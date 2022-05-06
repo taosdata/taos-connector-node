@@ -62,22 +62,24 @@ jobs:
 
 
     - name: Test node-taos on Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+      
+      run: | 
+          cd node-taos/nodejs
+          uses: actions/setup-node@v3
+          with:
+            node-version: ${{ matrix.node-version }}
+            cache: 'npm'
 
-    - run: cd node-taos/nodejs
-    - uses: actions/cache@v3
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+    # - uses: actions/cache@v3
+    #   with:
+    #     path: ~/.npm
+    #     key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-node-
 
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm run test
+    # - run: npm ci
+    # - run: npm run build --if-present
+    # - run: npm run test
 
 
     # - name: Test node-rest on Node.js ${{ matrix.node-version }}

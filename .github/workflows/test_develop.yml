@@ -1,0 +1,91 @@
+name: learn-github-actions
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+jobs:
+  test_develop:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+        node-version: [10.x, 12.x]
+        architecture:
+          - x64
+        check-latest: 
+          - true
+    
+    name: Node ${{ matrix.node_version }} - ${{ matrix.architecture }} on ${{ matrix.os }}
+    steps:
+
+    - name: Build Tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+    
+    - name: Checkout TDengine
+      uses: actions/checkout@v3
+      with:
+          fetch-depth: 1
+          repository: 'taosdata/TDengine'
+          path: 'TDengine'
+          ref: 'develop'
+          submodules: 'recursive'
+
+    - name: Build TDengine
+      run: |
+          cd TDengine
+          mkdir debug
+          cd debug
+          cmake .. -DBUILD_JDBC=false -DBUILD_TOOLS=false
+          make -j
+          sudo make install
+          
+    - name: start taosd
+      run: |
+        nohup sudo taosd &
+        taos -V  
+
+    - name: start taosadpter
+      run: |
+        nohup sudo taosadpter &
+
+    - name: checkout taos-connector-node
+    - uses: actions/checkout@v3
+      with: 
+       path: 'node-taos'
+       ref: 'develop'
+
+
+
+    - name: Test node-taos on Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - run: cd node-taos/nodejs
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm run test
+
+    - name: Test node-rest on Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - run: cd node-taos/typescript-rest
+    - uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+          
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm run example

@@ -21,18 +21,21 @@ jobs:
 
     steps:
 
-    - name: checkout nodejs  
-      uses: Bhacaz/checkout-files@v1
+    - name: checkout taos-connector-node
+    - uses: actions/checkout@v3
       with:
-         files: nodejs
+        path : "node-taos"
+        ref: "develop"
+
     
-    - name: check check out 
+    - name: verify check out 
       run: |
        echo `pwd`
        ls -al
+       cd node-taos/nodejs
 
     # - name: Use Node.js ${{ matrix.node-version }}
-    #   uses: actions/setup-node@v3
-    #   with:
-    #     node-version: ${{ matrix.node-version }}
-    #     cache: 'npm'
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'

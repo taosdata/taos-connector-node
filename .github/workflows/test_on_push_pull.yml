@@ -20,15 +20,12 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    # - uses: actions/checkout@v3
-    #   with:
-    #     path : "node-taos"
-    #     ref: "develop"
 
     - name: checkout nodejs  
-    - uses: Bhacaz/checkout-files@v1
+      uses: Bhacaz/checkout-files@v1
       with:
          files: nodejs
+    
     - name: check check out 
       run: |
        echo `pwd`

@@ -470,7 +470,7 @@ describe("test schemaless", () => {
       let tagData2 = ['3i64', '4f64', '\"t3\"', null];
       let expectResDataTable1 = getResData(colData1, tagData1, 6);
       let expectResDataTable2 = getResData(colData2, tagData2, 6);
-      let expectResData = expectResDataTable1.concat(expectResDataTable2);
+      let expectResData = expectResDataTable2.concat(expectResDataTable1);
 
       let lineStr = [stablename + ",t1=3i64,t2=4f64,t3=\"t3\" c1=3i64,c3=L\"passit\",c2=false,c4=4f64 1626006833639000000",
       stablename + ",t1=4i64,t3=\"t4\",t2=5f64,t4=5f64 c1=3i64,c3=L\"passitagin\",c2=true,c4=5f64,c5=5f64 1626006833641000000"

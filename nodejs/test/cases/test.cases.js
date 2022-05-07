@@ -52,7 +52,7 @@ afterAll(() => {
   conn.close();
 });
 
-describe.skip("test unsigned type", () => {
+describe("test unsigned type", () => {
 
   test(`name:test unsinged tinnyint ntable;` +
     `author:${author};` +
@@ -347,7 +347,7 @@ describe.skip("test unsigned type", () => {
 
 })
 
-describe.skip("test cn character", () => {
+describe("test cn character", () => {
   test(`name:test cn ntable;` +
     `author:${author};` +
     `desc:create,insert,query with cn characters;` +
@@ -417,7 +417,7 @@ describe.skip("test cn character", () => {
 })
 
 describe("test schemaless", () => {
-  test.skip(`name:sml line protocal using string;` +
+  test(`name:sml line protocal using string;` +
     `author:${author};` +
     `desc:using line protocal to schemaless insert with a string;` +
     `filename:${fileName};` +
@@ -485,7 +485,7 @@ describe("test schemaless", () => {
       expect(expectResData.length).toEqual(actualResData.length);
       //assert result data
       expectResData.forEach((item, index) => {
-        console.log(`sml line protocal using Array:acutualResData[${index}]:${actualResData[index]} expectData:${item}`);
+        // console.log(`sml line protocal using Array:acutualResData[${index}]:${actualResData[index]} expectData:${item}`);
         expect(item).toEqual(actualResData[index]);
       });
 
@@ -495,7 +495,7 @@ describe("test schemaless", () => {
       })
     })
 
-  test.skip(`name:sml json protocal using string;` +
+  test(`name:sml json protocal using string;` +
     `author:${author};` +
     `desc:using json protocal to schemaless insert with a json string;` +
     `filename:${fileName};` +
@@ -542,7 +542,7 @@ describe("test schemaless", () => {
       })
     })
 
-  test.skip(`name:sml json protocal using Array;` +
+  test(`name:sml json protocal using Array;` +
     `author:${author};` +
     `desc:using json protocal to schemaless insert with a json array;` +
     `filename:${fileName};` +
@@ -591,7 +591,7 @@ describe("test schemaless", () => {
     })
 })
 
-describe.skip("test support microsecond", () => {
+describe("test support microsecond", () => {
   test(`name:ms support ntable;` +
     `author:${author};` +
     `desc:test normal table supports microseconds;` +
@@ -681,7 +681,7 @@ describe.skip("test support microsecond", () => {
     })
 })
 
-describe.skip("test support nanosecond", () => {
+describe("test support nanosecond", () => {
   test(`name:ns support ntable;` +
     `author:${author};` +
     `desc:test normal table supports nanoseconds;` +
@@ -769,7 +769,7 @@ describe.skip("test support nanosecond", () => {
     })
 })
 
-describe.skip("test json tag", () => {
+describe("test json tag", () => {
   test(`name:json tag;` +
     `author:${author};` +
     `desc:create,insert,query with json tag;` +

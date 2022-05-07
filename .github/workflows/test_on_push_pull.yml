@@ -24,9 +24,11 @@ jobs:
       with:
         path : "node-taos"
         ref: "develop"
+
+    - name: change dir
+      run:  cd node-taos/nodejs
     
     - name: Use Node.js ${{ matrix.node-version }}
-    # - run:  cd node-taos/nodejs
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}

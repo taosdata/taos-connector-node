@@ -14,8 +14,6 @@ jobs:
         os:
           - ubuntu-20.04
         node-version: [10.x, 12.x]
-        architecture:
-          - x64
         check-latest: 
           - true
     
@@ -61,14 +59,14 @@ jobs:
        ref: 'develop'
 
 
-    - name: Test node-taos on Node.js ${{ matrix.node-version }}
+    # - name: Test node-taos on Node.js ${{ matrix.node-version }}
       
-      run: | 
-          cd node-taos/nodejs
-          uses: actions/setup-node@v3
-          with:
-            node-version: ${{ matrix.node-version }}
-            cache: 'npm'
+    #   run: | 
+    #       cd node-taos/nodejs
+    #       uses: actions/setup-node@v3
+    #       with:
+    #         node-version: ${{ matrix.node-version }}
+    #         cache: 'npm'
 
     # - uses: actions/cache@v3
     #   with:

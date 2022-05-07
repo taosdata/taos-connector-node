@@ -20,14 +20,17 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v3
+    # - uses: actions/checkout@v3
+    #   with:
+    #     path : "node-taos"
+    #     ref: "develop"
+
+    - name: checkout nodejs  
+    - uses: Bhacaz/checkout-files@v1
       with:
-        path : "node-taos"
-        ref: "develop"
-      
-    
+         files: nodejs
+
     - name: Use Node.js ${{ matrix.node-version }}
-      run:  cd node-taos/nodejs
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}

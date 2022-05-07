@@ -60,7 +60,14 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-    
+        
+    - name: test typescript-rest
+      working-directory: node-taos/typescript-rest
+      run: |
+        ls -al
+        npm install
+        npm run example
+
     - name: test nodejs
       working-directory: node-taos/nodejs
       run: |
@@ -68,9 +75,3 @@ jobs:
         npm install
         npm run test
 
-    - name: test typescript-rest
-      working-directory: node-taos/typescript-rest
-      run: |
-        ls -al
-        npm install
-        npm run example

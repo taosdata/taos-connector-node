@@ -52,7 +52,7 @@ afterAll(() => {
   conn.close();
 });
 
-describe("test unsigned type", () => {
+describe.skip("test unsigned type", () => {
 
   test(`name:test unsinged tinnyint ntable;` +
     `author:${author};` +
@@ -347,7 +347,7 @@ describe("test unsigned type", () => {
 
 })
 
-describe("test cn character", () => {
+describe.skip("test cn character", () => {
   test(`name:test cn ntable;` +
     `author:${author};` +
     `desc:create,insert,query with cn characters;` +
@@ -417,7 +417,7 @@ describe("test cn character", () => {
 })
 
 describe("test schemaless", () => {
-  test(`name:sml line protocal using string;` +
+  test.skip(`name:sml line protocal using string;` +
     `author:${author};` +
     `desc:using line protocal to schemaless insert with a string;` +
     `filename:${fileName};` +
@@ -495,7 +495,7 @@ describe("test schemaless", () => {
       })
     })
 
-  test(`name:sml json protocal using string;` +
+  test.skip(`name:sml json protocal using string;` +
     `author:${author};` +
     `desc:using json protocal to schemaless insert with a json string;` +
     `filename:${fileName};` +
@@ -542,7 +542,7 @@ describe("test schemaless", () => {
       })
     })
 
-  test(`name:sml json protocal using Array;` +
+  test.skip(`name:sml json protocal using Array;` +
     `author:${author};` +
     `desc:using json protocal to schemaless insert with a json array;` +
     `filename:${fileName};` +
@@ -591,7 +591,7 @@ describe("test schemaless", () => {
     })
 })
 
-describe("test support microsecond", () => {
+describe.skip("test support microsecond", () => {
   test(`name:ms support ntable;` +
     `author:${author};` +
     `desc:test normal table supports microseconds;` +
@@ -681,7 +681,7 @@ describe("test support microsecond", () => {
     })
 })
 
-describe("test support nanosecond", () => {
+describe.skip("test support nanosecond", () => {
   test(`name:ns support ntable;` +
     `author:${author};` +
     `desc:test normal table supports nanoseconds;` +
@@ -769,7 +769,7 @@ describe("test support nanosecond", () => {
     })
 })
 
-describe("test json tag", () => {
+describe.skip("test json tag", () => {
   test(`name:json tag;` +
     `author:${author};` +
     `desc:create,insert,query with json tag;` +

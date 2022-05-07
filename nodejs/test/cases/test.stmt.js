@@ -99,7 +99,7 @@ afterAll(() => {
   conn.close();
 });
 
-describe("stmt_bind_single_param", () => {
+describe.skip("stmt_bind_single_param", () => {
   test(`name:bindSingleParamWithOneTable;` +
     `author:${author};` +
     `desc:Using stmtBindSingleParam() bind one table in a batch;` +
@@ -367,7 +367,7 @@ describe("stmt_bind_single_param", () => {
     });
 })
 
-describe("stmt_bind_para_batch", () => {
+describe.skip("stmt_bind_para_batch", () => {
   test(`name:bindParamBatchWithOneTable;` +
     `author:${author};` +
     `desc:Using stmtBindParamBatch() bind one table in a batch;` +
@@ -615,7 +615,7 @@ describe("stmt_bind_para_batch", () => {
     });
 })
 
-describe("stmt_bind_param", () => {
+describe.skip("stmt_bind_param", () => {
   test(`name:bindParamWithOneTable;` +
     `author:${author};` +
     `desc:using stmtBindParam() bind one table in a batch;` +

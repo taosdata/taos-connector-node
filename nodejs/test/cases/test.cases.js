@@ -485,6 +485,7 @@ describe("test schemaless", () => {
       expect(expectResData.length).toEqual(actualResData.length);
       //assert result data
       expectResData.forEach((item, index) => {
+        console.log(`sml line protocal using Array:acutualResData[${index}]:${actualResData[index]} expectData:${item}`);
         expect(item).toEqual(actualResData[index]);
       });
 

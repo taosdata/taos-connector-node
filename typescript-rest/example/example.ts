@@ -1,4 +1,4 @@
-import { options, connect } from '../tdengine_rest'
+import { options, connect } from '../index'
 options.path = '/rest/sqlt'
 options.host = 'localhost'
 
@@ -43,7 +43,8 @@ async function execute(sql: string, pure = false) {
 }
 
 (async () => {
-    let start = new Date().getTime(); // 开始时间
+    // start execute time
+    let start = new Date().getTime(); 
     await execute(createDB);
     await execute(createTB);
     await execute(addColumn);
@@ -52,6 +53,7 @@ async function execute(sql: string, pure = false) {
     await execute(querySql);
     await execute(errorSql);
     await execute(dropDB);
+    // finish time
     let end = new Date().getTime(); // 结束时间
     console.log("total spend time:%d ms",end - start);
 })()

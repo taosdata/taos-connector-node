@@ -21,7 +21,7 @@ export interface FetchOptions {
     compress?: boolean|undefined;
     // maximum response body size in bytes. 0 to disable
     size?: number|undefined,            
-    agent?:|Agent|undefined
+    agent?:Agent|undefined
 }
 
 export interface User {

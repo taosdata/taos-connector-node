@@ -1,6 +1,6 @@
 import { options, connect } from '../index'
 
-options.host = '127.0.0.1'
+options.host = '127.0.0.1';
 //your cloud token
 options.query = {token:'c37ef4dbec8708c0227b4e8cb84ffffb9b8711a1'}
 options.port = 6041

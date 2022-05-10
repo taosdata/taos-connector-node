@@ -30,7 +30,7 @@ export class TDResRequest {
             )
             // remove last "&"
             url = url.slice(0,url.length-1);
-            console.log("query param:"+url)
+            // console.log("query param:"+url)
         }
         if ((this.uri.fragment != null)||(this.uri.fragment != undefined)){
             if(this.uri.fragment.slice(0,1)=='#'){

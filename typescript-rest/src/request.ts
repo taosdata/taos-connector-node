@@ -18,7 +18,14 @@ export class TDResRequest {
     }
 
     _makeUrl(): string {
-        return `http://${this.uri.host}:${this.uri.port}${this.uri.path}`;
+        let url = `${this.uri.schema}://${this.uri.host}:${this.uri.port}${this.uri.path}`
+        if ((this.uri.query != null)||(this.uri.query != undefined)){
+            let queryParams = ``
+        }
+        if ((this.uri.fragment != null)||(this.uri.fragment != undefined)){
+
+        }
+        return url;
     }
     _token(): string {
         return`Basic ${Buffer.from(`${this.user.user}:${this.user.passwd}`).toString('base64')}`

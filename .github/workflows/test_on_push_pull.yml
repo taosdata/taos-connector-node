@@ -1,5 +1,4 @@
-
-# Daily test for current develop branch's compatibility with latest TDengine's develop branch.
+# Triggered by pull request or push to develop branch
 name: test on push&pull
 
 on:

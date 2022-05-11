@@ -1,3 +1,4 @@
+# Daily test for current develop branch's compatibility with latest TDengine's develop branch.
 name: test compatibility
 
 on:

@@ -1,12 +1,9 @@
-
-# Daily test for current develop branch's compatibility with latest TDengine's develop branch.
 name: test compatibility
 
 on:
-  push:
-    branches: [ develop ]
-  pull_request:
-    branches: [ develop ]
+  schedule:
+    - cron: '0 2,14 * * *'
+    # runner timezone is utc-0
 
 jobs:
   build:

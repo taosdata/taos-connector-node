@@ -3,7 +3,7 @@ import {TDConnect,Options} from './src/connect';
 let options:Options = {
     host: '127.0.0.1',
     port: 6041,
-    path: '/rest/sql',
+    path: '/rest/sqlutc',
     user: 'root',
     passwd: 'taosdata',
     schema: 'http'

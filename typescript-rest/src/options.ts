@@ -32,7 +32,7 @@ export interface User {
 export interface Uri {
     schema: 'http'
     host: string;
-    path: "/rest/sqlt" | '/rest/sqlutc' | '/rest/sql';
+    path: '/rest/sqlutc';
     port: number;
     query?: {[key:string]:string};
     fragment?: string|undefined|null

@@ -1,5 +1,5 @@
 import { options, connect } from '../index'
-options.path = '/rest/sqlt'
+options.path = '/rest/sqlutc'
 options.host = 'localhost'
 
 const db = 'rest_ts_db';

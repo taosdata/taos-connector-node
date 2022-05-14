@@ -12,7 +12,7 @@
   },
   "scripts": {
     "test": "parcel build --no-source-maps && node ./dist/test/test.main.js && node ./dist/test/test.module.mjs",
-    "example": "tsc && node ./tsc/example/example.js",
+    "example": "tsc && node ./tsc/example/example.js && node ./tsc/example/cloud_example.js ",
     "build": "parcel build --no-source-maps",
     "watch": "parcel watch"
   },

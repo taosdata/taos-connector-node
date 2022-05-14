@@ -1,3 +1,5 @@
+import { timeStamp } from "console";
+
 interface IResult {
     status: string;
     head?: Array<string>;
@@ -63,6 +65,22 @@ export class Result {
                         typeName: typeNameMap[item[1]]
                     }
             })
+        }
+    }
+    private _initData(resData:Array<Array<any>>,meta:Array<Array<any>>,rows:number):void{
+        if (resData.length = 0){
+            this._data=[[]];
+        } else {
+            this._data= new Array<Array<any>>(resData.length);
+            for (let i =0 ;i<rows;i++){
+                for (let j=0;j<meta.length;j++){
+                    if(meta[j][1] ==9 ){
+                        this._data[i][j] = new Date(resData[i][j])
+                    }else{
+                        this._data[i][j] = resData[i][j]
+                    }
+                }
+            }
         }
     }
 

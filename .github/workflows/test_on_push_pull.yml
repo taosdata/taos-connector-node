@@ -1,9 +1,11 @@
+# Triggered by pull request or push to develop branch
 name: test on push&pull
 
 on:
-  schedule:
-    - cron: '0 2,14 * * *'
-    # runner timezone is utc-0
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
 
 jobs:
   build:
@@ -53,7 +55,6 @@ jobs:
     - uses: actions/checkout@v3
       with:
           path : "node-taos"
-          ref: "develop"
 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3

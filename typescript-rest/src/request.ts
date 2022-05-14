@@ -18,7 +18,28 @@ export class TDResRequest {
     }
 
     _makeUrl(): string {
-        return `http://${this.uri.host}:${this.uri.port}${this.uri.path}`;
+        let url = `${this.uri.schema}://${this.uri.host}:${this.uri.port}${this.uri.path}`
+        if ((this.uri.query != null)||(this.uri.query != undefined)){
+            url += '?'
+            Object.keys(this.uri.query).forEach(
+                key =>{
+                    if(this.uri.query!=null && (this.uri.query[key] != null || this.uri.query[key] != undefined)){
+                        url += key + "=" + this.uri.query[key] + "&"
+                    }
+                }
+            )
+            // remove last "&"
+            url = url.slice(0,url.length-1);
+            // console.log("query param:"+url)
+        }
+        if ((this.uri.fragment != null)||(this.uri.fragment != undefined)){
+            if(this.uri.fragment.slice(0,1)=='#'){
+                url += this.uri.fragment
+            }else{
+                url += '#'+this.uri.fragment;
+            }
+        }
+        return url;
     }
     _token(): string {
         return`Basic ${Buffer.from(`${this.user.user}:${this.user.passwd}`).toString('base64')}`

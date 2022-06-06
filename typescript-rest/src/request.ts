@@ -32,7 +32,7 @@ export class TDResRequest {
             // console.log(JSON.stringify(this.uri));
             url = `${this.uri.schema}://${this.uri.cloudUri}${this.uri.path}`
         } else {
-            console.log(JSON.stringify(this.uri));
+            // console.log(JSON.stringify(this.uri));
             url = `${this.uri.schema}://${this.uri.host}:${this.uri.port}${this.uri.path}`
         }
         if ((this.uri.query != null) || (this.uri.query != undefined)) {

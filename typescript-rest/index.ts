@@ -1,14 +1,11 @@
 
 import {TDConnect,Options} from './src/connect';
 let options:Options = {
-    host: '127.0.0.1',
-    port: 6041,
     path: '/rest/sqlutc',
-    user: 'root',
-    passwd: 'taosdata',
-    schema: 'http'
+    schema: 'http',
 }
 let connect = function connect(option:Options){
+    // console.log("index.options:"+JSON.stringify(option));
     return new TDConnect(option);
 }
 

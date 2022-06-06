@@ -1,10 +1,10 @@
 import { options, connect } from '../index'
 
-options.host = '127.0.0.1';
-//your cloud token
-options.query = {token:'c37ef4dbec8708c0227b4e8cb84ffffb9b8711a1'}
-options.port = 6041
+// add your cloud url
+options.cloudUri ='192.168.1.163:8085'
 
+// your cloud token
+options.query = {token:'c37ef4dbec8708c0227b4e8cb84ffffb9b8711a1'}
 
 const sql = 'show databases';
 
@@ -12,7 +12,8 @@ let conn = connect(options);
 let cursor = conn.cursor();
 
 async function execute(sql: string, pure = false) {
-    let result = await cursor.query(sql, pure);
+    let result = await cursor.query(sql, pure).catch(e=>{throw new Error(e);
+    });
     // print query result as taos shell
     result.toString();
     // Get Result object, return Result object.

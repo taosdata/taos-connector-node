@@ -1,6 +1,6 @@
 {
   "name": "td2.0-rest-connector",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A REST connector for TDengine",
   "source": "tdengine_rest.ts",
   "main": "dist/main/rest.js",

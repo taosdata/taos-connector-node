@@ -10,24 +10,24 @@ export class TDResRequest {
     constructor(url: Uri, user: User) {
         this.uri = url;
         this.user = user;
-        if(url.cloudUri==null ||url.cloudUri ==undefined ){
+        if (url.cloudUri == null || url.cloudUri == undefined) {
             this.options = {
                 method: 'POST',
                 body: '',
                 headers: { 'Authorization': this._token() }
-            }      
-        }else{
+            }
+        } else {
             this.options = {
                 method: 'POST',
                 body: '',
-                headers:{},
-            }  
-        }   
+                headers: {},
+            }
+        }
     }
 
     _makeUrl(): string {
         let url = '';
-            // console.log("_makeUrl():"+JSON.stringify(this.uri));
+        // console.log("_makeUrl():"+JSON.stringify(this.uri));
         if (this.uri.cloudUri != null || this.uri.cloudUri != undefined) {
             // console.log(JSON.stringify(this.uri));
             url = `${this.uri.schema}://${this.uri.cloudUri}${this.uri.path}`

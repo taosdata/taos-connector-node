@@ -18,7 +18,7 @@ export class TDengineCursor {
             port: options.port,
             schema: options.schema,
             query: options.query,
-            fragment: options.fragment, 
+            fragment: options.fragment,
         }
         this._user = {
             user: options.user,

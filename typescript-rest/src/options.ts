@@ -1,5 +1,4 @@
 import { Agent } from "http";
-// import { Headers } from "node-fetch";
 
 export interface FetchOptions {
     // These properties are part of the Fetch Standard

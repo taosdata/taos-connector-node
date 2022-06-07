@@ -16,7 +16,7 @@ export class TDengineCursor {
             path: options.path,
             cloudUri: options.cloudUri,
             port: options.port,
-            schema: options.schema,
+            scheme: options.scheme,
             query: options.query,
             fragment: options.fragment,
         }

@@ -2,7 +2,7 @@
 import {TDConnect,Options} from './src/connect';
 let options:Options = {
     path: '/rest/sqlutc',
-    schema: 'http',
+    scheme: 'http',
 }
 let connect = function connect(option:Options){
     // console.log("index.options:"+JSON.stringify(option));

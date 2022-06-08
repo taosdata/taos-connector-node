@@ -29,7 +29,7 @@ export interface User {
 }
 
 export interface Uri {
-    schema: 'http'|string
+    scheme: string
     cloudUri?:string
     host?: string|undefined|null;
     path: '/rest/sqlutc';

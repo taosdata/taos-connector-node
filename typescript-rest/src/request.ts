@@ -30,10 +30,10 @@ export class TDResRequest {
         // console.log("_makeUrl():"+JSON.stringify(this.uri));
         if (this.uri.cloudUri != null || this.uri.cloudUri != undefined) {
             // console.log(JSON.stringify(this.uri));
-            url = `${this.uri.schema}://${this.uri.cloudUri}${this.uri.path}`
+            url = `${this.uri.scheme}://${this.uri.cloudUri}${this.uri.path}`
         } else {
             // console.log(JSON.stringify(this.uri));
-            url = `${this.uri.schema}://${this.uri.host}:${this.uri.port}${this.uri.path}`
+            url = `${this.uri.scheme}://${this.uri.host}:${this.uri.port}${this.uri.path}`
         }
         if ((this.uri.query != null) || (this.uri.query != undefined)) {
             url += '?'

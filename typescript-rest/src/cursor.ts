@@ -14,7 +14,7 @@ export class TDengineCursor {
         this._uri = {
             host: options.host,
             path: options.path,
-            cloudUri: options.cloudUri,
+            url: options.url,
             port: options.port,
             scheme: options.scheme,
             query: options.query,

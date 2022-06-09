@@ -7,32 +7,31 @@ export class TDResRequest {
     options: FetchOptions;
     user: User;
 
-    constructor(url: Uri, user: User) {
-        this.uri = url;
+    constructor(uri: Uri, user: User) {
+        this.uri = uri;
         this.user = user;
-        if (url.cloudUri == null || url.cloudUri == undefined) {
+
+        // if uri.url exists,and that is a cloud url(means token exist)
+        if ((uri.query != null && uri.query['token'] != undefined) || (uri.query != undefined && uri.query['token'] != undefined)) {
             this.options = {
                 method: 'POST',
                 body: '',
-                headers: { 'Authorization': this._token() }
+                headers: {},
             }
         } else {
             this.options = {
                 method: 'POST',
                 body: '',
-                headers: {},
+                headers: { 'Authorization': this._token() },
             }
         }
     }
 
     _makeUrl(): string {
         let url = '';
-        // console.log("_makeUrl():"+JSON.stringify(this.uri));
-        if (this.uri.cloudUri != null || this.uri.cloudUri != undefined) {
-            // console.log(JSON.stringify(this.uri));
-            url = `${this.uri.scheme}://${this.uri.cloudUri}${this.uri.path}`
+        if (this.uri.url != null || this.uri.url != undefined) {
+            url = `${this.uri.url}${this.uri.path}`;
         } else {
-            // console.log(JSON.stringify(this.uri));
             url = `${this.uri.scheme}://${this.uri.host}:${this.uri.port}${this.uri.path}`
         }
         if ((this.uri.query != null) || (this.uri.query != undefined)) {

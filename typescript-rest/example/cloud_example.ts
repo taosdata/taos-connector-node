@@ -4,7 +4,8 @@ import { options, connect } from '../index'
 let tokenEnv = process.env["TDENGINE_CLOUD_TOKEN"];
 
 // get TDengine cloud token form env variables
-let urlEnv = process.env["TDENGINE_CLOUD_URL"];
+// let urlEnv = process.env["TDENGINE_CLOUD_URL"];
+let urlEnv = "http://hostname:port";
 
 if (tokenEnv != null || tokenEnv != undefined) {
     // set your cloud token
@@ -15,7 +16,7 @@ if (tokenEnv != null || tokenEnv != undefined) {
 
 if (urlEnv != null || urlEnv != undefined) {
     // add your cloud url
-    options.cloudUri = urlEnv;
+    options.url = urlEnv;
 } else {
     throw new Error("TDENGINE_CLOUD_URL is undefined,please set TDENGINE_CLOUD_URL.");
 }

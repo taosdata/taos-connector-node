@@ -503,7 +503,6 @@ CTaosInterface.prototype.fetchBlock = function fetchBlock(result, fields) {
   num_of_rows = Math.abs(num_of_rows);
   let offset = 0;
   let ptr = pblock.deref();
-  console.log("fetch_block ptr" + JSON.stringify(ptr));
   for (let i = 0; i < fields.length; i++) {
     let pdata = ref.reinterpret(ptr, 8, i * 8);
     if (ref.isNull(pdata.readPointer())) {

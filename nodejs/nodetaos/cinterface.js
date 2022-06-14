@@ -504,7 +504,7 @@ CTaosInterface.prototype.fetchBlock = function fetchBlock(result, fields) {
   let offset = 0;
   let ptr = pblock.deref();
   for (let i = 0; i < fields.length; i++) {
-    let pdata = ref.reinterpret(ptr, 8, i * 8);
+    let pdata = ref.reinterpret(ptr, ref.sizeof.pointer, i * ref.sizeof.pointer);
     if (ref.isNull(pdata.readPointer())) {
       blocks[i] = new Array();
     } else {

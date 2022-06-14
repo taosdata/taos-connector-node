@@ -98,7 +98,7 @@ try {
   initData();
   cursor_execute_a();
   console.log("==================================")
-  // query_execute_a();
+  query_execute_a();
 } finally {
   setTimeout(() => {
     cursor.execute(dropDB);

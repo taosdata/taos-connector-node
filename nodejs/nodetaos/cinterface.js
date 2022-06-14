@@ -376,6 +376,9 @@ function CTaosInterface(config = null, pass = false) {
 
     // int taos_load_table_info(TAOS *taos, const char* tableNameList)
     , 'taos_load_table_info': [ref.types.int, [ref.types.void_ptr, ref.types.char_ptr]]
+
+    // TAOS_ROW *taos_result_block(TAOS_RES *res);
+    , 'taos_result_block': [ref.types.void_ptr2, [ref.types.void_ptr]]
   });
 
   if (pass == false) {
@@ -500,9 +503,9 @@ CTaosInterface.prototype.fetchBlock = function fetchBlock(result, fields) {
   num_of_rows = Math.abs(num_of_rows);
   let offset = 0;
   let ptr = pblock.deref();
-
+  console.log("fetch_block ptr" + JSON.stringify(ptr));
   for (let i = 0; i < fields.length; i++) {
-    pdata = ref.reinterpret(ptr, 8, i * 8);
+    let pdata = ref.reinterpret(ptr, 8, i * 8);
     if (ref.isNull(pdata.readPointer())) {
       blocks[i] = new Array();
     } else {
@@ -560,51 +563,56 @@ CTaosInterface.prototype.query_a = function query_a(connection, sql, callback, p
  * Note: This isn't a recursive function, in order to fetch all data either use the TDengine cursor object, TaosQuery object, or implement a recrusive
  * function yourself using the libtaos.taos_fetch_rows_a function
  */
-CTaosInterface.prototype.fetch_rows_a = function fetch_rows_a(result, callback, param = ref.ref(ref.NULL)) {
-  // void taos_fetch_rows_a(TAOS_RES *res, void (*fp)(void *param, TAOS_RES *, int numOfRows), void *param);
+CTaosInterface.prototype.fetch_rows_a = function fetch_rows_a(taosRes, callback, param = ref.ref(ref.NULL)) {
   var cti = this;
-  // wrap callback with a function so interface can access the numOfRows value, needed in order to properly process the binary data
-  let asyncCallbackWrapper = function (param2, result2, numOfRows2) {
-    // Data preparation to pass to cursor. Could be bottleneck in query execution callback times.
-    let row = cti.libtaos.taos_fetch_row(result2);
-    let fields = cti.fetchFields_a(result2);
-
-    let precision = cti.libtaos.taos_result_precision(result2);
-    let blocks = new Array(fields.length);
-    blocks.fill(null);
-    numOfRows2 = Math.abs(numOfRows2);
-    let offset = 0;
-    var fieldL = cti.libtaos.taos_fetch_lengths(result);
-    var fieldlens = [];
-    if (ref.isNull(fieldL) == false) {
-
-      for (let i = 0; i < fields.length; i++) {
-        let plen = ref.reinterpret(fieldL, 8, i * 8);
-        let len = ref.get(plen, 0, ref.types.int32);
-        fieldlens.push(len);
+  // var callBackCnt = 0;
+  var fetchRow_a_callback = function (param2, taosRes2, numOfRows2) {
+    let fieldsList = cti.fetchFields_a(taosRes2);
+    let precision = cti.libtaos.taos_result_precision(taosRes2)
+    
+    let data = new Array(fieldsList.length);
+    data.fill(null);
+    
+    let fieldLengthArr = [];
+    let fieldLengthPtr = cti.libtaos.taos_fetch_lengths(taosRes2);
+    if (ref.isNull(fieldLengthPtr) == false) {
+      for (let i = 0; i < fieldsList.length; i++) {
+        let fieldLengthBuf = ref.reinterpret(fieldLengthPtr, ref.sizeof.int32, i * ref.sizeof.int32);
+        let fieldLength = ref.get(fieldLengthBuf, 0, ref.types.int32);
+        fieldLengthArr.push(fieldLength);
       }
     }
-    if (numOfRows2 > 0) {
-      for (let i = 0; i < fields.length; i++) {
-        if (ref.isNull(pdata.readPointer())) {
-          blocks[i] = new Array();
-        } else {
-          if (!convertFunctions[fields[i]['type']]) {
-            throw new errors.DatabaseError("Invalid data type returned from database");
-          }
-          let prow = ref.reinterpret(row, 8, i * 8);
-          prow = prow.readPointer();
-          prow = ref.ref(prow);
-          blocks[i] = convertFunctions[fields[i]['type']](prow, 1, fieldlens[i], offset, precision);
-          //offset += fields[i]['bytes'] * numOfRows2;
+    
+    // let taosRowArrPtr = cti.libtaos.taos_fetch_row(taosRes2); using taos_result_block instead
+    // taosRowArrPtr is (void*)**
+    let taosRowArrPtr = cti.libtaos.taos_result_block(taosRes2);
+    let taosRowArr = taosRowArrPtr.deref();
+
+    for (let i = 0; i < fieldLengthArr.length; i++) {
+      let taosRowPtr = ref.reinterpret(taosRowArr, ref.sizeof.pointer, i * ref.sizeof.pointer);
+      if (ref.isNull(taosRowPtr.readPointer())) {
+        data[i] = new Array();
+      } else {
+        taosRowPtr = ref.ref(taosRowPtr.readPointer());
+        if (!convertFunctions[fieldsList[i]['type']]) {
+          throw new errors.DatabaseError("Invalid data type returned from database");
         }
+        data[i] = convertFunctions[fieldsList[i]['type']](taosRowPtr, numOfRows2, fieldLengthArr[i], 0, precision);
       }
     }
-    callback(param2, result2, numOfRows2, blocks);
-  }
-  asyncCallbackWrapper = ffi.Callback(ref.types.void, [ref.types.void_ptr, ref.types.void_ptr, ref.types.int], asyncCallbackWrapper);
-  this.libtaos.taos_fetch_rows_a(result, asyncCallbackWrapper, param);
+    // callBackCnt++;
+    // console.log(`fetch_row_a() callback ${callBackCnt} times`)
+    callback(param2, taosRes2, numOfRows2, data);
+  };
+  var fetchRow_a_callback = ffi.Callback(ref.types.void, [ref.types.void_ptr, ref.types.void_ptr, ref.types.int], fetchRow_a_callback);
+  this.libtaos.taos_fetch_rows_a(taosRes, fetchRow_a_callback, param);
   return param;
+}
+
+// Used to parse the TAO_RES retrieved in taos_fetch_row_a()'s callback
+// block after block.
+CTaosInterface.prototype.resultBlock = function (taosRes) {
+  return this.libtaos.taos_result_block(taosRes)
 }
 
 // Fetch field meta data by result handle
@@ -885,7 +893,7 @@ CTaosInterface.prototype.loadTableInfo = function loadTableInfo(taos, tableList)
   let _tableListBuf = Buffer.alloc(ref.sizeof.pointer);
   let _listStr = tableList.toString();
 
-  if ((_.isString(tableList) )|| (_.isArray(tableList))) {
+  if ((_.isString(tableList)) || (_.isArray(tableList))) {
     ref.set(_tableListBuf, 0, ref.allocCString(_listStr), ref.types.char_ptr);
     return this.libtaos.taos_load_table_info(taos, _tableListBuf);
   } else {

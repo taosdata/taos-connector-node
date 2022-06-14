@@ -1,6 +1,9 @@
 import { options, connect } from '../index'
 options.path = '/rest/sqlutc'
-options.host = 'localhost'
+options.host = 'localhost';
+options.user = "root";
+options.passwd = "taosdata";
+options.port = 6041;
 
 const db = 'rest_ts_db';
 const table = 'rest'

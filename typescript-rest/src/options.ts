@@ -1,5 +1,4 @@
 import { Agent } from "http";
-import { Headers } from "node-fetch";
 
 export interface FetchOptions {
     // These properties are part of the Fetch Standard
@@ -25,17 +24,18 @@ export interface FetchOptions {
 }
 
 export interface User {
-    user: string;
-    passwd: string;
+    user?: string;
+    passwd?: string;
 }
 
 export interface Uri {
-    schema: 'http'
-    host: string;
+    scheme: string
+    cloudUri?:string
+    host?: string|undefined|null;
     path: '/rest/sqlutc';
-    port: number;
+    port?: number|undefined|null;
     query?: {[key:string]:string};
-    fragment?: string|undefined|null
+    fragment?: string|undefined|null;
 }
 
 

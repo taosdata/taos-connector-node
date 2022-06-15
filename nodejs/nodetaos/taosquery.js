@@ -58,9 +58,9 @@ TaosQuery.prototype.execute = async function execute() {
  * @since 1.2.0
  */
 TaosQuery.prototype.execute_a = async function execute_a(options = {}) {
-  var executionPromise =  new Promise( (resolve, reject) => {
+  // var executionPromise =  new Promise( (resolve, reject) => {
 
-  });
+  // });
   var fres;
   var frej;
   var fetchPromise =  new Promise( (resolve, reject) => {

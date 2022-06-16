@@ -21,9 +21,6 @@ if (urlEnv != null || urlEnv != undefined) {
     throw new Error("TDENGINE_CLOUD_URL is undefined,please set TDENGINE_CLOUD_URL.");
 }
 
-
-
-
 const sql = 'show databases';
 
 let conn = connect(options);

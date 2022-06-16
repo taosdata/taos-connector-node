@@ -29,10 +29,10 @@ export interface User {
 }
 
 export interface Uri {
-    scheme: string
-    cloudUri?:string
+    scheme: string;
+    url?:string;
     host?: string|undefined|null;
-    path: '/rest/sqlutc';
+    path: '/rest/sqlutc'|string;
     port?: number|undefined|null;
     query?: {[key:string]:string};
     fragment?: string|undefined|null;

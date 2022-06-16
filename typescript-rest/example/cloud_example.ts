@@ -4,6 +4,7 @@ import { options, connect } from '../index'
 let tokenEnv = process.env["TDENGINE_CLOUD_TOKEN"];
 
 // get TDengine cloud token form env variables
+// eg: http://localhost:6041
 let urlEnv = process.env["TDENGINE_CLOUD_URL"];
 
 if (tokenEnv != null || tokenEnv != undefined) {
@@ -15,13 +16,10 @@ if (tokenEnv != null || tokenEnv != undefined) {
 
 if (urlEnv != null || urlEnv != undefined) {
     // add your cloud url
-    options.cloudUri = urlEnv;
+    options.url = urlEnv;
 } else {
     throw new Error("TDENGINE_CLOUD_URL is undefined,please set TDENGINE_CLOUD_URL.");
 }
-
-
-
 
 const sql = 'show databases';
 
@@ -60,3 +58,5 @@ async function execute(sql: string, pure = false) {
     let end = new Date().getTime(); // end time
     console.log("total spend time:%d ms", end - start);
 })()
+
+

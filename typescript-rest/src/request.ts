@@ -1,11 +1,14 @@
 
 import { Uri, User, FetchOptions } from "./options";
 import fetch from 'node-fetch';
+import { Console } from "console";
 
 export class TDResRequest {
     uri: Uri;
     options: FetchOptions;
     user: User;
+    queryParams='';
+    hashFragment='';
 
     constructor(uri: Uri, user: User) {
         this.uri = uri;
@@ -27,14 +30,16 @@ export class TDResRequest {
         }
     }
 
-    _makeUrl(): string {
-        let url = '';
-        if (this.uri.url != null || this.uri.url != undefined) {
-            url = `${this.uri.url}${this.uri.path}`;
-        } else {
-            url = `${this.uri.scheme}://${this.uri.host}:${this.uri.port}${this.uri.path}`
+    _makeUrl():string{
+        let url='';
+        if (this.uri.url){
+           this._constructUrlWithInput();
+        }else{
+           //do nothing 
         }
-        if ((this.uri.query != null) || (this.uri.query != undefined)) {
+        url = `${this.uri.scheme}://${this.uri.host}:${this.uri.port}${this.uri.path}`
+        
+        if (this.uri.query) {
             url += '?'
             Object.keys(this.uri.query).forEach(
                 key => {
@@ -47,6 +52,10 @@ export class TDResRequest {
             url = url.slice(0, url.length - 1);
             // console.log("query param:"+url)
         }
+        if(this.queryParams){
+            url += this.queryParams;
+        }
+        
         if ((this.uri.fragment != null) || (this.uri.fragment != undefined)) {
             if (this.uri.fragment.slice(0, 1) == '#') {
                 url += this.uri.fragment
@@ -54,9 +63,35 @@ export class TDResRequest {
                 url += '#' + this.uri.fragment;
             }
         }
-        // console.log(`url:${url}`);
+        if(this.hashFragment){
+            url += this.hashFragment;
+        }
+
+        console.log(`url:${url}`);
         return url;
     }
+    // if user input url
+    _constructUrlWithInput() {
+        if (this.uri.url) {
+            let urlObj = new URL(this.uri.url);
+            if (urlObj.protocol) {
+                this.uri.scheme = urlObj.protocol.slice(0, urlObj.protocol.length - 1);;
+            }
+            if (urlObj.hostname) {
+                this.uri.host = urlObj.hostname;
+            }
+            if (urlObj.pathname!='/') {
+                this.uri.path = urlObj.pathname;
+            }
+            if (urlObj.search){
+                this.queryParams = urlObj.search;
+            }
+            if (urlObj.hash){
+                this.hashFragment = urlObj.hash;
+            }
+        }
+    }
+
     _token(): string {
         return `Basic ${Buffer.from(`${this.user.user}:${this.user.passwd}`).toString('base64')}`
     }

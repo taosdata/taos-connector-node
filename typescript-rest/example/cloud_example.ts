@@ -61,3 +61,5 @@ async function execute(sql: string, pure = false) {
     let end = new Date().getTime(); // end time
     console.log("total spend time:%d ms", end - start);
 })()
+//http://root:taosdata@taosdemo.com:6041/rest/sql/test?token=asdfasdfasd&token2=toke3#result
+

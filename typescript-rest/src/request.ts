@@ -66,7 +66,7 @@ export class TDResRequest {
             url += this.hashFragment;
         }
 
-        console.log(`url:${url}`);
+        // console.log(`url:${url}`);
         return url;
     }
     // if user input url

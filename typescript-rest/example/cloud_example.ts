@@ -5,8 +5,7 @@ let tokenEnv = process.env["TDENGINE_CLOUD_TOKEN"];
 
 // get TDengine cloud token form env variables
 // let urlEnv = process.env["TDENGINE_CLOUD_URL"];
-// let urlEnv = "http://hostname:port";
-let urlEnv = "http://192.168.1.163:8085";
+let urlEnv = "http://hostname:port";
 
 if (tokenEnv != null || tokenEnv != undefined) {
     // set your cloud token

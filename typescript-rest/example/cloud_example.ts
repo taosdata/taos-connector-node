@@ -5,7 +5,8 @@ let tokenEnv = process.env["TDENGINE_CLOUD_TOKEN"];
 
 // get TDengine cloud token form env variables
 // let urlEnv = process.env["TDENGINE_CLOUD_URL"];
-let urlEnv = "http://hostname:port";
+// let urlEnv = "http://hostname:port";
+let urlEnv = "http://192.168.1.163:8085";
 
 if (tokenEnv != null || tokenEnv != undefined) {
     // set your cloud token
@@ -61,5 +62,5 @@ async function execute(sql: string, pure = false) {
     let end = new Date().getTime(); // end time
     console.log("total spend time:%d ms", end - start);
 })()
-//http://root:taosdata@taosdemo.com:6041/rest/sql/test?token=asdfasdfasd&token2=toke3#result
+
 

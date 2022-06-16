@@ -1,21 +1,20 @@
 
 import { Uri, User, FetchOptions } from "./options";
 import fetch from 'node-fetch';
-import { Console } from "console";
 
 export class TDResRequest {
     uri: Uri;
     options: FetchOptions;
     user: User;
-    queryParams='';
-    hashFragment='';
+    queryParams = '';
+    hashFragment = '';
 
     constructor(uri: Uri, user: User) {
         this.uri = uri;
         this.user = user;
 
         // if uri.url exists,and that is a cloud url(means token exist)
-        if ((uri.query != null && uri.query['token'] != undefined) || (uri.query != undefined && uri.query['token'] != undefined)) {
+        if ((uri.query && uri.query['token']) || (uri.query && uri.query['token'])) {
             this.options = {
                 method: 'POST',
                 body: '',
@@ -30,20 +29,20 @@ export class TDResRequest {
         }
     }
 
-    _makeUrl():string{
-        let url='';
-        if (this.uri.url){
-           this._constructUrlWithInput();
-        }else{
-           //do nothing 
+    _makeUrl(): string {
+        let url = '';
+        if (this.uri.url) {
+            this._constructUrlWithInput();
+        } else {
+            //do nothing 
         }
         url = `${this.uri.scheme}://${this.uri.host}:${this.uri.port}${this.uri.path}`
-        
+
         if (this.uri.query) {
             url += '?'
             Object.keys(this.uri.query).forEach(
                 key => {
-                    if (this.uri.query != null && (this.uri.query[key] != null || this.uri.query[key] != undefined)) {
+                    if (this.uri.query && (this.uri.query[key] || this.uri.query[key])) {
                         url += key + "=" + this.uri.query[key] + "&"
                     }
                 }
@@ -52,18 +51,18 @@ export class TDResRequest {
             url = url.slice(0, url.length - 1);
             // console.log("query param:"+url)
         }
-        if(this.queryParams){
+        if (this.queryParams) {
             url += this.queryParams;
         }
-        
-        if ((this.uri.fragment != null) || (this.uri.fragment != undefined)) {
+
+        if ((this.uri.fragment) || (this.uri.fragment)) {
             if (this.uri.fragment.slice(0, 1) == '#') {
                 url += this.uri.fragment
             } else {
                 url += '#' + this.uri.fragment;
             }
         }
-        if(this.hashFragment){
+        if (this.hashFragment) {
             url += this.hashFragment;
         }
 
@@ -80,13 +79,16 @@ export class TDResRequest {
             if (urlObj.hostname) {
                 this.uri.host = urlObj.hostname;
             }
-            if (urlObj.pathname!='/') {
+            if (urlObj.port) {
+                this.uri.port = parseInt(urlObj.port);
+            }
+            if (urlObj.pathname != '/') {
                 this.uri.path = urlObj.pathname;
             }
-            if (urlObj.search){
+            if (urlObj.search) {
                 this.queryParams = urlObj.search;
             }
-            if (urlObj.hash){
+            if (urlObj.hash) {
                 this.hashFragment = urlObj.hash;
             }
         }

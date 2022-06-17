@@ -1,4 +1,5 @@
-# Daily test for current develop branch's compatibility with latest TDengine's develop branch.
+# Daily test `rest` connector  
+# For current develop branch's compatibility with latest TDengine's develop branch.
 name: test compatibility
 
 on:
@@ -13,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [10.x, 12.x]
+        node-version: [12.x,16.x]
     
     steps:
 
@@ -66,11 +67,4 @@ jobs:
         ls -al
         npm install
         npm run example
-
-    - name: test nodejs
-      working-directory: node-taos/nodejs
-      run: |
-        ls -al
-        npm install
-        npm run test
 

@@ -1,11 +1,11 @@
-# Triggered by pull request or push to develop branch
-name: test on push&pull
+# Daily test `nodejs` native connector 
+# For it current develop branch's compatibility with latest TDengine's develop branch.
+name: test compatibility
 
 on:
-  push:
-    branches: [ develop ]
-  pull_request:
-    branches: [ develop ]
+  schedule:
+    - cron: '0 2,14 * * *'
+    # runner timezone is utc-0
 
 jobs:
   build:
@@ -60,13 +60,6 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-
-    - name: test typescript-rest
-      working-directory: node-taos/typescript-rest
-      run: |
-        ls -al
-        npm install
-        npm run example
 
     - name: test nodejs
       working-directory: node-taos/nodejs

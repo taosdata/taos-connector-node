@@ -13,7 +13,6 @@
   "scripts": {
     "example": "tsc && node ./tsc/example/example.js",
     "build": "parcel build --no-source-maps",
-    "prepare": "parcel build",
     "watch": "parcel watch"
   },
   "repository": {

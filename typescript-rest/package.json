@@ -1,19 +1,19 @@
 {
   "name": "td2.0-rest-connector",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A REST connector for TDengine",
-  "source": "tdengine_rest.ts",
-  "main": "dist/main/rest.js",
-  "module": "dist/module/rest.mjs",
+  "source": "index.ts",
+  "main": "dist/main/index.js",
+  "module": "dist/module/index.mjs",
   "types": "dist/types.d.ts",
   "directories": {
     "example": "example",
     "test": "test"
   },
   "scripts": {
-    "test": "parcel build --no-source-maps && node ./dist/test/test.main.js && node ./dist/test/test.module.mjs",
     "example": "tsc && node ./tsc/example/example.js",
     "build": "parcel build --no-source-maps",
+    "prepare": "parcel build",
     "watch": "parcel watch"
   },
   "repository": {

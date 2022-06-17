@@ -1,6 +1,6 @@
 # Daily test `nodejs` native connector 
 # For it current develop branch's compatibility with latest TDengine's develop branch.
-name: test compatibility
+name: node develop daily compatibility
 
 on:
   schedule:

@@ -1,6 +1,6 @@
 # Triggered by pull request or push to develop branch
 # Test TypeScript rest connector.
-name: test on push&pull
+name: rest develop on push&pull
 
 on:
   push:

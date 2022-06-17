@@ -1,6 +1,6 @@
 # Triggered by pull request or push to develop branch
 # Test Nodejs connector.
-name: test on push&pull
+name: node develop on push&pull
 
 on:
   push:

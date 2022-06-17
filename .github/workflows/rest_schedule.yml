@@ -1,6 +1,6 @@
 # Daily test `rest` connector  
 # For current develop branch's compatibility with latest TDengine's develop branch.
-name: test compatibility
+name: rest develop daily compatibility
 
 on:
   schedule:

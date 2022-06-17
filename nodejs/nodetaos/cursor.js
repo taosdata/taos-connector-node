@@ -150,15 +150,18 @@ TDengineCursor.prototype._createAffectedResponse = function (num, time) {
 TDengineCursor.prototype._createSetResponse = function (num, time) {
   return "Query OK, " + num + " row(s) in set (" + (time * 0.001).toFixed(8) + "s)";
 }
-TDengineCursor.prototype.executemany = function executemany() {
 
-}
-TDengineCursor.prototype.fetchone = function fetchone() {
+//======remove useless function
+// TDengineCursor.prototype.executemany = function executemany() {
 
-}
-TDengineCursor.prototype.fetchmany = function fetchmany() {
+// }
+// TDengineCursor.prototype.fetchone = function fetchone() {
 
-}
+// }
+// TDengineCursor.prototype.fetchmany = function fetchmany() {
+
+// }
+
 /**
  * Fetches all results from a query and also stores results into cursor.data. It is preferable to use cursor.query() to create
  * queries and execute them instead of using the cursor object directly.
@@ -713,4 +716,8 @@ TDengineCursor.prototype.stmtClose = function stmtClose() {
       console.log("closeStmt success.");
     }
   }
+}
+
+TDengineCursor.prototype.getServerInfo = function getServerInfo(){
+  return this._chandle.getServerInfo(this._connection._conn);
 }

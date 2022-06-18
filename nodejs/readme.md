@@ -159,7 +159,3 @@ An example of using the NodeJS connector to achieve the same things but without 
 ## Contributing to TDengine
 
 Please follow the [contribution guidelines](https://github.com/taosdata/TDengine/blob/master/CONTRIBUTING.md) to contribute to the project.
-
-## License
-
-[GNU AGPL v3.0](http://www.gnu.org/licenses/agpl-3.0.html)

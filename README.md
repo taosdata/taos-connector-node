@@ -1,8 +1,8 @@
 # TDengine Connectors for Node.js
 
-This repository includes two Node connector for TDengine. One is `td2.0-connector`, a Node.js connector using TDengine's native connection. Another is `td2.0-rest-connector`, a TypeScript connector using TDengine's rest connection.
+This repository includes two Node connectors for TDengine. One is `td2.0-connector`, a Node.js connector using TDengine's native connection. Another is `td2.0-rest-connector`, a TypeScript connector using TDengine's rest connection.
 
-This readme file introduce basic installation and work with our connectors.
+This readme file describes the basic installation and use of our connector.
 
 ## `td2.0-connector`
 

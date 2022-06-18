@@ -1,7 +1,14 @@
 # TDengine RESTful
+
 This is a TDengine's RESTful connector in TypeScript. It's depend on [node-fetch v2](https://github.com/node-fetch/node-fetch/tree/2.x). Using `fetch(url,options)` to send sql statement and receive response.
 
-# Usage 
+## Installation
+
+```bash
+npm i td2.0-rest-connector
+```
+
+## Usage
 
 ```TypeScript
 import { options, connect } from 'td2.0-rest-connector'

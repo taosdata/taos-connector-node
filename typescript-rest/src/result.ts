@@ -44,7 +44,6 @@ export class Result {
             this._head = res.head;
             this._column_meta = new Array(meta_list_length);
             this._data = res.data;
-            // this._rows = res.rows;
             this._command = commands;
             this._initMeta(res);
             this._code = undefined;

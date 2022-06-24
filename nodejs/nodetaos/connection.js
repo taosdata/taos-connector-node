@@ -67,23 +67,3 @@ TDengineConnection.prototype.cursor = function cursor() {
 TDengineConnection.prototype.getClientInfo = function getClientInfo(){
   return this._chandle.getClientInfo();
 }
-
-// remove useless comment 
-// TDengineConnection.prototype.commit = function commit() {
-//   return this;
-// }
-// TDengineConnection.prototype.rollback = function rollback() {
-//   return this;
-// }
-/**
- * Clear the results from connector
- * @private
- */
-/*
- TDengineConnection.prototype._clearResultSet = function _clearResultSet() {
-  var result = this._chandle.useResult(this._conn).result;
-  if (result) {
-    this._chandle.freeResult(result)
-  }
-}
-*/

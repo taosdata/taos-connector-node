@@ -34,10 +34,16 @@ export class Result {
         let meta_list_length = res.column_meta == undefined ? 0 : res.column_meta.length
         if (res.status === 'succ') {
             this._status = res.status;
+            this._head = res.head
+            if(res.head && res.head.toString()=="affected_rows"&&res.data)
+            {
+                this._rows = res.data[0][0];
+            }else {
+                this._rows = res.rows;
+            }
             this._head = res.head;
             this._column_meta = new Array(meta_list_length);
             this._data = res.data;
-            this._rows = res.rows;
             this._command = commands;
             this._initMeta(res);
             this._code = undefined;

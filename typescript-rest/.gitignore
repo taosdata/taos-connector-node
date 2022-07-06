@@ -1,7 +1,4 @@
-package-lock.json
-dist/main
-dist/module
-dist/types.d.ts
+dist/
 node_modules/
 tsc/
 .parcel-cache/

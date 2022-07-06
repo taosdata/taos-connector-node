@@ -1,6 +1,13 @@
-import { options, connect } from '../tdengine_rest'
-options.path = '/rest/sqlt'
-options.host = 'localhost'
+import { options, connect } from '../index'
+options.path = '/rest/sqlutc'
+options.host = 'localhost';
+options.port = 6041;
+options.user = "root";
+options.passwd = "taosdata";
+
+//optional 
+// options.url = "http://127.0.0.1:6041";
+
 
 const db = 'rest_ts_db';
 const table = 'rest'
@@ -43,7 +50,8 @@ async function execute(sql: string, pure = false) {
 }
 
 (async () => {
-    let start = new Date().getTime(); // 开始时间
+    // start execute time
+    let start = new Date().getTime(); 
     await execute(createDB);
     await execute(createTB);
     await execute(addColumn);
@@ -52,6 +60,7 @@ async function execute(sql: string, pure = false) {
     await execute(querySql);
     await execute(errorSql);
     await execute(dropDB);
+    // finish time
     let end = new Date().getTime(); // 结束时间
     console.log("total spend time:%d ms",end - start);
 })()

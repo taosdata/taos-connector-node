@@ -1,3 +1,5 @@
+import { timeStamp } from "console";
+
 interface IResult {
     status: string;
     head?: Array<string>;
@@ -32,10 +34,16 @@ export class Result {
         let meta_list_length = res.column_meta == undefined ? 0 : res.column_meta.length
         if (res.status === 'succ') {
             this._status = res.status;
+            this._head = res.head
+            if(res.head && res.head.toString()=="affected_rows"&&res.data)
+            {
+                this._rows = res.data[0][0];
+            }else {
+                this._rows = res.rows;
+            }
             this._head = res.head;
             this._column_meta = new Array(meta_list_length);
             this._data = res.data;
-            this._rows = res.rows;
             this._command = commands;
             this._initMeta(res);
             this._code = undefined;
@@ -63,6 +71,22 @@ export class Result {
                         typeName: typeNameMap[item[1]]
                     }
             })
+        }
+    }
+    private _initData(resData:Array<Array<any>>,meta:Array<Array<any>>,rows:number):void{
+        if (resData.length = 0){
+            this._data=[[]];
+        } else {
+            this._data= new Array<Array<any>>(resData.length);
+            for (let i =0 ;i<rows;i++){
+                for (let j=0;j<meta.length;j++){
+                    if(meta[j][1] ==9 ){
+                        this._data[i][j] = new Date(resData[i][j])
+                    }else{
+                        this._data[i][j] = resData[i][j]
+                    }
+                }
+            }
         }
     }
 

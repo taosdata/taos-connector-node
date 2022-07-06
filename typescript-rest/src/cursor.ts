@@ -14,8 +14,11 @@ export class TDengineCursor {
         this._uri = {
             host: options.host,
             path: options.path,
+            url: options.url,
             port: options.port,
-
+            scheme: options.scheme,
+            query: options.query,
+            fragment: options.fragment,
         }
         this._user = {
             user: options.user,
@@ -37,6 +40,5 @@ export class TDengineCursor {
         } else {
             return new Result(res_json);
         }
-
     }
 }

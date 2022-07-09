@@ -15,8 +15,8 @@ function executeQuery(querySql) {
 }
 
 function stmtUseResultSample() {
-    let db = 'node_test_db';
-    let table = 'stmt_use_result';
+    let db = 'stmt_db';
+    let table = 'stmt_query';
     let subTable = 's1_0';
 
     let createDB = `create database if not exists ${db} keep 3650;`;
@@ -69,7 +69,7 @@ function stmtUseResultSample() {
     //stmt bind values
     cursor.stmtInit();
     cursor.stmtPrepare(insertSql);
-    cursor.loadTableInfo([subTable]);
+   
     cursor.stmtSetTbname(subTable);
     cursor.stmtBindParamBatch(mBinds.getMultiBindArr());
     cursor.stmtAddBatch();
@@ -77,12 +77,13 @@ function stmtUseResultSample() {
     cursor.stmtClose();
 
     // stmt select with normal column.
-    let condition1 = new taos.TaosBind(2);
-    condition1.bindInt(0);
-    condition1.bindNchar('taosdata涛思数据');
+    let condition1 = new taos.TaosMultiBindArr(2);
+
+    condition1.multiBindInt([0]);
+    condition1.multiBindNchar(['taosdata涛思数据']);
     cursor.stmtInit();
     cursor.stmtPrepare(querySql);
-    cursor.stmtBindParam(condition1.getBind());
+    cursor.stmtBindParamBatch(condition1.getMultiBindArr());
     cursor.stmtExecute();
     cursor.stmtUseResult();   
     cursor.stmtClose();

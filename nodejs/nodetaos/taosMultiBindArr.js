@@ -135,8 +135,10 @@ class TaosMultiBindArr extends TaosMultiBind {
     multiBindBinary(strArr) {
         if (this.bound > this.index) {
             let mBindBinary = super.multiBindBinary(strArr);
+            // console.log("mBindBinary:"+JSON.stringify(mBindBinary));
             TAOS_MULTI_BIND.set(this.taosMBindArrBuf, this.index * TAOS_MULTI_BIND_SIZE, mBindBinary);
             this.index += 1;
+            
         } else {
             throw new TDError(`multiBindBinary() failed,since index:${this.index} is out of Buffer bound ${this.bound}.`)
         }
@@ -172,6 +174,22 @@ class TaosMultiBindArr extends TaosMultiBind {
             throw new TDError(`multiBindNchar() failed,since index:${this.index} is out of Buffer bound ${this.bound}.`)
         }
     }
+
+    /**
+     * Used to bind JSON tag column's value.
+     * @param {*} strArr An array of JSON (string) values,
+     * represents the JSON values you want to bind.
+     */
+     multiBindJSON(strArr) {
+        if (this.bound > this.index) {
+            let mBindNchar = super.multiBindJSON(strArr);
+            TAOS_MULTI_BIND.set(this.taosMBindArrBuf, this.index * TAOS_MULTI_BIND_SIZE, mBindNchar);
+            this.index += 1;
+        } else {
+            throw new TDError(`multiBindJSON() failed,since index:${this.index} is out of Buffer bound ${this.bound}.`)
+        }
+    }
+
 
     /**
      * Used to bind unsigned tiny int column's value.

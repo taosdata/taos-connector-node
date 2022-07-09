@@ -17,8 +17,8 @@ function executeQuery(querySql) {
 }
 
 function stmtSingleParaBatchSample() {
-    let db = 'node_test_db';
-    let table = 'stmt_taos_bind_single_bind_batch';
+    let db = 'stmt_db';
+    let table = 'bind_single_bind_batch';
 
     let createDB = `create database if not exists ${db} keep 3650;`;
     let dropDB = `drop database if exists ${db};`;
@@ -67,12 +67,12 @@ function stmtSingleParaBatchSample() {
     let uBigIntMbind = mbind.multiBindUBigInt([16424352000002222n, 36424354000001111n, 0, null, undefined]);
 
     // tags value.
-    let tags = new taos.TaosBind(1);
-    tags.bindJson('{\"key1\":\"taosdata\",\"key2\":null,\"key3\":\"TDengine涛思数据\",\"key4\":3.2}');
-
+    let tags = new taos.TaosMultiBindArr(1);
+    tags.multiBindJSON(['{\"key1\":\"taosdata\",\"key2\":null,\"key3\":\"TDengine涛思数据\",\"key4\":3.2}']);
+   
     cursor.stmtInit();
     cursor.stmtPrepare(insertSql);
-    cursor.stmtSetTbnameTags('s_01', tags.getBind());
+    cursor.stmtSetTbnameTags('s_01', tags.getMultiBindArr());
     cursor.stmtBindSingleParamBatch(tsMBind, 0);
     cursor.stmtBindSingleParamBatch(boolMbind, 1);
     cursor.stmtBindSingleParamBatch(tinyIntMbind, 2);
@@ -93,7 +93,7 @@ function stmtSingleParaBatchSample() {
     cursor.stmtClose();
 
     executeQuery(querySql);
-    executeUpdate(dropDB);
+    // executeUpdate(dropDB);
 }
 stmtSingleParaBatchSample();
 setTimeout(() => {

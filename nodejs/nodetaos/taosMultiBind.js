@@ -1,4 +1,5 @@
 const ref = require('ref-napi');
+const { C_JSON_TAG } = require('./constants');
 const StructType = require('ref-struct-di')(ref);
 const taosConst = require('./constants');
 
@@ -248,14 +249,22 @@ class TaosMultiBind {
      * @returns A instance of struct TAOS_MULTI_BIND that contains one column's data with binary.
      */
     multiBindBinary(strArr) {
-        let maxStrUFT8Length = this._maxUTF8StrArrLength(strArr);
-        console.log(`maxStrUFT8Length * strArr.length=${maxStrUFT8Length * strArr.length}`);
+
+        let encoder = new TextEncoder();
+        let strUTF8Arr = [];
+        strArr.forEach(item => {
+            let tmpUint8Array = encoder.encode(item);
+            strUTF8Arr.push(tmpUint8Array);
+        })
+
+        let maxStrUFT8Length = this._maxUint8Array(strUTF8Arr) + 1;
+
         let mbindBufferBuf = Buffer.alloc(maxStrUFT8Length * strArr.length);
         let mbindLengBuf = Buffer.alloc(ref.types.int.size * strArr.length);
         let mbindIsNullBuf = Buffer.alloc(ref.types.char.size * strArr.length);
 
         strArr.forEach((element, index) => {
-            ref.set(mbindLengBuf, index * ref.types.int.size, this._stringUTF8Length(element), ref.types.int)
+            ref.set(mbindLengBuf, index * ref.types.int.size, strUTF8Arr[index].length, ref.types.int)
             if (element == null || element == undefined) {
                 ref.set(mbindIsNullBuf, index * ref.types.char.size, 1, ref.types.char);
             } else {
@@ -314,14 +323,21 @@ class TaosMultiBind {
      * @returns A instance of struct TAOS_MULTI_BIND that contains one nchar column's data with nchar.
      */
     multiBindNchar(strArr) {
-        let maxStrUFT8Length = this._maxUTF8StrArrLength(strArr);
-        // console.log(`maxStrUFT8Length * strArr.length=${maxStrUFT8Length * strArr.length}`);
+        let encoder = new TextEncoder();
+        let strUTF8Arr = [];
+        strArr.forEach(item => {
+            let tmpUint8Array = encoder.encode(item);
+            strUTF8Arr.push(tmpUint8Array);
+        })
+
+        let maxStrUFT8Length = this._maxUint8Array(strUTF8Arr) + 1;
+
         let mbindBufferBuf = Buffer.alloc(maxStrUFT8Length * strArr.length);
         let mbindLengBuf = Buffer.alloc(ref.types.int.size * strArr.length);
         let mbindIsNullBuf = Buffer.alloc(ref.types.char.size * strArr.length);
 
         strArr.forEach((element, index) => {
-            ref.set(mbindLengBuf, index * ref.types.int.size, this._stringUTF8Length(element), ref.types.int)
+            ref.set(mbindLengBuf, index * ref.types.int.size, strUTF8Arr[index].length, ref.types.int)
             if (element == null || element == undefined) {
                 ref.set(mbindIsNullBuf, index * ref.types.char.size, 1, ref.types.char);
             } else {
@@ -340,6 +356,59 @@ class TaosMultiBind {
         })
         return mbind;
     }
+
+    /**
+     * To bind tdengine's JSON tag through an array.
+     * @param {*} strArr is an array that stores string.
+     * (Null string can be defined as undefined or null,notice '' is not null.)
+     * @returns A instance of struct TAOS_MULTI_BIND that contains one nchar column's data with nchar.
+     */
+     multiBindJSON(jsonStr) {
+        let strArr = []; 
+        if(jsonStr.constructor===Array && jsonStr.length!=1){
+            throw new Error("Only accept bind one tag at once")
+        }else if (typeof(jsonStr)=='string'){
+            strArr.push(jsonStr)
+        }else if(jsonStr.constructor===Array && jsonStr.length==1){
+            strArr.push(jsonStr[0]);
+        }else{
+            throw new Error("Only accept bind one json tag with string or an Array with one element");
+        }
+        
+        let encoder = new TextEncoder();
+        let strUTF8Arr = [];
+        strArr.forEach(item => {
+            let tmpUint8Array = encoder.encode(item);
+            strUTF8Arr.push(tmpUint8Array);
+        })
+
+        let maxStrUFT8Length = this._maxUint8Array(strUTF8Arr) + 1;
+
+        let mbindBufferBuf = Buffer.alloc(maxStrUFT8Length * strArr.length);
+        let mbindLengBuf = Buffer.alloc(ref.types.int.size * strArr.length);
+        let mbindIsNullBuf = Buffer.alloc(ref.types.char.size * strArr.length);
+
+        strArr.forEach((element, index) => {
+            ref.set(mbindLengBuf, index * ref.types.int.size, strUTF8Arr[index].length, ref.types.int)
+            if (element == null || element == undefined) {
+                ref.set(mbindIsNullBuf, index * ref.types.char.size, 1, ref.types.char);
+            } else {
+                ref.writeCString(mbindBufferBuf, index * maxStrUFT8Length, element, 'utf8');
+                ref.set(mbindIsNullBuf, index * ref.types.char.size, 0, ref.types.char);
+            }
+        });
+
+        let mbind = new TAOS_MULTI_BIND({
+            buffer_type: taosConst.C_JSON_TAG,
+            buffer: mbindBufferBuf,
+            buffer_length: maxStrUFT8Length,
+            length: mbindLengBuf,
+            is_null: mbindIsNullBuf,
+            num: strArr.length,
+        })
+        return mbind;
+    }
+
 
     /**
     * to bind unsigned tiny int through an array.
@@ -474,57 +543,14 @@ class TaosMultiBind {
     // multiBJson(jsonArray) no need to support.Since till now TDengine only support json tag
     // and there is no need to support bind json tag in TAOS_MULTI_BIND.
 
-    /**
-     * 
-     * @param {*} strArr an string array
-     * @returns return the max length of the element in strArr in "UFT-8" encoding.
-     */
-    _maxUTF8StrArrLength(strArr) {
-        let max = 0;
-        strArr.forEach((item) => {
-            let realLeng = 0;
-            let itemLength = -1;
-            if (item == null || item == undefined) {
-                itemLength = 0;
-            } else {
-                itemLength = item.length;
+    _maxUint8Array(strUTF8Arr) {
+        let max = -1;
+        strUTF8Arr.forEach(utf8Arr => {
+            if (max < utf8Arr.length) {
+                max = utf8Arr.length;
             }
-
-            let charCode = -1;
-            for (let i = 0; i < itemLength; i++) {
-                charCode = item.charCodeAt(i);
-                if (charCode >= 0 && charCode <= 128) {
-                    realLeng += 1;
-                } else {
-                    realLeng += 3;
-                }
-            }
-            if (max < realLeng) {
-                max = realLeng
-            };
-        });
+        })
         return max;
-    }
-
-    /**
-     * 
-     * @param {*} str a string.
-     * @returns return the length of the input string  encoding with utf-8.
-     */
-    _stringUTF8Length(str) {
-        let leng = 0;
-        if (str == null || str == undefined) {
-            leng = 0;
-        } else {
-            for (let i = 0; i < str.length; i++) {
-                if (str.charCodeAt(i) >= 0 && str.charCodeAt(i) <= 128) {
-                    leng += 1;
-                } else {
-                    leng += 3;
-                }
-            }
-        }
-        return leng;
     }
 }
 // console.log(TAOS_MULTI_BIND.size)

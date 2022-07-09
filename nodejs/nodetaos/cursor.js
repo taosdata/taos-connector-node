@@ -153,12 +153,7 @@ TDengineCursor.prototype._createSetResponse = function (num, time) {
 TDengineCursor.prototype.executemany = function executemany() {
 
 }
-TDengineCursor.prototype.fetchone = function fetchone() {
 
-}
-TDengineCursor.prototype.fetchmany = function fetchmany() {
-
-}
 /**
  * Fetches all results from a query and also stores results into cursor.data. It is preferable to use cursor.query() to create
  * queries and execute them instead of using the cursor object directly.
@@ -190,9 +185,9 @@ TDengineCursor.prototype.fetchall = function fetchall(options, callback) {
   obs.observe({ entryTypes: ['measure'] });
   performance.mark('A');
   while (true) {
-    let blockAndRows = this._chandle.fetchBlock(this._result, this._fields);
-    // console.log(blockAndRows);
-    // break;
+    // let blockAndRows = this._chandle.fetchBlock(this._result, this._fields);
+    let blockAndRows = this._chandle.fetchRawBlock(this._result);
+
     let block = blockAndRows.blocks;
     let num_of_rows = blockAndRows.num_of_rows;
     if (num_of_rows == 0) {
@@ -201,16 +196,12 @@ TDengineCursor.prototype.fetchall = function fetchall(options, callback) {
     this._rowcount += num_of_rows;
     let numoffields = this._fields.length;
     for (let i = 0; i < num_of_rows; i++) {
-      // data.push([]);
-
-      let rowBlock = new Array(numoffields);
+      let rowBlock = new Array(numoffields);     
       for (let j = 0; j < numoffields; j++) {
         rowBlock[j] = block[j][i];
       }
       data[this._rowcount - num_of_rows + i] = (rowBlock);
-      // data.push(rowBlock);
     }
-
   }
 
   performance.mark('B');
@@ -263,16 +254,7 @@ TDengineCursor.prototype.execute_a = function execute_a(operation, options, call
     }
 
     if (resCode >= 0) {
-      //      let fieldCount = cr._chandle.numFields(res2);
-      //      if (fieldCount == 0) {
-      //        //cr._chandle.freeResult(res2);
-      //        return res2;
-      //      } 
-      //      else {
-      //        return res2;
-      //      }
       return res2;
-
     }
     else {
       throw new errors.ProgrammingError("Error occuring with use of execute_a async function. Status code was returned with failure");
@@ -296,8 +278,6 @@ TDengineCursor.prototype.execute_a = function execute_a(operation, options, call
   performance.mark('B');
   performance.measure('query', 'A', 'B');
   return param;
-
-
 }
 /**
  * Fetches all results from an async query. It is preferable to use cursor.query_a() to create
@@ -343,7 +323,7 @@ TDengineCursor.prototype.fetchall_a = function fetchall_a(result, options, callb
       let buf2 = ref.alloc('Object');
       param2.data.push(rowData);
       ref.writeObject(buf2, 0, param2);
-      cr._chandle.fetch_rows_a(result2, asyncCallbackWrapper, buf2);
+      cr._chandle.fetch_raw_block_a(result2, asyncCallbackWrapper, buf2);
     }
     else {
       let finalData = param2.data;
@@ -367,7 +347,7 @@ TDengineCursor.prototype.fetchall_a = function fetchall_a(result, options, callb
     }
   }
   ref.writeObject(buf, 0, param);
-  param = this._chandle.fetch_rows_a(result, asyncCallbackWrapper, buf); //returned param
+  param = this._chandle.fetch_raw_block_a(result, asyncCallbackWrapper, buf); //returned param
   return { param: param, result: result };
 }
 /**
@@ -482,7 +462,7 @@ TDengineCursor.prototype.stmtPrepare = function stmtPrepare(sql) {
   if (this._stmt == null) {
     throw new errors.DatabaseError("stmt is null,init stmt first");
   } else {
-    let stmtPrepare = this._chandle.stmtPrepare(this._stmt, sql, null);
+    let stmtPrepare = this._chandle.stmtPrepare(this._stmt, sql, sql.length);
     if (stmtPrepare != 0) {
       throw new errors.DatabaseError(this._chandle.stmtErrStr(this._stmt));
     } else {
@@ -546,27 +526,6 @@ TDengineCursor.prototype.stmtSetSubTbname = function stmtSetSubTbname(subTableNa
       throw new errors.DatabaseError(this._chandle.stmtErrStr(this._stmt));
     } else {
       console.log("stmtSetSubTbname success.");
-    }
-  }
-}
-
-/**
- * bind a whole line data, for both INSERT and SELECT. The parameter 'bind' points to an array 
- * contains the whole line data. Each item in array represents a column's value, the item 
- * number and sequence should keep consistence with columns in sql statement. The usage of 
- * structure TAOS_BIND is the same with MYSQL_BIND in MySQL.
- * @param {*} binds points to an array contains the whole line data.
- * @returns 	0 for success, non-zero for failure.
- */
-TDengineCursor.prototype.stmtBindParam = function stmtBindParam(binds) {
-  if (this._stmt == null) {
-    throw new errors.DatabaseError("stmt is null,init stmt first");
-  } else {
-    let stmtPrepare = this._chandle.bindParam(this._stmt, binds);
-    if (stmtPrepare != 0) {
-      throw new errors.DatabaseError(this._chandle.stmtErrStr(this._stmt));
-    } else {
-      console.log("bindParam success.");
     }
   }
 }

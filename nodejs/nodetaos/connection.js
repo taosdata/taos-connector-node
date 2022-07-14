@@ -64,12 +64,7 @@ TDengineConnection.prototype.cursor = function cursor() {
   //Pass the connection object to the cursor
   return new TDengineCursor(this);
 }
-TDengineConnection.prototype.commit = function commit() {
-  return this;
-}
-TDengineConnection.prototype.rollback = function rollback() {
-  return this;
-}
+
 /**
  * Clear the results from connector
  * @private

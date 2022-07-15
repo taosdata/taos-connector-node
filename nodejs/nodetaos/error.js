@@ -18,6 +18,7 @@ class Warning extends Error {
     this.name = "Warning";
   }
 }
+
 /** Exception raised for errors that are related to the database interface rather than the database itself.
  * @ignore
  */
@@ -90,7 +91,12 @@ class NotSupportedError extends DatabaseError {
     this.name = "TDError.DatabaseError.NotSupportedError";
   }
 }
-
+class TMQError extends TDError{
+  constructor(args){
+    super(args)
+    this.name = "TDError.TMQError";
+  }
+}
 module.exports = {
-  TDError, Warning, InterfaceError, DatabaseError, DataError, OperationalError, IntegrityError, InternalError, ProgrammingError, NotSupportedError
+  TDError, Warning, InterfaceError, DatabaseError, DataError, OperationalError, IntegrityError, InternalError, ProgrammingError, NotSupportedError,TMQError
 };

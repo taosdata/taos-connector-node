@@ -566,23 +566,27 @@ CTaosInterface.prototype.fetchRawBlock = function fetchRawBlock(taosRes) {
     var lengthArraySize = 4 * numOfFields;
     let offsetForColData = offsetBeforeLengthArr + lengthArraySize;
     // read column after column
-    for (let i = 0; i < numOfFields; i++) {
+    if(numOfRows>0)
+    {
+      for (let i = 0; i < numOfFields; i++) {
 
-      let lengthPtr = ref.reinterpret(pData, ref.sizeof.int, offsetBeforeLengthArr + (i * 4));
-      let length = lengthPtr.readInt32LE();
-
-      if (!convertFunctions[fields[i]['type']]) {
-        throw new errors.DatabaseError("Invalid data type returned from database");
-      } else if (fields[i]['type'] == 8 || fields[i]['type'] == 10 || fields[i]['type'] == 15) {
-        let colHeadPtr = ref.reinterpret(pData, length + offsetArrLength, offsetForColData)
-        blocks[i] = convertFunctions[fields[i]['type']](colHeadPtr, numOfRows, fields[i].bytes, 0, precision);
-        offsetForColData = offsetForColData + offsetArrLength + length;
-      } else {
-        let colHeadPtr = ref.reinterpret(pData, length + bitMapSize, offsetForColData)
-        blocks[i] = convertFunctions[fields[i]['type']](colHeadPtr, numOfRows, fields[i].bytes, 0, precision);
-        offsetForColData = offsetForColData + bitMapSize + length;
+        let lengthPtr = ref.reinterpret(pData, ref.sizeof.int, offsetBeforeLengthArr + (i * 4));
+        let length = lengthPtr.readInt32LE();
+  
+        if (!convertFunctions[fields[i]['type']]) {
+          throw new errors.DatabaseError("Invalid data type returned from database");
+        } else if (fields[i]['type'] == 8 || fields[i]['type'] == 10 || fields[i]['type'] == 15) {
+          let colHeadPtr = ref.reinterpret(pData, length + offsetArrLength, offsetForColData)
+          blocks[i] = convertFunctions[fields[i]['type']](colHeadPtr, numOfRows, fields[i].bytes, 0, precision);
+          offsetForColData = offsetForColData + offsetArrLength + length;
+        } else {
+          let colHeadPtr = ref.reinterpret(pData, length + bitMapSize, offsetForColData)
+          blocks[i] = convertFunctions[fields[i]['type']](colHeadPtr, numOfRows, fields[i].bytes, 0, precision);
+          offsetForColData = offsetForColData + bitMapSize + length;
+        }
       }
     }
+    
     return { blocks: blocks, num_of_rows: Math.abs(numOfRows) }
   } else {
     throw new OperationalError(`${libtaos.taos_errstr(taosRes)} ,${code}`);

@@ -1,3 +1,6 @@
+import { rejects } from 'assert';
+import { resolve } from 'path';
+import { exit } from 'process';
 import { Uri, User } from './options'
 import { TDResRequest } from './request'
 import { Result } from './result'
@@ -33,12 +36,27 @@ export class TDengineCursor {
     async query(sql: string, pure = true): Promise<Result> {
         let req = new TDResRequest(this._uri, this._user);
         let response = await req.request(sql);
-        let res_json = await response.json();
+        if (response.status == 200) {
+            let res_json = await response.json();
+            await console.log(res_json)
 
-        if (pure == false) {
-            return new Result(res_json, sql);
-        } else {
-            return new Result(res_json);
+            if (pure == false) {
+                return new Result(res_json, sql);
+            } else {
+                return new Result(res_json);
+            }
+
+        }else if (response.status == 400) {
+             new Error("invalid parameters.")
+        }else if (response.status == 401) {
+            throw new Error("Authentication failed.")
+        }else if (response.status == 404) {
+            throw new Error("interface not exists.")
+        }else if (response.status == 500) {
+            throw new Error("internal error.")
+        }else if (response.status == 503) {
+            throw new Error("insufficient system resource.")
         }
+        throw new Error("http request failed.");
     }
 }

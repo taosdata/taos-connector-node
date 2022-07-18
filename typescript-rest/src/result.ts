@@ -1,8 +1,4 @@
-import { Console, timeStamp } from "console";
-
 interface IResult {
-    // status: string;
-    // head?: Array<string>;
     column_meta?: Array<Array<any>>;
     data?: Array<Array<any>>;
     rows?: number;
@@ -19,8 +15,6 @@ interface meta {
 }
 
 export class Result {
-    // private _status: string;
-    // private _head?: string[];
     private _column_meta?: Array<meta>;
     private _data?: Array<Array<any>>;
     private _rows?: number;

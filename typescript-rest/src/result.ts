@@ -1,8 +1,4 @@
-import { timeStamp } from "console";
-
 interface IResult {
-    status: string;
-    head?: Array<string>;
     column_meta?: Array<Array<any>>;
     data?: Array<Array<any>>;
     rows?: number;
@@ -14,14 +10,11 @@ interface IResult {
 
 interface meta {
     columnName: string;
-    code: number;
+    typeName: string;
     size: number;
-    typeName?: string;
 }
 
 export class Result {
-    private _status: string;
-    private _head?: string[];
     private _column_meta?: Array<meta>;
     private _data?: Array<Array<any>>;
     private _rows?: number;
@@ -32,25 +25,19 @@ export class Result {
 
     constructor(res: IResult, commands?: string) {
         let meta_list_length = res.column_meta == undefined ? 0 : res.column_meta.length
-        if (res.status === 'succ') {
-            this._status = res.status;
-            this._head = res.head
-            if(res.head && res.head.toString()=="affected_rows"&&res.data)
-            {
-                this._rows = res.data[0][0];
-            }else {
-                this._rows = res.rows;
+        if(res.code == 0){
+            this._code = res.code;
+            if(res.data&&res.column_meta&&res.column_meta[0][0] === "affected_rows"){
+                this._rows = res.data[0][0]
+            }else if(res.data){
+                this._rows = res.data.length;
             }
-            this._head = res.head;
             this._column_meta = new Array(meta_list_length);
+            this._initMeta(res);
             this._data = res.data;
             this._command = commands;
-            this._initMeta(res);
-            this._code = undefined;
             this._desc = undefined;
-        } else {
-            this._status = res.status;
-            this._head = undefined;
+        }else {
             this._column_meta = undefined;
             this._data = undefined;
             this._rows = undefined;
@@ -66,9 +53,8 @@ export class Result {
                 if (this._column_meta != undefined)
                     this._column_meta[index] = {
                         columnName: item[0],
-                        code: item[1],
-                        size: item[2],
-                        typeName: typeNameMap[item[1]]
+                        typeName: item[1],
+                        size: item[2],              
                     }
             })
         }
@@ -92,14 +78,6 @@ export class Result {
 
     getResult(): Result {
         return this;
-    }
-
-    getStatus(): string {
-        return this._status;
-    }
-
-    getHead(): Array<any> | undefined {
-        return this._head;
     }
 
     getMeta(): Array<meta> | undefined {
@@ -131,10 +109,10 @@ export class Result {
         if(this._command != undefined){
             console.log(this._command);
         }
-        if (this._status === 'succ' && this._column_meta != undefined && this._data != undefined) {
+        if (this._code === 0 && this._column_meta  && this._data ) {
              str = this._prettyStr(this._column_meta, this._data)
         } else {
-            str = `Execute ${this._status},reason:${this._desc}. error_no:${this._code} `;
+            str = `Execute failed,reason:${this._desc}. error_no:${this._code} `;
             console.log(str)
         }
     }
@@ -149,7 +127,7 @@ export class Result {
             colName.push(fields[i].columnName)
             colType.push(fields[i].typeName);
 
-            if ((fields[i].code) == 8 || (fields[i].code) == 10) {
+            if ((fields[i].typeName) === "VARCHAR" || (fields[i].typeName) === "NCHAR") {
                 colSize.push(Math.max(fields[i].columnName.length, fields[i].size));  //max(column_name.length,column_type_precision)
             } else {
                 colSize.push(Math.max(fields[i].columnName.length, suggestedMinWidths[fields[i].size]));// max(column_name.length,suggest_column_with_suggestion)

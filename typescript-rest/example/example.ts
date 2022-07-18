@@ -1,5 +1,5 @@
 import { options, connect } from '../index'
-options.path = '/rest/sqlutc'
+options.path = '/rest/sql/'
 options.host = 'localhost';
 options.port = 6041;
 options.user = "root";
@@ -7,7 +7,6 @@ options.passwd = "taosdata";
 
 //optional 
 // options.url = "http://127.0.0.1:6041";
-
 
 const db = 'rest_ts_db';
 const table = 'rest'
@@ -31,10 +30,6 @@ async function execute(sql: string, pure = false) {
     result.toString();
     // Get Result object, return Result object.
     console.log("result.getResult()",result.getResult());
-    // Get status, return 'succ'|'error'.
-    console.log("result.getStatus()",result.getStatus());
-    // Get head,return response head (Array<any>|undefined,when execute failed this is undefined).
-    console.log("result.getHead()",result.getHead());
     // Get Meta data, return Meta[]|undefined(when execute failed this is undefined).
     console.log("result.getMeta()",result.getMeta());
     // Get data,return Array<Array<any>>|undefined(when execute failed this is undefined).

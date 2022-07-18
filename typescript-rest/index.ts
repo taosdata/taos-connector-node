@@ -1,7 +1,7 @@
 
 import { TDConnect, Options } from './src/connect';
 let options: Options = {
-    path: '/rest/sqlutc/',
+    path: '/rest/sql/',
     scheme: 'http',
     user: 'root',
     passwd: 'taosdata',

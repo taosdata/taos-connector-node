@@ -1,6 +1,3 @@
-import { rejects } from 'assert';
-import { resolve } from 'path';
-import { exit } from 'process';
 import { Uri, User } from './options'
 import { TDResRequest } from './request'
 import { Result } from './result'

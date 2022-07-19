@@ -117,11 +117,11 @@ beforeAll(() => {
 
 // Clears the database and adds some testing data.
 // Jest will wait for this promise to resolve before running tests.
-// afterAll(() => {
-//     // executeUpdate(`drop database if exists ${db};`);
-//     c1.close();
-//     conn.close();
-// });
+afterAll(() => {
+    // executeUpdate(`drop database if exists ${db};`);
+    c1.close();
+    conn.close();
+});
 
 
 describe("test async query", () => {

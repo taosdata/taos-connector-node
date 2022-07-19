@@ -105,7 +105,8 @@ TDengineCursor.prototype.execute = function execute(operation, options, callback
   let stmt = operation;
   let time = 0;
   let res;
-  if (options['quiet'] != true) {
+  if (options['quiet'] == true) {
+
     const obs = new PerformanceObserver((items) => {
       time = items.getEntries()[0].duration;
       performance.clearMarks();
@@ -125,7 +126,7 @@ TDengineCursor.prototype.execute = function execute(operation, options, callback
     if (fieldCount == 0) {
       let affectedRowCount = this._chandle.affectedRows(this._result);
       let response = this._createAffectedResponse(affectedRowCount, time)
-      if (options['quiet'] != true) {
+      if (options['quiet'] == true) {
         console.log(response);
       }
       wrapCB(callback);
@@ -206,8 +207,10 @@ TDengineCursor.prototype.fetchall = function fetchall(options, callback) {
 
   performance.mark('B');
   performance.measure('query', 'A', 'B');
-  let response = this._createSetResponse(this._rowcount, time)
-  console.log(response);
+  if(options && options['quiet'] == true){
+    let response = this._createSetResponse(this._rowcount, time)
+    console.log(response);
+  }
 
   // this._connection._clearResultSet();
   let fields = this.fields;
@@ -672,4 +675,12 @@ TDengineCursor.prototype.stmtClose = function stmtClose() {
       console.log("closeStmt success.");
     }
   }
+}
+
+TDengineCursor.prototype.getServerInfo = function getServerInfo(){
+  return this._chandle.getServerInfo(this._connection._conn);
+}
+
+TDengineCursor.prototype.getServerStatus = function getServerStatus (fqdn,port){
+  return this._chandle.getServerStatus(fqdn,port);
 }

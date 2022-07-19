@@ -100,7 +100,6 @@ CTMQInterface.prototype.consume = function consume(consumer, timeout) {
 
     let consumerResult = new ConsumerResult(taosRes);
 
-    let = new TopicPartition()
     while (true) {
         let rawBlock = ctaos.fetchRawBlock(taosRes)
 

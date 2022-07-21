@@ -36,8 +36,11 @@ export class TDResRequest {
         } else {
             //do nothing 
         }
-        url = `${this.uri.scheme}://${this.uri.host}:${this.uri.port}${this.uri.path}`
-
+        if(this.uri.port){
+            url = `${this.uri.scheme}://${this.uri.host}:${this.uri.port}${this.uri.path}`
+        }else{
+            url = `${this.uri.scheme}://${this.uri.host}${this.uri.path}`
+        }
         if (this.uri.query) {
             url += '?'
             Object.keys(this.uri.query).forEach(

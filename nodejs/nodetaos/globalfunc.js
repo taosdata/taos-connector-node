@@ -12,3 +12,4 @@ function toTaosTSString(date) {
   return tsArr[0] + " " + tsArr[1].substring(0, tsArr[1].length-1);
 }
 global.toTaosTSString = toTaosTSString;
+global.TextEncoder = require("util").TextEncoder; 

@@ -2,7 +2,6 @@ const ref = require('ref-napi');
 const { C_JSON_TAG } = require('./constants');
 const StructType = require('ref-struct-di')(ref);
 const taosConst = require('./constants');
-const { TextEncoder } = require("util");
 
 var TAOS_MULTI_BIND = StructType({
     'buffer_type': ref.types.int,
@@ -250,7 +249,6 @@ class TaosMultiBind {
      * @returns A instance of struct TAOS_MULTI_BIND that contains one column's data with binary.
      */
     multiBindBinary(strArr) {
-
         let encoder = new TextEncoder();
         let strUTF8Arr = [];
         strArr.forEach(item => {

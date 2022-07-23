@@ -1,37 +1,40 @@
-// const { testMatch } = require('../../jest.config');
 const taos = require('../../tdengine');
-const { getFeildsFromDll, buildInsertSql, getFieldArr, getResData } = require('../utils/utilTools')
+const { getFeildsFromDll: getFelidFromDll, buildInsertSql, getFieldArr, getResData } = require('../utils/utilTools')
 
 const author = 'xiaolei';
 const result = 'passed';
 const fileName = __filename.slice(__dirname.length + 1);
+const db = 'node_db';
 
 // This is a taos connection
 let conn;
 // This is a Cursor
 let c1;
 
-function executeUpdate(sql) {
-  console.log(sql);
-  c1.execute(sql);
+function executeUpdate(sql,printFlag = false) {
+  if(printFlag === true){
+    console.log(sql);
+  }
+  c1.execute(sql,{'quiet':false});
 }
 
-function executeQuery(sql) {
+function executeQuery(sql,printFlag = false) {
+  if(printFlag === true){
+    console.log(sql);
+  }
+  
   c1.execute(sql, { quiet: true })
-  var data = c1.fetchall();
+  var data = c1.fetchall({'quiet':false});
   let fields = c1.fields;
   let resArr = [];
 
   data.forEach(row => {
     row.forEach(data => {
       if (data instanceof Date) {
-        // console.log("date obejct:"+data.valueOf());
         resArr.push(data.taosTimestamp());
       } else {
-        // console.log("not date:"+data);
         resArr.push(data);
       }
-      // console.log(data instanceof Date)
     })
   })
   return { resData: resArr, resFeilds: fields };
@@ -40,14 +43,14 @@ function executeQuery(sql) {
 beforeAll(() => {
   conn = taos.connect({ host: "127.0.0.1", user: "root", password: "taosdata", config: "/etc/taos", port: 10 });
   c1 = conn.cursor();
-  executeUpdate("create database if not exists node_test_db keep 3650;");
-  executeUpdate("use node_test_db;");
+  executeUpdate(`create database if not exists ${db} keep 3650;`);
+  executeUpdate(`use ${db};`);
 });
 
 // Clears the database and adds some testing data.
 // Jest will wait for this promise to resolve before running tests.
 afterAll(() => {
-  executeUpdate("drop database if exists node_test_db;");
+  executeUpdate(`drop database if exists ${db};`);
   c1.close();
   conn.close();
 });
@@ -61,7 +64,7 @@ describe("test unsigned type", () => {
     `result:${result}`, () => {
       let createSql = "create table if not exists utinnytest(ts timestamp,ut tinyint unsigned,i4 int,rownum nchar(20));";
       executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let expectResData = [1641827743305, 254, 124, 'row1'
         , 1641827743306, 0, -123, 'row2'
         , 1641827743307, 54, 0, 'row3'];
@@ -92,7 +95,7 @@ describe("test unsigned type", () => {
     `result:${result}`, () => {
       let createSql = "create table if not exists usmalltest(ts timestamp,ut smallint unsigned,i4 int,rownum nchar(20));";
       executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let expectResData = [1641827743305, 65534, 124, 'row1', 1641827743306, 0, -123, 'row2', 1641827743307, 79, 0, 'row3'];
       let insertSql = buildInsertSql('usmalltest', '', expectResData, [], 4);
 
@@ -121,7 +124,7 @@ describe("test unsigned type", () => {
     `result:${result}`, () => {
       let createSql = "create table if not exists uinttest(ts timestamp,ui int unsigned,i4 int,rownum nchar(20));";
       executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let expectResData = [1641827743305, 4294967294, 2147483647, 'row1', 1641827743306, 0, -2147483647, 'row2', 1641827743307, 105, 0, 'row3'];
       let insertSql = buildInsertSql('uinttest', '', expectResData, [], 4);
 
@@ -150,7 +153,7 @@ describe("test unsigned type", () => {
     `result:${result}`, () => {
       let createSql = "create table if not exists ubigtest(ts timestamp,ui bigint unsigned,i8 bigint,rownum nchar(20));";
       executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let expectResData = [1641827743305, 18446744073709551614n, 9223372036854775807n, 'row1',
         1641827743306, 0n, -9223372036854775807n, 'row2',
         1641827743307, 130n, 0n, 'row3'];
@@ -181,7 +184,7 @@ describe("test unsigned type", () => {
     `result:${result}`, () => {
       let createSql = "create table if not exists unsigntest(ts timestamp,ut tinyint unsigned,us smallint unsigned,ui int unsigned,ub bigint unsigned,bi bigint);";
       executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let expectResData = [1641827743305, 254, 65534, 4294967294, 18446744073709551614n, 9223372036854775807n,
         1641827743306, 0, 0, 0, 0n, -9223372036854775807n];
       let insertSql = buildInsertSql('unsigntest', '', expectResData, [], 6);
@@ -226,7 +229,7 @@ describe("test unsigned type", () => {
         ",desc_nchr nchar(200)" +
         ");";
       executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let colData = [1641827743305, 254, 65534, 4294967294, 18446744073709551614n, 9223372036854775807n,
         1641827743306, 0, 0, 0, 0n, -9223372036854775807n,
         1641827743307, 201, 44, 2, 8n, 1531n];
@@ -272,7 +275,7 @@ describe("test unsigned type", () => {
         ",desc_nchr nchar(200)" +
         ");";
       executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let colData = [1641827743305, 254, 65534, 4294967294, 18446744073709551614n, 9223372036854775807n,
         1641827743306, 0, 0, 0, 0n, -9223372036854775807n,
         1641827743307, 201, 44, 2, 8n, 1531n];
@@ -286,7 +289,7 @@ describe("test unsigned type", () => {
       let actualResFields = result.resFeilds;
 
       //assert result data length 
-      console.log("expectResData.length:" + expectResData.length + " actualResData.length:" + actualResData.length);
+      //console.log("expectResData.length:" + expectResData.length + " actualResData.length:" + actualResData.length);
       expect(expectResData.length).toEqual(actualResData.length);
       //assert result data
       expectResData.forEach((item, index) => {
@@ -319,7 +322,7 @@ describe("test unsigned type", () => {
         ",desc_nchr nchar(200)" +
         ");";
       executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let colData = [1641827743305, 254, 65534, 4294967294, 18446744073709551614n, 9223372036854775807n,
         1641827743306, 0, 0, 0, 0n, -9223372036854775807n,
         1641827743307, 201, 44, 2, 8n, 1531n];
@@ -353,9 +356,9 @@ describe("test cn character", () => {
     `desc:create,insert,query with cn characters;` +
     `filename:${fileName};` +
     `result:${result}`, () => {
-      createSql = "create table if not exists nchartest(ts timestamp,value int,text binary(200),detail nchar(200));"
+      createSql = "create table if not exists nchartest(ts timestamp,val int,text binary(200),detail nchar(200));"
       executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let expectResData = [1641827743305, 1, 'taosdata', 'tdengine'
         , 1641827743306, 2, 'tasdata', '涛思数据'
         , 1641827743307, 3, '涛思数据', 'tdengine'
@@ -385,9 +388,9 @@ describe("test cn character", () => {
     `desc:create,insert,query with cn characters;` +
     `filename:${fileName};` +
     `result:${result}`, () => {
-      createSql = "create table if not exists nchartest_s(ts timestamp,value int,text binary(200),detail nchar(200))tags(tag_bi binary(50),tag_nchr nchar(50));"
+      createSql = "create table if not exists nchartest_s(ts timestamp,val int,text binary(200),detail nchar(200))tags(tag_bi binary(50),tag_nchr nchar(50));"
       executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let colData = [1641827743305, 1, 'taosdata', 'tdengine'
         , 1641827743306, 2, 'tasdata', '涛思数据'
         , 1641827743307, 3, '涛思数据', 'tdengine'
@@ -399,181 +402,6 @@ describe("test cn character", () => {
 
       executeUpdate(insertSql);
       let result = executeQuery("select * from nchartest_s;");
-      let actualResData = result.resData;
-      let actualResFields = result.resFeilds;
-
-      //assert result data length 
-      expect(expectResData.length).toEqual(actualResData.length);
-      //assert result data
-      expectResData.forEach((item, index) => {
-        expect(item).toEqual(actualResData[index]);
-      });
-
-      //assert result meta data
-      expectResField.forEach((item, index) => {
-        expect(item).toEqual(actualResFields[index])
-      })
-    })
-})
-
-describe("test schemaless", () => {
-  test(`name:sml line protocal using string;` +
-    `author:${author};` +
-    `desc:using line protocal to schemaless insert with a string;` +
-    `filename:${fileName};` +
-    `result:${result}`, () => {
-      let stablename = 'line_protocal_string';
-      createSql = `create table if not exists ${stablename}(ts timestamp,c1 bigint,c3 nchar(6),c2 bool,c4 double)`
-        + `tags(t1 nchar(4),t2 nchar(4),t3 nchar(4));`
-
-      executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
-      let colData = [1626006833639, 3n, 'passit', false, 4.000000000];
-      let tagData = ['3i64', '4f64', '\"t3\"'];
-      let expectResData = getResData(colData, tagData, 5);
-      let lineStr = stablename + ",t1=3i64,t2=4f64,t3=\"t3\" c1=3i64,c3=L\"passit\",c2=false,c4=4f64 1626006833639";
-
-
-      c1.schemalessInsert(lineStr, taos.SCHEMALESS_PROTOCOL.TSDB_SML_LINE_PROTOCOL, taos.SCHEMALESS_PRECISION.TSDB_SML_TIMESTAMP_MILLI_SECONDS);
-      let result = executeQuery(`select * from ${stablename};`);
-      let actualResData = result.resData;
-      let actualResFields = result.resFeilds;
-
-      //assert result data length 
-      expect(expectResData.length).toEqual(actualResData.length);
-      //assert result data
-      expectResData.forEach((item, index) => {
-        expect(item).toEqual(actualResData[index]);
-      });
-
-      //assert result meta data
-      expectResField.forEach((item, index) => {
-        expect(item).toEqual(actualResFields[index])
-      })
-    })
-
-  test(`name:sml line protocal using Array;` +
-    `author:${author};` +
-    `desc:using line protocal to schemaless insert with an Array;` +
-    `filename:${fileName};` +
-    `result:${result}`, () => {
-      let stablename = 'line_protocol_arr';
-
-      createSql = `create table if not exists ${stablename}(ts timestamp,c1 bigint,c3 nchar(10),c2 bool,c4 double,c5 double)`
-        + `tags(t1 nchar(4),t2 nchar(4),t3 nchar(4),t4 nchar(4));`
-
-      executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
-      let colData1 = [1626006833641, 3n, 'passitagin', true, 5, 5]
-      let colData2 = [1626006833639, 3n, 'passit', false, 4, null];
-      let tagData1 = ['4i64', '5f64', '\"t4\"', '5f64'];
-      let tagData2 = ['3i64', '4f64', '\"t3\"', null];
-      let expectResDataTable1 = getResData(colData1, tagData1, 6);
-      let expectResDataTable2 = getResData(colData2, tagData2, 6);
-      let expectResData = expectResDataTable2.concat(expectResDataTable1);
-
-      let lineStr = [stablename + ",t1=3i64,t2=4f64,t3=\"t3\" c1=3i64,c3=L\"passit\",c2=false,c4=4f64 1626006833639000000",
-      stablename + ",t1=4i64,t3=\"t4\",t2=5f64,t4=5f64 c1=3i64,c3=L\"passitagin\",c2=true,c4=5f64,c5=5f64 1626006833641000000"
-      ];
-
-      c1.schemalessInsert(lineStr, taos.SCHEMALESS_PROTOCOL.TSDB_SML_LINE_PROTOCOL, taos.SCHEMALESS_PRECISION.TSDB_SML_TIMESTAMP_NANO_SECONDS);
-      let result = executeQuery(`select * from ${stablename};`);
-      let actualResData = result.resData;
-      let actualResFields = result.resFeilds;
-
-      //assert result data length 
-      expect(expectResData.length).toEqual(actualResData.length);
-      //assert result data
-      expectResData.forEach((item, index) => {
-        // console.log(`sml line protocal using Array:acutualResData[${index}]:${actualResData[index]} expectData:${item}`);
-        expect(item).toEqual(actualResData[index]);
-      });
-
-      //assert result meta data
-      expectResField.forEach((item, index) => {
-        expect(item).toEqual(actualResFields[index])
-      })
-    })
-
-  test(`name:sml json protocal using string;` +
-    `author:${author};` +
-    `desc:using json protocal to schemaless insert with a json string;` +
-    `filename:${fileName};` +
-    `result:${result}`, () => {
-      let stablename = 'json_protocol_str';
-
-      createSql = `create table if not exists ${stablename}(ts timestamp,value double)`
-        + `tags(t1 bool,t2 bool,t3 double,t4 nchar(35));`
-
-      executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
-      let colData1 = [1626006833000, 10]
-      let tagData1 = [true, false, 10, '123_abc_.!@#$%^&*:;,./?|+-=()[]{}<>'];
-      let expectResData = getResData(colData1, tagData1, 2);
-
-      let jsonStr = "{"
-        + "\"metric\": \"" + stablename + "\","
-        + "\"timestamp\": 1626006833000,"
-        + "\"value\": 10,"
-        + "\"tags\": {"
-        + " \"t1\": true,"
-        + "\"t2\": false,"
-        + "\"t3\": 10,"
-        + "\"t4\": \"123_abc_.!@#$%^&*:;,./?|+-=()[]{}<>\""
-        + "}"
-        + "}";
-
-      c1.schemalessInsert(jsonStr, taos.SCHEMALESS_PROTOCOL.TSDB_SML_JSON_PROTOCOL, taos.SCHEMALESS_PRECISION.TSDB_SML_TIMESTAMP_MILLI_SECONDS);
-
-      let result = executeQuery(`select * from ${stablename};`);
-      let actualResData = result.resData;
-      let actualResFields = result.resFeilds;
-
-      //assert result data length 
-      expect(expectResData.length).toEqual(actualResData.length);
-      //assert result data
-      expectResData.forEach((item, index) => {
-        expect(item).toEqual(actualResData[index]);
-      });
-
-      //assert result meta data
-      expectResField.forEach((item, index) => {
-        expect(item).toEqual(actualResFields[index])
-      })
-    })
-
-  test(`name:sml json protocal using Array;` +
-    `author:${author};` +
-    `desc:using json protocal to schemaless insert with a json array;` +
-    `filename:${fileName};` +
-    `result:${result}`, () => {
-      let stablename = 'json_protocol_arr';
-
-      createSql = `create table if not exists ${stablename}(ts timestamp,value double)`
-        + `tags(t1 bool,t2 bool,t3 double,t4 nchar(35));`
-
-      executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
-      let colData1 = [1626006833000, 10]
-      let tagData1 = [true, false, 10, '123_abc_.!@#$%^&*:;,./?|+-=()[]{}<>'];
-      let expectResData = getResData(colData1, tagData1, 2);
-
-      let jsonArr = ["{"
-        + "\"metric\": \"" + stablename + "\","
-        + "\"timestamp\": 1626006833,"
-        + "\"value\": 10,"
-        + "\"tags\": {"
-        + " \"t1\": true,"
-        + "\"t2\": false,"
-        + "\"t3\": 10,"
-        + "\"t4\": \"123_abc_.!@#$%^&*:;,./?|+-=()[]{}<>\""
-        + "}"
-        + "}"
-      ];
-
-      c1.schemalessInsert(jsonArr, taos.SCHEMALESS_PROTOCOL.TSDB_SML_JSON_PROTOCOL, taos.SCHEMALESS_PRECISION.TSDB_SML_TIMESTAMP_SECONDS);
-
-      let result = executeQuery(`select * from ${stablename};`);
       let actualResData = result.resData;
       let actualResFields = result.resFeilds;
 
@@ -609,7 +437,7 @@ describe("test support microsecond", () => {
       let dropDB = `drop database if exists ${db};`;
       let insertSql = buildInsertSql(db + '.' + table, '',expectResData, [], 3);
       let querySql = `select * from ${db}.${table};`;
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       
       executeUpdate(dropDB);
       executeUpdate(createDB);
@@ -654,7 +482,7 @@ describe("test support microsecond", () => {
       let dropDB = `drop database if exists ${db};`;
       let insertSql = buildInsertSql(db + '.' + table, db + '.' + stable, colData,tagData, 3);
       let querySql = `select * from ${db}.${stable};`;
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let expectResData = getResData(colData, tagData, 3);
       
       executeUpdate(dropDB);
@@ -698,7 +526,7 @@ describe("test support nanosecond", () => {
       let dropDB = `drop database if exists ${db};`;
       let insertSql = buildInsertSql(db + '.' + table, '',expectResData, [], 3);
       let querySql = `select * from ${db}.${table};`;
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       
       executeUpdate(dropDB);
       executeUpdate(createDB);
@@ -714,7 +542,6 @@ describe("test support nanosecond", () => {
       expect(expectResData.length).toEqual(actualResData.length);
       //assert result data
       expectResData.forEach((item, index) => {
-        console.log((index));
         expect(item).toEqual(actualResData[index]);
       });
 
@@ -742,7 +569,7 @@ describe("test support nanosecond", () => {
       let dropDB = `drop database if exists ${db};`;
       let insertSql = buildInsertSql(db + '.' + table, db + '.' + stable, colData,tagData, 3);
       let querySql = `select * from ${db}.${stable};`;
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResField = getFieldArr(getFelidFromDll(createSql));
       let expectResData = getResData(colData, tagData, 3);
       
       executeUpdate(dropDB);
@@ -769,39 +596,3 @@ describe("test support nanosecond", () => {
     })
 })
 
-describe("test json tag", () => {
-  test(`name:json tag;` +
-    `author:${author};` +
-    `desc:create,insert,query with json tag;` +
-    `filename:${fileName};` +
-    `result:${result}`, () => {
-      let tableName = 'jsons1';
-      let createSql = `create table if not exists ${tableName}(ts timestamp, dataInt int, dataBool bool, dataStr nchar(50), dataStrBin binary(150)) tags(jtag json);`;
-
-      executeUpdate(createSql);
-      let expectResField = getFieldArr(getFeildsFromDll(createSql));
-      let colData = [1591060618000, 1, false, 'json1', '涛思数据'
-        , 1591060628000, 23, true, '涛思数据', 'json'
-        , 1591060638000, 54, false, 'tdengine', 'taosdata'];
-      let tagData = ['{\"tag1\":\"fff\",\"tag2\":5,\"tag3\":true}']
-      let insertSql = buildInsertSql('json_sub_1', tableName, colData, tagData, 5);
-      let expectResData = getResData(colData, tagData, 5);
-
-      executeUpdate(insertSql);
-      let result = executeQuery(`select * from ${tableName};`);
-      let actualResData = result.resData;
-      let actualResFields = result.resFeilds;
-
-      //assert result data length 
-      expect(expectResData.length).toEqual(actualResData.length);
-      //assert result data
-      expectResData.forEach((item, index) => {
-        expect(item).toEqual(actualResData[index]);
-      });
-
-      //assert result meta data
-      expectResField.forEach((item, index) => {
-        expect(item).toEqual(actualResFields[index])
-      })
-    })
-})

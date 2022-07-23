@@ -96,6 +96,7 @@ const TDengineTypeCode = {
     'float': 6,
     'double': 7,
     'binary': 8,
+    'varchar': 8,
     'timestamp': 9,
     'nchar': 10,
     'tinyint unsigned': 11,
@@ -122,7 +123,7 @@ const TDengineTypeBytes = {
     'smallint unsigned': 2,
     'int unsigned': 4,
     'bigint unsigned': 8,
-    'json': 4096,
+    'json': 4095,
 }
 
 /**

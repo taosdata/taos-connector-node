@@ -10,9 +10,10 @@ class ConsumerResult {
     }
 
     set(topicPartition, data, field) {
+        
         let containIndex = this._contains(topicPartition);
         if (containIndex > -1) {
-            this.block[i].concat(data);
+            this.block[containIndex].concat(data);
         } else {
             this.topicPartition.push(topicPartition);
             this.block.push(data);

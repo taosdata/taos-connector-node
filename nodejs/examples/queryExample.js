@@ -8,15 +8,19 @@ cursor.execute("create table if not exists t( ts timestamp,v1 tinyint,v2 smallin
 cursor.execute("insert into t1 using t tags (true,-1,-2,-3,-4,1,2,3,4,5,5.55,'varchar_tag','nchar_tag') values(1656677700000,0,1,2,3,0,1,2,3,0,0,'varchar_col_0','nchar_col_0',true,NULL)");
 cursor.execute("insert into t1 values(1656677800100,1,2,3,4,1,2,3,4,1,2,'varchar_col_1','nchar_col_1',false,NULL)");
 
-cursor.execute("select * from  p.t ;")
+cursor. execute("select * from  p.t;")
 cursor.fetchall();
 console.log(cursor.fields); // Latest query's Field metadata is stored in cursor.fields
 console.log(cursor.data); // Latest query's result data is stored in cursor.data, also returned by fetchall.
 
 
-let p = cursor.query("select * from p.t; ")//select bnr,nchr, t_bnr,t_nchr from stmt_db.bind_param_batch;
+let p = cursor.query("select * from p.t; ")
 p.execute().then((result) => result.pretty());
 
+let p2 = cursor.query("select * from p.t;",true);
+p2.then((result) =>result.pretty())
 
+let p3 = cursor.query("describe  p.t");
+p3.execute().then((result) => result.pretty());
 cursor.close();
 conn.close();

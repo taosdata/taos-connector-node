@@ -65,15 +65,6 @@ TDengineConnection.prototype.cursor = function cursor() {
   return new TDengineCursor(this);
 }
 
-/**
- * Clear the results from connector
- * @private
- */
-/*
- TDengineConnection.prototype._clearResultSet = function _clearResultSet() {
-  var result = this._chandle.useResult(this._conn).result;
-  if (result) {
-    this._chandle.freeResult(result)
-  }
+TDengineConnection.prototype.getClientInfo = function getClientInfo(){
+  return this._chandle.getClientInfo();
 }
-*/

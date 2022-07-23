@@ -80,30 +80,33 @@ function initData(numOfRows) {
     return { resData: data, resTag: tag }
 }
 
-function executeUpdate(sql) {
-    console.log(sql);
-    c1.execute(sql);
+function executeUpdate(sql, printFlag = false) {
+    if (printFlag === true) {
+        console.log(sql);
+    }
+    c1.execute(sql, { 'quiet': false });
 }
 
-function executeQuery(sql) {
+function executeQuery(sql, printFlag = false) {
+    if (printFlag === true) {
+        console.log(sql);
+    }
+
     c1.execute(sql, { quiet: true })
-    var data = c1.fetchall();
+    var data = c1.fetchall({ 'quiet': false });
     let fields = c1.fields;
     let resArr = [];
 
     data.forEach(row => {
         row.forEach(data => {
             if (data instanceof Date) {
-                // console.log("date obejct:"+data.valueOf());
                 resArr.push(data.taosTimestamp());
             } else {
-                // console.log("not date:"+data);
                 resArr.push(data);
             }
-            // console.log(data instanceof Date)
         })
     })
-    return { resData: resArr, resFeilds: fields };
+    return { resData: resArr, resFields: fields };
 }
 
 beforeAll(() => {
@@ -117,11 +120,11 @@ beforeAll(() => {
 
 // Clears the database and adds some testing data.
 // Jest will wait for this promise to resolve before running tests.
-// afterAll(() => {
-//     // executeUpdate(`drop database if exists ${db};`);
-//     c1.close();
-//     conn.close();
-// });
+afterAll(() => {
+    // executeUpdate(`drop database if exists ${db};`);
+    c1.close();
+    conn.close();
+});
 
 
 describe("test async query", () => {
@@ -139,7 +142,7 @@ describe("test async query", () => {
             let expectResData = getResData(colData, tagData, 14);
 
             executeUpdate(insertSql);
-            console.log(expectResData);
+            //console.log(expectResData);
 
             let promise = c1.query(`select * from ${table};`);
             let resData = await promise.execute_a();
@@ -165,8 +168,8 @@ describe("test async query", () => {
 
             // assert result data
             expectResData.forEach((item, index) => {
-                console.log("expectResData:" + item + " " + index);
-                console.log(actualResData[index]);
+                // console.log("expectResData:" + item + " " + index);
+                // console.log(actualResData[index]);
                 expect(actualResData[index]).toBe(item);
             });
 

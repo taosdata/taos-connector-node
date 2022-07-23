@@ -179,7 +179,7 @@ var libtaos = ffi.Library(taoslibname, {
     , 'taos_get_client_info': [ref.types.char_ptr, []]
 
     //TSDB_SERVER_STATUS taos_check_server_status(const char *fqdn, int port, char *details, int maxlen);
-    ,'taos_check_server_status':[ref.types.int,[ref.types.char_ptr,ref.types.int,ref.types.char_ptr,ref.types.int]]   
+    // ,'taos_check_server_status':[ref.types.int,[ref.types.char_ptr,ref.types.int,ref.types.char_ptr,ref.types.int]]   
    
 });
 module.exports = libtaos;

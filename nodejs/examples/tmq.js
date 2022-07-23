@@ -55,12 +55,6 @@ function consumerExample() {
     console.log(msg.block);
     console.log(msg.fields)
     }
-    // let msg = consumer.consume(200);
-    // console.log(msg.topicPartition);
-    // console.log(msg.block);
-    // console.log(msg.fields)
-
-
 
     let topicList = consumer.subscription();
     console.log(topicList);

@@ -17,7 +17,6 @@ function CTMQInterface(config) {
 CTMQInterface.prototype.newConsumer = function newConsumer(config) {
     let tmqCfg = libtmq.tmq_conf_new();
     try {
-        console.log(tmqCfg);
         for (var [key, val] of config) {
             let confRes = libtmq.tmq_conf_set(tmqCfg, ref.allocCString(key), ref.allocCString(val));
             if (confRes == -2) {
@@ -72,7 +71,6 @@ CTMQInterface.prototype.subscription = function subscription(consumer) {
     let topicPPtr = ref.ref(topicPtr);
 
     let code = libtmq.tmq_subscription(consumer, topicPPtr);
-    console.log("subscription");
     this._consumerErrorHandle("tmq_subscription", code);
 
     // let topic = ref.reinterpret(topicPPtr,ref.sizeof.pointer)
@@ -84,7 +82,6 @@ CTMQInterface.prototype.subscription = function subscription(consumer) {
         let tpcPtr = ref.readPointer(c_topic_list_ptr, i * ref.sizeof.pointer, ref.sizeof.pointer);
         let tpc = ref.readCString(tpcPtr);
         // let tpc = ref.readCString(ref.deref(c_topic_list_ptr));
-        console.log("topic in subscription:" + tpc);
         topicList.push(tpc)
     }
 
@@ -95,8 +92,6 @@ CTMQInterface.prototype.subscription = function subscription(consumer) {
 CTMQInterface.prototype.consume = function consume(consumer, timeout) {
     let ctaos = new CTaosInterface();
     let taosRes = libtmq.tmq_consumer_poll(consumer, timeout);
-    console.log(consumer);
-    console.log(taosRes);
 
     let consumerResult = new ConsumerResult(taosRes);
 
@@ -107,7 +102,7 @@ CTMQInterface.prototype.consume = function consume(consumer, timeout) {
             break;
         } else {
             let data = []
-            data = rawBlock.blocks;
+            //data = rawBlock.blocks;
             let topic = ref.readCString(libtmq.tmq_get_topic_name(taosRes));
             let db = ref.readCString(libtmq.tmq_get_db_name(taosRes));
             let vGroupId = libtmq.tmq_get_vgroup_id(taosRes);

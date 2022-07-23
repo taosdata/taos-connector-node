@@ -85,12 +85,13 @@ function stmtUseResultSample() {
     cursor.stmtPrepare(querySql);
     cursor.stmtBindParamBatch(condition1.getMultiBindArr());
     cursor.stmtExecute();
-    cursor.stmtUseResult();   
-    cursor.stmtClose();
+    cursor.stmtUseResult();  
     
+    // get result
     cursor.fetchall();
     console.log(cursor.fields);
-    console.log(cursor.data);
+    console.log(cursor.data); 
+    cursor.stmtClose();
 
     executeUpdate(dropDB);
 }

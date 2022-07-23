@@ -32,7 +32,7 @@ let uBigIntArr = [0n, 36424354000001111n, 18446744073709551614n, 26n, null];
 let tagData1 = [true, 1, 32767, 1234555, -164243520000011111n, 214.02, 2.01, 'taosdata涛思数据', 'TDengine数据', 254, 65534, 4294967295, 164243520000011111n];
 let tagData2 = [true, 2, 32767, 1234555, -164243520000011111n, 214.02, 2.01, 'taosdata涛思数据', 'TDengine数据', 254, 65534, 4294967295, 164243520000011111n];
 let tagData3 = [true, 3, 32767, 1234555, -164243520000011111n, 214.02, 2.01, 'taosdata涛思数据', 'TDengine数据', 254, 65534, 4294967295, 164243520000011111n];
-
+let jsonTag = ['{\"tag1\":\"jtag_1\",\"tag2\":1,\"tag3\":true}']
 /**
  * Combine individual array of every tdengine type that 
  * has been declared and then return a new array.
@@ -61,14 +61,14 @@ function getBindData() {
 
 function executeUpdate(sql, printFlag = false) {
   if (printFlag === true) {
-      console.log(sql);
+    console.log(sql);
   }
   c1.execute(sql, { 'quiet': false });
 }
 
 function executeQuery(sql, printFlag = false) {
   if (printFlag === true) {
-      console.log(sql);
+    console.log(sql);
   }
 
   c1.execute(sql, { quiet: true })
@@ -77,13 +77,13 @@ function executeQuery(sql, printFlag = false) {
   let resArr = [];
 
   data.forEach(row => {
-      row.forEach(data => {
-          if (data instanceof Date) {
-              resArr.push(data.taosTimestamp());
-          } else {
-              resArr.push(data);
-          }
-      })
+    row.forEach(data => {
+      if (data instanceof Date) {
+        resArr.push(data.taosTimestamp());
+      } else {
+        resArr.push(data);
+      }
+    })
   })
   return { resData: resArr, resFields: fields };
 }
@@ -145,7 +145,7 @@ describe("stmt_bind_single_param", () => {
       let expectResField = getFieldArr(getFeildsFromDll(createSql));
       let expectResData = getResData(getBindData(), tagData1, 14);
 
-      // prepare tag TAOS_BIND 
+      // prepare tag
       let tags = new taos.TaosMultiBindArr(14);
       tags.multiBindBool([true]);
       tags.multiBindTinyInt([1]);
@@ -406,8 +406,83 @@ describe("stmt_bind_single_param", () => {
 
 
     });
-  
-   test(`name:bindSingleParamWithJson`,()=>{expect(2).toEqual(2)}) 
+
+  test('name:bindSingleParamWithJson' +
+    `author:${author};` +
+    `desc:Using stmtBindSingleParam() bind one table in a batch and set;` +
+    `filename:${fileName};` +
+    `result:${result}`, () => {
+      let table = 'bindsingleparambatch_121_j';
+      let createSql = `create table if not exists ${table} ` +
+        `(ts timestamp,` +
+        `bl bool,` +
+        `i8 tinyint,` +
+        `i16 smallint,` +
+        `i32 int,` +
+        `i64 bigint,` +
+        `f32 float,` +
+        `d64 double,` +
+        `bnr binary(20),` +
+        `nchr nchar(20),` +
+        `u8 tinyint unsigned,` +
+        `u16 smallint unsigned,` +
+        `u32 int unsigned,` +
+        `u64 bigint unsigned` +
+        `)tags(` +
+        `json_tag json`+
+        `);`;
+      let insertSql = `insert into ? using ${table} tags(?) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?);`;
+      let querySql = `select * from ${table}`;
+      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResData = getResData(getBindData(), jsonTag, 14);
+
+      // prepare json tag
+      let  jTag = new taos.TaosMultiBindArr(1);
+      jTag.multiBindJSON(jsonTag);
+      
+      //prepare TAOS_MULTI_BIND dat
+      let mBind1 = new taos.TaosMultiBind();
+
+      executeUpdate(createSql);
+
+      c1.stmtInit();
+      c1.stmtPrepare(insertSql);
+      c1.stmtSetTbnameTags(`${table}_s01`, jTag.getMultiBindArr());
+      c1.stmtBindSingleParamBatch(mBind1.multiBindTimestamp(tsArr), 0);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindBool(boolArr), 1);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindTinyInt(tinyIntArr), 2);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindSmallInt(smallIntArr), 3);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindInt(intArr), 4);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindBigInt(bigIntArr), 5);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindFloat(floatArr), 6);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindDouble(doubleArr), 7);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindBinary(binaryArr), 8);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindNchar(ncharArr), 9);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindUTinyInt(uTinyIntArr), 10);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindUSmallInt(uSmallIntArr), 11);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindUInt(uIntArr), 12);
+      c1.stmtBindSingleParamBatch(mBind1.multiBindUBigInt(uBigIntArr), 13);
+      c1.stmtAddBatch();
+      c1.stmtExecute();
+      c1.stmtClose();
+
+      let result = executeQuery(querySql);
+      let actualResData = result.resData;
+      let actualResFields = result.resFields;
+
+      //assert result data length 
+      expect(expectResData.length).toEqual(actualResData.length);
+      //assert result data
+      expectResData.forEach((item, index) => {
+        expect(actualResData[index]).toEqual(item);
+      });
+
+      //assert result meta data
+      expectResField.forEach((item, index) => {
+        expect(actualResFields[index]).toEqual(item)
+      })
+      expect(2).toEqual(2) 
+    })
 })
 
 describe("stmt_bind_para_batch", () => {
@@ -548,11 +623,11 @@ describe("stmt_bind_para_batch", () => {
         `t_u64 bigint unsigned` +
         `);`;
       let insertSql = `insert into ? using ${table} tags(?,?,?,?,?,?,?,?,?,?,?,?,?) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?);`;
-      
+
       let querySql1 = `select ts,bl,i8,i16,i32,i64,f32,d64,bnr,nchr,u8,u16,u32,u64,t_bl,t_i8,t_i16,t_i32,t_i64,t_f32,t_d64,t_bnr,t_nchr,t_u8,t_u16,t_u32,t_u64 from ${table}_s01;`;
       let querySql2 = `select ts,bl,i8,i16,i32,i64,f32,d64,bnr,nchr,u8,u16,u32,u64,t_bl,t_i8,t_i16,t_i32,t_i64,t_f32,t_d64,t_bnr,t_nchr,t_u8,t_u16,t_u32,t_u64 from ${table}_s02;`;
       let querySql3 = `select ts,bl,i8,i16,i32,i64,f32,d64,bnr,nchr,u8,u16,u32,u64,t_bl,t_i8,t_i16,t_i32,t_i64,t_f32,t_d64,t_bnr,t_nchr,t_u8,t_u16,t_u32,t_u64 from ${table}_s03;`;
-      
+
       let expectResField = getFieldArr(getFeildsFromDll(createSql));
 
       let expectResData1 = getResData(getBindData(), tagData1, 14);
@@ -560,7 +635,7 @@ describe("stmt_bind_para_batch", () => {
       let expectResData3 = getResData(getBindData(), tagData3, 14);;
 
 
-     // prepare tag TAOS_BIND 
+      // prepare tag TAOS_BIND 
       let tag1 = new taos.TaosMultiBindArr(14);
       tag1.multiBindBool([true]);
       tag1.multiBindTinyInt([1]);
@@ -693,6 +768,81 @@ describe("stmt_bind_para_batch", () => {
 
     });
 
-  test(`name:bindParamBatchWithJson`,()=>{expect(2).toEqual(2)})
+  test(`name:bindParamBatchWithJson`+
+  `author:${author};` +
+  `desc:Using stmtBindParamBatch() bind one json tag table in a batch;` +
+  `filename:${fileName};` +
+  `result:${result}`, () => {
+    let table = 'bindparambatch_121_j';//bind one table to one batch
+      let createSql = `create table if not exists ${table} ` +
+        `(ts timestamp,` +
+        `bl bool,` +
+        `i8 tinyint,` +
+        `i16 smallint,` +
+        `i32 int,` +
+        `i64 bigint,` +
+        `f32 float,` +
+        `d64 double,` +
+        `bnr binary(20),` +
+        `nchr nchar(20),` +
+        `u8 tinyint unsigned,` +
+        `u16 smallint unsigned,` +
+        `u32 int unsigned,` +
+        `u64 bigint unsigned` +
+        `)tags(` +
+        `json_tag json`+
+        `);`;
+
+      let insertSql = `insert into ? using ${table} tags(?) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?);`;
+      let querySql = `select * from ${table}`;
+      let expectResField = getFieldArr(getFeildsFromDll(createSql));
+      let expectResData = getResData(getBindData(), jsonTag, 14);
+
+      // prepare json tag
+      let jTags = new taos.TaosMultiBindArr(1);
+      jTags.multiBindJSON(jsonTag);
+
+      //Prepare TAOS_MULTI_BIND data array
+      let mBinds = new taos.TaosMultiBindArr(14);
+      mBinds.multiBindTimestamp(tsArr);
+      mBinds.multiBindBool(boolArr);
+      mBinds.multiBindTinyInt(tinyIntArr);
+      mBinds.multiBindSmallInt(smallIntArr);
+      mBinds.multiBindInt(intArr);
+      mBinds.multiBindBigInt(bigIntArr);
+      mBinds.multiBindFloat(floatArr);
+      mBinds.multiBindDouble(doubleArr);
+      mBinds.multiBindBinary(binaryArr);
+      mBinds.multiBindNchar(ncharArr);
+      mBinds.multiBindUTinyInt(uTinyIntArr);
+      mBinds.multiBindUSmallInt(uSmallIntArr);
+      mBinds.multiBindUInt(uIntArr);
+      mBinds.multiBindUBigInt(uBigIntArr);
+
+      executeUpdate(createSql);
+      c1.stmtInit();
+      c1.stmtPrepare(insertSql);
+      c1.stmtSetTbnameTags(`${table}_s01`, jTags.getMultiBindArr());
+      c1.stmtBindParamBatch(mBinds.getMultiBindArr());
+      c1.stmtAddBatch();
+      c1.stmtExecute();
+      c1.stmtClose();
+
+      let result = executeQuery(querySql);
+      let actualResData = result.resData;
+      let actualResFields = result.resFields;
+
+      //assert result data length 
+      expect(expectResData.length).toEqual(actualResData.length);
+      //assert result data
+      expectResData.forEach((item, index) => {
+        expect(item).toEqual(actualResData[index]);
+      });
+
+      //assert result meta data
+      expectResField.forEach((item, index) => {
+        expect(item).toEqual(actualResFields[index])
+      })
+  })
 })
 

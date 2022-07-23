@@ -543,7 +543,7 @@ CTaosInterface.prototype.useResult = function useResult(result) {
 CTaosInterface.prototype.fetchRawBlock = function fetchRawBlock(taosRes) {
   var numOfRowPtr = ref.alloc('int *');
   var pDataPtr = ref.alloc('void **');
-
+  
   let code = libtaos.taos_fetch_raw_block(taosRes, numOfRowPtr, pDataPtr);
 
   if (code == 0) {
@@ -924,21 +924,21 @@ CTaosInterface.prototype.stmtErrStr = function stmtErrStr(stmt) {
   return ref.readCString(libtaos.taos_stmt_errstr(stmt));
 }
 
-CTaosInterface.prototype.getServerStatus = function getServerStatus(fqdn,port){
-    const maxLen = 512;
-    let detailPtr = ref.ref(Buffer.alloc(maxLen));
-    let statusCode = libtaos.taos_check_server_status(fqdn,port,detailPtr,maxLen);
-    let detail = ref.readCString(detailPtr);
-    if (statusCode == 0){
-      return "[TSDB_SRV_STATUS_UNAVAILABLE]:"+detail;
-    }else if(statusCode == 1){
-      return "[TSDB_SRV_STATUS_NETWORK_OK]:"+detail;
-    }else if(statusCode == 2){
-      return "[TSDB_SRV_STATUS_NETWORK_OK]:"+detail;
-    }else if(statusCode == 3){
-      return "[TSDB_SRV_STATUS_SERVICE_DEGRADED]:"+detail;
-    }else if(statusCode == 4){
-      return "[TSDB_SRV_STATUS_EXTING]:"+detail;
-    }
+// CTaosInterface.prototype.getServerStatus = function getServerStatus(fqdn,port){
+//     const maxLen = 512;
+//     let detailPtr = ref.ref(Buffer.alloc(maxLen));
+//     let statusCode = libtaos.taos_check_server_status(fqdn,port,detailPtr,maxLen);
+//     let detail = ref.readCString(detailPtr);
+//     if (statusCode == 0){
+//       return "[TSDB_SRV_STATUS_UNAVAILABLE]:"+detail;
+//     }else if(statusCode == 1){
+//       return "[TSDB_SRV_STATUS_NETWORK_OK]:"+detail;
+//     }else if(statusCode == 2){
+//       return "[TSDB_SRV_STATUS_NETWORK_OK]:"+detail;
+//     }else if(statusCode == 3){
+//       return "[TSDB_SRV_STATUS_SERVICE_DEGRADED]:"+detail;
+//     }else if(statusCode == 4){
+//       return "[TSDB_SRV_STATUS_EXTING]:"+detail;
+//     }
 
-}
+// }

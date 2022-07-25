@@ -2,7 +2,7 @@ const ref = require('ref-napi');
 const { C_JSON_TAG } = require('./constants');
 const StructType = require('ref-struct-di')(ref);
 const taosConst = require('./constants');
-require('./global');
+
 
 var TAOS_MULTI_BIND = StructType({
     'buffer_type': ref.types.int,

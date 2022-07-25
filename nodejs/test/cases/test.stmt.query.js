@@ -1,7 +1,5 @@
 const taos = require('../../tdengine');
 const { getFeildsFromDll, buildInsertSql, getFieldArr, getResData } = require('../utils/utilTools')
-require('./global');
-
 
 const author = 'xiaolei';
 const result = 'passed';

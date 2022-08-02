@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 const taos = require('../../tdengine');
 const { getFeildsFromDll, buildInsertSql, getFieldArr, getResData } = require('../utils/utilTools')
 

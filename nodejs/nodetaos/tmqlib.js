@@ -78,7 +78,7 @@ var libtmq = ffi.Library(taoslibname,{
     ,'tmq_get_res_type':[ref.types.int,[ref.types.void_ptr]]
     
     // int32_t tmq_get_raw_meta(TAOS_RES *res, void **raw_meta, int32_t *raw_meta_len);
-    ,'tmq_get_raw_meta':[ref.types.int32,[ref.types.void_ptr,ref.types.void_ptr2,'int *']]
+    // ,'tmq_get_raw_meta':[ref.types.int32,[ref.types.void_ptr,ref.types.void_ptr2,'int *']]
     
     // const char *tmq_get_topic_name(TAOS_RES *res);
     ,'tmq_get_topic_name':[ref.types.char_ptr,[ref.types.void_ptr]]

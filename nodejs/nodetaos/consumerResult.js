@@ -23,7 +23,7 @@ class ConsumerResult {
 
     _contains(topicPartition) {
         let key = -1;
-        this.topicPartition.forEach((index, item) => {
+        this.topicPartition.forEach((item, index) => {
             if (item.equals(topicPartition)) {
                 key = index;
                 return;

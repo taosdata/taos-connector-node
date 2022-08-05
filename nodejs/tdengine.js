@@ -10,9 +10,8 @@ module.exports = {
   },
   SCHEMALESS_PROTOCOL: TDengineConstant.SCHEMALESS_PROTOCOL,
   SCHEMALESS_PRECISION: TDengineConstant.SCHEMALESS_PRECISION,
-  TaosMultiBind,
   TaosMultiBindArr,
-
+  TaosMultiBind,
   consumer:function (config = {}){
     return new TMQConsumer(config);
   }

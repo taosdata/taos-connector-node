@@ -48,7 +48,7 @@ jobs:
         EOF
     - name: start taosd
       run: nohup sudo sh ./start.sh &    
-
+      
     - name: checkout nodejs 3.0
       uses: actions/checkout@v3
       with:

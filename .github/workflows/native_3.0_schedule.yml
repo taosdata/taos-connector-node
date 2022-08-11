@@ -41,10 +41,13 @@ jobs:
           make -j8
           sudo make install
           
-    - name: start taosd
+    - name: shell
       run: |
-        nohup sudo taosd &
-        taos -V  
+        cat >start.sh<<EOF
+        ulimit -n 65535 && TAOS_SUPPORT_VNODES=256 taosd
+        EOF
+    - name: start taosd
+      run: nohup sudo sh ./start.sh &    
 
     - name: checkout nodejs 3.0
       uses: actions/checkout@v3

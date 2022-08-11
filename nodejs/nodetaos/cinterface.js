@@ -26,7 +26,7 @@ const TAOSFIELD = {
 function convertTimestamp(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
 
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
   let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
 
   offset = bitMapSize;
@@ -543,7 +543,7 @@ CTaosInterface.prototype.useResult = function useResult(result) {
 CTaosInterface.prototype.fetchRawBlock = function fetchRawBlock(taosRes) {
   var numOfRowPtr = ref.alloc('int *');
   var pDataPtr = ref.alloc('void **');
-  
+
   let code = libtaos.taos_fetch_raw_block(taosRes, numOfRowPtr, pDataPtr);
 
   if (code == 0) {
@@ -561,18 +561,16 @@ CTaosInterface.prototype.fetchRawBlock = function fetchRawBlock(taosRes) {
     blocks.fill(null);
 
     // offset pData
-    // pData + 12 + (4+2)*numOfFields;
-    let offsetBeforeLengthArr = 12 + (4 + 2) * numOfFields;
+    let offsetBeforeLengthArr = (4 * 5) + 8 + (4 + 1) * numOfFields;
     var lengthArraySize = 4 * numOfFields;
     let offsetForColData = offsetBeforeLengthArr + lengthArraySize;
     // read column after column
-    if(numOfRows>0)
-    {
+    if (numOfRows > 0) {
       for (let i = 0; i < numOfFields; i++) {
 
         let lengthPtr = ref.reinterpret(pData, ref.sizeof.int, offsetBeforeLengthArr + (i * 4));
         let length = lengthPtr.readInt32LE();
-  
+
         if (!convertFunctions[fields[i]['type']]) {
           throw new errors.DatabaseError("Invalid data type returned from database");
         } else if (fields[i]['type'] == 8 || fields[i]['type'] == 10 || fields[i]['type'] == 15) {
@@ -586,7 +584,7 @@ CTaosInterface.prototype.fetchRawBlock = function fetchRawBlock(taosRes) {
         }
       }
     }
-    
+
     return { blocks: blocks, num_of_rows: Math.abs(numOfRows) }
   } else {
     throw new OperationalError(`${libtaos.taos_errstr(taosRes)} ,${code}`);
@@ -634,9 +632,9 @@ CTaosInterface.prototype.query_a = function query_a(connection, sql, callback, p
  * function yourself using the libtaos.taos_fetch_raw_block_a function
  */
 
-CTaosInterface.prototype.fetch_raw_block_a = function fetch_raw_block_a(taosRes,callback,param=ref.ref(ref.NULL)){
+CTaosInterface.prototype.fetch_raw_block_a = function fetch_raw_block_a(taosRes, callback, param = ref.ref(ref.NULL)) {
   var cti = this;
-  var fetchRawBlock_a_callback = function (param2,taosRes2,numOfRows2){
+  var fetchRawBlock_a_callback = function (param2, taosRes2, numOfRows2) {
     let fields = cti.fetchFields_a(taosRes2);
     let precision = libtaos.taos_result_precision(taosRes2);
 
@@ -650,21 +648,20 @@ CTaosInterface.prototype.fetch_raw_block_a = function fetch_raw_block_a(taosRes,
         fieldLengthArr.push(fieldLength);
       }
     }
-// =====logic same as fetch_raw_block
-// parse raw block from here.
+    // =====logic same as fetch_raw_block
+    // parse raw block from here.
     let pData = libtaos.taos_get_raw_block(taosRes2);
     let numOfRows = numOfRows2;
     let numOfFields = libtaos.taos_field_count(taosRes2);
 
-    let bitMapSize = Math.ceil(numOfRows / 8.0);
+    let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
     let offsetArrLength = ref.sizeof.int32 * numOfRows;
 
     let blocks = new Array(numOfFields);
     blocks.fill(null);
 
     // offset pData
-    // pData + 12 + (4+2)*numOfFields;
-    let offsetBeforeLengthArr = 12 + (4 + 2) * numOfFields;
+    let offsetBeforeLengthArr = (4 * 5) + 8 + (4 + 1) * numOfFields;
     var lengthArraySize = 4 * numOfFields;
     let offsetForColData = offsetBeforeLengthArr + lengthArraySize;
     // read column after column
@@ -688,7 +685,7 @@ CTaosInterface.prototype.fetch_raw_block_a = function fetch_raw_block_a(taosRes,
     callback(param2, taosRes2, numOfRows2, blocks);
   }
   var fetchRawBlock_a_callback = ffi.Callback(ref.types.void, [ref.types.void_ptr, ref.types.void_ptr, ref.types.int], fetchRawBlock_a_callback);
-  libtaos.taos_fetch_raw_block_a(taosRes,fetchRawBlock_a_callback,param)
+  libtaos.taos_fetch_raw_block_a(taosRes, fetchRawBlock_a_callback, param)
 }
 // Used to parse the TAO_RES retrieved in taos_fetch_row_a()'s callback
 // block after block.

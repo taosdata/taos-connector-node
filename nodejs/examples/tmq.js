@@ -36,6 +36,9 @@ function initData() {
     })
 
 }
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 function consumerExample() {
     let consumer = taos.consumer({
@@ -49,11 +52,12 @@ function consumerExample() {
     // const topic = new Array()['topic_table']
     consumer.subscribe([topic]);
     // consumer.subscribe([topic,topic2]);
-   for(let t=0;t<10;t++){
-     msg = consumer.consume(200);
-    console.log(msg.topicPartition);
-    console.log(msg.block);
-    console.log(msg.fields)
+    for (let t = 0; t < 10; t++) {
+        msg = consumer.consume(200);
+        console.log(msg.topicPartition);
+        console.log(msg.block);
+        console.log(msg.fields);
+        consumer.commit(msg);
     }
 
     let topicList = consumer.subscription();
@@ -62,6 +66,7 @@ function consumerExample() {
     consumer.commit(msg);
     consumer.unsubscribe();
     consumer.close();
+
 }
 
 function createTopic() {
@@ -84,9 +89,10 @@ function dispose() {
 try {
     initData();
     createTopic();
-    consumerExample()
+    consumerExample();
+
 } finally {
-    dispose()
+    sleep(1000).then(dispose)
 }
 
 

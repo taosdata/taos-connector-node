@@ -122,7 +122,6 @@ CTMQInterface.prototype.consume = function consume(consumer, timeout) {
         }
 
     }
-    ctaos.freeResult(taosRes);
     return consumerResult;
 }
 CTMQInterface.prototype.unsubscribe = function unsubscribe(consumer) {
@@ -137,6 +136,7 @@ CTMQInterface.prototype.consumerClose = function consumerClose(consumer) {
 CTMQInterface.prototype.commit = function commit(consumer, consumerResult) {
     let code = libtmq.tmq_commit_sync(consumer, consumerResult.msg);
     this._consumerErrorHandle("commit", code);
+    consumerResult.close();
 }
 
 CTMQInterface.prototype.commit_a = function commit_a(consumer, consumerResult, callback, param = ref.ref(ref.NULL)) {

@@ -10,7 +10,7 @@ class ConsumerResult {
     }
 
     set(topicPartition, data, field) {
-        
+
         let containIndex = this._contains(topicPartition);
         if (containIndex > -1) {
             this.block[containIndex].concat(data);
@@ -19,6 +19,10 @@ class ConsumerResult {
             this.block.push(data);
             this.fields.push(field);
         }
+    }
+
+    close() {
+        this.msg = null;
     }
 
     _contains(topicPartition) {

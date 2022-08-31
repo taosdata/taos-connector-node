@@ -6,7 +6,6 @@ let options: Options = {
     user: 'root',
     passwd: 'taosdata',
     host: "127.0.0.1",
-    port: 6041,
 }
 let connect = function connect(option: Options) {
     // console.log("index.options:"+JSON.stringify(option));

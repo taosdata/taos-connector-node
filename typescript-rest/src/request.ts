@@ -36,9 +36,9 @@ export class TDResRequest {
         } else {
             //do nothing 
         }
-        if(this.uri.port){
+        if (this.uri.port) {
             url = `${this.uri.scheme}://${this.uri.host}:${this.uri.port}${this.uri.path}`
-        }else{
+        } else {
             url = `${this.uri.scheme}://${this.uri.host}${this.uri.path}`
         }
         if (this.uri.query) {
@@ -106,7 +106,7 @@ export class TDResRequest {
 
     request(command: string): Promise<any> {
         this._body(command);
-        console.log(this._makeUrl());
+        //console.log(this._makeUrl());
         return fetch(this._makeUrl(), this.options);
     }
 }

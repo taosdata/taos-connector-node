@@ -43,15 +43,15 @@ export class TDengineCursor {
                 return new Result(res_json);
             }
 
-        }else if (response.status == 400) {
-             new Error("invalid parameters.")
-        }else if (response.status == 401) {
+        } else if (response.status == 400) {
+            new Error("invalid parameters.")
+        } else if (response.status == 401) {
             throw new Error("Authentication failed.")
-        }else if (response.status == 404) {
+        } else if (response.status == 404) {
             throw new Error("interface not exists.")
-        }else if (response.status == 500) {
+        } else if (response.status == 500) {
             throw new Error("internal error.")
-        }else if (response.status == 503) {
+        } else if (response.status == 503) {
             throw new Error("insufficient system resource.")
         }
         throw new Error("http request failed.");

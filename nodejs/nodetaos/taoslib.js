@@ -14,7 +14,7 @@ var clientVersion = ffi.Library(taoslibname, {
     'taos_get_client_info': ['string', []],
 });
 
-function getCleintVersion() {
+function getClientVersion() {
     return clientVersion.taos_get_client_info().slice(0, 1)
 }
 

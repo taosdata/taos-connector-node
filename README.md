@@ -170,7 +170,7 @@ npm i @tdengine/rest
 
 ```TypeScript
 import { options, connect } from '@tdengine/rest'
-options.path='/rest/sqlt';
+options.path='/rest/sql';
 // set host
 options.host='localhost';
 // set other options like user/passwd

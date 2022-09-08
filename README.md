@@ -1,30 +1,31 @@
 # TDengine Connectors for Node.js
 
-This repository includes two Node connector for TDengine. One is `td2.0-connector`, a Node.js connector using TDengine's native connection. Another is `td2.0-rest-connector`, a TypeScript connector using TDengine's rest connection.
+This repository includes two Node connector for TDengine. One is `@tdengine/client`, a Node.js connector using TDengine's native connection. Another is `@tdengine/rest`, a TypeScript connector using TDengine's rest connection.
 
 This readme file introduce basic installation and work with our connectors.
 
-## `td2.0-connector`
+## `@tdengine/client`
 
-This is the Node.js library that lets you connect to [TDengine](https://www.github.com/taosdata/tdengine) 2.0 version. It is built so that you can use as much of it as you want or as little of it as you want through providing an extensive API. If you want the raw data in the form of an array of arrays for the row data retrieved from a table, you can do that. If you want to wrap that data with objects that allow you easily manipulate and display data such as using a prettifier function, you can do that!
+This is the Node.js library that lets you connect to [TDengine](https://www.github.com/taosdata/tdengine) 3.0 version. It is built so that you can use as much of it as you want or as little of it as you want through providing an extensive API. If you want the raw data in the form of an array of arrays for the row data retrieved from a table, you can do that. If you want to wrap that data with objects that allow you easily manipulate and display data such as using a prettifier function, you can do that!
 
 ### Installation
 
 To get started, just type in the following to install the connector through [npm](https://www.npmjs.com/)
 
 ```cmd
-npm install td2.0-connector
+npm install @tdengine/client
 ```
 
 To interact with TDengine, we make use of the [node-gyp](https://github.com/nodejs/node-gyp) library. To install, you will need to install the following depending on platform (the following instructions are quoted from node-gyp)
 
 #### On Linux
 
-- `python` (`v2.7` recommended, `v3.x.x` is **not** supported)
+- `python`
 - `make`
 - A proper C/C++ compiler toolchain, like [GCC](https://gcc.gnu.org)
-- `node` (between `v10.x` and `v11.x`, other version has some dependency compatibility problems)
+- `node` (either `v10.x` or `v12.x`, other version has some dependency compatibility problems)
 
+<!-- 
 #### On macOS
 
 - `python` (`v2.7` recommended, `v3.x.x` is **not** supported) (already installed on macOS)
@@ -52,6 +53,7 @@ To interact with TDengine, we make use of the [node-gyp](https://github.com/node
      in your Terminal)
 
     - This step will install `gcc` and the related toolchain containing `make`
+    -->
 
 #### On Windows
 
@@ -77,12 +79,12 @@ The following is a short summary of the basic usage of the connector, the  full 
 
 #### Connection
 
-To use the connector, first require the library ```td2.0-connector```. Running the function ```taos.connect``` with the connection options passed in as an object will return a TDengine connection object. The required connection option is ```host```, other options if not set, will be the default values as shown below.
+To use the connector, first require the library ```@tdengine/client```. Running the function ```taos.connect``` with the connection options passed in as an object will return a TDengine connection object. The required connection option is ```host```, other options if not set, will be the default values as shown below.
 
 A cursor also needs to be initialized in order to interact with TDengine from Node.js.
 
 ```javascript
-const taos = require('td2.0-connector');
+const taos = require('@tdengine/client');
 var conn = taos.connect({host:"127.0.0.1", user:"root", password:"taosdata", config:"/etc/taos",port:0})
 var cursor = conn.cursor(); // Initializing a new cursor
 ```
@@ -154,21 +156,21 @@ promise2.then(function(result) {
 })
 ```
 
-## `td2.0-rest-connector`
+## `@tdengine/rest`
 
 This is a TDengine's RESTful connector in TypeScript. It's depend on [node-fetch v2](https://github.com/node-fetch/node-fetch/tree/2.x). Using `fetch(url,options)` to send sql statement and receive response.
 
 ### Installation
 
 ```bash
-npm i td2.0-rest-connector
+npm i @tdengine/rest
 ```
 
 ### Usage
 
 ```TypeScript
-import { options, connect } from 'td2.0-rest-connector'
-options.path='/rest/sqlt';
+import { options, connect } from '@tdengine/rest'
+options.path='/rest/sql';
 // set host
 options.host='localhost';
 // set other options like user/passwd

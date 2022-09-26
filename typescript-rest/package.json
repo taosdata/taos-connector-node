@@ -1,6 +1,6 @@
 {
   "name": "@tdengine/rest",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "A REST connector for TDengine",
   "source": "index.ts",
   "main": "dist/main/index.js",

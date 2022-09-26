@@ -49,25 +49,25 @@ async function execute(sql: string, pure = true) {
     await execute(createDB);
     console.log("-----------------------------------")
 
-    // await execute(createTB);
-    // console.log("-----------------------------------")
+    await execute(createTB);
+    console.log("-----------------------------------")
 
-    // await execute(addColumn);
-    // console.log("----------------------------------")
+    await execute(addColumn);
+    console.log("----------------------------------")
 
-    // await execute(dropColumn);
-    // console.log("-----------------------------------")
+    await execute(dropColumn);
+    console.log("-----------------------------------")
 
-    // await execute(insertSql);
-    // console.log("-----------------------------------")
+    await execute(insertSql);
+    console.log("-----------------------------------")
 
-    // await execute(querySql);
-    // console.log("-----------------------------------")
+    await execute(querySql);
+    console.log("-----------------------------------")
 
-    // await execute(errorSql);
-    // console.log("-----------------------------------")
+    await execute(errorSql);
+    console.log("-----------------------------------")
 
-    // await execute(dropDB);
+    await execute(dropDB);
     // finish time
     let end = new Date().getTime(); // 结束时间
     console.log("total spend time:%d ms",end - start);

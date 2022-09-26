@@ -45,12 +45,10 @@ jobs:
     - name: start taosd
       run: |
         nohup sudo taosd &
-        taos -V  
 
     - name: start taosadapter
       run: |
-        nohup sudo taosd &
-        taos -V  
+        nohup sudo taosadapter &
 
     - uses: actions/checkout@v3
       with:

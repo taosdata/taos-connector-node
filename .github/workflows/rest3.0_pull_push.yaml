@@ -4,11 +4,13 @@ name: rest 3.0 on push&pull
 
 on:
   push:
-    branches: [ '3.0' ]
+    branches: 
+      - '3.0' 
     paths:
       - "typescript-rest"
   pull_request:
-    branches: [ '3.0' ]
+    branches: 
+      - '3.0'
     paths:
       - "typescript-rest"
 

@@ -179,8 +179,7 @@ let conn = connect(options);
 let cursor = conn.cursor();
 (async()=>{
     let result = await cursor.query('show databases');
-    // print query result as taos shell
-    result.toString();
+
     // Get Result object, return Result object.
     console.log(result.getResult());
     // Get status, return 'succ'|'error'.

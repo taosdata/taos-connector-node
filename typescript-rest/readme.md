@@ -26,8 +26,6 @@ let cursor = conn.cursor();
     // optional:
     // let result = await cursor.query('show databases',pure=false);
     
-    // print query result as taos shell
-    result.toString();
     // Get Result object, return Result object.
     console.log(result.getResult());
     // Get status, return 'succ'|'error'.

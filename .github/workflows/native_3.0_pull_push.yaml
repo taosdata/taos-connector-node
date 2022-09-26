@@ -5,12 +5,10 @@ name: native 3.0 on push&pull
 on:
   push:
     branches: [ '3.0' ]
-    paths:
-      - "nodejs"
+    paths: ['nodejs']
   pull_request:
     branches: [ '3.0' ]
-    paths:
-      - "node"
+    paths: ['nodejs']
 
 jobs:
   build:

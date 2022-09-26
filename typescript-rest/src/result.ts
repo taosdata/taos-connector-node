@@ -104,19 +104,6 @@ export class Result {
         return this._desc;
     }
 
-    // toString(): void {
-    //     let str = '';
-    //     if(this._command != undefined){
-    //         console.log(this._command);
-    //     }
-    //     if (this._code === 0 && this._column_meta  && this._data ) {
-    //          str = this._prettyStr(this._column_meta, this._data)
-    //     } else {
-    //         str = `Execute failed,reason:${this._desc}. error_no:${this._code} `;
-    //         console.log(str)
-    //     }
-    // }
-
     private _prettyStr(fields: Array<meta>, data: Array<Array<any>>): string {
         let colName = new Array<string>();
         let colType = new Array<string | undefined>();

@@ -24,7 +24,7 @@ const errorSql = 'show database';
 let conn = connect(options);
 let cursor = conn.cursor();
 
-async function execute(sql: string, pure = false) {
+async function execute(sql: string, pure = true) {
     let result = await cursor.query(sql, pure);
     // print query result as taos shell
     result.toString();
@@ -48,12 +48,26 @@ async function execute(sql: string, pure = false) {
     // start execute time
     let start = new Date().getTime(); 
     await execute(createDB);
+    console.log("-----------------------------------")
+
     await execute(createTB);
+    console.log("-----------------------------------")
+
     await execute(addColumn);
+    console.log("----------------------------------")
+
     await execute(dropColumn);
+    console.log("-----------------------------------")
+
     await execute(insertSql);
+    console.log("-----------------------------------")
+
     await execute(querySql);
+    console.log("-----------------------------------")
+
     await execute(errorSql);
+    console.log("-----------------------------------")
+
     await execute(dropDB);
     // finish time
     let end = new Date().getTime(); // 结束时间

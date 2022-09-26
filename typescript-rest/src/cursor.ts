@@ -35,8 +35,6 @@ export class TDengineCursor {
         let response = await req.request(sql);
         if (response.status == 200) {
             let res_json = await response.json();
-            await console.log(res_json)
-
             if (pure == false) {
                 return new Result(res_json, sql);
             } else {

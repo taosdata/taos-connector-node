@@ -27,7 +27,6 @@ let cursor = conn.cursor();
 async function execute(sql: string, pure = true) {
     let result = await cursor.query(sql, pure);
     // print query result as taos shell
-    result.toString();
     // Get Result object, return Result object.
     console.log("result.getResult()",result.getResult());
     // Get Meta data, return Meta[]|undefined(when execute failed this is undefined).

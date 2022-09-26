@@ -6,11 +6,11 @@ on:
   push:
     branches: [ '3.0' ]
     paths:
-      - "typescript-rest"
+      - "nodejs"
   pull_request:
     branches: [ '3.0' ]
     paths:
-      - "typescript-rest"
+      - "node"
 
 jobs:
   build:

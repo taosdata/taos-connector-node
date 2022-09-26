@@ -1,6 +1,6 @@
 # Triggered by pull request or push to develop branch
-# Test Nodejs connector.
-name: native 3.0 on push&pull
+# Test TypeScript rest connector.
+name: rest 3.0 on push&pull
 
 on:
   push:
@@ -12,6 +12,7 @@ on:
     paths:
       - "typescript-rest"
 
+
 jobs:
   build:
 
@@ -19,8 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x]
-    
+        node-version: [12.x,16.x]   
     steps:
 
     - name: Build Tools
@@ -29,33 +29,35 @@ jobs:
         sudo apt-get install -y build-essential cmake
         sudo apt-get install -y python3 python3-pip python-is-python3
 
-    - name: Checkout TDengine 3.0
+    - name: Checkout TDengine
       uses: actions/checkout@v3
       with:
           fetch-depth: 1
           repository: 'taosdata/TDengine'
           path: 'TDengine'
           ref: '3.0'
+          submodules: 'recursive'
 
-    - name: Build TDengine 3.0
+    - name: Build TDengine
       run: |
           cd TDengine
           mkdir debug
           cd debug
-          cmake ..  
-          make -j8  
+          cmake .. -DBUILD_JDBC=false -DBUILD_TOOLS=false
+          make -j
           sudo make install
           
-    - name: shell
-      run: |
-        cat >start.sh<<EOF
-        ulimit -n 65535 && TAOS_SUPPORT_VNODES=256 taosd
-        EOF
     - name: start taosd
-      run: nohup sudo sh ./start.sh &   
+      run: |
+        nohup sudo taosd &
+        taos -V  
 
-    - name: checkout nodejs 3.0
-      uses: actions/checkout@v3
+    - name: start taosadapter
+      run: |
+        nohup sudo taosd &
+        taos -V  
+
+    - uses: actions/checkout@v3
       with:
           path : "node-taos"
 
@@ -64,9 +66,9 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: test nodejs
-      working-directory: node-taos/nodejs
+    - name: test typescript-rest
+      working-directory: node-taos/typescript-rest
       run: |
         ls -al
         npm install
-        npm run test
+        npm run example

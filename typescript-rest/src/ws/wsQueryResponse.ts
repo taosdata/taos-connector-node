@@ -1,0 +1,135 @@
+/**
+ * define ws Response type|class, for query?
+ */
+
+
+export class WSVersionResponse {
+
+    version: string;
+    code: number;
+    message: string;
+    action: string;
+
+    constructor(msg: any) {
+
+        this.version = msg.version;
+        this.code = msg.code;
+        this.message = msg.message;
+        this.action = msg.action;
+    }
+}
+
+export class WSQueryResponse {
+    code: number;
+    message: string;
+    action: string;
+    req_id: number;
+    timing: number;
+    id: number;
+    is_update: boolean;
+    affected_rows: number;
+    fields_count: number|null;
+    fields_names: Array<string>|null;
+    fields_types: Array<number>|null;
+    fields_lengths: Array<number>|null;
+    precision: number;
+
+    constructor(msg: any) {
+        this.code = msg.code;
+        this.message = msg.message;
+        this.action = msg.action;
+        this.req_id = msg.req_id;
+        this.timing = msg.timing;
+        this.id = msg.id;
+        this.is_update = msg.is_update;
+        this.affected_rows = msg.affected_rows;
+        this.fields_count = msg.fields_count;
+        this.fields_names = msg.fields_names;
+        this.fields_types = msg.fields_types;
+        this.fields_lengths = msg.fields_lengths;
+        this.precision = msg.precision;
+    }
+}
+
+export class WSFetchResponse {
+    code: number;
+    message: string;
+    action: string;
+    req_id: number;
+    timing: number;
+    id: number;
+    completed: boolean;
+    length: Array<number>;
+    rows: number;
+
+    constructor(msg: any) {
+        this.code = msg.code;
+        this.message = msg.message;
+        this.action = msg.action;
+        this.req_id = msg.req_id;
+        this.timing = msg.timing;
+        this.id = msg.id;
+        this.completed = msg.completed;
+        this.length = msg.length;
+        this.rows = msg.rows;
+    }
+}
+
+export class WSFetchBlockResponse {
+
+    req_id: BigInt
+    data: ArrayBuffer
+    timing:BigInt
+    constructor(msg: ArrayBuffer) {
+        //前8位
+        this.timing = new DataView(msg,0,8).getBigUint64(0,true)
+        this.req_id = new DataView(msg,8,8).getBigInt64(0,true)
+        this.data = msg.slice(16)
+    }
+    // data Response
+
+}
+
+export class TDResponse {
+
+}
+
+interface IWSConnResponse {
+    code: number;
+    message: string;
+    action: string;
+    req_id: number;
+    timing: number;
+}
+
+export class WSConnResponse {
+    code: number;
+    message: string;
+    action: string;
+    req_id: number;
+    timing: number;
+
+    constructor(msg: IWSConnResponse) {
+        this.code = msg.code;
+        this.message = msg.message;
+        this.action = msg.action;
+        this.req_id = msg.req_id;
+        this.timing = msg.timing;
+    }
+}
+
+
+
+
+// let a = '{"code":0,"message":"","action":"query","req_id":1,"timing":2600508,"id":1,"is_update":false,"affected_rows":0,"fields_count":6,"fields_names":["ts","current","voltage","phase","location","groupid"],"fields_types":[9,6,4,6,8,4],"fields_lengths":[8,4,4,4,64,4],"precision":0}'
+
+// let qRes = new WSQueryResponse(JSON.parse(a));
+// console.log(qRes);
+
+// let b = '{"code":0,"message":"","action":"fetch","req_id":1,"timing":475905,"id":1,"completed":false,"lengths":[8,4,4,4,66,4],"rows":1}'
+// let fRes = new WSFetchResponse(JSON.parse(b))
+// console.log(fRes)
+
+// let c = '{"code":65535,"message":"taos not connected","action":"query","req_id":1,"timing":58358}'
+// let cRes = new WSConnResponse(JSON.parse(c))
+// console.log(cRes);

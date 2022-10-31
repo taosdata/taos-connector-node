@@ -63,24 +63,11 @@ export class TDWebSocketClient {
     private _onmessage(event: IMessageEvent) {
         let data = event.data;
         if ((data instanceof Buffer)) {
-            console.log("Buffer:" + typeof data)
+            console.log("unexpected response type :" + typeof data)
         } else if (data instanceof ArrayBuffer) {
+            let req_id = new DataView(data, 8, 8).getBigUint64(0, true)
+            console.log("fetch block response req_id:" + req_id)
 
-           console.log(new DataView(data, 0, data.byteLength));
-            let req_id = BigInt(2)
-            let a = new DataView(data, 8, 8);
-            console.log(a.getUint8(0))
-            console.log(a.getUint8(1))
-            console.log(a.getUint8(2))
-            console.log(a.getUint8(3))
-            console.log(a.getUint8(4))
-            console.log(a.getUint8(5))
-            console.log(a.getUint8(6))
-            console.log(a.getUint8(7))
-            console.log(a.getBigUint64(0,true))
-
-
-            console.log("req_id"+req_id);
             let action: MessageAction | any = undefined;
 
             _msgActionRegister.forEach((v: MessageAction, k: MessageId) => {
@@ -116,7 +103,7 @@ export class TDWebSocketClient {
                 action.resolve(msg);
             }
             else {
-                throw new TDWebSocketClientError(`no callback registered for ${msg.action} with req_id=${msg.req_id}` );
+                throw new TDWebSocketClientError(`no callback registered for ${msg.action} with req_id=${msg.req_id}`);
             }
         }
     }
@@ -134,10 +121,12 @@ export class TDWebSocketClient {
         return this._wsConn.readyState;
     }
 
-    sendMsg(message: string) {
+    sendMsg(message: string, register: Boolean = true) {
         let msg = JSON.parse(message);
         return new Promise((resolve, reject) => {
-            this._registerCallback({ action: msg.action, req_id: msg.args.req_id }, resolve, reject)
+            if (register) {
+                this._registerCallback({ action: msg.action, req_id: msg.args.req_id }, resolve, reject)
+            }
             if (this._wsConn && this._wsConn.readyState > 0) {
                 this._wsConn.send(message)
             } else {
@@ -156,8 +145,8 @@ export class TDWebSocketClient {
             })
     }
 
-    setTimeout(waitTime: number) {
-        this._timeout = waitTime;
+    configTimeout(ms: number) {
+        this._timeout = ms;
     }
 
 }

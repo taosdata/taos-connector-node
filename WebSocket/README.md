@@ -12,7 +12,7 @@ ws.close()
 ws.status()
 ```
 
-## STMT
+## STMT (Draft,could be changed)
 
 ``` typescript
 let url = "ws://host:port/rest/stmt"
@@ -53,7 +53,7 @@ function stmt_close(){
 }
 ```
 
-## TMQ
+## TMQ (Draft, could be changed)
 
 ```TypeScript
 let url = "ws://host:port/rest/tmq"

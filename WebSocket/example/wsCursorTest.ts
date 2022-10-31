@@ -1,4 +1,4 @@
-import { WSCursor } from "./wsCursor";
+import { WSCursor } from "../src/wsCursor";
 
 let ws = new WSCursor("ws://root:taosdata@182.92.127.131:6041/rest/ws")
 // ws.connect().then((e)=>{console.log(e);ws.close()}).catch(e=>console.log(e))

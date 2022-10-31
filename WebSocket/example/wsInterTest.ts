@@ -10,7 +10,7 @@
 // console.log(wsCursor.readyState());
 
 
-import { WSInterface } from "./wsQueryInterface";
+import { WSInterface } from "../src/wsQueryInterface";
 
 var ws: WSInterface = new WSInterface(new URL("ws://root:taosdata@182.92.127.131:6041/rest/ws"));
 var block;

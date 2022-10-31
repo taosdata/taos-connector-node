@@ -24,7 +24,7 @@ export class WSQueryResponse {
     message: string;
     action: string;
     req_id: number;
-    timing: number;
+    timing: bigint;
     id: number;
     is_update: boolean;
     affected_rows: number;
@@ -56,7 +56,7 @@ export class WSFetchResponse {
     message: string;
     action: string;
     req_id: number;
-    timing: number;
+    timing: bigint;
     id: number;
     completed: boolean;
     length: Array<number>;
@@ -77,13 +77,13 @@ export class WSFetchResponse {
 
 export class WSFetchBlockResponse {
 
-    req_id: BigInt
+    req_id: bigint
     data: ArrayBuffer
-    timing:BigInt
+    timing:bigint
     constructor(msg: ArrayBuffer) {
         //前8位
         this.timing = new DataView(msg,0,8).getBigUint64(0,true)
-        this.req_id = new DataView(msg,8,8).getBigInt64(0,true)
+        this.req_id = new DataView(msg,8,8).getBigUint64(0,true)
         this.data = msg.slice(16)
     }
     // data Response
@@ -99,7 +99,7 @@ interface IWSConnResponse {
     message: string;
     action: string;
     req_id: number;
-    timing: number;
+    timing: bigint;
 }
 
 export class WSConnResponse {
@@ -107,7 +107,7 @@ export class WSConnResponse {
     message: string;
     action: string;
     req_id: number;
-    timing: number;
+    timing: BigInt;
 
     constructor(msg: IWSConnResponse) {
         this.code = msg.code;
@@ -117,19 +117,3 @@ export class WSConnResponse {
         this.timing = msg.timing;
     }
 }
-
-
-
-
-// let a = '{"code":0,"message":"","action":"query","req_id":1,"timing":2600508,"id":1,"is_update":false,"affected_rows":0,"fields_count":6,"fields_names":["ts","current","voltage","phase","location","groupid"],"fields_types":[9,6,4,6,8,4],"fields_lengths":[8,4,4,4,64,4],"precision":0}'
-
-// let qRes = new WSQueryResponse(JSON.parse(a));
-// console.log(qRes);
-
-// let b = '{"code":0,"message":"","action":"fetch","req_id":1,"timing":475905,"id":1,"completed":false,"lengths":[8,4,4,4,66,4],"rows":1}'
-// let fRes = new WSFetchResponse(JSON.parse(b))
-// console.log(fRes)
-
-// let c = '{"code":65535,"message":"taos not connected","action":"query","req_id":1,"timing":58358}'
-// let cRes = new WSConnResponse(JSON.parse(c))
-// console.log(cRes);

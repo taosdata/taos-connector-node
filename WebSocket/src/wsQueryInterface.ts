@@ -57,7 +57,6 @@ export class WSInterface {
         return new Promise((resolve, reject) => {
             this._wsQueryClient.sendMsg(JSON.stringify(queryMsg))
                 .then((e: any) => {
-                    console.log(e);
                     if (e.code == 0) {
                         if(e.is_update == true){
 
@@ -81,7 +80,7 @@ export class WSInterface {
         let fetchMsg = {
             action: 'fetch',
             args: {
-                req_id: this._req_id,
+                req_id: res.req_id,
                 id: res.id
             }
         }
@@ -126,7 +125,7 @@ export class WSInterface {
         this._req_id++
 
         return new Promise((resolve, reject) => {
-            this._wsQueryClient.sendMsg(JSON.stringify(freeResultMsg)).then((e: any) => {
+            this._wsQueryClient.sendMsg(JSON.stringify(freeResultMsg),false).then((e: any) => {
                 resolve(e)
             }).catch(e => reject(e))
         })

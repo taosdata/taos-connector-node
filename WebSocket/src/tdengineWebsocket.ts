@@ -1,10 +1,11 @@
 
-import { execute } from './queryPromise'
-import { TaosResult } from './TDengineResult'
+import { execute } from './wsQuery'
+import { TaosResult } from './taosResult'
 import { WSInterface } from './wsQueryInterface'
+import { WSConnResponse } from './wsQueryResponse'
 
-
-export class WSCursor {
+ 
+export class TDengineWebSocket {
     _wsInterface: WSInterface
     _data: Array<any> = []
     _meta: Array<any> = []
@@ -13,7 +14,7 @@ export class WSCursor {
         this._wsInterface = new WSInterface(new URL(url))
     }
 
-    connect() {
+    connect():Promise<WSConnResponse> {
         return this._wsInterface.connect();
     }
 

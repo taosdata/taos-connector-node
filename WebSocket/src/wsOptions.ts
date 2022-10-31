@@ -1,8 +1,3 @@
-interface Options {
-
-}
-
-
 export interface User {
     user?: string;
     passwd?: string;
@@ -24,9 +19,9 @@ console.log(url)
 let origin = url.origin;
 let pathname = url.pathname;
 let search = url.search;
-console.log(origin.concat(pathname).concat(search));
+// console.log(origin.concat(pathname).concat(search));
 let data = url.pathname.split('/')[3]
-console.log( url.pathname.split('/'))
+// console.log( url.pathname.split('/'))
 
 
 function checkURL(url:URL){

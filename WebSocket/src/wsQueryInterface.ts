@@ -1,7 +1,7 @@
-import { parseBlock, TaosResult } from './TDengineResult';
+import { parseBlock, TaosResult } from './taosResult';
 import { TDWebSocketClient } from './wsClient'
 import { WebSocketInterfaceError } from './wsError'
-import { WSVersionResponse, WSFetchBlockResponse, WSQueryResponse, WSFetchResponse } from './wsQueryResponse'
+import { WSVersionResponse, WSFetchBlockResponse, WSQueryResponse, WSFetchResponse, WSConnResponse } from './wsQueryResponse'
 
 
 export class WSInterface {
@@ -16,7 +16,7 @@ export class WSInterface {
         this._wsQueryClient = new TDWebSocketClient(this._url);
     }
 
-    connect() {
+    connect():Promise<WSConnResponse> {
 
         let connMsg = {
             action: 'conn',

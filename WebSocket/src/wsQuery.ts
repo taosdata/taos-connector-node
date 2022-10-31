@@ -1,4 +1,4 @@
-import { TaosResult } from './TDengineResult';
+import { TaosResult } from './taosResult';
 import { WSInterface } from './wsQueryInterface'
 export async function execute(sql: string, wsInterface: WSInterface): Promise<TaosResult> {
     let taosResult;

@@ -1,6 +1,6 @@
-import { WSCursor } from "../src/wsCursor";
+import { TDWebSocket } from "../index";
 
-let ws = new WSCursor("ws://root:taosdata@182.92.127.131:6041/rest/ws")
+let ws = TDWebSocket("ws://root:taosdata@182.92.127.131:6041/rest/ws")
 // ws.connect().then((e)=>{console.log(e);ws.close()}).catch(e=>console.log(e))
 
 // ws.version().then((e) =>{console.log(e);ws.close()} );

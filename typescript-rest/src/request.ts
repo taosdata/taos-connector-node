@@ -106,8 +106,8 @@ export class TDResRequest {
 
     request(command: string): Promise<any> {
         this._body(command);
-        console.log(this._makeUrl());
-        console.log(JSON.stringify(this.options));
+        // console.log(this._makeUrl());
+        // console.log(JSON.stringify(this.options));
         return fetch(this._makeUrl(), this.options);
     }
 }

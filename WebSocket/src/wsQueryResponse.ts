@@ -107,7 +107,7 @@ export class WSConnResponse {
     message: string;
     action: string;
     req_id: number;
-    timing: BigInt;
+    timing: bigint;
 
     constructor(msg: IWSConnResponse) {
         this.code = msg.code;

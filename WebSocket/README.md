@@ -3,13 +3,35 @@
 ## Bulk Pulling
 
 ``` typescript
+import {taoWS} from '@tdengine/websocket'
 let url = "ws://host:port/rest/ws"
-ws = taosWS(url)
-ws.connect()
-ws.query(sql).then(e=>{console.log(result)})
-ws.version()
-ws.close()
-ws.status()
+// create an instance of taoWS, while the returned websocket connection of the returned instance 'ws' may is not in 'OPEN' status
+var ws = TDWebSocket(url)
+```
+
+``` typescript
+// build connect with tdengine
+ws.connect().then(connectRes=>console.log(connectRes)).catch(e=>{/*do some thing to  handle error*/})
+```
+
+``` typescript
+//query data with SQL
+ws.query(sql).then(taosResult=>{console.log(taosResult)}).catch(e=>{/*do some thing to  handle error*/})
+```
+
+```typescript
+// get client version
+ws.version().then(version=>console.log(version)).catch(e=>{/*do some thing to  handle error*/})
+```
+
+``` typescript
+// get current WebSocket connection status
+let status:number = ws.status()
+```
+
+``` typescript
+// close current WebSocket connection
+ws.close();
 ```
 
 ## STMT (Draft,could be changed)

@@ -1,10 +1,10 @@
 import { WSFetchBlockResponse, WSFetchResponse, WSQueryResponse } from "./wsQueryResponse";
-import { ColumnsBlockType, TDengineTypeCode } from './constant'
+import { ColumnsBlockType, TDengineTypeCode, TDengineTypeName } from './constant'
 import { TaosResultError, WebSocketQueryInterFaceError } from "./wsError";
 import { AppendRun } from "./ut8Helper"
 
 export class TaosResult {
-    meta: Array<TDengineMeta> | undefined
+    meta: Array<ResponseMeta> | undefined
     data: Array<Array<any>> | null;
     precision: number = 0;
     affectRows: number = 0;
@@ -33,6 +33,7 @@ export class TaosResult {
         this.precision = queryResponse.precision;
         this.timing = queryResponse.timing;
     }
+
     setRows(fetchResponse: WSFetchResponse) {
         this.affectRows += fetchResponse.rows;
         this.timing = this.timing + fetchResponse.timing
@@ -46,10 +47,33 @@ export class TaosResult {
         }
 
     }
+    /**
+     * Mapping the WebSocket response type code to TDengine's type name. 
+     */
+    getTDengineMeta():Array<TDengineMeta>|null{
+        if(this.meta){
+            let _ = new Array<TDengineMeta>()
+            this.meta.forEach(m=>{
+                _.push({
+                    name:m.name,
+                    type:TDengineTypeName[m.type],
+                    length:m.length
+                })
+            })
+            return _;
+        }else{
+            return null;
+        }
+    }
 
 }
 
-interface TDengineMeta {
+interface TDengineMeta{
+    name:string,
+    type:string,
+    length:number,
+}
+interface ResponseMeta {
     name: string,
     type: number,
     length: number,
@@ -145,7 +169,7 @@ export function parseBlock(fetchResponse: WSFetchResponse, blocks: WSFetchBlockR
 
 }
 
-function _isVarTye(meta: TDengineMeta): Number {
+function _isVarTye(meta: ResponseMeta): Number {
     switch (meta.type) {
         case TDengineTypeCode['NCHAR']: {
             return ColumnsBlockType['NCHAR']
@@ -162,7 +186,7 @@ function _isVarTye(meta: TDengineMeta): Number {
     }
 }
 
-function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: TDengineMeta): Number | Boolean | BigInt {
+function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: ResponseMeta): Number | Boolean | BigInt {
 
     switch (meta.type) {
         case TDengineTypeCode['BOOLEAN']: {

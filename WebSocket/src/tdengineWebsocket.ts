@@ -14,8 +14,8 @@ export class TDengineWebSocket {
         this._wsInterface = new WSInterface(new URL(url))
     }
 
-    connect():Promise<WSConnResponse> {
-        return this._wsInterface.connect();
+    connect(database?:string):Promise<WSConnResponse> {
+        return this._wsInterface.connect(database);
     }
 
     state(){

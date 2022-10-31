@@ -28,10 +28,10 @@ export class WSQueryResponse {
     id: number;
     is_update: boolean;
     affected_rows: number;
-    fields_count: number|null;
-    fields_names: Array<string>|null;
-    fields_types: Array<number>|null;
-    fields_lengths: Array<number>|null;
+    fields_count: number | null;
+    fields_names: Array<string> | null;
+    fields_types: Array<number> | null;
+    fields_lengths: Array<number> | null;
     precision: number;
 
     constructor(msg: any) {
@@ -79,15 +79,12 @@ export class WSFetchBlockResponse {
 
     req_id: bigint
     data: ArrayBuffer
-    timing:bigint
+    timing: bigint
     constructor(msg: ArrayBuffer) {
-        //前8位
-        this.timing = new DataView(msg,0,8).getBigUint64(0,true)
-        this.req_id = new DataView(msg,8,8).getBigUint64(0,true)
+        this.timing = new DataView(msg, 0, 8).getBigUint64(0, true)
+        this.req_id = new DataView(msg, 8, 8).getBigUint64(0, true)
         this.data = msg.slice(16)
     }
-    // data Response
-
 }
 
 export class TDResponse {

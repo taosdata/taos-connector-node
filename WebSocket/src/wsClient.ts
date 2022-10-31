@@ -4,7 +4,8 @@ import { TDWebSocketClientError, WebSocketQueryError } from './wsError'
 
 interface MessageId {
     action: string,
-    req_id: BigInt,
+    req_id: bigint,
+    id?:bigint
 }
 
 interface MessageAction {
@@ -65,13 +66,13 @@ export class TDWebSocketClient {
         if ((data instanceof Buffer)) {
             console.log("unexpected response type :" + typeof data)
         } else if (data instanceof ArrayBuffer) {
-            let req_id = new DataView(data, 8, 8).getBigUint64(0, true)
-            console.log("fetch block response req_id:" + req_id)
+            let id = new DataView(data, 8, 8).getBigUint64(0, true)
+            console.log("fetch block response id:" + id)
 
             let action: MessageAction | any = undefined;
 
             _msgActionRegister.forEach((v: MessageAction, k: MessageId) => {
-                if (k.req_id == req_id) {
+                if (k.id == id) {
                     action = v
                     _msgActionRegister.delete(k)
                 }
@@ -80,7 +81,7 @@ export class TDWebSocketClient {
                 action.resolve(data);
             }
             else {
-                throw new TDWebSocketClientError(`no callback registered for fetch_block with req_id=${req_id}`);
+                throw new TDWebSocketClientError(`no callback registered for fetch_block with id=${id}`);
             }
 
         }
@@ -125,7 +126,7 @@ export class TDWebSocketClient {
         let msg = JSON.parse(message);
         return new Promise((resolve, reject) => {
             if (register) {
-                this._registerCallback({ action: msg.action, req_id: msg.args.req_id }, resolve, reject)
+                this._registerCallback({ action: msg.action, req_id: msg.args.req_id , id:msg.args.id}, resolve, reject)
             }
             if (this._wsConn && this._wsConn.readyState > 0) {
                 this._wsConn.send(message)

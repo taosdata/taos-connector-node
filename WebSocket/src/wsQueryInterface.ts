@@ -16,7 +16,13 @@ export class WSInterface {
         this._wsQueryClient = new TDWebSocketClient(this._url);
     }
 
-    connect():Promise<WSConnResponse> {
+    connect(database?: string): Promise<WSConnResponse> {
+
+        let _db = this._url.pathname.split('/')[3];
+
+        if (database) {
+            _db = database;
+        }
 
         let connMsg = {
             action: 'conn',
@@ -24,7 +30,7 @@ export class WSInterface {
                 req_id: this._req_id,
                 user: this._url.username,
                 password: this._url.password,
-                db: this._url.pathname.split('/')[3],
+                db: _db,
             }
         }
         this._req_id++;
@@ -44,7 +50,7 @@ export class WSInterface {
     }
 
     // need to construct Response.
-    query(sql: string) :Promise<WSQueryResponse>{
+    query(sql: string): Promise<WSQueryResponse> {
         // construct msg
         let queryMsg = {
             action: 'query',
@@ -58,12 +64,7 @@ export class WSInterface {
             this._wsQueryClient.sendMsg(JSON.stringify(queryMsg))
                 .then((e: any) => {
                     if (e.code == 0) {
-                        if(e.is_update == true){
-
-                        }else{
-                            resolve(new WSQueryResponse(e))
-                        }
-
+                        resolve(new WSQueryResponse(e))
                     } else {
                         reject(new WebSocketInterfaceError(`${e.message},code ${e.code}`))
                     }
@@ -75,7 +76,7 @@ export class WSInterface {
         return this._wsQueryClient.readyState()
     }
 
-    fetch(res: WSQueryResponse):Promise<WSFetchResponse> {
+    fetch(res: WSQueryResponse): Promise<WSFetchResponse> {
 
         let fetchMsg = {
             action: 'fetch',
@@ -98,18 +99,17 @@ export class WSInterface {
         })
     }
 
-    fetchBlock(fetchResponse: WSFetchResponse, taosResult:TaosResult):Promise<TaosResult> {
-
+    fetchBlock(fetchResponse: WSFetchResponse, taosResult: TaosResult): Promise<TaosResult> {
         let fetchBlockMsg = {
             action: 'fetch_block',
             args: {
                 'req_id': fetchResponse.req_id,
-                'id': fetchResponse.id
+                'id': fetchResponse.id,
             }
         }
         return new Promise((resolve, reject) => {
             this._wsQueryClient.sendMsg(JSON.stringify(fetchBlockMsg)).then((e: any) => {
-                resolve(parseBlock(fetchResponse,new WSFetchBlockResponse(e),taosResult))
+                resolve(parseBlock(fetchResponse, new WSFetchBlockResponse(e), taosResult))
             }).catch(e => reject(e))
         })
     }
@@ -125,13 +125,13 @@ export class WSInterface {
         this._req_id++
 
         return new Promise((resolve, reject) => {
-            this._wsQueryClient.sendMsg(JSON.stringify(freeResultMsg),false).then((e: any) => {
+            this._wsQueryClient.sendMsg(JSON.stringify(freeResultMsg), false).then((e: any) => {
                 resolve(e)
             }).catch(e => reject(e))
         })
     }
 
-    version():Promise<string> {
+    version(): Promise<string> {
         let versionMsg = {
             action: 'version',
             args: {
@@ -144,11 +144,11 @@ export class WSInterface {
                 .then((ws: TDWebSocketClient) => {
                     return ws.sendMsg(JSON.stringify(versionMsg))
                 }).then((e: any) => {
-                    if(e.code == 0){
+                    if (e.code == 0) {
                         resolve(new WSVersionResponse(e).version)
-                    }else{
+                    } else {
                         reject(new WSVersionResponse(e).message)
-                    }                    
+                    }
                 }).catch(e => reject(e));
         })
     }

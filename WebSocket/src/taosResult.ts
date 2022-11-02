@@ -4,15 +4,15 @@ import { TaosResultError, WebSocketQueryInterFaceError } from "./wsError";
 import { AppendRun } from "./ut8Helper"
 
 export class TaosResult {
-    meta: Array<ResponseMeta> | undefined
+    meta: Array<ResponseMeta> | null;
     data: Array<Array<any>> | null;
     precision: number = 0;
     affectRows: number = 0;
     timing: bigint;
     constructor(queryResponse: WSQueryResponse) {
         if (queryResponse.is_update == true) {
-            this.meta = undefined;
-            this.data = null;
+            this.meta = null
+            this.data = null
         } else {
             if (queryResponse.fields_count && queryResponse.fields_names && queryResponse.fields_types && queryResponse.fields_lengths) {
                 let _meta = [];
@@ -30,8 +30,9 @@ export class TaosResult {
             this.data = [];
         }
 
-        this.precision = queryResponse.precision;
-        this.timing = queryResponse.timing;
+        this.affectRows = queryResponse.affected_rows
+        this.timing = queryResponse.timing
+        this.precision = queryResponse.precision
     }
 
     setRows(fetchResponse: WSFetchResponse) {
@@ -50,28 +51,28 @@ export class TaosResult {
     /**
      * Mapping the WebSocket response type code to TDengine's type name. 
      */
-    getTDengineMeta():Array<TDengineMeta>|null{
-        if(this.meta){
+    getTDengineMeta(): Array<TDengineMeta> | null {
+        if (this.meta) {
             let _ = new Array<TDengineMeta>()
-            this.meta.forEach(m=>{
+            this.meta.forEach(m => {
                 _.push({
-                    name:m.name,
-                    type:TDengineTypeName[m.type],
-                    length:m.length
+                    name: m.name,
+                    type: TDengineTypeName[m.type],
+                    length: m.length
                 })
             })
             return _;
-        }else{
+        } else {
             return null;
         }
     }
 
 }
 
-interface TDengineMeta{
-    name:string,
-    type:string,
-    length:number,
+interface TDengineMeta {
+    name: string,
+    type: string,
+    length: number,
 }
 interface ResponseMeta {
     name: string,
@@ -86,9 +87,9 @@ export function parseBlock(fetchResponse: WSFetchResponse, blocks: WSFetchBlockR
 
         // console.log(typeof taosResult.timing)
         // console.log(typeof blocks.timing)
-        console.log(blocks.req_id)
-       
-        taosResult.timing = BigInt(taosResult.timing).valueOf()+ blocks.timing;
+        // console.log(blocks.id)
+
+        taosResult.timing = BigInt(taosResult.timing).valueOf() + blocks.timing;
 
         const INT_32_SIZE = 4;
 
@@ -180,6 +181,9 @@ function _isVarTye(meta: ResponseMeta): Number {
         case TDengineTypeCode['BINARY']: {
             return ColumnsBlockType['VARCHAR']
         }
+        case TDengineTypeCode['JSON']: {
+            return ColumnsBlockType['VARCHAR']
+        }
         default: {
             return ColumnsBlockType['SOLID']
         }
@@ -189,13 +193,13 @@ function _isVarTye(meta: ResponseMeta): Number {
 function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: ResponseMeta): Number | Boolean | BigInt {
 
     switch (meta.type) {
-        case TDengineTypeCode['BOOLEAN']: {
+        case TDengineTypeCode['BOOL']: {
             return (Boolean)(new DataView(dataBuffer, colDataHead, 1).getInt8(0))
         }
-        case TDengineTypeCode['TINY INT']: {
+        case TDengineTypeCode['TINYINT']: {
             return (new DataView(dataBuffer, colDataHead, 1).getInt8(0))
         }
-        case TDengineTypeCode['SMALL INT']: {
+        case TDengineTypeCode['SMALLINT']: {
             return (new DataView(dataBuffer, colDataHead, 2).getInt16(0, true))
         }
         case TDengineTypeCode['INT']: {
@@ -217,10 +221,10 @@ function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: Respo
             return (new DataView(dataBuffer, colDataHead, 8).getBigUint64(0, true))
         }
         case TDengineTypeCode['FLOAT']: {
-            return (new DataView(dataBuffer, colDataHead, 4).getFloat32(0, true))
+            return (parseFloat(new DataView(dataBuffer, colDataHead, 4).getFloat32(0, true).toFixed(5)) )
         }
         case TDengineTypeCode['DOUBLE']: {
-            return (new DataView(dataBuffer, colDataHead, 8).getFloat64(0, true))
+            return (parseFloat(new DataView(dataBuffer, colDataHead, 8).getFloat64(0, true).toFixed(15)))
         }
         case TDengineTypeCode['TIMESTAMP']: {
             return (new DataView(dataBuffer, colDataHead, 8).getBigInt64(0, true))

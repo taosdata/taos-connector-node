@@ -2,11 +2,35 @@
 
 ## Bulk Pulling
 
+User can connect to the TDengine by passing DSN to WebSocket client. The description about the DSN like before.
+
+```text
+[+<protocol>]://[[<username>:<password>@]<host>:<port>][/<database>][?<p1>=<v1>[&<p2>=<v2>]]
+|------------|---|-----------|-----------|------|------|------------|-----------------------|
+|   protocol |   | username  | password  | host | port |  database  |  params               |
+```
+
+各部分意义见下表：
+
+- **protocol**: 显示指定以何种方式建立连接，例如：`ws://localhost:6041` 指定以 Websocket 方式建立连接。
+- **username/password**: 用于创建连接的用户名及密码。
+- **host/port**: 指定创建连接的服务器及端口，当不指定服务器地址及端口时（`taos://`），Websocket 连接默认为 `localhost:6041` 。
+- **database**: 指定默认连接的数据库名，可选参数。
+- **params**：其他可选参数。
+
+一个完整的 DSN 描述字符串示例如下：
+
+```text
+ws://localhost:6041/test
+```
+
+表示使用 Websocket（`ws`）方式通过 `6041` 端口连接服务器 `localhost`，并指定默认数据库为 `test`。
+
 ``` typescript
 import {taoWS} from '@tdengine/websocket'
-let url = "ws://host:port/rest/ws"
+let dsn = "ws://host:port/rest/ws/db"
 // create an instance of taoWS, while the returned websocket connection of the returned instance 'ws' may is not in 'OPEN' status
-var ws = TDWebSocket(url)
+var ws = TDWebSocket(dsn)
 ```
 
 ``` typescript

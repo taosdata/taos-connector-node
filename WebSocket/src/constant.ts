@@ -8,11 +8,11 @@ interface StringIndexable {
 
 export const TDengineTypeName: IndexableString = {
     0: 'NULL',
-    1: 'BOOLEAN',
-    2: 'TINY INT',
-    3: 'SMALL INT',
+    1: 'BOOL',
+    2: 'TINYINT',
+    3: 'SMALLINT',
     4: 'INT',
-    5: 'BIG INT',
+    5: 'BIGINT',
     6: 'FLOAT',
     7: 'DOUBLE',
     8: 'VARCHAR',
@@ -34,9 +34,9 @@ export const ColumnsBlockType: StringIndexable = {
 
 export const TDengineTypeCode: StringIndexable = {
     'NULL': 0,
-    'BOOLEAN': 1,
-    'TINY INT': 2,
-    'SMALL INT': 3,
+    'BOOL': 1,
+    'TINYINT': 2,
+    'SMALLINT': 3,
     'INT': 4,
     'BIGINT': 5,
     'FLOAT': 6,
@@ -56,4 +56,19 @@ export const TDenginePrecision: IndexableString = {
     0: 'MILLISECOND',
     1: "MICROSECOND",
     2: "NANOSECOND",
+}
+
+export const TDengineTypeLength: StringIndexable = {
+    'BOOL': 1,
+    'TINYINT': 1,
+    'SMALLINT': 2,
+    'INT': 4,
+    'BIGINT': 8,
+    'FLOAT': 4,
+    'DOUBLE': 8,
+    'TIMESTAMP': 8,
+    'TINYINT UNSIGNED': 1,
+    'SMALLINT UNSIGNED': 2,
+    'INT UNSIGNED': 4,
+    'BIGINT UNSIGNED': 8,
 }

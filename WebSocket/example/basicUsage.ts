@@ -24,6 +24,7 @@ const errorSql = 'show database';
 // .then((e) =>{console.log(e);ws.close()} );
 
 ws.connect()
+    .then(res=>console.log(res))
     .then(() => ws.query(createDB))
     .then(res => { console.log(res) })
     .then(() => ws.query(useDB))

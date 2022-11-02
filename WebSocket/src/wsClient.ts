@@ -51,14 +51,16 @@ export class TDWebSocketClient {
     Ready(): Promise<TDWebSocketClient> {
         return new Promise((resolve, reject) => {
             this._wsConn.onopen = () => {
-                console.log("websocket connection opened")
+                // console.log("websocket connection opened")
                 resolve(this);
             }
         })
     }
 
     private _onclose(e: ICloseEvent) {
-        console.log("websocket connection closed")
+        return new Promise((resolve,reject)=>{
+            resolve("websocket connection closed")
+        })
     }
 
     private _onmessage(event: IMessageEvent) {
@@ -67,7 +69,7 @@ export class TDWebSocketClient {
             console.log("unexpected response type :" + typeof data)
         } else if (data instanceof ArrayBuffer) {
             let id = new DataView(data, 8, 8).getBigUint64(0, true)
-            console.log("fetch block response id:" + id)
+            // console.log("fetch block response id:" + id)
 
             let action: MessageAction | any = undefined;
 
@@ -87,7 +89,7 @@ export class TDWebSocketClient {
         }
         else {
             let msg = JSON.parse(data)
-            console.log("onMessage:" + JSON.stringify(msg));
+            // console.log("onMessage:" + JSON.stringify(msg));
             let action: MessageAction | any = undefined;
 
             _msgActionRegister.forEach((v: MessageAction, k: MessageId) => {
@@ -137,7 +139,7 @@ export class TDWebSocketClient {
     }
 
     private _registerCallback(id: MessageId, res: (args: unknown) => void, rej: (reason: any) => void) {
-        console.log(id)
+        // console.log("register messageId:"+ JSON.stringify(id))
         _msgActionRegister.set(id,
             {
                 reject: rej,

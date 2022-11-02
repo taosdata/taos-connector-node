@@ -25,7 +25,7 @@ export class WSQueryResponse {
     action: string;
     req_id: number;
     timing: bigint;
-    id: number;
+    id: bigint;
     is_update: boolean;
     affected_rows: number;
     fields_count: number | null;
@@ -57,7 +57,7 @@ export class WSFetchResponse {
     action: string;
     req_id: number;
     timing: bigint;
-    id: number;
+    id: bigint;
     completed: boolean;
     length: Array<number>;
     rows: number;
@@ -77,12 +77,12 @@ export class WSFetchResponse {
 
 export class WSFetchBlockResponse {
 
-    req_id: bigint
+    id: bigint
     data: ArrayBuffer
     timing: bigint
     constructor(msg: ArrayBuffer) {
         this.timing = new DataView(msg, 0, 8).getBigUint64(0, true)
-        this.req_id = new DataView(msg, 8, 8).getBigUint64(0, true)
+        this.id = new DataView(msg, 8, 8).getBigUint64(0, true)
         this.data = msg.slice(16)
     }
 }

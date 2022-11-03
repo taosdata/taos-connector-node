@@ -41,6 +41,7 @@ export class TDWebSocketClient {
             this._wsConn.onclose = this._onclose
 
             this._wsConn.onmessage = this._onmessage
+            this._wsConn._binaryType = "arraybuffer"
         } else {
             throw new WebSocketQueryError("websocket URL must be defined")
         }
@@ -65,6 +66,7 @@ export class TDWebSocketClient {
 
     private _onmessage(event: IMessageEvent) {
         let data = event.data;
+        console.log("===="+ (Object.prototype.toString.call(data)))
         if ((data instanceof Buffer)) {
             console.log("unexpected response type :" + typeof data)
         } else if (data instanceof ArrayBuffer) {

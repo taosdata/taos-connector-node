@@ -1,7 +1,7 @@
 import {TDengineWebSocket} from './src/tdengineWebsocket'
 
-let TDWebSocket = (url:string)=>{
+let connect = (url:string)=>{
     return new TDengineWebSocket(url)
 }
 
-export{TDWebSocket}
+export{connect}

@@ -12,11 +12,11 @@ User can connect to the TDengine by passing DSN to WebSocket client. The descrip
 |   protocol |   | username  | password  | host | port |  database  |  params               |
 ```
 
-- **protocol**: Display using websocket protocol to establish connection. eg.`ws://localhost:6041`
+- **protocol**: Display using websocket protocol to establish connection. eg. `ws://localhost:6041`
 - **username/password**: Database's username and password.
-- **host/port**: Declare host and port. eg.`localhost:6041`
+- **host/port**: Declare host and port. eg. `localhost:6041`
 - **database**: Optional, use to specify database name.
-- **params**: Other parameters.Like cloud Token.
+- **params**: Other parameters. Like cloud Token.
 
 A complete DSN string example：
 
@@ -27,10 +27,10 @@ ws://localhost:6041/test
 ### Basic Usage
 
 ``` typescript
-import {taoWS} from '@tdengine/websocket'
+import {connect} from '@tdengine/websocket'
 let dsn = "ws://host:port/rest/ws/db"
 // create an instance of taoWS, while the returned websocket connection of the returned instance 'ws' may is not in 'OPEN' status
-var ws = TDWebSocket(dsn)
+var ws = connect(dsn)
 ```
 
 ``` typescript

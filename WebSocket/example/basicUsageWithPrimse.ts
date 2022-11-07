@@ -1,9 +1,6 @@
-import { TDWebSocket } from "../index";
+import { connect } from "../index";
 
-// let ws = TDWebSocket("ws://root:taosdata@182.92.127.131:6041/rest/ws")
-let ws = TDWebSocket("ws://root:taosdata@127.0.0.1:6041/rest/ws")
-
-
+let ws = connect("ws://root:taosdata@127.0.0.1:6041/rest/ws")
 
 const db = 'test';
 const table = 'ws'
@@ -20,8 +17,8 @@ const querySql = `select * from ${db}.${table}`;
 const errorSql = 'show database';
 
 
-// ws.version()
-// .then((e) =>{console.log(e);ws.close()} );
+ws.version()
+.then((e) =>{console.log(e);ws.close()} );
 
 ws.connect()
     .then(res=>console.log(res))

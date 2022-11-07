@@ -108,6 +108,8 @@ export class WSInterface {
         return new Promise((resolve, reject) => {
             this._wsQueryClient.sendMsg(JSON.stringify(fetchBlockMsg)).then((e: any) => {
                 resolve(parseBlock(fetchResponse, new WSFetchBlockResponse(e), taosResult))
+                // if retrieve JSON then reject with message
+                // else is binary , so parse raw block to TaosResult
             }).catch(e => reject(e))
         })
     }
@@ -156,7 +158,7 @@ export class WSInterface {
 
     checkURL(url: URL) {
         // Assert is cloud url
-        if (!url.search.includes('?token=')) {
+        if (!!url.searchParams.has('token')) {
             if (!(url.username || url.password)) {
                 throw new WebSocketInterfaceError("invalid url, password or username needed.")
             }

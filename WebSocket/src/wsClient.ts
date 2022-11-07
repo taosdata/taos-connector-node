@@ -66,7 +66,7 @@ export class TDWebSocketClient {
 
     private _onmessage(event: IMessageEvent) {
         let data = event.data;
-        console.log("===="+ (Object.prototype.toString.call(data)))
+        // console.log("===="+ (Object.prototype.toString.call(data)))
         if ((data instanceof Buffer)) {
             console.log("unexpected response type :" + typeof data)
         } else if (data instanceof ArrayBuffer) {

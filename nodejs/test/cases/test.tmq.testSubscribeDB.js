@@ -86,7 +86,7 @@ afterAll(() => {
 });
 
 
-describe("tmq_subscribe_db", () => {
+describe.skip("tmq_subscribe_db", () => {
     test('name:tmq subscribe topic of database;' +
         `author:${author};` +
         `desc:TMQ subscribe single topic for a DB using one consumer;` +

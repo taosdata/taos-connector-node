@@ -85,7 +85,7 @@ afterAll(() => {
     conn.close();
 });
 
-describe("tmq_subscribe_tables", () => {
+describe.skip("tmq_subscribe_tables", () => {
     test('name:tmq subscribe single topic;' +
         `author:${author};` +
         `desc:TMQ subscribe single topic using one consumer;` +

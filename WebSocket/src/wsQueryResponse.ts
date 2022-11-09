@@ -39,8 +39,8 @@ export class WSQueryResponse {
         this.message = msg.message;
         this.action = msg.action;
         this.req_id = msg.req_id;
-        this.timing = msg.timing;
-        this.id = msg.id;
+        this.timing = BigInt(msg.timing);
+        this.id = BigInt(msg.id);
         this.is_update = msg.is_update;
         this.affected_rows = msg.affected_rows;
         this.fields_count = msg.fields_count;
@@ -67,8 +67,8 @@ export class WSFetchResponse {
         this.message = msg.message;
         this.action = msg.action;
         this.req_id = msg.req_id;
-        this.timing = msg.timing;
-        this.id = msg.id;
+        this.timing = BigInt(msg.timing);
+        this.id = BigInt(msg.id);
         this.completed = msg.completed;
         this.length = msg.length;
         this.rows = msg.rows;
@@ -85,10 +85,6 @@ export class WSFetchBlockResponse {
         this.id = new DataView(msg, 8, 8).getBigUint64(0, true)
         this.data = msg.slice(16)
     }
-}
-
-export class TDResponse {
-
 }
 
 interface IWSConnResponse {
@@ -111,6 +107,6 @@ export class WSConnResponse {
         this.message = msg.message;
         this.action = msg.action;
         this.req_id = msg.req_id;
-        this.timing = msg.timing;
+        this.timing = BigInt(msg.timing);
     }
 }

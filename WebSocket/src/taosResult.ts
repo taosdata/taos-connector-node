@@ -8,6 +8,7 @@ export class TaosResult {
     data: Array<Array<any>> | null;
     precision: number = 0;
     affectRows: number = 0;
+    /** unit nano seconds */
     timing: bigint;
     constructor(queryResponse: WSQueryResponse) {
         if (queryResponse.is_update == true) {
@@ -33,10 +34,12 @@ export class TaosResult {
         this.affectRows = queryResponse.affected_rows
         this.timing = queryResponse.timing
         this.precision = queryResponse.precision
+        // console.log(`typeof this.timing:${typeof this.timing}, typeof fetchResponse.timing:${typeof queryResponse.timing}`)
     }
 
     setRows(fetchResponse: WSFetchResponse) {
         this.affectRows += fetchResponse.rows;
+        // console.log(`typeof this.timing:${typeof this.timing}, typeof fetchResponse.timing:${typeof fetchResponse.timing}`)
         this.timing = this.timing + fetchResponse.timing
     }
 
@@ -89,7 +92,7 @@ export function parseBlock(fetchResponse: WSFetchResponse, blocks: WSFetchBlockR
         // console.log(typeof blocks.timing)
         // console.log(blocks.id)
 
-        taosResult.timing = BigInt(taosResult.timing).valueOf() + blocks.timing
+        taosResult.timing = BigInt(taosResult.timing) + blocks.timing
 
         const INT_32_SIZE = 4;
 

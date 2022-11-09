@@ -1,5 +1,3 @@
-
-import { Blob } from "buffer";
 import { ICloseEvent, IMessageEvent, w3cwebsocket } from "websocket";
 import { TDWebSocketClientError, WebSocketQueryError } from './wsError'
 
@@ -67,7 +65,11 @@ export class TDWebSocketClient {
 
     private _onmessage(event: any) {
         let data = event.data;
+        // console.log("[wsClient._onMessage()._msgActionRegister]\n")
+        // console.log(_msgActionRegister)
+
         // console.log("===="+ (Object.prototype.toString.call(data)))
+
         if (Object.prototype.toString.call(data) === '[object ArrayBuffer]') {
             let id = new DataView(data, 8, 8).getBigUint64(0, true)
             // console.log("fetch block response id:" + id)
@@ -112,7 +114,7 @@ export class TDWebSocketClient {
 
         } else if (Object.prototype.toString.call(data) === '[object String]') {
             let msg = JSON.parse(data)
-            // console.log("onMessage:" + JSON.stringify(msg));
+            // console.log("[_onmessage.stringType]==>:" + data);
             let action: MessageAction | any = undefined;
 
             _msgActionRegister.forEach((v: MessageAction, k: MessageId) => {
@@ -152,12 +154,23 @@ export class TDWebSocketClient {
     }
 
     sendMsg(message: string, register: Boolean = true) {
+        // console.log("[wsClient.sendMessage()]===>" + message)
         let msg = JSON.parse(message);
+        // console.log(typeof msg.args.id)
+        if (msg.args.id) {
+            msg.args.id = BigInt(msg.args.id)
+        }
+        // console.log("[wsClient.sendMessage.msg]===>\n")
+        // console.log(msg)
+
         return new Promise((resolve, reject) => {
-            if (register) {
-                this._registerCallback({ action: msg.action, req_id: msg.args.req_id, id: msg.args.id }, resolve, reject)
-            }
             if (this._wsConn && this._wsConn.readyState > 0) {
+                if (register) {
+
+                    this._registerCallback({ action: msg.action, req_id: msg.args.req_id, id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id) }, resolve, reject)
+                    // console.log("[wsClient.sendMessage._msgActionRegister]===>\n")
+                    // console.log(_msgActionRegister)
+                }
                 this._wsConn.send(message)
             } else {
                 reject(new WebSocketQueryError(`WebSocket connection is not ready,status :${this._wsConn?.readyState}`))

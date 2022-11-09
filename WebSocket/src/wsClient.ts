@@ -1,5 +1,3 @@
-
-import { Console } from "console";
 import { ICloseEvent, IMessageEvent, w3cwebsocket } from "websocket";
 import { TDWebSocketClientError, WebSocketQueryError } from './wsError'
 
@@ -16,7 +14,6 @@ interface MessageAction {
 }
 
 var _msgActionRegister: Map<MessageId, MessageAction> = new Map();
-
 
 export class TDWebSocketClient {
     private _wsConn: w3cwebsocket;
@@ -65,13 +62,14 @@ export class TDWebSocketClient {
         })
     }
 
-    private _onmessage(event: IMessageEvent) {
+
+    private _onmessage(event: any) {
         let data = event.data;
         console.log("[wsClient._onMessage()._msgActionRegister]\n")
         console.log(_msgActionRegister)
-        if ((data instanceof Buffer)) {
-            console.log("unexpected response type :" + typeof data)
-        } else if (data instanceof ArrayBuffer) {
+
+        // console.log("===="+ (Object.prototype.toString.call(data)))
+        if (Object.prototype.toString.call(data) === '[object ArrayBuffer]') {
             let id = new DataView(data, 8, 8).getBigUint64(0, true)
             // console.log("fetch block response id:" + id)
 
@@ -87,11 +85,33 @@ export class TDWebSocketClient {
                 action.resolve(data);
             }
             else {
+                _msgActionRegister.clear()
                 throw new TDWebSocketClientError(`no callback registered for fetch_block with id=${id}`);
             }
 
-        }
-        else {
+        } else if (Object.prototype.toString.call(data) === '[object Blob]') {
+            data.arrayBuffer().then((d: ArrayBuffer) => {
+                let id = new DataView(d, 8, 8).getBigUint64(0, true)
+                // console.log("fetch block response id:" + id)
+
+                let action: MessageAction | any = undefined;
+
+                _msgActionRegister.forEach((v: MessageAction, k: MessageId) => {
+                    if (k.id == id) {
+                        action = v
+                        _msgActionRegister.delete(k)
+                    }
+                })
+                if (action) {
+                    action.resolve(data);
+                }
+                else {
+                    _msgActionRegister.clear()
+                    throw new TDWebSocketClientError(`no callback registered for fetch_block with id=${id}`);
+                }
+            })
+
+        } else if (Object.prototype.toString.call(data) === '[object String]') {
             let msg = JSON.parse(data)
             console.log("[_onmessage.stringType]==>:" + data);
             let action: MessageAction | any = undefined;
@@ -110,8 +130,12 @@ export class TDWebSocketClient {
                 action.resolve(msg);
             }
             else {
+                _msgActionRegister.clear()
                 throw new TDWebSocketClientError(`no callback registered for ${msg.action} with req_id=${msg.req_id}`);
             }
+        } else {
+            _msgActionRegister.clear()
+            throw new TDWebSocketClientError(`invalid message type ${Object.prototype.toString.call(data)}`)
         }
     }
 
@@ -132,21 +156,21 @@ export class TDWebSocketClient {
         console.log("[wsClient.sendMessage()]===>" + message)
         let msg = JSON.parse(message);
         console.log(typeof msg.args.id)
-        if(msg.args.id){
+        if (msg.args.id) {
             msg.args.id = BigInt(msg.args.id)
         }
-        console.log("[wsClient.sendMessage.msg]===>\n" )
+        console.log("[wsClient.sendMessage.msg]===>\n")
         console.log(msg)
 
         return new Promise((resolve, reject) => {
             if (this._wsConn && this._wsConn.readyState > 0) {
                 if (register) {
-                   
+
                     this._registerCallback({ action: msg.action, req_id: msg.args.req_id, id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id) }, resolve, reject)
                     console.log("[wsClient.sendMessage._msgActionRegister]===>\n")
                     console.log(_msgActionRegister)
                 }
-                    this._wsConn.send(message)
+                this._wsConn.send(message)
             } else {
                 reject(new WebSocketQueryError(`WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
             }

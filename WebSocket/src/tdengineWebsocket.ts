@@ -15,7 +15,7 @@ export class TDengineWebSocket {
     }
 
     connect(database?:string):Promise<WSConnResponse> {
-        return this._wsInterface.connect(database);
+        return this._wsInterface.connect(database)
     }
 
     state(){

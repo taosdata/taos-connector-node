@@ -34,12 +34,12 @@ export class TaosResult {
         this.affectRows = queryResponse.affected_rows
         this.timing = queryResponse.timing
         this.precision = queryResponse.precision
-        console.log(`typeof this.timing:${typeof this.timing}, typeof fetchResponse.timing:${typeof queryResponse.timing}`)
+        // console.log(`typeof this.timing:${typeof this.timing}, typeof fetchResponse.timing:${typeof queryResponse.timing}`)
     }
 
     setRows(fetchResponse: WSFetchResponse) {
         this.affectRows += fetchResponse.rows;
-        console.log(`typeof this.timing:${typeof this.timing}, typeof fetchResponse.timing:${typeof fetchResponse.timing}`)
+        // console.log(`typeof this.timing:${typeof this.timing}, typeof fetchResponse.timing:${typeof fetchResponse.timing}`)
         this.timing = this.timing + fetchResponse.timing
     }
 

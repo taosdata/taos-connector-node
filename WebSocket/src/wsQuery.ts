@@ -10,8 +10,8 @@ export async function execute(sql: string, wsInterface: WSInterface): Promise<Ta
         } else {
             while (true) {
                 let wsFetchResponse = await wsInterface.fetch(wsQueryResponse)
-                console.log("[wsQuery.execute.wsFetchResponse]==>\n")
-                console.log(wsFetchResponse)
+                // console.log("[wsQuery.execute.wsFetchResponse]==>\n")
+                // console.log(wsFetchResponse)
                 // console.log(typeof BigInt(8))
                 // console.log(typeof wsFetchResponse.timing)
                 if (wsFetchResponse.completed == true) {

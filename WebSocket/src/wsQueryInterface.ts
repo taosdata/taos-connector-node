@@ -32,23 +32,36 @@ export class WSInterface {
                 db: _db,
             }
         }
+        // console.log(connMsg)
         return new Promise((resolve, reject) => {
-            this._wsQueryClient.Ready()
-                .then((ws: TDWebSocketClient) => {
-                    return ws.sendMsg(JSON.stringify(connMsg))
-                })
-                .then((e: any) => {
-                    if (e.code == 0) {
-                        resolve(e);
-                    } else {
-                        reject(new WebSocketQueryError(`${e.message}, code ${e.code}`))
-                    }
-                })
+            if (this._wsQueryClient.readyState() > 0) {
+                this._wsQueryClient.sendMsg(JSON.stringify(connMsg))
+                    .then((e: any) => {
+                        if (e.code == 0) {
+                            resolve(e);
+                        } else {
+                            reject(new WebSocketQueryError(`${e.message}, code ${e.code}`))
+                        }
+                    })
+            } else {
+                this._wsQueryClient.Ready()
+                    .then((ws: TDWebSocketClient) => {
+                        return ws.sendMsg(JSON.stringify(connMsg))
+                    })
+                    .then((e: any) => {
+                        if (e.code == 0) {
+                            resolve(e);
+                        } else {
+                            reject(new WebSocketQueryError(`${e.message}, code ${e.code}`))
+                        }
+                    })
+            }
+
         })
     }
 
     // need to construct Response.
-    query(sql: string): Promise<WSQueryResponse> { 
+    query(sql: string): Promise<WSQueryResponse> {
         this._reqIDIncrement()
         // construct msg
         let queryMsg = {
@@ -60,7 +73,7 @@ export class WSInterface {
         }
         return new Promise((resolve, reject) => {
             let jsonStr = JSON.stringify(queryMsg)
-            console.log("[wsQueryInterface.query.queryMsg]===>" + jsonStr)
+            // console.log("[wsQueryInterface.query.queryMsg]===>" + jsonStr)
             this._wsQueryClient.sendMsg(jsonStr)
                 .then((e: any) => {
                     if (e.code == 0) {
@@ -85,11 +98,11 @@ export class WSInterface {
                 id: res.id
             }
         }
-        console.log("[wsQueryInterface.fetch()]===>wsQueryResponse\n")
-        console.log(res)
+        // console.log("[wsQueryInterface.fetch()]===>wsQueryResponse\n")
+        // console.log(res)
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(fetchMsg)
-            console.log("[wsQueryInterface.fetch.fetchMsg]===>" + jsonStr)
+            // console.log("[wsQueryInterface.fetch.fetchMsg]===>" + jsonStr)
             this._wsQueryClient.sendMsg(jsonStr)
                 .then((e: any) => {
                     if (e.code == 0) {
@@ -114,7 +127,7 @@ export class WSInterface {
         }
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(fetchBlockMsg)
-            console.log("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
+            // console.log("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
             this._wsQueryClient.sendMsg(jsonStr).then((e: any) => {
                 resolve(parseBlock(fetchResponse, new WSFetchBlockResponse(e), taosResult))
                 // if retrieve JSON then reject with message
@@ -134,7 +147,7 @@ export class WSInterface {
         }
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(freeResultMsg)
-            console.log("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
+            // console.log("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
             this._wsQueryClient.sendMsg(jsonStr, false).then((e: any) => {
                 resolve(e)
             }).catch(e => reject(e))
@@ -150,10 +163,22 @@ export class WSInterface {
             }
         }
         return new Promise((resolve, reject) => {
+            if (this._wsQueryClient.readyState() > 0) {
+                this._wsQueryClient.sendMsg(JSONBig.stringify(versionMsg))
+                    .then((e: any) => {
+                        // console.log(e)
+                        if (e.code == 0) {
+                            resolve(new WSVersionResponse(e).version)
+                        } else {
+                            reject(new WSVersionResponse(e).message)
+                        }
+                    }).catch(e => reject(e));
+            }
             this._wsQueryClient.Ready()
                 .then((ws: TDWebSocketClient) => {
                     return ws.sendMsg(JSONBig.stringify(versionMsg))
                 }).then((e: any) => {
+                    // console.log(e)
                     if (e.code == 0) {
                         resolve(new WSVersionResponse(e).version)
                     } else {

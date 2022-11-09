@@ -17,8 +17,8 @@ const querySql = `select * from ${db}.${table}`;
 const errorSql = 'show database';
 
 
-ws.version()
-.then((e) =>{console.log(e);ws.close()} );
+// ws.version()
+// .then((e) =>{console.log(e);ws.close()} );
 
 ws.connect()
     .then(res=>console.log(res))
@@ -42,4 +42,5 @@ ws.connect()
     .then(res=>console.log(res))
     .then(() => ws.close())
     .catch(e => { console.log(e); ws.close() })
+
 

@@ -2,7 +2,7 @@ import { parseBlock, TaosResult } from './taosResult';
 import { TDWebSocketClient } from './wsClient'
 import { WebSocketInterfaceError, WebSocketQueryError } from './wsError'
 import { WSVersionResponse, WSFetchBlockResponse, WSQueryResponse, WSFetchResponse, WSConnResponse } from './wsQueryResponse'
-
+import JSONBig from 'json-bigint'
 
 export class WSInterface {
     private _wsQueryClient: TDWebSocketClient;
@@ -48,7 +48,7 @@ export class WSInterface {
     }
 
     // need to construct Response.
-    query(sql: string): Promise<WSQueryResponse> {
+    query(sql: string): Promise<WSQueryResponse> { 
         this._reqIDIncrement()
         // construct msg
         let queryMsg = {
@@ -59,7 +59,9 @@ export class WSInterface {
             },
         }
         return new Promise((resolve, reject) => {
-            this._wsQueryClient.sendMsg(JSON.stringify(queryMsg))
+            let jsonStr = JSON.stringify(queryMsg)
+            console.log("[wsQueryInterface.query.queryMsg]===>" + jsonStr)
+            this._wsQueryClient.sendMsg(jsonStr)
                 .then((e: any) => {
                     if (e.code == 0) {
                         resolve(new WSQueryResponse(e))
@@ -83,16 +85,21 @@ export class WSInterface {
                 id: res.id
             }
         }
+        console.log("[wsQueryInterface.fetch()]===>wsQueryResponse\n")
+        console.log(res)
         return new Promise((resolve, reject) => {
-            this._wsQueryClient.sendMsg(JSON.stringify(fetchMsg)).then((e: any) => {
-                if (e.code == 0) {
-                    resolve(new WSFetchResponse(e))
-                } else {
-                    reject(new WebSocketInterfaceError(`${e.message},code ${e.code}`))
-                }
-            }).catch(e => {
-                reject(e)
-            });
+            let jsonStr = JSONBig.stringify(fetchMsg)
+            console.log("[wsQueryInterface.fetch.fetchMsg]===>" + jsonStr)
+            this._wsQueryClient.sendMsg(jsonStr)
+                .then((e: any) => {
+                    if (e.code == 0) {
+                        resolve(new WSFetchResponse(e))
+                    } else {
+                        reject(new WebSocketInterfaceError(`${e.message},code ${e.code}`))
+                    }
+                }).catch(e => {
+                    reject(e)
+                });
         })
     }
 
@@ -106,7 +113,9 @@ export class WSInterface {
             }
         }
         return new Promise((resolve, reject) => {
-            this._wsQueryClient.sendMsg(JSON.stringify(fetchBlockMsg)).then((e: any) => {
+            let jsonStr = JSONBig.stringify(fetchBlockMsg)
+            console.log("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
+            this._wsQueryClient.sendMsg(jsonStr).then((e: any) => {
                 resolve(parseBlock(fetchResponse, new WSFetchBlockResponse(e), taosResult))
                 // if retrieve JSON then reject with message
                 // else is binary , so parse raw block to TaosResult
@@ -124,7 +133,9 @@ export class WSInterface {
             }
         }
         return new Promise((resolve, reject) => {
-            this._wsQueryClient.sendMsg(JSON.stringify(freeResultMsg), false).then((e: any) => {
+            let jsonStr = JSONBig.stringify(freeResultMsg)
+            console.log("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
+            this._wsQueryClient.sendMsg(jsonStr, false).then((e: any) => {
                 resolve(e)
             }).catch(e => reject(e))
         })
@@ -141,7 +152,7 @@ export class WSInterface {
         return new Promise((resolve, reject) => {
             this._wsQueryClient.Ready()
                 .then((ws: TDWebSocketClient) => {
-                    return ws.sendMsg(JSON.stringify(versionMsg))
+                    return ws.sendMsg(JSONBig.stringify(versionMsg))
                 }).then((e: any) => {
                     if (e.code == 0) {
                         resolve(new WSVersionResponse(e).version)
@@ -158,17 +169,17 @@ export class WSInterface {
 
     checkURL(url: URL) {
         // Assert is cloud url
-        if (!!url.searchParams.has('token')) {
+        if (!url.searchParams.has('token')) {
             if (!(url.username || url.password)) {
                 throw new WebSocketInterfaceError("invalid url, password or username needed.")
             }
         }
     }
 
-    private _reqIDIncrement(){
-        if(this._req_id == Number.MAX_SAFE_INTEGER){
-            this._req_id = 0; 
-        }else{
+    private _reqIDIncrement() {
+        if (this._req_id == Number.MAX_SAFE_INTEGER) {
+            this._req_id = 0;
+        } else {
             this._req_id += 1;
         }
     }

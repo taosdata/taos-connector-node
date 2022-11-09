@@ -1,9 +1,9 @@
-import { TDWebSocket } from "../../index"
+import { connect } from "../../index"
 // const TDWebSocket = require("../../dist/main/index.js") 
 import { createSTable, createSTableJSON, createTable, expectStableData, insertNTable, insertStable, jsonMeta, tableMeta, tagMeta } from "../utils";
 const DSN = 'ws://root:taosdata@127.0.0.1:6041/rest/ws'
 // const DSN = 'ws://root:taosdata@182.92.127.131:6041/rest/ws'
-var ws = TDWebSocket(DSN)
+var ws = connect(DSN)
 const table = 'ws_q_n';
 const stable = 'ws_q_s';
 const tableCN = 'ws_q_n_cn';

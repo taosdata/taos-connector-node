@@ -104,7 +104,7 @@ export class TDWebSocketClient {
                     }
                 })
                 if (action) {
-                    action.resolve(data);
+                    action.resolve(d);
                 }
                 else {
                     _msgActionRegister.clear()

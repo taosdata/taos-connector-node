@@ -44,8 +44,8 @@ function convertTimestamp(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precisi
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readInt64LE();
       res.push(new TaosObjects.TaosTimestamp(data, precision));
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -70,8 +70,8 @@ function convertBool(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readInt8();
       res.push(data == 1 ? true : false);
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -96,8 +96,8 @@ function convertTinyint(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readInt8();
       res.push(data);
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -122,8 +122,8 @@ function convertTinyintUnsigned(colHeadPtr, numOfRows, nBytes = 0, offset = 0, p
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readUInt8();
       res.push(data);
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -148,8 +148,8 @@ function convertSmallint(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precisio
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readInt16LE();
       res.push(data);
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -173,8 +173,8 @@ function convertSmallintUnsigned(colHeadPtr, numOfRows, nBytes = 0, offset = 0, 
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readUInt16LE();
       res.push(data);
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -199,8 +199,8 @@ function convertInt(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readInt32LE();
       res.push(data);
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -225,8 +225,8 @@ function convertIntUnsigned(colHeadPtr, numOfRows, nBytes = 0, offset = 0, preci
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readUInt32LE();
       res.push(data);
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -251,8 +251,8 @@ function convertBigint(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision 
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readInt64LE();
       res.push(BigInt(data));
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -277,8 +277,8 @@ function convertBigintUnsigned(colHeadPtr, numOfRows, nBytes = 0, offset = 0, pr
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readUInt64LE();
       res.push(BigInt(data));
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -303,8 +303,8 @@ function convertFloat(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision =
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readFloatLE().toFixed(5);
       res.push(parseFloat(data));
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -327,9 +327,11 @@ function convertDouble(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision 
     } else {
       let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
       let data = colDataBuf.readDoubleLE().toFixed(16);
+      // console.log("convertDouble buff:",JSON.stringify(colDataBuf))
+      // console.log("convertDouble data:",data,i)
       res.push(parseFloat(data));
-      offset = offset + nBytes;
     }
+    offset = offset + nBytes;
   }
   return res;
 }
@@ -545,7 +547,7 @@ CTaosInterface.prototype.fetchRawBlock = function fetchRawBlock(taosRes) {
   var pDataPtr = ref.alloc('void **');
 
   let code = libtaos.taos_fetch_raw_block(taosRes, numOfRowPtr, pDataPtr);
-
+   
   if (code == 0) {
     let numOfRows = numOfRowPtr.readInt32LE();
     let pData = ref.deref(pDataPtr);
@@ -559,6 +561,20 @@ CTaosInterface.prototype.fetchRawBlock = function fetchRawBlock(taosRes) {
 
     let blocks = new Array(numOfFields);
     blocks.fill(null);
+
+    // print block raw
+    // let blockLength = ref.reinterpret(pData, ref.sizeof.int,4).readInt32LE();
+    // console.log(blockLength)
+    // let content_str=''
+    // for(let i = 0; i<blockLength;i++){
+    //    let byteContent = ref.reinterpret(pData,ref.sizeof.byte,i).readUInt8()
+    //    content_str += byteContent +"\t"
+    //    if((i+1)%4 == 0){
+    //     content_str +="\n"
+    //    }
+    // }
+    // console.log(content_str)
+
 
     // offset pData
     let offsetBeforeLengthArr = (4 * 5) + 8 + (4 + 1) * numOfFields;

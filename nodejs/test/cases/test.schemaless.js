@@ -74,7 +74,7 @@ describe("test schemaless", () => {
         c1.schemalessInsert(lineStr, taos.SCHEMALESS_PROTOCOL.TSDB_SML_LINE_PROTOCOL, taos.SCHEMALESS_PRECISION.TSDB_SML_TIMESTAMP_MICRO_SECONDS);
         let result = executeQuery(`select * from ${stablename};`);
         let actualResData = result.resData;
-        console.log(expectResData)
+        // console.log(expectResData)
 
         //assert result data length 
         expect(expectResData.length).toEqual(actualResData.length);
@@ -87,7 +87,7 @@ describe("test schemaless", () => {
   
       })
   
-    test.skip(`name:sml line protocal using Array;` +
+    test(`name:sml line protocal using Array;` +
       `author:${author};` +
       `desc:using line protocal to schemaless insert with an Array;` +
       `filename:${fileName};` +
@@ -120,10 +120,10 @@ describe("test schemaless", () => {
   
         //assert result data length 
         expect(expectResData.length).toEqual(actualResData.length);
-        console.log(lineStr);
+        // console.log(lineStr);
         //assert result data
         expectResData.forEach((item, index) => {
-          console.log(`sml line protocal using Array:acutualResData[${index}]:${actualResData[index]} expectData:${item}`);
+          // console.log(`sml line protocal using Array:acutualResData[${index}]:${actualResData[index]} expectData:${item}`);
           expect(item).toEqual(actualResData[index]);
         });
   

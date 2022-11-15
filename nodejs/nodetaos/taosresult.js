@@ -46,7 +46,12 @@ TaosResult.prototype.pretty = function pretty() {
     let rowStr = "";
     row.data.forEach((entry, i) => {
       if (this.fields[i]._field.type == 9) {
-        entry = entry.toTaosString();
+        if(entry){
+          entry = entry.toTaosString();
+        }else{
+          entry = "null"
+        }
+        
       } else {
         entry = entry == null ? 'null' : entry.toString();
       }

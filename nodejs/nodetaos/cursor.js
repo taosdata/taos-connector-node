@@ -546,7 +546,7 @@ TDengineCursor.prototype.stmtBindSingleParamBatch = function stmtBindSingleParam
     if (stmtPrepare != 0) {
       throw new errors.DatabaseError(this._chandle.stmtErrStr(this._stmt));
     } else {
-      console.log("stmtBindSingleParamBatch success.");
+      // console.log("stmtBindSingleParamBatch success.");
     }
   }
 }

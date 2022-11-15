@@ -54,10 +54,11 @@ function consumerExample() {
     // consumer.subscribe([topic,topic2]);
     for (let t = 0; t < 10; t++) {
         msg = consumer.consume(200);
-        console.log(msg.topicPartition);
+        console.log(JSON.stringify(msg.topicPartition));
         console.log(msg.block);
         console.log(msg.fields);
         consumer.commit(msg);
+        console.log(`========= ${t} times =======`)
     }
 
     let topicList = consumer.subscription();
@@ -92,7 +93,7 @@ try {
     consumerExample();
 
 } finally {
-    sleep(1000).then(dispose)
+    // sleep(1000).then(dispose)
 }
 
 

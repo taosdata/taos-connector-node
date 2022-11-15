@@ -39,11 +39,10 @@ class ConsumerResult {
 }
 
 class TopicPartition {
-    constructor(topic, db, vGroupId, table, taosRes) {
+    constructor(topic, db, vGroupId) {
         this.topic = topic;
         this.db = db;
         this.vGroupId = vGroupId;
-        this.table = table;
     }
 
     equals(topicPartition) {
@@ -54,9 +53,6 @@ class TopicPartition {
             return false;
         }
         if (this.vGroupId != topicPartition.vGroupId) {
-            return false;
-        }
-        if (this.table != topicPartition.table) {
             return false;
         }
         return true;

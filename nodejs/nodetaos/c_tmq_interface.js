@@ -106,10 +106,9 @@ CTMQInterface.prototype.consume = function consume(consumer, timeout) {
             let topic = ref.readCString(libtmq.tmq_get_topic_name(taosRes));
             let db = ref.readCString(libtmq.tmq_get_db_name(taosRes));
             let vGroupId = libtmq.tmq_get_vgroup_id(taosRes);
-            let table = ref.readCString(libtmq.tmq_get_table_name(taosRes));
 
 
-            let topicPartition = new TopicPartition(topic, db, vGroupId, table)
+            let topicPartition = new TopicPartition(topic, db, vGroupId)
             let fields = ctaos.useResult(taosRes);
 
 

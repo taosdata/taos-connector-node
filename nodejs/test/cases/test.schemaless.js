@@ -57,12 +57,12 @@ afterAll(() => {
 
 
 describe("test schemaless", () => {
-    test(`name:sml line protocal using string;` +
+    test(`name:sml line protocol using string;` +
       `author:${author};` +
-      `desc:using line protocal to schemaless insert with a string;` +
+      `desc:using line protocol to schemaless insert with a string;` +
       `filename:${fileName};` +
       `result:${result}`, () => {
-        let stablename = 'line_protocal_string';
+        let stablename = 'line_protocol_string';
 
         // executeUpdate(createSql);
         let colData = [1658213992000, 3n, 'passit', false, 4.000000000];
@@ -87,9 +87,9 @@ describe("test schemaless", () => {
   
       })
   
-    test(`name:sml line protocal using Array;` +
+    test(`name:sml line protocol using Array;` +
       `author:${author};` +
-      `desc:using line protocal to schemaless insert with an Array;` +
+      `desc:using line protocol to schemaless insert with an Array;` +
       `filename:${fileName};` +
       `result:${result}`, () => {
         let stablename = 'line_protocol_arr';
@@ -123,20 +123,20 @@ describe("test schemaless", () => {
         // console.log(lineStr);
         //assert result data
         expectResData.forEach((item, index) => {
-          // console.log(`sml line protocal using Array:acutualResData[${index}]:${actualResData[index]} expectData:${item}`);
+          // console.log(`sml line protocol using Array:actualResData[${index}]:${actualResData[index]} expectData:${item}`);
           expect(item).toEqual(actualResData[index]);
         });
   
         //assert result meta data
         expectResField.forEach((item, index) => {
-          // console.log(`sml line protocal using Array:acutualField[${index}]:${JSON.stringify(actualResFields[index]) } expectField:${JSON.stringify(item)}`);
+          // console.log(`sml line protocol using Array:actualField[${index}]:${JSON.stringify(actualResFields[index]) } expectField:${JSON.stringify(item)}`);
           expect(actualResFields[index]).toEqual(item)
         })
       })
   
-    test(`name:sml json protocal using string;` +
+    test(`name:sml json protocol using string;` +
       `author:${author};` +
-      `desc:using json protocal to schemaless insert with a json string;` +
+      `desc:using json protocol to schemaless insert with a json string;` +
       `filename:${fileName};` +
       `result:${result}`, () => {
         let stablename = 'json_protocol_str';
@@ -181,9 +181,9 @@ describe("test schemaless", () => {
         })
       })
   
-    test(`name:sml json protocal using Array;` +
+    test(`name:sml json protocol using Array;` +
       `author:${author};` +
-      `desc:using json protocal to schemaless insert with a json array;` +
+      `desc:using json protocol to schemaless insert with a json array;` +
       `filename:${fileName};` +
       `result:${result}`, () => {
         let stablename = 'json_protocol_arr';

@@ -117,7 +117,7 @@ export function parseBlock(fetchResponse: WSFetchResponse, blocks: WSFetchBlockR
             // traverse row after row. 
             for (let j = 0; j < metaList.length; j++) {
 
-                let isVarType = _isVarTye(metaList[j])
+                let isVarType = _isVarType(metaList[j])
                 // console.log("== dataBuffer Length:" + dataBuffer.byteLength)
                 // console.log("== loop i:" + i + "J=" + j + "col:" + metaList[j].name + "type:" + metaList[j].type)
                 // console.log("== loop isVarType:" + isVarType);
@@ -174,7 +174,7 @@ export function parseBlock(fetchResponse: WSFetchResponse, blocks: WSFetchBlockR
 
 }
 
-function _isVarTye(meta: ResponseMeta): Number {
+function _isVarType(meta: ResponseMeta): Number {
     switch (meta.type) {
         case TDengineTypeCode['NCHAR']: {
             return ColumnsBlockType['NCHAR']
@@ -235,7 +235,7 @@ function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: Respo
             // could change 
         }
         default: {
-            throw new WebSocketQueryInterFaceError(`unspported type ${meta.type} for column ${meta.name}`)
+            throw new WebSocketQueryInterFaceError(`unsupported type ${meta.type} for column ${meta.name}`)
         }
     }
 }

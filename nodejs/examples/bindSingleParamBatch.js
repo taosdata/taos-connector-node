@@ -49,7 +49,7 @@ function stmtSingleParaBatchSample() {
     executeUpdate(useDB);
     executeUpdate(createTable);
 
-    // normal colum values.
+    // normal column values.
     let mbind = new taos.TaosMultiBind();
     let tsMBind = mbind.multiBindTimestamp([1642435200000, 1642435300000, 1642435400000, 1642435500000, 1642435600000])
     let boolMbind = mbind.multiBindBool([true, false, true, undefined, null]);

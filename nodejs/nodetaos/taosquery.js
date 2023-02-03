@@ -10,7 +10,7 @@ module.exports = TaosQuery;
  * functionality and save time whilst also making it easier to debug and enter less problems with the use of promises.
  * @param {string} query - Query to construct object from
  * @param {TDengineCursor} cursor - The cursor from which this query will execute from
- * @param {boolean} execute - Whether or not to immedietely execute the query synchronously and fetch all results. Default is false.
+ * @param {boolean} execute - Whether or not to immediately execute the query synchronously and fetch all results. Default is false.
  * @property {string} query - The current query in string format the TaosQuery object represents
  * @return {TaosQuery}
  * @since 1.0.6

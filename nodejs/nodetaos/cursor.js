@@ -50,7 +50,7 @@ TDengineCursor.prototype.rowcount = function rowcount() {
 }
 /**
  * Close the cursor by setting its connection to null and freeing results from the connection and resetting the results it has stored
- * @return {boolean} Whether or not the cursor was succesfully closed
+ * @return {boolean} Whether or not the cursor was successfully closed
  * @since 1.0.0
  */
 TDengineCursor.prototype.close = function close() {
@@ -65,7 +65,7 @@ TDengineCursor.prototype.close = function close() {
 /**
  * Create a TaosQuery object to perform a query to TDengine and retrieve data.
  * @param {string} operation - The operation string to perform a query on
- * @param {boolean} execute - Whether or not to immedietely perform the query. Default is false.
+ * @param {boolean} execute - Whether or not to immediately perform the query. Default is false.
  * @return {TaosQuery | Promise<TaosResult>} A TaosQuery object
  * @example
  * var query = cursor.query("select count(*) from meterinfo.meters");
@@ -81,7 +81,7 @@ TDengineCursor.prototype.query = function query(operation, execute = false) {
  * queries and execute them instead of using the cursor object directly.
  * @param {string} operation - The query operation to execute in the taos shell
  * @param {Object} options - Execution options object. quiet : true turns off logging from queries
- * @param {boolean} options.quiet - True if you want to surpress logging such as "Query OK, 1 row(s) ..."
+ * @param {boolean} options.quiet - True if you want to suppress logging such as "Query OK, 1 row(s) ..."
  * @param {function} callback - A callback function to execute after the query is made to TDengine
  * @return {number | Buffer} Number of affected rows or a Buffer that points to the results of the query
  * @since 1.0.0
@@ -159,7 +159,7 @@ TDengineCursor.prototype.executemany = function executemany() {
  * Fetches all results from a query and also stores results into cursor.data. It is preferable to use cursor.query() to create
  * queries and execute them instead of using the cursor object directly.
  * @param {function} callback - callback function executing on the complete fetched data
- * @return {Array<Array>} The resultant array, with entries corresponding to each retreived row from the query results, sorted in
+ * @return {Array<Array>} The resultant array, with entries corresponding to each retrieved row from the query results, sorted in
  * order by the field name ordering in the table.
  * @since 1.0.0
  * @example
@@ -222,10 +222,10 @@ TDengineCursor.prototype.fetchall = function fetchall(options, callback) {
   return data;
 }
 /**
- * Asynchrnously execute a query to TDengine. NOTE, insertion requests must be done in sync if on the same table.
+ * Asynchronously execute a query to TDengine. NOTE, insertion requests must be done in sync if on the same table.
  * @param {string} operation - The query operation to execute in the taos shell
  * @param {Object} options - Execution options object. quiet : true turns off logging from queries
- * @param {boolean} options.quiet - True if you want to surpress logging such as "Query OK, 1 row(s) ..."
+ * @param {boolean} options.quiet - True if you want to suppress logging such as "Query OK, 1 row(s) ..."
  * @param {function} callback - A callback function to execute after the query is made to TDengine
  * @return {number | Buffer} Number of affected rows or a Buffer that points to the results of the query
  * @since 1.0.0
@@ -259,7 +259,7 @@ TDengineCursor.prototype.execute_a = function execute_a(operation, options, call
       return res2;
     }
     else {
-      throw new errors.ProgrammingError("Error occuring with use of execute_a async function. Status code was returned with failure");
+      throw new errors.ProgrammingError("Error occurring with use of execute_a async function. Status code was returned with failure");
     }
   }
 
@@ -424,8 +424,8 @@ TDengineCursor.prototype.unsubscribe = function unsubscribe(subscription) {
 /**
  * schemaless insert 
  * @param {*} connection a valid database connection
- * @param {*} lines string data, which statisfied with line proctocol
- * @param {*} protocal Line protocol, enum type (0,1,2,3),indicate different line protocol
+ * @param {*} lines string data, which satisfied with line proctocol
+ * @param {*} protocol Line protocol, enum type (0,1,2,3),indicate different line protocol
  * @param {*} precision timestamp precision in lines, enum type (0,1,2,3,4,5,6)
  * @returns TAOS_RES 
  * 
@@ -474,7 +474,7 @@ TDengineCursor.prototype.stmtPrepare = function stmtPrepare(sql) {
 }
 
 /**
- * For INSERT only. Used to bind table name as a parmeter for the input stmt object.
+ * For INSERT only. Used to bind table name as a parameter for the input stmt object.
  * @param {TaosBind} tableName target table name you want to  bind
  * @returns 0 for success, non-zero for failure.
  */

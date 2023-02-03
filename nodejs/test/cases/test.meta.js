@@ -76,7 +76,7 @@ afterAll(() => {
     conn.close();
 });
 
-describe("test fetchFeild", () => {
+describe("test fetchField", () => {
     test(`name:test fetchField for normal type;` +
         `author:${author};` +
         `desc:fetchField result test for normal type;` +

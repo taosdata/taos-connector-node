@@ -643,8 +643,8 @@ CTaosInterface.prototype.query_a = function query_a(connection, sql, callback, p
   return param;
 }
 
-/** Asynchrnously fetches the next block of rows. Wraps callback and transfers a 4th argument to the cursor, the row data as blocks in javascript form
- * Note: This isn't a recursive function, in order to fetch all data either use the TDengine cursor object, TaosQuery object, or implement a recrusive
+/** Asynchronously fetches the next block of rows. Wraps callback and transfers a 4th argument to the cursor, the row data as blocks in javascript form
+ * Note: This isn't a recursive function, in order to fetch all data either use the TDengine cursor object, TaosQuery object, or implement a recursive
  * function yourself using the libtaos.taos_fetch_raw_block_a function
  */
 
@@ -759,7 +759,7 @@ CTaosInterface.prototype.getClientInfo = function getClientInfo() {
  * @returns TAOS_RES
  *
  */
-CTaosInterface.prototype.schemalessInsert = function schemalessInsert(connection, lines, protocal, precision) {
+CTaosInterface.prototype.schemalessInsert = function schemalessInsert(connection, lines, protocol, precision) {
   let _numLines = null;
   let _lines = null;
 
@@ -776,9 +776,9 @@ CTaosInterface.prototype.schemalessInsert = function schemalessInsert(connection
     }
   }
   else {
-    throw new errors.InterfaceError("Unsupport lines input")
+    throw new errors.InterfaceError("Unsupported lines input")
   }
-  return libtaos.taos_schemaless_insert(connection, _lines, _numLines, protocal, precision);
+  return libtaos.taos_schemaless_insert(connection, _lines, _numLines, protocol, precision);
 }
 
 //stmt APIs
@@ -805,7 +805,7 @@ CTaosInterface.prototype.stmtPrepare = function stmtPrepare(stmt, sql, length) {
 }
 
 /**
- * For INSERT only. Used to bind table name as a parmeter for the input stmt object.
+ * For INSERT only. Used to bind table name as a parameter for the input stmt object.
  * @param {*} stmt could be the value returned by 'stmtInit', 
  *            that may be a valid object or NULL.
  * @param {TaosMultiBind} tableName target table name you want to  bind

@@ -1,8 +1,8 @@
 /**
  * This is an util function will return the column info based on the create sql.
- * @param {*} sql 
+ * @param {*} sql
  * @returns Return an Array about the column names and column type.
- * 
+ *
  */
 function getFeildsFromDll(sql) {
     let fields = [];
@@ -31,10 +31,10 @@ function getFeildsFromDll(sql) {
 /**
  * Based on the input array, it will generate sql that could be used to insert the data of array into the db.
  * @param {*} tableName It could be the table name that you want to insert data.
- * @param {*} stable If you want to using stable as template to create table automatically, 
+ * @param {*} stable If you want to using stable as template to create table automatically,
  *                   set this to your stable name. Deault if '';
  * @param {*} dataArr An Array of data that you want insert (it could be mutilple lines)
- * @param {*} tagArr  An Array used to store one sub table's tag info  
+ * @param {*} tagArr  An Array used to store one sub table's tag info
  * @param {*} numOfColumn The number of columns that the target table has.
  * @returns Return an insert sql string.
  */
@@ -107,7 +107,7 @@ const TDengineTypeCode = {
 }
 
 /**
- * Mapping the data type with corresponing size that has defined in tdengine
+ * Mapping the data type with corresponding size that has defined in tdengine
  */
 const TDengineTypeBytes = {
     'null': 0,
@@ -127,17 +127,17 @@ const TDengineTypeBytes = {
 }
 
 /**
- * Used to create an array of taos feilds object. 
+ * Used to create an array of taos feilds object.
  * @param {*} arr This should be the return array from the method getFeildsFromDll()
- * @returns Return an array of taosFeild Object
+ * @returns Return an array of taosField Object
  */
 function getFieldArr(arr) {
-    let feild = [];
+    let field = [];
     for (let i = 0; i < arr.length;) {
         let bracetPosi = arr[i + 1].indexOf('(');
         let type = '';
         let size = -1;
-       
+
         if (bracetPosi == -1) {
             type = TDengineTypeCode[arr[i + 1]];
             size = TDengineTypeBytes[arr[i + 1]];
@@ -150,28 +150,28 @@ function getFieldArr(arr) {
             type: type,
             bytes: size
         }
-        feild.push(fieldObj);
+        field.push(fieldObj);
         i = i + 2;
     }
-    return feild;
+    return field;
 }
 /**
- * Conbine arrays of data info and tag info together, and return a new array. This array construction is simmilar with query result
+ * Conbine arrays of data info and tag info together, and return a new array. This array construction is similar with query result
  * from the tdengine by taos shell.This method only can be used by a subtable.
  * @param {*} dataArr An array holds  columns' data  that will be insert into the db.
  * @param {*} tagArr An array holds tags' data that is belong to a sub table.
- * @param {*} numOfcolumn 
+ * @param {*} numOfcolumn
  * @returns return the an array of column data and tag data.
  */
 function getResData(dataArr, tagArr, numOfcolumn) {
-    let resData = [];    
+    let resData = [];
     dataArr.forEach((item, index) => {
         resData.push(item);
         if ((index + 1) % numOfcolumn == 0) {
             tagArr.forEach((element) => {
                 resData.push(element);
             }) ;
-        } 
+        }
     });
     return resData;
 }

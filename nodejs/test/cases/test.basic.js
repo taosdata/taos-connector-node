@@ -57,7 +57,7 @@ afterAll(() => {
 
 describe("test unsigned type", () => {
 
-  test(`name:test unsinged tinnyint ntable;` +
+  test(`name:test unsigned tinnyint ntable;` +
     `author:${author};` +
     `desc:create,insert,query with unsigned tinnyint;` +
     `filename:${fileName};` +
@@ -88,7 +88,7 @@ describe("test unsigned type", () => {
       })
     });
 
-  test(`name:test unsinged smallint ntable;` +
+  test(`name:test unsigned smallint ntable;` +
     `author:${author};` +
     `desc:create,insert,query with unsigned smallint;` +
     `filename:${fileName};` +
@@ -117,7 +117,7 @@ describe("test unsigned type", () => {
       })
     });
 
-  test(`name:test unsinged int ntable;` +
+  test(`name:test unsigned int ntable;` +
     `author:${author};` +
     `desc:create,insert,query with unsigned int;` +
     `filename:${fileName};` +
@@ -146,7 +146,7 @@ describe("test unsigned type", () => {
       })
     });
 
-  test(`name:test unsinged bigint ntable;` +
+  test(`name:test unsigned bigint ntable;` +
     `author:${author};` +
     `desc:create,insert,query with unsigned bigint;` +
     `filename:${fileName};` +
@@ -177,9 +177,9 @@ describe("test unsigned type", () => {
       })
     });
 
-  test(`name:test unsinged type ntable;` +
+  test(`name:test unsigned type ntable;` +
     `author:${author};` +
-    `desc:create,insert,query with mutiple unsinged type;` +
+    `desc:create,insert,query with multiple unsigned type;` +
     `filename:${fileName};` +
     `result:${result}`, () => {
       let createSql = "create table if not exists unsigntest(ts timestamp,ut tinyint unsigned,us smallint unsigned,ui int unsigned,ub bigint unsigned,bi bigint);";
@@ -209,7 +209,7 @@ describe("test unsigned type", () => {
       })
     });
 
-  test(`name:test unsinged type stable max value;` +
+  test(`name:test unsigned type stable max value;` +
     `author:${author};` +
     `desc:this is a description;` +
     `filename:${fileName};` +
@@ -233,7 +233,7 @@ describe("test unsigned type", () => {
       let colData = [1641827743305, 254, 65534, 4294967294, 18446744073709551614n, 9223372036854775807n,
         1641827743306, 0, 0, 0, 0n, -9223372036854775807n,
         1641827743307, 201, 44, 2, 8n, 1531n];
-      let tagData = [254, 65534, 4294967294, 18446744073709551614n, 'max value of unsinged type tag']
+      let tagData = [254, 65534, 4294967294, 18446744073709551614n, 'max value of unsigned type tag']
       let insertSql = buildInsertSql('max_unsigned_tag_test_sub1', 'max_unsigned_tag_test', colData, tagData, 6);
       let expectResData = getResData(colData, tagData, 6);
 
@@ -255,7 +255,7 @@ describe("test unsigned type", () => {
       })
     });
 
-  test(`name:test unsinged type stable minimal value;` +
+  test(`name:test unsigned type stable minimal value;` +
     `author:${author};` +
     `desc:this is a description;` +
     `filename:${fileName};` +
@@ -279,7 +279,7 @@ describe("test unsigned type", () => {
       let colData = [1641827743305, 254, 65534, 4294967294, 18446744073709551614n, 9223372036854775807n,
         1641827743306, 0, 0, 0, 0n, -9223372036854775807n,
         1641827743307, 201, 44, 2, 8n, 1531n];
-      let tagData = [0, 0, 0, 0n, 'minimal value of unsinged type tag']
+      let tagData = [0, 0, 0, 0n, 'minimal value of unsigned type tag']
       let insertSql = buildInsertSql('min_unsigned_tag_test_sub1', 'min_unsigned_tag_test', colData, tagData, 6);
       let expectResData = getResData(colData, tagData, 6);
 
@@ -302,7 +302,7 @@ describe("test unsigned type", () => {
       })
     });
 
-  test(`name:test unsinged type stable mixed value;` +
+  test(`name:test unsigned type stable mixed value;` +
     `author:${author};` +
     `desc:this is a description;` +
     `filename:${fileName};` +
@@ -326,7 +326,7 @@ describe("test unsigned type", () => {
       let colData = [1641827743305, 254, 65534, 4294967294, 18446744073709551614n, 9223372036854775807n,
         1641827743306, 0, 0, 0, 0n, -9223372036854775807n,
         1641827743307, 201, 44, 2, 8n, 1531n];
-      let tagData = [1, 20, 300, 4000n, 'mixed value of unsinged type tag']
+      let tagData = [1, 20, 300, 4000n, 'mixed value of unsigned type tag']
       let insertSql = buildInsertSql('mix_unsigned_tag_test_sub1', 'mix_unsigned_tag_test', colData, tagData, 6);
       let expectResData = getResData(colData, tagData, 6);
 

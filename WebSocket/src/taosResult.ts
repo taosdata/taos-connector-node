@@ -194,7 +194,7 @@ function _isVarTye(meta: ResponseMeta): Number {
     }
 }
 
-function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: ResponseMeta): Number | Boolean | BigInt {
+function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: ResponseMeta): Number | Boolean | BigInt | String {
 
     switch (meta.type) {
         case TDengineTypeCode['BOOL']: {
@@ -231,8 +231,25 @@ function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: Respo
             return (parseFloat(new DataView(dataBuffer, colDataHead, 8).getFloat64(0, true).toFixed(15)))
         }
         case TDengineTypeCode['TIMESTAMP']: {
-            return (new DataView(dataBuffer, colDataHead, 8).getBigInt64(0, true))
-            // could change 
+            //1680481718906
+            let ts = new DataView(dataBuffer, colDataHead, 8).getBigInt64(0, true)
+            let tsN = Number(ts)
+            // 毫秒
+            if (tsN / (10**13) < 1) {
+                let d = new Date(Number(tsN))
+                return d.toISOString()
+            }
+           // 微妙
+           if (tsN / (10**16) < 1) {
+                let d = new Date(Number(tsN/1000))
+                return d.toISOString()
+           }
+           // 纳秒
+           if (tsN / (10**19) < 1) {
+            let d = new Date(Number(tsN/1000000))
+            return d.toISOString()
+       }
+
         }
         default: {
             throw new WebSocketQueryInterFaceError(`unspported type ${meta.type} for column ${meta.name}`)

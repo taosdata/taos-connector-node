@@ -129,7 +129,7 @@ export class WSInterface {
             let jsonStr = JSONBig.stringify(fetchBlockMsg)
             // console.log("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
             this._wsQueryClient.sendMsg(jsonStr).then((e: any) => {
-                resolve(parseBlock(fetchResponse, new WSFetchBlockResponse(e), taosResult))
+                return parseBlock(fetchResponse, new WSFetchBlockResponse(e), taosResult)
                 // if retrieve JSON then reject with message
                 // else is binary , so parse raw block to TaosResult
             }).catch(e => reject(e))

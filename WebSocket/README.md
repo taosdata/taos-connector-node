@@ -26,34 +26,48 @@ ws://localhost:6041/test
 
 ### Basic Usage
 
-``` typescript
-import {connect} from '@tdengine/websocket'
-let dsn = "ws://host:port/rest/ws/db"
+```typescript
+import { connect } from '@tdengine/websocket';
+let dsn = 'ws://host:port/rest/ws/db';
 // create an instance of taoWS, while the returned websocket connection of the returned instance 'ws' may is not in 'OPEN' status
-var ws = connect(dsn)
+var ws = connect(dsn);
 ```
 
-``` typescript
+```typescript
 // build connect with tdengine
-ws.connect().then(connectRes=>console.log(connectRes)).catch(e=>{/*do some thing to  handle error*/})
+ws.connect()
+  .then((connectRes) => console.log(connectRes))
+  .catch((e) => {
+    /*do some thing to  handle error*/
+  });
 ```
 
-``` typescript
+```typescript
 //query data with SQL
-ws.query(sql).then(taosResult=>{console.log(taosResult)}).catch(e=>{/*do some thing to  handle error*/})
+ws.query(sql)
+  .then((taosResult) => {
+    console.log(taosResult);
+  })
+  .catch((e) => {
+    /*do some thing to  handle error*/
+  });
 ```
 
 ```typescript
 // get client version
-ws.version().then(version=>console.log(version)).catch(e=>{/*do some thing to  handle error*/})
+ws.version()
+  .then((version) => console.log(version))
+  .catch((e) => {
+    /*do some thing to  handle error*/
+  });
 ```
 
-``` typescript
+```typescript
 // get current WebSocket connection status
-let status:number = ws.status()
+let status: number = ws.status();
 ```
 
-``` typescript
+```typescript
 // close current WebSocket connection
 ws.close();
 ```

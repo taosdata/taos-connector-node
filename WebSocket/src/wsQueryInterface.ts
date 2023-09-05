@@ -1,28 +1,85 @@
+import { TimeoutParam, TimeoutValue } from './constant';
 import { parseBlock, TaosResult } from './taosResult';
-import { TDWebSocketClient } from './wsClient';
-import { WebSocketInterfaceError, WebSocketQueryError } from './wsError';
+import { Utils } from './utils';
+import { MessageId, WebSocketClient } from './wsClient';
 import {
-  WSVersionResponse,
+  WebSocketClientError,
+  WebSocketInterfaceError,
+  WebSocketQueryError,
+} from './wsError';
+import { WsFunc } from './wsOptions';
+import {
   WSFetchBlockResponse,
   WSQueryResponse,
   WSFetchResponse,
   WSConnResponse,
+  WSVersionResponse,
 } from './wsQueryResponse';
 import JSONBig from 'json-bigint';
 
 export class WSInterface {
-  private _wsQueryClient: TDWebSocketClient;
+  private _ws: WebSocketClient;
   private _req_id = 0;
   private _url;
+  private _state = false;
 
   constructor(url: URL) {
-    this.checkURL(url);
+    if (!url) {
+      throw new WebSocketQueryError('websocket URL must be defined');
+    }
+    Utils.checkURL(url);
     this._url = url;
-    this._wsQueryClient = new TDWebSocketClient(this._url);
+
+    let messageHandler = (data: string) => {
+      let msg = JSON.parse(data);
+      if (msg.action == 'version' && msg.version !== undefined) {
+        this._ws.removeInflightVersionRequest().forEach((action) => {
+          action.resolve(msg);
+        });
+        return;
+      }
+      let key: MessageId = { action: msg.action, req_id: msg.req_id };
+      let action = this._ws.removeInflightRequest(key);
+
+      if (action) {
+        action.resolve(msg);
+      } else {
+        this._ws.close();
+        throw new WebSocketClientError(
+          `no callback registered for ${msg.action} with req_id=${msg.req_id}`
+        );
+      }
+    };
+    let binaryHandler = (data: ArrayBuffer) => {
+      let id = new DataView(data, 8, 8).getBigUint64(0, true);
+
+      let action = this._ws.removeInflightRequest({
+        action: 'fetch_block',
+        req_id: 0,
+        id: id,
+      });
+      if (action) {
+        action.resolve(data);
+      } else {
+        this._ws.close();
+        throw new WebSocketClientError(
+          `no callback registered for fetch_block with id=${id}`
+        );
+      }
+    };
+
+    this._ws = new WebSocketClient(
+      url.origin.concat(WsFunc.WS),
+      messageHandler,
+      binaryHandler,
+      url.searchParams.get(TimeoutParam)
+        ? Number(url.searchParams.get(TimeoutParam))
+        : TimeoutValue
+    );
   }
 
   connect(database?: string): Promise<WSConnResponse> {
-    let _db = this._url.pathname.split('/')[3];
+    let _db = this._url.pathname.split('/')[1];
 
     if (database) {
       _db = database;
@@ -37,24 +94,46 @@ export class WSInterface {
         db: _db,
       },
     };
-    // console.log(connMsg)
+    if (this._state) {
+      return new Promise((resolve, reject) => {
+        resolve(
+          new WSConnResponse({
+            code: 0,
+            message: 'already connected',
+            action: 'conn',
+            req_id: this._req_id,
+            timing: BigInt(0),
+          })
+        );
+      });
+    }
     return new Promise((resolve, reject) => {
-      if (this._wsQueryClient.readyState() > 0) {
-        this._wsQueryClient.sendMsg(JSON.stringify(connMsg)).then((e: any) => {
-          if (e.code == 0) {
-            resolve(e);
-          } else {
-            reject(new WebSocketQueryError(`${e.message}, code ${e.code}`));
-          }
-        });
-      } else {
-        this._wsQueryClient
-          .Ready()
-          .then((ws: TDWebSocketClient) => {
-            return ws.sendMsg(JSON.stringify(connMsg));
+      if (this._ws.readyState() > 0) {
+        this._ws
+          .sendMsg(JSON.stringify(connMsg), {
+            action: 'conn',
+            req_id: this._req_id,
           })
           .then((e: any) => {
             if (e.code == 0) {
+              this._state = true;
+              resolve(e);
+            } else {
+              reject(new WebSocketQueryError(`${e.message}, code ${e.code}`));
+            }
+          });
+      } else {
+        this._ws
+          .Ready()
+          .then((ws: WebSocketClient) => {
+            return ws.sendMsg(JSON.stringify(connMsg), {
+              action: 'conn',
+              req_id: this._req_id,
+            });
+          })
+          .then((e: any) => {
+            if (e.code == 0) {
+              this._state = true;
               resolve(e);
             } else {
               reject(new WebSocketQueryError(`${e.message}, code ${e.code}`));
@@ -67,7 +146,6 @@ export class WSInterface {
   // need to construct Response.
   query(sql: string): Promise<WSQueryResponse> {
     this._reqIDIncrement();
-    // construct msg
     let queryMsg = {
       action: 'query',
       args: {
@@ -77,19 +155,27 @@ export class WSInterface {
     };
     return new Promise((resolve, reject) => {
       let jsonStr = JSON.stringify(queryMsg);
-      // console.log("[wsQueryInterface.query.queryMsg]===>" + jsonStr)
-      this._wsQueryClient.sendMsg(jsonStr).then((e: any) => {
-        if (e.code == 0) {
-          resolve(new WSQueryResponse(e));
-        } else {
-          reject(new WebSocketInterfaceError(`${e.message},code ${e.code}`));
-        }
-      });
+      this._ws
+        .sendMsg(jsonStr, {
+          action: 'query',
+          req_id: this._req_id,
+        })
+        .then((e: any) => {
+          if (e.code == 0) {
+            resolve(new WSQueryResponse(e));
+          } else {
+            reject(
+              new WebSocketInterfaceError(
+                `sql: ${sql}, msg: ${e.message}, code ${e.code}`
+              )
+            );
+          }
+        });
     });
   }
 
   getState() {
-    return this._wsQueryClient.readyState();
+    return this._ws.readyState();
   }
 
   fetch(res: WSQueryResponse): Promise<WSFetchResponse> {
@@ -101,13 +187,10 @@ export class WSInterface {
         id: res.id,
       },
     };
-    // console.log("[wsQueryInterface.fetch()]===>wsQueryResponse\n")
-    // console.log(res)
     return new Promise((resolve, reject) => {
       let jsonStr = JSONBig.stringify(fetchMsg);
-      // console.log("[wsQueryInterface.fetch.fetchMsg]===>" + jsonStr)
-      this._wsQueryClient
-        .sendMsg(jsonStr)
+      this._ws
+        .sendMsg(jsonStr, { action: 'fetch', req_id: this._req_id })
         .then((e: any) => {
           if (e.code == 0) {
             resolve(new WSFetchResponse(e));
@@ -135,15 +218,17 @@ export class WSInterface {
     };
     return new Promise((resolve, reject) => {
       let jsonStr = JSONBig.stringify(fetchBlockMsg);
-      // console.log("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
-      this._wsQueryClient
-        .sendMsg(jsonStr)
+      this._ws
+        .sendMsg(jsonStr, {
+          action: 'fetch_block',
+          // unused
+          req_id: 0,
+          id: fetchResponse.id,
+        })
         .then((e: any) => {
           resolve(
             parseBlock(fetchResponse, new WSFetchBlockResponse(e), taosResult)
           );
-          // if retrieve JSON then reject with message
-          // else is binary , so parse raw block to TaosResult
         })
         .catch((e) => reject(e));
     });
@@ -160,9 +245,8 @@ export class WSInterface {
     };
     return new Promise((resolve, reject) => {
       let jsonStr = JSONBig.stringify(freeResultMsg);
-      // console.log("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
-      this._wsQueryClient
-        .sendMsg(jsonStr, false)
+      this._ws
+        .sendMsg(jsonStr, { action: '', req_id: 0 }, false)
         .then((e: any) => {
           resolve(e);
         })
@@ -179,9 +263,12 @@ export class WSInterface {
       },
     };
     return new Promise((resolve, reject) => {
-      if (this._wsQueryClient.readyState() > 0) {
-        this._wsQueryClient
-          .sendMsg(JSONBig.stringify(versionMsg))
+      if (this._ws.readyState() > 0) {
+        this._ws
+          .sendMsg(JSON.stringify(versionMsg), {
+            action: 'version',
+            req_id: this._req_id,
+          })
           .then((e: any) => {
             // console.log(e)
             if (e.code == 0) {
@@ -192,10 +279,13 @@ export class WSInterface {
           })
           .catch((e) => reject(e));
       }
-      this._wsQueryClient
+      this._ws
         .Ready()
-        .then((ws: TDWebSocketClient) => {
-          return ws.sendMsg(JSONBig.stringify(versionMsg));
+        .then((ws: WebSocketClient) => {
+          return ws.sendMsg(JSON.stringify(versionMsg), {
+            action: 'version',
+            req_id: this._req_id,
+          });
         })
         .then((e: any) => {
           // console.log(e)
@@ -210,18 +300,7 @@ export class WSInterface {
   }
 
   close() {
-    this._wsQueryClient.close();
-  }
-
-  checkURL(url: URL) {
-    // Assert is cloud url
-    if (!url.searchParams.has('token')) {
-      if (!(url.username || url.password)) {
-        throw new WebSocketInterfaceError(
-          'invalid url, password or username needed.'
-        );
-      }
-    }
+    this._ws.close();
   }
 
   private _reqIDIncrement() {

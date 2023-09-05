@@ -1,6 +1,6 @@
 import { connect } from '../index';
 
-let dsn = 'ws://root:taosdata@127.0.0.1:6041/rest/ws';
+let dsn = 'ws://root:taosdata@127.0.0.1:6041/test?timeout=2500';
 let ws = connect(dsn);
 
 async function connectDatabase(database?: string) {

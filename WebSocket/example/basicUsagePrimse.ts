@@ -1,6 +1,6 @@
 import { connect } from '../index';
 
-let ws = connect('ws://root:taosdata@127.0.0.1:6041/rest/ws');
+let ws = connect('ws://root:taosdata@127.0.0.1:6041/');
 
 const db = 'test';
 const table = 'ws';
@@ -15,7 +15,7 @@ const insertSql =
   `('2022-03-30 18:30:51.568',5,6,7,8,'binary2','nchar2')` +
   `('2022-03-30 18:30:51.569',9,0,1,2,'binary3','nchar3')`;
 const querySql = `select * from ${db}.${table}`;
-const errorSql = 'show database';
+const errorSql = 'show databases';
 
 ws.connect()
   .then((res) => console.log(res))

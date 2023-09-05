@@ -1,9 +1,11 @@
-import { ICloseEvent, IMessageEvent, w3cwebsocket } from 'websocket';
-import { TDWebSocketClientError, WebSocketQueryError } from './wsError';
+import { ICloseEvent, w3cwebsocket } from 'websocket';
+import { WebSocketClientError, WebSocketQueryError } from './wsError';
+import _ from 'json-bigint';
+import { TimeoutValue } from './constant';
 
-interface MessageId {
+export interface MessageId {
   action: string;
-  req_id: bigint;
+  req_id: number;
   id?: bigint;
 }
 
@@ -13,43 +15,58 @@ interface MessageAction {
   timer: ReturnType<typeof setTimeout>;
 }
 
-var _msgActionRegister: Map<MessageId, MessageAction> = new Map();
+var _msgActionRegister: Map<string, MessageAction> = new Map();
 
-export class TDWebSocketClient {
+export class WebSocketClient {
   private _wsConn: w3cwebsocket;
-  _wsURL: URL;
-  _timeout = 5000;
+  private _timeout = TimeoutValue;
+  private stringHandler: (event: string) => void;
+  private binaryHandler: (event: ArrayBuffer) => void;
 
   // create ws
-  constructor(url: URL) {
-    // return w3bsocket3
-    if (url) {
-      this._wsURL = url;
-      let origin = url.origin;
-      let pathname = url.pathname;
-      let search = url.search;
-
-      this._wsConn = new w3cwebsocket(origin.concat(pathname).concat(search));
-
-      // this._wsConn.onopen = this._onopen
-
-      this._wsConn.onerror = function (err: Error) {
-        throw err;
-      };
-
-      this._wsConn.onclose = this._onclose;
-
-      this._wsConn.onmessage = this._onmessage;
-      this._wsConn._binaryType = 'arraybuffer';
-    } else {
-      throw new WebSocketQueryError('websocket URL must be defined');
+  constructor(
+    url: string,
+    stringHandler: (event: string) => void,
+    binaryHandler: (event: ArrayBuffer) => void = () => {},
+    timeout: number = TimeoutValue
+  ) {
+    if (!url) {
+      throw new WebSocketClientError('websocket URL must be defined');
     }
+    this.stringHandler = stringHandler;
+    this.binaryHandler = binaryHandler;
+    this._timeout = timeout;
+
+    this._wsConn = new w3cwebsocket(url);
+
+    this._wsConn.onerror = (err: Error) => {
+      throw err;
+    };
+
+    this._wsConn.onclose = this._onclose;
+
+    this._wsConn.onmessage = (event: any) => {
+      let data = event.data;
+      if (Object.prototype.toString.call(data) === '[object String]') {
+        this.stringHandler(data);
+      } else if (
+        Object.prototype.toString.call(data) === '[object ArrayBuffer]'
+      ) {
+        this.binaryHandler(data);
+      } else if (Object.prototype.toString.call(data) === '[object Blob]') {
+        data.arrayBuffer().then(this.binaryHandler);
+      } else {
+        _msgActionRegister.clear();
+        throw new WebSocketClientError(
+          `websocket receive unknown data type ${typeof data}`
+        );
+      }
+    };
   }
 
-  Ready(): Promise<TDWebSocketClient> {
+  Ready(): Promise<WebSocketClient> {
     return new Promise((resolve, reject) => {
       this._wsConn.onopen = () => {
-        // console.log("websocket connection opened")
         resolve(this);
       };
     });
@@ -61,84 +78,26 @@ export class TDWebSocketClient {
     });
   }
 
-  private _onmessage(event: any) {
-    let data = event.data;
-    // console.log("[wsClient._onMessage()._msgActionRegister]\n")
-    // console.log(_msgActionRegister)
-
-    // console.log("===="+ (Object.prototype.toString.call(data)))
-
-    if (Object.prototype.toString.call(data) === '[object ArrayBuffer]') {
-      let id = new DataView(data, 8, 8).getBigUint64(0, true);
-      // console.log("fetch block response id:" + id)
-
-      let action: MessageAction | any = undefined;
-
-      _msgActionRegister.forEach((v: MessageAction, k: MessageId) => {
-        if (k.id == id) {
-          action = v;
-          _msgActionRegister.delete(k);
-        }
-      });
-      if (action) {
-        action.resolve(data);
-      } else {
-        _msgActionRegister.clear();
-        throw new TDWebSocketClientError(
-          `no callback registered for fetch_block with id=${id}`
-        );
-      }
-    } else if (Object.prototype.toString.call(data) === '[object Blob]') {
-      data.arrayBuffer().then((d: ArrayBuffer) => {
-        let id = new DataView(d, 8, 8).getBigUint64(0, true);
-        // console.log("fetch block response id:" + id)
-
-        let action: MessageAction | any = undefined;
-
-        _msgActionRegister.forEach((v: MessageAction, k: MessageId) => {
-          if (k.id == id) {
-            action = v;
-            _msgActionRegister.delete(k);
-          }
-        });
-        if (action) {
-          action.resolve(d);
-        } else {
-          _msgActionRegister.clear();
-          throw new TDWebSocketClientError(
-            `no callback registered for fetch_block with id=${id}`
-          );
-        }
-      });
-    } else if (Object.prototype.toString.call(data) === '[object String]') {
-      let msg = JSON.parse(data);
-      // console.log("[_onmessage.stringType]==>:" + data);
-      let action: MessageAction | any = undefined;
-
-      _msgActionRegister.forEach((v: MessageAction, k: MessageId) => {
-        if (k.action == 'version') {
-          action = v;
-          _msgActionRegister.delete(k);
-        }
-        if (k.req_id == msg.req_id && k.action == msg.action) {
-          action = v;
-          _msgActionRegister.delete(k);
-        }
-      });
-      if (action) {
-        action.resolve(msg);
-      } else {
-        _msgActionRegister.clear();
-        throw new TDWebSocketClientError(
-          `no callback registered for ${msg.action} with req_id=${msg.req_id}`
-        );
-      }
-    } else {
-      _msgActionRegister.clear();
-      throw new TDWebSocketClientError(
-        `invalid message type ${Object.prototype.toString.call(data)}`
-      );
+  removeInflightRequest(key: MessageId): MessageAction | undefined {
+    let k = this.getHash(key);
+    let v = _msgActionRegister.get(k);
+    if (v) {
+      v.timer && clearTimeout(v.timer);
+      _msgActionRegister.delete(k);
+      return v;
     }
+  }
+
+  removeInflightVersionRequest(): MessageAction[] {
+    let actions: MessageAction[] = [];
+    _msgActionRegister.forEach((v, k) => {
+      if (k.startsWith('version')) {
+        actions.push(v);
+        v.timer && clearTimeout(v.timer);
+        _msgActionRegister.delete(k);
+      }
+    });
+    return actions;
   }
 
   close() {
@@ -146,7 +105,7 @@ export class TDWebSocketClient {
       _msgActionRegister.clear();
       this._wsConn.close();
     } else {
-      throw new TDWebSocketClientError('WebSocket connection is undefined.');
+      throw new WebSocketClientError('WebSocket connection is undefined.');
     }
   }
 
@@ -154,30 +113,11 @@ export class TDWebSocketClient {
     return this._wsConn.readyState;
   }
 
-  sendMsg(message: string, register: Boolean = true) {
-    // console.log("[wsClient.sendMessage()]===>" + message)
-    let msg = JSON.parse(message);
-    // console.log(typeof msg.args.id)
-    if (msg.args.id) {
-      msg.args.id = BigInt(msg.args.id);
-    }
-    // console.log("[wsClient.sendMessage.msg]===>\n")
-    // console.log(msg)
-
+  sendMsg(message: string, key: MessageId, register: Boolean = true) {
     return new Promise((resolve, reject) => {
       if (this._wsConn && this._wsConn.readyState > 0) {
         if (register) {
-          this._registerCallback(
-            {
-              action: msg.action,
-              req_id: msg.args.req_id,
-              id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id),
-            },
-            resolve,
-            reject
-          );
-          // console.log("[wsClient.sendMessage._msgActionRegister]===>\n")
-          // console.log(_msgActionRegister)
+          this._registerCallback(key, resolve, reject);
         }
         this._wsConn.send(message);
       } else {
@@ -195,8 +135,7 @@ export class TDWebSocketClient {
     res: (args: unknown) => void,
     rej: (reason: any) => void
   ) {
-    // console.log("register messageId:"+ JSON.stringify(id))
-    _msgActionRegister.set(id, {
+    _msgActionRegister.set(this.getHash(id), {
       reject: rej,
       resolve: res,
       timer: setTimeout(
@@ -209,6 +148,14 @@ export class TDWebSocketClient {
         this._timeout
       ),
     });
+  }
+
+  private getHash(key: MessageId): string {
+    let k = key.action + '-' + key.req_id;
+    if (key.id) {
+      k += '-' + key.id;
+    }
+    return k;
   }
 
   configTimeout(ms: number) {

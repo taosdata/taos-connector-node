@@ -71,3 +71,6 @@ export const TDengineTypeLength: StringIndexable = {
   'INT UNSIGNED': 4,
   'BIGINT UNSIGNED': 8,
 };
+
+export const TimeoutParam = 'timeout';
+export const TimeoutValue = 30000;

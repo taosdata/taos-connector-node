@@ -56,7 +56,7 @@ export class WSFetchResponse {
   timing: bigint;
   id: bigint;
   completed: boolean;
-  length: Array<number>;
+  lengths: Array<number>;
   rows: number;
 
   constructor(msg: any) {
@@ -67,7 +67,7 @@ export class WSFetchResponse {
     this.timing = BigInt(msg.timing);
     this.id = BigInt(msg.id);
     this.completed = msg.completed;
-    this.length = msg.length;
+    this.lengths = msg.lengths;
     this.rows = msg.rows;
   }
 }

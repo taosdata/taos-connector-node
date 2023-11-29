@@ -23,337 +23,316 @@ const TAOSFIELD = {
   STRUCT_SIZE: 72,
 }
 
-function convertTimestamp(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertTimestamp(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
 
   let res = [];
   let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
 
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
 
-    let ifNullByte = bitMapBuf.readInt8(byteIndex);
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readInt64LE();
+      let data = basePtr.readInt64LE(dataOffset);
       res.push(new TaosObjects.TaosTimestamp(data, precision));
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertBool(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertBool(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
 
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
 
-    let ifNullByte = bitMapBuf.readInt8(byteIndex);
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readInt8();
+      let data = basePtr.readInt8(dataOffset);
       res.push(data == 1 ? true : false);
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertTinyint(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertTinyint(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
 
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
 
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
-    let ifNullByte = bitMapBuf.readInt8(byteIndex);
+
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readInt8();
+      let data = basePtr.readInt8(dataOffset);
       res.push(data);
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertTinyintUnsigned(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertTinyintUnsigned(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
 
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
 
-    let ifNullByte = bitMapBuf.readInt8(byteIndex);
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readUInt8();
+      let data = basePtr.readUInt8(dataOffset);
       res.push(data);
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertSmallint(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertSmallint(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
 
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
 
-    let ifNullByte = bitMapBuf.readInt8(byteIndex);
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readInt16LE();
+      let data = basePtr.readInt16LE(dataOffset);
       res.push(data);
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertSmallintUnsigned(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertSmallintUnsigned(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
+
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
 
-    let ifNullByte = bitMapBuf.readInt8(byteIndex);
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readUInt16LE();
+      let data = basePtr.readUInt16LE(dataOffset);
       res.push(data);
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertInt(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertInt(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
 
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
 
-    let ifNullByte = bitMapBuf.readUInt8(byteIndex);
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readInt32LE();
+      let data = basePtr.readInt32LE(dataOffset);
       res.push(data);
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertIntUnsigned(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertIntUnsigned(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
 
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
 
-    let ifNullByte = bitMapBuf.readInt8(byteIndex);
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readUInt32LE();
+      let data = basePtr.readUInt32LE(dataOffset);
       res.push(data);
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertBigint(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertBigint(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
 
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
 
-    let ifNullByte = bitMapBuf.readInt8(byteIndex);
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readInt64LE();
+      let data = basePtr.readInt64LE(dataOffset);
       res.push(BigInt(data));
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertBigintUnsigned(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertBigintUnsigned(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
 
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
 
-    let ifNullByte = bitMapBuf.readInt8(byteIndex);
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readUInt64LE();
+      let data = basePtr.readUInt64LE(dataOffset);
       res.push(BigInt(data));
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertFloat(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertFloat(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
 
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
 
-    let ifNullByte = bitMapBuf.readInt8(byteIndex);
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readFloatLE().toFixed(5);
+      let data = basePtr.readFloatLE(dataOffset).toFixed(5);
       res.push(parseFloat(data));
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertDouble(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertDouble(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
   let res = [];
-  let bitMapSize = Math.ceil(numOfRows / 8.0);
-  let bitMapBuf = ref.reinterpret(colHeadPtr, bitMapSize, 0);
+  let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
 
-  offset = bitMapSize;
+  let dataOffset = bitMapSize + offset;
+
   for (let i = 0; i < numOfRows; i++) {
     let byteIndex = i >> 3
     let bitWiseOffset = 7 - (i & 7)
 
-    let ifNullByte = bitMapBuf.readInt8(byteIndex);
+    let ifNullByte = basePtr.readInt8(offset + byteIndex);
     let ifNullFlag = (ifNullByte & (1 << bitWiseOffset)) >> bitWiseOffset;
 
     if (ifNullFlag == 1) {
       res.push(null);
     } else {
-      let colDataBuf = ref.reinterpret(colHeadPtr, nBytes, offset);
-      let data = colDataBuf.readDoubleLE().toFixed(16);
-      // console.log("convertDouble buff:",JSON.stringify(colDataBuf))
-      // console.log("convertDouble data:",data,i)
+      let data = basePtr.readDoubleLE(dataOffset).toFixed(16);
       res.push(parseFloat(data));
     }
-    offset = offset + nBytes;
+    dataOffset += nBytes;
   }
   return res;
 }
 
-function convertBinary(colHeadPtr, numOfRows, nbytes = 0, offset = 0, precision = 0) {
+function convertBinary(basePtr, numOfRows, nbytes = 0, offset = 0, precision = 0) {
 
   let res = [];
   let int16Size = ref.sizeof.int16;
   let intSize = ref.sizeof.int;
 
   let offsetArrLength = intSize * numOfRows;
-  let offsetArrBuff = ref.reinterpret(colHeadPtr, offsetArrLength, 0);
-
+  // 00 00 00 00     dataOffset
+  // 00 00           dataLength
+  // 00 00 00 00 00  dataBuff
   for (let i = 0; i < numOfRows; i++) {
-    let offset = offsetArrBuff.readInt32LE(i * intSize);
-    if (offset == -1) {
+    let dataOffset = basePtr.readInt32LE(offset + i * intSize);
+    if (dataOffset == -1) {
       res.push(null)
     } else {
-      let dataLengthBuff = ref.reinterpret(colHeadPtr, int16Size, offsetArrLength + offset);
-      let dataLength = dataLengthBuff.readInt16LE()
-
-      let dataBuff = ref.reinterpret(colHeadPtr, dataLength, offsetArrLength + offset + int16Size);
+      let dataLengthPos = offset + offsetArrLength + dataOffset
+      let dataLength = basePtr.readUInt16LE(dataLengthPos)
+      let start = dataLengthPos + int16Size
+      let end = start + dataLength
+      let dataBuff = basePtr.subarray(start, end)
       let data = dataBuff.toString('utf8')
       res.push(data)
     }
@@ -361,31 +340,30 @@ function convertBinary(colHeadPtr, numOfRows, nbytes = 0, offset = 0, precision 
   return res;
 }
 
-function convertNchar(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertNchar(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
 
   let res = [];
   let int16Size = ref.sizeof.int16;
   let intSize = ref.sizeof.int32;
 
   let offsetArrLength = intSize * numOfRows;
-  let offsetArrBuff = ref.reinterpret(colHeadPtr, offsetArrLength, 0);
-
   for (let i = 0; i < numOfRows; i++) {
-    let offset = offsetArrBuff.readInt32LE(i * intSize);
-    if (offset == -1) {
+    let dataOffset = basePtr.readInt32LE(offset + i * intSize);
+    if (dataOffset == -1) {
       res.push(null)
     } else {
-      let dataLengthBuff = ref.reinterpret(colHeadPtr, int16Size, offsetArrLength + offset);
-      let dataLength = dataLengthBuff.readInt16LE()
-
+      let dataLengthPos = offset + offsetArrLength + dataOffset
+      let dataLength = basePtr.readUInt16LE(dataLengthPos)
       let stringLength = dataLength / 4;
       let result = '';
 
+      // 00 00 00 00     dataOffset
+      // 00 00           dataLength
+      // 00 00 00 00 00  dataBuff
+      let dataBuffPos = dataLengthPos + int16Size
       for (let j = 0; j < stringLength; j++) {
-        let dataBuff = ref.reinterpret(colHeadPtr, 4, offsetArrLength + offset + int16Size + j * 4);
-        let str = dataBuff.readUInt32LE(0);
-
-        result += AppendRun(str)
+        let rune = basePtr.readUInt32LE(dataBuffPos + j * 4)
+        result += AppendRun(rune)
       }
       res.push(result);
     }
@@ -393,23 +371,25 @@ function convertNchar(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision =
   return res;
 }
 
-function convertJsonTag(colHeadPtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
+function convertJsonTag(basePtr, numOfRows, nBytes = 0, offset = 0, precision = 0) {
   let res = [];
   let int16Size = ref.sizeof.int16;
   let intSize = ref.sizeof.int;
 
   let offsetArrLength = intSize * numOfRows;
-  let offsetArrBuff = ref.reinterpret(colHeadPtr, offsetArrLength, 0);
-
+  // 00 00 00 00     dataOffset
+  // 00 00           dataLength
+  // 00 00 00 00 00  dataBuff
   for (let i = 0; i < numOfRows; i++) {
-    let offset = offsetArrBuff.readInt32LE(i * intSize);
-    if (offset == -1) {
+    let dataOffset = basePtr.readInt32LE(offset + i * intSize);
+    if (dataOffset == -1) {
       res.push(null)
     } else {
-      let dataLengthBuff = ref.reinterpret(colHeadPtr, int16Size, offsetArrLength + offset);
-      let dataLength = dataLengthBuff.readInt16LE()
-
-      let dataBuff = ref.reinterpret(colHeadPtr, dataLength, offsetArrLength + offset + int16Size);
+      let dataLengthPos = offset + offsetArrLength + dataOffset
+      let dataLength = basePtr.readUInt16LE(dataLengthPos)
+      let start = dataLengthPos + int16Size
+      let end = start + dataLength
+      let dataBuff = basePtr.subarray(start, end)
       let data = dataBuff.toString('utf8')
       res.push(data)
     }
@@ -532,8 +512,15 @@ CTaosInterface.prototype.useResult = function useResult(result) {
   if (ref.isNull(pfields) == false) {
     pfields = ref.reinterpret(pfields, this.fieldsCount(result) * TAOSFIELD.STRUCT_SIZE, 0);
     for (let i = 0; i < pfields.length; i += TAOSFIELD.STRUCT_SIZE) {
+      let end = TAOSFIELD.NAME_LENGTH
+      for (let j = 0; j < TAOSFIELD.NAME_LENGTH; j++) {
+        if (pfields[i + j] === 0){
+          end = j
+          break
+        }
+      }
       fields.push({
-        name: ref.readCString(ref.reinterpret(pfields, TAOSFIELD.NAME_LENGTH, i)),
+        name: pfields.subarray(i , i + end).toString('utf8'),
         type: pfields[i + TAOSFIELD.TYPE_OFFSET],
         bytes: pfields[i + TAOSFIELD.BYTES_OFFSET] + pfields[i + TAOSFIELD.BYTES_OFFSET + 1] * 256
       })
@@ -547,16 +534,17 @@ CTaosInterface.prototype.fetchRawBlock = function fetchRawBlock(taosRes) {
   var pDataPtr = ref.alloc('void **');
 
   let code = libtaos.taos_fetch_raw_block(taosRes, numOfRowPtr, pDataPtr);
-   
+
   if (code == 0) {
     let numOfRows = numOfRowPtr.readInt32LE();
     let pData = ref.deref(pDataPtr);
-
     let numOfFields = libtaos.taos_field_count(taosRes);
     let precision = libtaos.taos_result_precision(taosRes);
     let fields = this.useResult(taosRes);
+    let blockLength = ref.reinterpret(pData, ref.sizeof.int, 4).readInt32LE();
+    let block = ref.reinterpret(pData, blockLength, 0);
 
-    let bitMapSize = Math.ceil(numOfRows / 8.0);
+    let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
     let offsetArrLength = ref.sizeof.int32 * numOfRows;
 
     let blocks = new Array(numOfFields);
@@ -578,24 +566,22 @@ CTaosInterface.prototype.fetchRawBlock = function fetchRawBlock(taosRes) {
 
     // offset pData
     let offsetBeforeLengthArr = (4 * 5) + 8 + (4 + 1) * numOfFields;
-    var lengthArraySize = 4 * numOfFields;
+    let lengthArraySize = 4 * numOfFields;
     let offsetForColData = offsetBeforeLengthArr + lengthArraySize;
     // read column after column
     if (numOfRows > 0) {
       for (let i = 0; i < numOfFields; i++) {
 
-        let lengthPtr = ref.reinterpret(pData, ref.sizeof.int, offsetBeforeLengthArr + (i * 4));
-        let length = lengthPtr.readInt32LE();
+        let lengthOffset = offsetBeforeLengthArr + (i * 4)
+        let length = block.readInt32LE(lengthOffset);
 
         if (!convertFunctions[fields[i]['type']]) {
           throw new errors.DatabaseError("Invalid data type returned from database");
         } else if (fields[i]['type'] == 8 || fields[i]['type'] == 10 || fields[i]['type'] == 15) {
-          let colHeadPtr = ref.reinterpret(pData, length + offsetArrLength, offsetForColData)
-          blocks[i] = convertFunctions[fields[i]['type']](colHeadPtr, numOfRows, fields[i].bytes, 0, precision);
+          blocks[i] = convertFunctions[fields[i]['type']](block, numOfRows, fields[i].bytes, offsetForColData, precision);
           offsetForColData = offsetForColData + offsetArrLength + length;
         } else {
-          let colHeadPtr = ref.reinterpret(pData, length + bitMapSize, offsetForColData)
-          blocks[i] = convertFunctions[fields[i]['type']](colHeadPtr, numOfRows, fields[i].bytes, 0, precision);
+          blocks[i] = convertFunctions[fields[i]['type']](block, numOfRows, fields[i].bytes, offsetForColData, precision);
           offsetForColData = offsetForColData + bitMapSize + length;
         }
       }
@@ -650,7 +636,9 @@ CTaosInterface.prototype.query_a = function query_a(connection, sql, callback, p
 
 CTaosInterface.prototype.fetch_raw_block_a = function fetch_raw_block_a(taosRes, callback, param = ref.ref(ref.NULL)) {
   var cti = this;
-  var fetchRawBlock_a_callback = function (param2, taosRes2, numOfRows2) {
+  var fetchRawBlock_a_callback_js = function (param2, taosRes2, numOfRows2) {
+    // avoid gc
+    let x = param
     let fields = cti.fetchFields_a(taosRes2);
     let precision = libtaos.taos_result_precision(taosRes2);
 
@@ -658,9 +646,9 @@ CTaosInterface.prototype.fetch_raw_block_a = function fetch_raw_block_a(taosRes,
     let fieldLengthPtr = libtaos.taos_fetch_lengths(taosRes2);
 
     if (ref.isNull(fieldLengthPtr) == false) {
+      let fieldLengthBuf = ref.reinterpret(fieldLengthPtr, ref.sizeof.int32 * fields.length, 0);
       for (let i = 0; i < fields.length; i++) {
-        let fieldLengthBuf = ref.reinterpret(fieldLengthPtr, ref.sizeof.int32, i * ref.sizeof.int32);
-        let fieldLength = ref.get(fieldLengthBuf, 0, ref.types.int32);
+        let fieldLength = fieldLengthBuf.readInt32LE(i * ref.sizeof.int32)
         fieldLengthArr.push(fieldLength);
       }
     }
@@ -670,6 +658,9 @@ CTaosInterface.prototype.fetch_raw_block_a = function fetch_raw_block_a(taosRes,
     let numOfRows = numOfRows2;
     let numOfFields = libtaos.taos_field_count(taosRes2);
 
+    let blockLength = ref.reinterpret(pData, ref.sizeof.int, 4).readInt32LE();
+    let block = ref.reinterpret(pData, blockLength, 0);
+
     let bitMapSize = (numOfRows + ((1 << 3) - 1)) >> 3;
     let offsetArrLength = ref.sizeof.int32 * numOfRows;
 
@@ -678,29 +669,27 @@ CTaosInterface.prototype.fetch_raw_block_a = function fetch_raw_block_a(taosRes,
 
     // offset pData
     let offsetBeforeLengthArr = (4 * 5) + 8 + (4 + 1) * numOfFields;
-    var lengthArraySize = 4 * numOfFields;
+    let lengthArraySize = 4 * numOfFields;
     let offsetForColData = offsetBeforeLengthArr + lengthArraySize;
     // read column after column
     for (let i = 0; i < numOfFields; i++) {
 
-      let lengthPtr = ref.reinterpret(pData, ref.sizeof.int, offsetBeforeLengthArr + (i * 4));
-      let length = lengthPtr.readInt32LE();
+      let lengthOffset = offsetBeforeLengthArr + (i * 4)
+      let length = block.readInt32LE(lengthOffset);
 
       if (!convertFunctions[fields[i]['type']]) {
         throw new errors.DatabaseError("Invalid data type returned from database");
       } else if (fields[i]['type'] == 8 || fields[i]['type'] == 10 || fields[i]['type'] == 15) {
-        let colHeadPtr = ref.reinterpret(pData, length + offsetArrLength, offsetForColData)
-        blocks[i] = convertFunctions[fields[i]['type']](colHeadPtr, numOfRows, fields[i].bytes, 0, precision);
+        blocks[i] = convertFunctions[fields[i]['type']](block, numOfRows, fields[i].bytes, offsetForColData, precision);
         offsetForColData = offsetForColData + offsetArrLength + length;
       } else {
-        let colHeadPtr = ref.reinterpret(pData, length + bitMapSize, offsetForColData)
-        blocks[i] = convertFunctions[fields[i]['type']](colHeadPtr, numOfRows, fields[i].bytes, 0, precision);
+        blocks[i] = convertFunctions[fields[i]['type']](block, numOfRows, fields[i].bytes, offsetForColData, precision);
         offsetForColData = offsetForColData + bitMapSize + length;
       }
     }
     callback(param2, taosRes2, numOfRows2, blocks);
   }
-  var fetchRawBlock_a_callback = ffi.Callback(ref.types.void, [ref.types.void_ptr, ref.types.void_ptr, ref.types.int], fetchRawBlock_a_callback);
+  var fetchRawBlock_a_callback = ffi.Callback(ref.types.void, [ref.types.void_ptr, ref.types.void_ptr, ref.types.int], fetchRawBlock_a_callback_js);
   libtaos.taos_fetch_raw_block_a(taosRes, fetchRawBlock_a_callback, param)
 }
 // Used to parse the TAO_RES retrieved in taos_fetch_row_a()'s callback
@@ -717,8 +706,15 @@ CTaosInterface.prototype.fetchFields_a = function fetchFields_a(result) {
   if (ref.isNull(pfields) == false) {
     pfields = ref.reinterpret(pfields, pfieldscount * TAOSFIELD.STRUCT_SIZE, 0);
     for (let i = 0; i < pfields.length; i += TAOSFIELD.STRUCT_SIZE) {
+      let end = TAOSFIELD.NAME_LENGTH
+      for (let j = 0; j < TAOSFIELD.NAME_LENGTH; j++) {
+        if (pfields[i + j] === 0){
+          end = j
+          break
+        }
+      }
       fields.push({
-        name: ref.readCString(ref.reinterpret(pfields, TAOSFIELD.NAME_LENGTH, i)),
+        name: pfields.subarray(i , i + end).toString('utf8'),
         type: pfields[i + TAOSFIELD.TYPE_OFFSET],
         bytes: pfields[i + TAOSFIELD.BYTES_OFFSET] + pfields[i + TAOSFIELD.BYTES_OFFSET + 1] * 256
       })
@@ -785,9 +781,9 @@ CTaosInterface.prototype.schemalessInsert = function schemalessInsert(connection
 
 /**
  * init a TAOS_STMT object for later use.it should be freed with stmtClose.
- * @param {*} connection valid taos connection 
- * @returns  Not NULL returned for success, and NULL for failure. 
- * 
+ * @param {*} connection valid taos connection
+ * @returns  Not NULL returned for success, and NULL for failure.
+ *
  */
 CTaosInterface.prototype.stmtInit = function stmtInit(connection) {
   return libtaos.taos_stmt_init(connection)
@@ -795,7 +791,7 @@ CTaosInterface.prototype.stmtInit = function stmtInit(connection) {
 
 /**
  * prepare a sql statement,'sql' should be a valid INSERT/SELECT statement, 'length' is not used.
- * @param {*} stmt 
+ * @param {*} stmt
  * @param {string} sql  a valid INSERT/SELECT statement
  * @param {ulong} length not used
  * @returns 	0 for success, non-zero for failure.
@@ -806,7 +802,7 @@ CTaosInterface.prototype.stmtPrepare = function stmtPrepare(stmt, sql, length) {
 
 /**
  * For INSERT only. Used to bind table name as a parmeter for the input stmt object.
- * @param {*} stmt could be the value returned by 'stmtInit', 
+ * @param {*} stmt could be the value returned by 'stmtInit',
  *            that may be a valid object or NULL.
  * @param {TaosMultiBind} tableName target table name you want to  bind
  * @returns 0 for success, non-zero for failure.
@@ -816,19 +812,19 @@ CTaosInterface.prototype.stmtSetTbname = function stmtSetTbname(stmt, tableName)
 }
 
 /**
- * For INSERT only. 
- * Set a table name for binding table name as parameter and tag values for all  tag parameters. 
+ * For INSERT only.
+ * Set a table name for binding table name as parameter and tag values for all  tag parameters.
  * @param {*} stmt could be the value returned by 'stmtInit', that may be a valid object or NULL.
  * @param {*} tableName use to set target table name
- * @param {TaosMultiBind} tags use to set tag value for target table. 
- * @returns 
+ * @param {TaosMultiBind} tags use to set tag value for target table.
+ * @returns
  */
 CTaosInterface.prototype.stmtSetTbnameTags = function stmtSetTbnameTags(stmt, tableName, tags) {
   return libtaos.taos_stmt_set_tbname_tags(stmt, ref.allocCString(tableName), tags);
 }
 
 /**
- * For INSERT only. 
+ * For INSERT only.
  * Set a table name for binding table name as parameter. Only used for binding all tables
  * in one stable, user application must call 'loadTableInfo' API to load all table
  * meta before calling this API. If the table meta is not cached locally, it will return error.
@@ -842,9 +838,9 @@ CTaosInterface.prototype.stmtSetSubTbname = function stmtSetSubTbname(stmt, subT
 
 
 /**
- * Bind a single column's data, INTERNAL used and for INSERT only. 
+ * Bind a single column's data, INTERNAL used and for INSERT only.
  * @param {*} stmt could be the value returned by 'stmtInit', that may be a valid object or NULL.
- * @param {TaosMultiBind} mbind points to a column's data which could be the one or more lines. 
+ * @param {TaosMultiBind} mbind points to a column's data which could be the one or more lines.
  * @param {*} colIndex the column's index in prepared sql statement, it starts from 0.
  * @returns 0 for success, non-zero for failure.
  */
@@ -857,9 +853,9 @@ CTaosInterface.prototype.stmtBindSingleParamBatch = function stmtBindSingleParam
  * Bind one or multiple lines data.
  * @param {*} stmt could be the value returned by 'stmtInit',
  *            that may be a valid object or NULL.
- * @param {*} mbinds Points to an array contains one or more lines data.The item 
+ * @param {*} mbinds Points to an array contains one or more lines data.The item
  *            number and sequence should keep consistence with columns
- *            n sql statement. 
+ *            n sql statement.
  * @returns  0 for success, non-zero for failure.
  */
 CTaosInterface.prototype.stmtBindParamBatch = function stmtBindParamBatch(stmt, mbinds) {
@@ -868,11 +864,11 @@ CTaosInterface.prototype.stmtBindParamBatch = function stmtBindParamBatch(stmt, 
 
 /**
  * add all current bound parameters to batch process, for INSERT only.
- * Must be called after each call to bindParam/bindSingleParamBatch, 
- * or all columns binds for one or more lines with bindSingleParamBatch. User 
+ * Must be called after each call to bindParam/bindSingleParamBatch,
+ * or all columns binds for one or more lines with bindSingleParamBatch. User
  * application can call any bind parameter API again to bind more data lines after calling
  * to this API.
- * @param {*} stmt 
+ * @param {*} stmt
  * @returns 	0 for success, non-zero for failure.
  */
 CTaosInterface.prototype.addBatch = function addBatch(stmt) {
@@ -882,7 +878,7 @@ CTaosInterface.prototype.addBatch = function addBatch(stmt) {
 /**
  * actually execute the INSERT/SELECT sql statement. User application can continue
  * to bind new data after calling to this API.
- * @param {*} stmt 
+ * @param {*} stmt
  * @returns 	0 for success, non-zero for failure.
  */
 CTaosInterface.prototype.stmtExecute = function stmtExecute(stmt) {
@@ -890,7 +886,7 @@ CTaosInterface.prototype.stmtExecute = function stmtExecute(stmt) {
 }
 
 /**
- * For SELECT only,getting the query result. 
+ * For SELECT only,getting the query result.
  * User application should free it with API 'FreeResult' at the end.
  * @param {*} stmt could be the value returned by 'stmtInit', that may be a valid object or NULL.
  * @returns Not NULL for success, NULL for failure.
@@ -928,7 +924,7 @@ CTaosInterface.prototype.closeStmt = function closeStmt(stmt) {
 }
 
 /**
- * Get detail error message when got failure for any stmt API call. 
+ * Get detail error message when got failure for any stmt API call.
  * If not failure, the result returned by this API is unknown.
  * @param {*} stmt Could be the value returned by 'stmtInit', that may be a valid object or NULL.
  * @returns error string

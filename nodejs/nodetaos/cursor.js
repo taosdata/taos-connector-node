@@ -196,7 +196,7 @@ TDengineCursor.prototype.fetchall = function fetchall(options, callback) {
     this._rowcount += num_of_rows;
     let numoffields = this._fields.length;
     for (let i = 0; i < num_of_rows; i++) {
-      let rowBlock = new Array(numoffields);     
+      let rowBlock = new Array(numoffields);
       for (let j = 0; j < numoffields; j++) {
         rowBlock[j] = block[j][i];
       }
@@ -422,13 +422,13 @@ TDengineCursor.prototype.unsubscribe = function unsubscribe(subscription) {
 }
 
 /**
- * schemaless insert 
+ * schemaless insert
  * @param {*} connection a valid database connection
  * @param {*} lines string data, which statisfied with line proctocol
  * @param {*} protocal Line protocol, enum type (0,1,2,3),indicate different line protocol
  * @param {*} precision timestamp precision in lines, enum type (0,1,2,3,4,5,6)
- * @returns TAOS_RES 
- * 
+ * @returns TAOS_RES
+ *
  */
 TDengineCursor.prototype.schemalessInsert = function schemalessInsert(lines, protocol, precision) {
   this._result = this._chandle.schemalessInsert(this._connection._conn, lines, protocol, precision);
@@ -442,8 +442,8 @@ TDengineCursor.prototype.schemalessInsert = function schemalessInsert(lines, pro
 //STMT
 /**
  * init a TAOS_STMT object for later use.it should be freed with stmtClose.
- * @returns  Not NULL returned for success, and NULL for failure. 
- * 
+ * @returns  Not NULL returned for success, and NULL for failure.
+ *
  */
 TDengineCursor.prototype.stmtInit = function stmtInit() {
   let stmt = null
@@ -492,11 +492,11 @@ TDengineCursor.prototype.stmtSetTbname = function stmtSetTbname(tableName) {
 }
 
 /**
- * For INSERT only. 
- * Set a table name for binding table name as parameter and tag values for all  tag parameters. 
+ * For INSERT only.
+ * Set a table name for binding table name as parameter and tag values for all  tag parameters.
  * @param {*} tableName use to set target table name
- * @param {TaosMultiBind} tags use to set tag value for target table. 
- * @returns 
+ * @param {TaosMultiBind} tags use to set tag value for target table.
+ * @returns
  */
 TDengineCursor.prototype.stmtSetTbnameTags = function stmtSetTbnameTags(tableName, tags) {
   if (this._stmt == null) {
@@ -512,7 +512,7 @@ TDengineCursor.prototype.stmtSetTbnameTags = function stmtSetTbnameTags(tableNam
 }
 
 /**
- * For INSERT only. 
+ * For INSERT only.
  * Set a table name for binding table name as parameter. Only used for binding all tables
  * in one stable, user application must call 'loadTableInfo' API to load all table
  * meta before calling this API. If the table meta is not cached locally, it will return error.
@@ -533,8 +533,8 @@ TDengineCursor.prototype.stmtSetSubTbname = function stmtSetSubTbname(subTableNa
 }
 
 /**
- * Bind a single column's data, INTERNAL used and for INSERT only. 
- * @param {TaosMultiBind} mbind points to a column's data which could be the one or more lines. 
+ * Bind a single column's data, INTERNAL used and for INSERT only.
+ * @param {TaosMultiBind} mbind points to a column's data which could be the one or more lines.
  * @param {*} colIndex the column's index in prepared sql statement, it starts from 0.
  * @returns 0 for success, non-zero for failure.
  */
@@ -554,9 +554,9 @@ TDengineCursor.prototype.stmtBindSingleParamBatch = function stmtBindSingleParam
 /**
  * For INSERT only.
  * Bind one or multiple lines data.
- * @param {*} mbinds Points to an array contains one or more lines data.The item 
+ * @param {*} mbinds Points to an array contains one or more lines data.The item
  *            number and sequence should keep consistence with columns
- *            n sql statement. 
+ *            n sql statement.
  * @returns  0 for success, non-zero for failure.
  */
 TDengineCursor.prototype.stmtBindParamBatch = function stmtBindParamBatch(mbinds) {
@@ -574,11 +574,11 @@ TDengineCursor.prototype.stmtBindParamBatch = function stmtBindParamBatch(mbinds
 
 /**
  * add all current bound parameters to batch process, for INSERT only.
- * Must be called after each call to bindParam/bindSingleParamBatch, 
- * or all columns binds for one or more lines with bindSingleParamBatch. User 
+ * Must be called after each call to bindParam/bindSingleParamBatch,
+ * or all columns binds for one or more lines with bindSingleParamBatch. User
  * application can call any bind parameter API again to bind more data lines after calling
  * to this API.
- * @param {*} stmt 
+ * @param {*} stmt
  * @returns 	0 for success, non-zero for failure.
  */
 TDengineCursor.prototype.stmtAddBatch = function stmtAddBatch() {
@@ -598,7 +598,7 @@ TDengineCursor.prototype.stmtAddBatch = function stmtAddBatch() {
 /**
  * actually execute the INSERT/SELECT sql statement. User application can continue
  * to bind new data after calling to this API.
- * @param {*} stmt 
+ * @param {*} stmt
  * @returns 	0 for success, non-zero for failure.
  */
 TDengineCursor.prototype.stmtExecute = function stmtExecute() {
@@ -615,7 +615,7 @@ TDengineCursor.prototype.stmtExecute = function stmtExecute() {
 }
 
 /**
- * For SELECT only,getting the query result. 
+ * For SELECT only,getting the query result.
  * User application should free it with API 'FreeResult' at the end.
  * @returns Not NULL for success, NULL for failure.
  */
@@ -659,7 +659,7 @@ TDengineCursor.prototype.loadTableInfo = function loadTableInfo(tableList) {
 
 /**
  * close STMT object and free resources.
- * @param {*} stmt 
+ * @param {*} stmt
  * @returns 0 for success, non-zero for failure.
  */
 TDengineCursor.prototype.stmtClose = function stmtClose() {

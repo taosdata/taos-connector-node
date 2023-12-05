@@ -235,7 +235,7 @@ function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: Respo
             // could change 
         }
         default: {
-            throw new WebSocketQueryInterFaceError(`unspported type ${meta.type} for column ${meta.name}`)
+            throw new WebSocketQueryInterFaceError(`unsupported type ${meta.type} for column ${meta.name}`)
         }
     }
 }

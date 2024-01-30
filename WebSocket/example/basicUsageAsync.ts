@@ -1,6 +1,6 @@
 import { connect } from "../index";
 
-let dsn = 'ws://root:taosdata@127.0.0.1:6041/rest/ws'
+let dsn = 'ws://root:taosdata@192.168.1.98:6041/rest/ws'
 let ws = connect(dsn)
 
 
@@ -37,7 +37,7 @@ async function runSql(sql:string) {
         await runSql('show tables')
         await runSql('CREATE STABLE if not exists meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);')
         await runSql('describe meters')
-        await runSql('INSERT INTO d1001 USING meters TAGS ("California.SanFrancisco", 2) VALUES (NOW, 10.2, 219, 0.32)')
+        await runSql('INSERT INTO d1001 USING meters TAGS (3, "California.SanFrancisco") VALUES (NOW, 10.2, 219, 0.32)')
         await runSql('select * from meters')
         await runSql('use test')
         ws.close()

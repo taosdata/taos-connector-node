@@ -72,7 +72,7 @@ export class TaosResult {
 
 }
 
-interface TDengineMeta {
+export interface TDengineMeta {
     name: string,
     type: string,
     length: number,

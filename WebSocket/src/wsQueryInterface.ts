@@ -73,7 +73,7 @@ export class WSInterface {
         }
         return new Promise((resolve, reject) => {
             let jsonStr = JSON.stringify(queryMsg)
-            // console.log("[wsQueryInterface.query.queryMsg]===>" + jsonStr)
+            console.log("[wsQueryInterface.query.queryMsg]===>" + jsonStr)
             this._wsQueryClient.sendMsg(jsonStr)
                 .then((e: any) => {
                     if (e.code == 0) {

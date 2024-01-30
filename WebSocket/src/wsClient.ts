@@ -1,4 +1,4 @@
-import { ICloseEvent, IMessageEvent, w3cwebsocket } from "websocket";
+import { ICloseEvent, IMessageEvent, w3cwebsocket } from 'websocket';
 import { TDWebSocketClientError, WebSocketQueryError } from './wsError'
 
 interface MessageId {
@@ -31,8 +31,6 @@ export class TDWebSocketClient {
             let search = url.search;
 
             this._wsConn = new w3cwebsocket(origin.concat(pathname).concat(search));
-
-            // this._wsConn.onopen = this._onopen
 
             this._wsConn.onerror = function (err: Error) { throw err }
 

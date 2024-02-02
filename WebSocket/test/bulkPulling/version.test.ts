@@ -5,15 +5,15 @@ var ws = connect(DSN)
 
 describe('TDWebSocket.version()', () => {
     test('check version', () => {
-        return ws.version()
+        return ws.Version()
         .then((version) => {
             // console.log(version)
             expect(version.charAt(0)).toEqual('3')
         })
-        .then(()=>{ws.close()})
+        .then(()=>{ws.Close()})
     })
 })
 afterAll(() => {
     //close websocket and clear data
-    ws.close()
+    ws.Close()
 })

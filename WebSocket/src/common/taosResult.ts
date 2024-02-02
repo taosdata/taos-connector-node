@@ -1,4 +1,4 @@
-import { WSFetchBlockResponse, WSFetchResponse, WSQueryResponse } from "./wsQueryResponse";
+import { WSFetchBlockResponse, WSFetchResponse, WSQueryResponse } from "../client/wsResponse";
 import { ColumnsBlockType, TDengineTypeCode, TDengineTypeName } from './constant'
 import { TaosResultError, WebSocketQueryInterFaceError } from "./wsError";
 import { AppendRune } from "./ut8Helper"
@@ -70,6 +70,11 @@ export class TaosResult {
         }
     }
 
+}
+
+export interface TaosRowResult {
+    meta: Array<TDengineMeta> | null,
+    data: Array<any> | undefined
 }
 
 export interface TDengineMeta {

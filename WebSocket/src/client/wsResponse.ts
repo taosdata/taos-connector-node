@@ -24,6 +24,7 @@ export class WSQueryResponse {
     message: string;
     action: string;
     req_id: number;
+    stmt_id:number;
     timing: bigint;
     id: bigint;
     is_update: boolean;
@@ -33,14 +34,20 @@ export class WSQueryResponse {
     fields_types: Array<number> | null;
     fields_lengths: Array<number> | null;
     precision: number;
-
+    
     constructor(msg: any) {
         this.code = msg.code;
         this.message = msg.message;
         this.action = msg.action;
         this.req_id = msg.req_id;
         this.timing = BigInt(msg.timing);
-        this.id = BigInt(msg.id);
+        if (msg.id) {
+            this.id = BigInt(msg.id);
+        }else{
+            this.id = BigInt(0)
+        }
+        
+        this.stmt_id = msg.stmt_id;
         this.is_update = msg.is_update;
         this.affected_rows = msg.affected_rows;
         this.fields_count = msg.fields_count;

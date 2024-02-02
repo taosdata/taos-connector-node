@@ -6,14 +6,14 @@ var ws = connect(DSN)
 
 describe('TDWebSocket.connect() success ', () => {
     test('normal connect', async() => {
-        let connRes = await ws.connect()
+        let connRes = await ws.Open()
         expect(connRes.action).toBe('conn')
     })
 
     test.skip('connect fails with error', async() => {
         expect.assertions(1)
         try {
-            await  ws.connect("jest");
+            await  ws.Open("jest");
         }catch(e){
             expect(e).toMatch('Invalid database name')
         }
@@ -23,5 +23,5 @@ describe('TDWebSocket.connect() success ', () => {
 
 afterEach(() => {
     //close websocket and clear data
-    ws.close()
+    ws.Close()
 })

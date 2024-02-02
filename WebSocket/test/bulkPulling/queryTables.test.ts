@@ -45,25 +45,25 @@ const selectJsonTable = `select * from ${jsonTable}`
 const selectJsonTableCN = `select * from ${jsonTableCN}`
 
 beforeAll(async () => {
-    return await ws.connect()
-        .then(() => ws.query(createDB))
-        .then(() => ws.query(useDB))
-        .then(() => ws.query(createSTable(stable)))
-        .then(() => ws.query(createSTable(stableCN)))
-        .then(() => ws.query(createTable(table)))
-        .then(() => ws.query(createTable(tableCN)))
-        .then(() => ws.query(createSTableJSON(jsonTable)))
-        .then(() => ws.query(createSTableJSON(jsonTableCN)))
+    return await ws.Open()
+        .then(() => ws.Exec(createDB))
+        .then(() => ws.Exec(useDB))
+        .then(() => ws.Exec(createSTable(stable)))
+        .then(() => ws.Exec(createSTable(stableCN)))
+        .then(() => ws.Exec(createTable(table)))
+        .then(() => ws.Exec(createTable(tableCN)))
+        .then(() => ws.Exec(createSTableJSON(jsonTable)))
+        .then(() => ws.Exec(createSTableJSON(jsonTableCN)))
         .catch((e) => { throw new Error(e) })
 })
 
 describe('ws.query(stable)', () => {
     test('Insert query stable without CN character', async () => {
         let insert = insertStable(tableValues, stableTags, stable)
-        let insertRes = await ws.query(insert)
+        let insertRes = await ws.Exec(insert)
         expect(insertRes.affectRows).toBe(5)
 
-        let queryRes = await ws.query(selectStable)
+        let queryRes = await ws.Exec(selectStable)
 
         let expectMeta = tableMeta.concat(tagMeta)
         let expectData = expectStableData(tableValues, stableTags)
@@ -92,11 +92,11 @@ describe('ws.query(stable)', () => {
     test('query stable with CN character', async () => {
         let insertCN = insertStable(tableCNValues, stableCNTags, stableCN)
         // console.log(insertCN)
-        let insertRes = await ws.query(insertCN)
+        let insertRes = await ws.Exec(insertCN)
         // console.log(insertRes)
         expect(insertRes.affectRows).toBe(5)
 
-        let queryRes = await ws.query(selectStableCN)
+        let queryRes = await ws.Exec(selectStableCN)
 
         let expectMeta = tableMeta.concat(tagMeta)
         let expectData = expectStableData(tableCNValues, stableCNTags)
@@ -132,10 +132,10 @@ describe('ws.query(table)', () => {
     test('Insert query normal table without CN character', async () => {
         let insert = insertNTable(tableValues, table)
         // console.log(insert)
-        let insertRes = await ws.query(insert)
+        let insertRes = await ws.Exec(insert)
         expect(insertRes.affectRows).toBe(5)
 
-        let queryRes = await ws.query(selectTable)
+        let queryRes = await ws.Exec(selectTable)
 
         let expectMeta = tableMeta
         let expectData = tableValues
@@ -164,11 +164,11 @@ describe('ws.query(table)', () => {
     test('Insert query normal table with CN character', async () => {
         let insertCN = insertNTable(tableCNValues, tableCN)
         // console.log(insertCN)
-        let insertRes = await ws.query(insertCN)
+        let insertRes = await ws.Exec(insertCN)
         // console.log(insertRes)
         expect(insertRes.affectRows).toBe(5)
 
-        let queryRes = await ws.query(selectTableCN)
+        let queryRes = await ws.Exec(selectTableCN)
 
         let expectMeta = tableMeta
         let expectData = tableCNValues
@@ -202,10 +202,10 @@ describe('ws.query(jsonTable)', () => {
         let insert = insertStable(tableValues, jsonTags, jsonTable)
         // console.log(insert)
 
-        let insertRes = await ws.query(insert);
+        let insertRes = await ws.Exec(insert);
         expect(insertRes.affectRows).toBe(5)
 
-        let queryRes = await ws.query(selectJsonTable)
+        let queryRes = await ws.Exec(selectJsonTable)
         let expectMeta = tableMeta.concat(jsonMeta)
         let expectData = expectStableData(tableValues, jsonTags)
         let actualMeta = queryRes.getTDengineMeta()
@@ -236,10 +236,10 @@ describe('ws.query(jsonTable)', () => {
         let insert = insertStable(tableCNValues, jsonTagsCN, jsonTableCN)
         // console.log(insert)
 
-        let insertRes = await ws.query(insert);
+        let insertRes = await ws.Exec(insert);
         expect(insertRes.affectRows).toBe(5)
 
-        let queryRes = await ws.query(selectJsonTableCN)
+        let queryRes = await ws.Exec(selectJsonTableCN)
         let expectMeta = tableMeta.concat(jsonMeta)
         let expectData = expectStableData(tableCNValues, jsonTagsCN)
         let actualMeta = queryRes.getTDengineMeta()
@@ -267,8 +267,8 @@ describe('ws.query(jsonTable)', () => {
 })
 
 afterAll(async () => {
-    await ws.query(dropDB)
-    ws.close()
+    await ws.Exec(dropDB)
+    ws.Close()
 })
 
 //--detectOpenHandles --maxConcurrency=1 --forceExit

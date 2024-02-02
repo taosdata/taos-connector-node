@@ -1,7 +1,6 @@
-import { connect } from "../index";
-
-let ws = connect("ws://root:taosdata@127.0.0.1:6041/rest/ws")
-
+import {connect, stmtConnect } from "../index";
+let ws = connect("ws://root:taosdata@192.168.1.98:6051/rest/ws")
+let stmt = stmtConnect("ws://root:taosdata@192.168.1.98:6051/rest/ws")
 const db = 'test';
 const table = 'ws'
 const createDB = `create database if not exists ${db} keep 3650`;
@@ -14,30 +13,31 @@ const insertSql = `insert into ${db}.${table} values('2022-03-30 18:30:51.567',1
     `('2022-03-30 18:30:51.568',5,6,7,8,'binary2','nchar2')` +
     `('2022-03-30 18:30:51.569',9,0,1,2,'binary3','nchar3')`;
 const querySql = `select * from ${db}.${table}`;
-const errorSql = 'show database';
+const errorSql = 'show databases';
+
+ws.Open()
+    // .then(res=>console.log(res))   
+    // .then(() => ws.Query(createDB))
+    // .then(res=> res.Scan())
+    // .then(res => { console.log(res) })
+    // .then(() => ws.Exec(useDB))
+    // .then(res => { console.log(res) })
+    // .then(() => ws.Exec(createTB))
+    // .then(res => { console.log(res) })
+    .then(() => ws.Exec(insertSql))
+    .then(res => console.log(res))
+    // .then(() => ws.Exec(addColumn))
+    // .then(res => console.log(res))
+    // .then(() => ws.Exec(dropColumn))
+    // .then(res => console.log(res))
+    .then(() => {ws.Exec(querySql)})
+    .then(res => {console.log("fdfdfdfdfewfewf"); console.log(res)})
+    // .then(() => ws.Exec(dropDB))
+    // .then(res => console.log(res))
+    // .then(() => ws.Exec(errorSql))
+    // .then(res=>console.log(res))
+    .catch(e => { console.log(e); ws.Close() })
 
 
-ws.connect()
-    .then(res=>console.log(res))   
-    .then(() => ws.query(createDB))
-    .then(res => { console.log(res) })
-    .then(() => ws.query(useDB))
-    .then(res => { console.log(res) })
-    .then(() => ws.query(createTB))
-    .then(res => { console.log(res) })
-    .then(() => ws.query(insertSql))
-    .then(res => console.log(res))
-    .then(() => ws.query(addColumn))
-    .then(res => console.log(res))
-    .then(() => ws.query(dropColumn))
-    .then(res => console.log(res))
-    .then(() => ws.query(querySql))
-    .then(res => console.log(res))
-    .then(() => ws.query(dropDB))
-    .then(res => console.log(res))
-    .then(() => ws.query(errorSql))
-    .then(res=>console.log(res))
-    .then(() => ws.close())
-    .catch(e => { console.log(e); ws.close() })
 
-
+    

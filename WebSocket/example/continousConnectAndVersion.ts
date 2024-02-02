@@ -2,15 +2,15 @@ import { connect } from "../index";
 
 let ws = connect("ws://root:taosdata@127.0.0.1:6041/rest/ws")
 
-ws.version()
+ws.Version()
 .then((e) =>{console.log(e)} )
-.then(()=>ws.version())
+.then(()=>ws.Version())
 .then((e) =>{console.log(e)} )
-.then(()=>ws.connect())
+.then(()=>ws.Open())
 .then((e) =>{console.log(e)} )
-.then(()=>ws.connect('test'))
-.then((e) =>{console.log(e);ws.close()} )
-.catch(e=>{console.log(e);ws.close();})
+.then(()=>ws.Open('test'))
+.then((e) =>{console.log(e);ws.Close()} )
+.catch(e=>{console.log(e);ws.Close();})
 
 
 

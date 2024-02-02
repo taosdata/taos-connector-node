@@ -6,3 +6,4 @@ WebSocket/dist/
 WebSocket/node_modules/
 WebSocket/tsc/
 WebSocket/coverage/
+.DS_Store

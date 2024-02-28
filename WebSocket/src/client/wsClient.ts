@@ -1,6 +1,6 @@
 import { ICloseEvent, IMessageEvent, w3cwebsocket } from 'websocket';
-import { TDWebSocketClientError, WebSocketQueryError } from '../common/wsError'
-import { WSQueryResponse } from './wsResponse';
+import { ErrorCode, TDWebSocketClientError, WebSocketQueryError } from '../common/wsError'
+import { MessageResp } from '../common/taosResult';
 
 interface MessageId {
     action: string,
@@ -12,6 +12,7 @@ interface MessageAction {
     reject: Function,
     resolve: Function,
     timer: ReturnType<typeof setTimeout>,
+    sendTime: number,
 }
 
 var _msgActionRegister: Map<MessageId, MessageAction> = new Map();
@@ -22,34 +23,33 @@ export class TDWebSocketClient {
     _timeout = 5000;
 
     // create ws
-    constructor(url: URL) {
-
+    constructor(url: URL, timeout :number | undefined | null) {
         // return w3bsocket3
         if (url) {
             this._wsURL = url;
             let origin = url.origin;
             let pathname = url.pathname;
             let search = url.search;
-
+            if (timeout) {
+                this._timeout = timeout
+            }
             this._wsConn = new w3cwebsocket(origin.concat(pathname).concat(search));
 
-            this._wsConn.onerror = function (err: Error) { throw err }
+            this._wsConn.onerror = function (err: Error) { console.log(err.message); throw err }
 
             this._wsConn.onclose = this._onclose
 
             this._wsConn.onmessage = this._onmessage
             this._wsConn._binaryType = "arraybuffer"
         } else {
-            throw new WebSocketQueryError("websocket URL must be defined")
+            throw new WebSocketQueryError(ErrorCode.ERR_INVALID_URL, "websocket URL must be defined")
         }
-
-
     }
 
     Ready(): Promise<TDWebSocketClient> {
         return new Promise((resolve, reject) => {
             this._wsConn.onopen = () => {
-                // console.log("websocket connection opened")
+                console.log("websocket connection opened")
                 resolve(this);
             }
         })
@@ -64,15 +64,12 @@ export class TDWebSocketClient {
 
     private _onmessage(event: any) {
         let data = event.data;
-        console.log("[wsClient._onMessage()._msgActionRegister]\n")
-        console.log(_msgActionRegister)
+        // console.log("[wsClient._onMessage()._msgActionRegister]\n")
+        // console.log(_msgActionRegister)
 
-        console.log("===="+ (Object.prototype.toString.call(data)))
-
+        console.log("wsClient._onMessage()===="+ (Object.prototype.toString.call(data)))
         if (Object.prototype.toString.call(data) === '[object ArrayBuffer]') {
             let id = new DataView(data, 8, 8).getBigUint64(0, true)
-            console.log("fetch block response id:" + id)
-
             let action: MessageAction | any = undefined;
 
             _msgActionRegister.forEach((v: MessageAction, k: MessageId) => {
@@ -82,18 +79,21 @@ export class TDWebSocketClient {
                 }
             })
             if (action) {
-                action.resolve(data);
+                let currTime = new Date().getTime()
+                let resp:MessageResp = {
+                    msg:data,
+                    totalTime:Math.abs(currTime - action.sendTime),
+                };
+                action.resolve(resp);
             }
             else {
                 _msgActionRegister.clear()
-                throw new TDWebSocketClientError(`no callback registered for fetch_block with id=${id}`);
+                throw new TDWebSocketClientError(ErrorCode.ERR_WS_NO_CALLBACK, `no callback registered for fetch_block with id=${id}`);
             }
 
         } else if (Object.prototype.toString.call(data) === '[object Blob]') {
             data.arrayBuffer().then((d: ArrayBuffer) => {
                 let id = new DataView(d, 8, 8).getBigUint64(0, true)
-                console.log("fetch block response id:" + id)
-
                 let action: MessageAction | any = undefined;
 
                 _msgActionRegister.forEach((v: MessageAction, k: MessageId) => {
@@ -103,11 +103,16 @@ export class TDWebSocketClient {
                     }
                 })
                 if (action) {
-                    action.resolve(d);
+                    let currTime = new Date().getTime()
+                    let resp:MessageResp = {
+                        msg:d,
+                        totalTime:Math.abs(currTime - action.sendTime),
+                    };
+                    action.resolve(resp);
                 }
                 else {
                     _msgActionRegister.clear()
-                    throw new TDWebSocketClientError(`no callback registered for fetch_block with id=${id}`);
+                    throw new TDWebSocketClientError(ErrorCode.ERR_WS_NO_CALLBACK, `no callback registered for fetch_block with id=${id}`);
                 }
             })
 
@@ -127,16 +132,21 @@ export class TDWebSocketClient {
                 }
             })
             if (action) {
-                console.log("[_onmessage.stringType.msg]==>:" + msg);
-                action.resolve(msg);
+                let currTime = new Date().getTime()
+                let resp:MessageResp = {
+                    msg:msg,
+                    totalTime:Math.abs(currTime - action.sendTime),
+                };
+                // console.log("resp", resp, action.sendTime, currTime)
+                action.resolve(resp);
             }
             else {
                 _msgActionRegister.clear()
-                throw new TDWebSocketClientError(`no callback registered for ${msg.action} with req_id=${msg.req_id}`);
+                throw new TDWebSocketClientError(ErrorCode.ERR_WS_NO_CALLBACK, `no callback registered for ${msg.action} with req_id=${msg.req_id}`);
             }
         } else {
             _msgActionRegister.clear()
-            throw new TDWebSocketClientError(`invalid message type ${Object.prototype.toString.call(data)}`)
+            throw new TDWebSocketClientError(ErrorCode.ERR_INVALID_MESSAGE_TYPE, `invalid message type ${Object.prototype.toString.call(data)}`)
         }
     }
 
@@ -145,7 +155,7 @@ export class TDWebSocketClient {
             _msgActionRegister.clear();
             this._wsConn.close();
         } else {
-            throw new TDWebSocketClientError("WebSocket connection is undefined.")
+            throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION, "WebSocket connection is undefined.")
         }
     }
 
@@ -159,15 +169,14 @@ export class TDWebSocketClient {
         if (msg.args.id !== undefined) {
             msg.args.id = BigInt(msg.args.id)
         }
-        console.log("[wsClient.sendMsgNoResp.msg]===>\n", msg)
+        // console.log("[wsClient.sendMsgNoResp.msg]===>\n", msg)
 
         return new Promise((resolve, reject) => {
             if (this._wsConn && this._wsConn.readyState > 0) {            
                 this._wsConn.send(message)
-                console.log("TDWebSocketClient::_wsConn.send:" + message)
                 resolve(true)
             } else {
-                reject(new WebSocketQueryError(`WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
+                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
             }
         })
     }
@@ -180,33 +189,29 @@ export class TDWebSocketClient {
         if (msg.args.id !== undefined) {
             msg.args.id = BigInt(msg.args.id)
         }
-        console.log("[wsClient.sendMessage.msg]===>\n")
-        console.log(msg)
+        // console.log("[wsClient.sendMessage.msg]===>\n", msg)
 
         return new Promise((resolve, reject) => {
             if (this._wsConn && this._wsConn.readyState > 0) {
                 if (register) {
                     this._registerCallback({ action: msg.action, req_id: msg.args.req_id, id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id) }, resolve, reject)
-                    console.log("[wsClient.sendMessage._msgActionRegister]===>\n")
-                    console.log(_msgActionRegister)
+                    // console.log("[wsClient.sendMessage._msgActionRegister]===>\n", _msgActionRegister)
                 }
                 
                 this._wsConn.send(message)
-                console.log("TDWebSocketClient::_wsConn.send:" + message)
             } else {
-                reject(new WebSocketQueryError(`WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
+                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
             }
         })
     }
 
     private _registerCallback(id: MessageId, res: (args: unknown) => void, rej: (reason: any) => void) {
-        console.log("register messageId:")
-        console.log(id)
         _msgActionRegister.set(id,
             {
+                sendTime: new Date().getTime(),
                 reject: rej,
                 resolve: res,
-                timer: setTimeout(() => rej(new WebSocketQueryError(`action:${id.action},req_id:${id.req_id} timeout with ${this._timeout} milliseconds`)), this._timeout)
+                timer: setTimeout(() => rej(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_QUERY_TIMEOUT, `action:${id.action},req_id:${id.req_id} timeout with ${this._timeout} milliseconds`)), this._timeout)
             })
     }
 

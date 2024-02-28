@@ -17,7 +17,7 @@ export async function execute(sql: string, wsInterface: WSInterface): Promise<Ta
                 if (wsFetchResponse.completed == true) {
                     break;
                 } else {
-                    taosResult.setRows(wsFetchResponse)
+                    taosResult.SetRowsAndTime(wsFetchResponse.rows, wsFetchResponse.timing)
                     let tmp: TaosResult = await wsInterface.fetchBlock(wsFetchResponse, taosResult)
                     taosResult = tmp;
                 }

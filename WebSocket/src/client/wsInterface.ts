@@ -1,6 +1,6 @@
-import { parseBlock, TaosResult } from '../common/taosResult';
+import { parseBlock, MessageResp, TaosResult } from '../common/taosResult';
 import { TDWebSocketClient } from './wsClient';
-import { WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
+import { ErrorCode, WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
 import {
   WSVersionResponse,
   WSFetchBlockResponse,
@@ -15,13 +15,13 @@ export class WSInterface {
   private _req_id = 1000000;
   private _url;
 
-  constructor(url: URL) {
+  constructor(url: URL, timeout ?:number | undefined | null) {
     this.checkURL(url);
     this._url = url;
-    this._wsQueryClient = new TDWebSocketClient(this._url);
+    this._wsQueryClient = new TDWebSocketClient(this._url, timeout);
   }
 
-  connect(database?: string): Promise<WSConnResponse> {
+  connect(database?: string | undefined | null): Promise<WSConnResponse> {
     let _db = this._url.pathname.split('/')[3];
 
     if (database) {
@@ -37,30 +37,42 @@ export class WSInterface {
         db: _db,
       },
     };
-    // console.log(connMsg)
+    
     return new Promise((resolve, reject) => {
       if (this._wsQueryClient.readyState() > 0) {
         this._wsQueryClient.sendMsg(JSON.stringify(connMsg)).then((e: any) => {
-          if (e.code == 0) {
+          if (e.msg.code == 0) {
             resolve(e);
           } else {
-            reject(new WebSocketQueryError(`${e.message}, code ${e.code}`));
+            reject(new WebSocketQueryError(e.code, e.message));
           }
-        });
+        }).catch((e) => {reject(e);});
       } else {
-        this._wsQueryClient
-          .Ready()
-          .then((ws: TDWebSocketClient) => {
+        this._wsQueryClient.Ready().then((ws: TDWebSocketClient) => {
             return ws.sendMsg(JSON.stringify(connMsg));
           })
           .then((e: any) => {
-            if (e.code == 0) {
+            if (e.msg.code == 0) {
               resolve(e);
             } else {
-              reject(new WebSocketQueryError(`${e.message}, code ${e.code}`));
+              reject(new WebSocketQueryError(e.code, e.message));
             }
-          });
+          }).catch((e) => {reject(e);});
       }
+    });
+  }
+
+  // return Response need callor parse .
+  execReturnAny(queryMsg: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
+      this._wsQueryClient.sendMsg(queryMsg).then((e: any) => {
+        if (e.msg.code == 0) {
+          resolve(e);
+        } else {
+          reject(new WebSocketInterfaceError(e.code, e.message));
+        }
+      }).catch((e) => {reject(e);});
     });
   }
 
@@ -78,12 +90,12 @@ export class WSInterface {
     return new Promise((resolve, reject) => {
       console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
       this._wsQueryClient.sendMsg(queryMsg).then((e: any) => {
-        if (e.code == 0) {
+        if (e.msg.code == 0) {
           resolve(new WSQueryResponse(e));
         } else {
-          reject(new WebSocketInterfaceError(`${e.message},code ${e.code}`));
+          reject(new WebSocketInterfaceError(e.code, e.message));
         }
-      });
+      }).catch((e) => {reject(e);});
     });
   }
 
@@ -106,12 +118,12 @@ export class WSInterface {
       let jsonStr = JSONBig.stringify(fetchMsg);
       console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
       this._wsQueryClient.sendMsg(jsonStr).then((e: any) => {
-          if (e.code == 0) {
+        if (e.msg.code == 0) {
             resolve(new WSFetchResponse(e));
-          } else {
-            reject(new WebSocketInterfaceError(`${e.message},code ${e.code}`));
-          }
-        }).catch((e) => {reject(e);});
+        } else {
+            reject(new WebSocketInterfaceError(e.code, e.message));
+        }
+      }).catch((e) => {reject(e);});
     });
   }
 
@@ -128,7 +140,9 @@ export class WSInterface {
       let jsonStr = JSONBig.stringify(fetchBlockMsg);
       // console.log("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
       this._wsQueryClient.sendMsg(jsonStr).then((e: any) => {
-          resolve(parseBlock(fetchResponse, new WSFetchBlockResponse(e), taosResult));
+          let resp:MessageResp = e
+          taosResult.AddtotalTime(resp.totalTime)
+          resolve(parseBlock(fetchResponse.rows, new WSFetchBlockResponse(resp.msg), taosResult));
           // if retrieve JSON then reject with message
           // else is binary , so parse raw block to TaosResult
         }).catch((e) => reject(e));
@@ -166,10 +180,10 @@ export class WSInterface {
         this._wsQueryClient.sendMsg(JSONBig.stringify(versionMsg))
           .then((e: any) => {
             // console.log(e)
-            if (e.code == 0) {
+            if (e.msg.code == 0) {
               resolve(new WSVersionResponse(e).version);
             } else {
-              reject(new WSVersionResponse(e).message);
+              reject(new WebSocketInterfaceError(e.code, e.message));
             }
           }).catch((e) => reject(e));
       }
@@ -178,10 +192,10 @@ export class WSInterface {
           return ws.sendMsg(JSONBig.stringify(versionMsg));
         }).then((e: any) => {
           // console.log(e)
-          if (e.code == 0) {
+          if (e.msg.code == 0) {
             resolve(new WSVersionResponse(e).version);
           } else {
-            reject(new WSVersionResponse(e).message);
+            reject(new WebSocketInterfaceError(e.code, e.message));
           }
         }).catch((e) => reject(e));
     });
@@ -195,7 +209,7 @@ export class WSInterface {
     // Assert is cloud url
     if (!url.searchParams.has('token')) {
       if (!(url.username || url.password)) {
-        throw new WebSocketInterfaceError('invalid url, password or username needed.');
+        throw new WebSocketInterfaceError(ErrorCode.ERR_INVALID_AUTHENTICATION, 'invalid url, password or username needed.');
       }
     }
   }

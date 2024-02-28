@@ -2,40 +2,44 @@
  * define ws Response type|class, for query?
  */
 
+import { MessageResp } from "../common/taosResult";
 
 export class WSVersionResponse {
-
     version: string;
     code: number;
     message: string;
     action: string;
-
-    constructor(msg: any) {
-
-        this.version = msg.version;
-        this.code = msg.code;
-        this.message = msg.message;
-        this.action = msg.action;
+    totalTime: number;
+    constructor(resp:MessageResp) {
+        this.version = resp.msg.version;
+        this.code = resp.msg.code;
+        this.message = resp.msg.message;
+        this.action = resp.msg.action;
+        this.totalTime = resp.totalTime;
     }
 }
 
 export class WSQueryResponse {
-    code: number;
-    message: string;
-    action: string;
-    req_id: number;
-    stmt_id:number;
-    timing: bigint;
-    id: bigint;
-    is_update: boolean;
-    affected_rows: number;
-    fields_count: number | null;
-    fields_names: Array<string> | null;
-    fields_types: Array<number> | null;
-    fields_lengths: Array<number> | null;
-    precision: number;
+    code?: number;
+    message?: string;
+    action?: string;
+    req_id?: number;
+    timing?: bigint | null;
+    totalTime: number;
+    id?: bigint;
+    is_update?: boolean;
+    affected_rows?: number | null;
+    fields_count?: number | null;
+    fields_names?: Array<string> | null;
+    fields_types?: Array<number> | null;
+    fields_lengths?: Array<number> | null;
+    precision?: number;
     
-    constructor(msg: any) {
+    constructor(resp:MessageResp) {
+        this.totalTime = resp.totalTime
+        this.initMsg(resp.msg)
+    }
+    private initMsg(msg:any) {
         this.code = msg.code;
         this.message = msg.message;
         this.action = msg.action;
@@ -47,7 +51,6 @@ export class WSQueryResponse {
             this.id = BigInt(0)
         }
         
-        this.stmt_id = msg.stmt_id;
         this.is_update = msg.is_update;
         this.affected_rows = msg.affected_rows;
         this.fields_count = msg.fields_count;
@@ -68,17 +71,18 @@ export class WSFetchResponse {
     completed: boolean;
     length: Array<number>;
     rows: number;
-
-    constructor(msg: any) {
-        this.code = msg.code;
-        this.message = msg.message;
-        this.action = msg.action;
-        this.req_id = msg.req_id;
-        this.timing = BigInt(msg.timing);
-        this.id = BigInt(msg.id);
-        this.completed = msg.completed;
-        this.length = msg.length;
-        this.rows = msg.rows;
+    totalTime: number;
+    constructor(resp:MessageResp) {
+        this.totalTime = resp.totalTime
+        this.code = resp.msg.code;
+        this.message = resp.msg.message;
+        this.action = resp.msg.action;
+        this.req_id = resp.msg.req_id;
+        this.timing = BigInt(resp.msg.timing);
+        this.id = BigInt(resp.msg.id);
+        this.completed = resp.msg.completed;
+        this.length = resp.msg.length;
+        this.rows = resp.msg.rows;
     }
 }
 

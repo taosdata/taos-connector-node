@@ -1,20 +1,26 @@
 import { WSRows } from './wsRows'
 import { TaosResult } from '../common/taosResult'
 import { WSInterface } from '../client/wsInterface'
-import { WSConnResponse } from '../client/wsResponse'
-import { TaosResultError } from '../common/wsError'
+import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/wsError'
+import { WSConfig } from '../common/config'
+import { GetUrl } from '../common/utils'
  
 export class WsSql{
     private _wsInterface: WSInterface
     private _req_id = 2000000;
    
-    constructor(url: string) {
-        this._wsInterface = new WSInterface(new URL(url))
-        this._req_id = Date.parse(new Date().toString())
+    constructor(url: URL, timeout :number | undefined | null) {
+        this._wsInterface = new WSInterface(url, timeout)
     }
 
-    Open(database?:string):Promise<WSConnResponse> {
-        return this._wsInterface.connect(database)
+    static Open(wsConfig:WSConfig):Promise<WsSql> {
+        if (!wsConfig.GetUrl()) {
+            throw new WebSocketInterfaceError(ErrorCode.ERR_INVALID_URL, 'invalid url, password or username needed.');
+        }
+
+        let url = GetUrl(wsConfig)
+        let wsSql = new WsSql(url, wsConfig.GetTimeOut());
+        return wsSql.open(wsConfig.GetDb())
     }
 
     State(){
@@ -32,11 +38,17 @@ export class WsSql{
         return this.query(sql)
     }
 
-    Exec(sql:string, action:string = 'query'):Promise<TaosResult>{
-        return this.execute(sql, action)
+    Exec(sql:string):Promise<TaosResult>{
+        return this.execute(sql)
     }
     Close() {
         this._wsInterface.close();
+    }
+
+    async open(database:string | null | undefined):Promise<WsSql> {
+        return new Promise((resolve, reject) => {
+            this._wsInterface.connect(database).then(()=>{resolve(this)}).catch((e: any)=>{reject(e)});
+        })
     }
 
     async execute(sql: string, action:string = 'query'): Promise<TaosResult> {
@@ -49,15 +61,11 @@ export class WsSql{
                 try{
                     while (true) {
                         let wsFetchResponse = await this._wsInterface.fetch(wsQueryResponse)
-                        console.log("[wsQuery.execute.wsFetchResponse]==>\n")
-                        console.log(wsFetchResponse)
-                        console.log(typeof BigInt(8))
-                        console.log(typeof wsFetchResponse.timing)
-                        if (wsFetchResponse.completed == false) {
+                        if (wsFetchResponse.completed == true) {
                             break;
                         } else {
-                            taosResult.setRows(wsFetchResponse)
-                            let tmp: TaosResult = await this._wsInterface.fetchBlock(wsFetchResponse, taosResult)
+                            taosResult.SetRowsAndTime(wsFetchResponse.rows, wsFetchResponse.timing);
+                            let tmp: TaosResult = await this._wsInterface.fetchBlock(wsFetchResponse, taosResult);
                             taosResult = tmp;
                         }
                     }

@@ -1,19 +1,44 @@
-import { WSFetchBlockResponse, WSFetchResponse, WSQueryResponse } from "../client/wsResponse";
+import { WSFetchBlockResponse, WSQueryResponse } from "../client/wsResponse";
 import { ColumnsBlockType, TDengineTypeCode, TDengineTypeName } from './constant'
-import { TaosResultError, WebSocketQueryInterFaceError } from "./wsError";
+import { ErrorCode, TaosResultError, WebSocketQueryInterFaceError } from "./wsError";
 import { AppendRune } from "./ut8Helper"
 
+export interface TDengineMeta {
+    name: string,
+    type: string,
+    length: number,
+}
+
+interface ResponseMeta {
+    name: string,
+    type: number,
+    length: number,
+}
+
+export interface MessageResp {
+    totalTime: number,
+    msg:any,
+}
+
 export class TaosResult {
-    meta: Array<ResponseMeta> | null;
-    data: Array<Array<any>> | null;
-    precision: number = 0;
-    affectRows: number = 0;
+    private _meta: Array<ResponseMeta> | null;
+    private _data: Array<Array<any>> | null;
+
+    private _precision: number | null | undefined;
+    private _affectRows: number | null | undefined;
+    private _totalTime = 0;
     /** unit nano seconds */
-    timing: bigint;
-    constructor(queryResponse: WSQueryResponse) {
+    private _timing: bigint | null | undefined;
+    constructor(queryResponse?: WSQueryResponse) {
+        if (queryResponse == null) {
+            this._meta = null
+            this._data = null
+            this._timing = BigInt(0)
+            return
+        }
         if (queryResponse.is_update == true) {
-            this.meta = null
-            this.data = null
+            this._meta = null
+            this._data = null
         } else {
             if (queryResponse.fields_count && queryResponse.fields_names && queryResponse.fields_types && queryResponse.fields_lengths) {
                 let _meta = [];
@@ -24,81 +49,91 @@ export class TaosResult {
                         length: queryResponse.fields_lengths[i]
                     })
                 }
-                this.meta = _meta;
+                this._meta = _meta;
             } else {
                 throw new TaosResultError(`fields_count,fields_names,fields_types,fields_lengths of the update query response should be null`)
             }
-            this.data = [];
+            this._data = [];
         }
 
-        this.affectRows = queryResponse.affected_rows
-        this.timing = queryResponse.timing
-        this.precision = queryResponse.precision
+        this._affectRows = queryResponse.affected_rows
+        this._timing = queryResponse.timing
+        this._precision = queryResponse.precision
+        this._totalTime = queryResponse.totalTime
         // console.log(`typeof this.timing:${typeof this.timing}, typeof fetchResponse.timing:${typeof queryResponse.timing}`)
     }
 
-    setRows(fetchResponse: WSFetchResponse) {
-        this.affectRows += fetchResponse.rows;
-        // console.log(`typeof this.timing:${typeof this.timing}, typeof fetchResponse.timing:${typeof fetchResponse.timing}`)
-        this.timing = this.timing + fetchResponse.timing
+    public SetRowsAndTime(rows: number, timing?:bigint) {
+        if (this._affectRows) {
+            this._affectRows += rows;
+        }
+        this.SetTiming(timing)
+    }
+    
+    public GetMeta(): Array<TDengineMeta> | null {
+        return this.getTDengineMeta();
     }
 
-    setData(fetchBlockResponse: WSFetchBlockResponse) {
-        if (this.data) {
-            this.data.push([])
-        } else {
-            throw new TaosResultError(`update query response cannot set data`)
+    public GetData(): Array<Array<any>> | null {
+        return this._data;
+    }
+    public SetData(value: Array<Array<any>> | null) {
+        this._data = value;
+    }
+    public GetAffectRows(): number | null | undefined {
+        return this._affectRows;
+    }
+
+    public GetTaosMeta(): Array<ResponseMeta> | null {
+        return this._meta;
+    }
+
+    public GetPrecision():number | null | undefined {
+        return this._precision;
+    }
+    public GetTotalTime() {
+        return this._totalTime;
+    }
+    public  AddtotalTime(totalTime:number) {
+        this._totalTime += totalTime;
+    }
+
+    public SetTiming(timing?: bigint) {
+        if (!this._timing) {
+            this._timing = BigInt(0) 
         }
 
+        if (timing) {
+            this._timing = this._timing + timing
+        }    
     }
     /**
      * Mapping the WebSocket response type code to TDengine's type name. 
      */
-    getTDengineMeta(): Array<TDengineMeta> | null {
-        if (this.meta) {
-            let _ = new Array<TDengineMeta>()
-            this.meta.forEach(m => {
-                _.push({
+    private getTDengineMeta(): Array<TDengineMeta> | null {
+        if (this._meta) {
+            let tdMeta = new Array<TDengineMeta>()
+            this._meta.forEach(m => {
+                tdMeta.push({
                     name: m.name,
                     type: TDengineTypeName[m.type],
                     length: m.length
                 })
             })
-            return _;
-        } else {
-            return null;
-        }
+            return tdMeta;
+        } 
+        return null;  
     }
-
 }
 
-export interface TaosRowResult {
-    meta: Array<TDengineMeta> | null,
-    data: Array<any> | undefined
-}
-
-export interface TDengineMeta {
-    name: string,
-    type: string,
-    length: number,
-}
-interface ResponseMeta {
-    name: string,
-    type: number,
-    length: number,
-}
-
-export function parseBlock(fetchResponse: WSFetchResponse, blocks: WSFetchBlockResponse, taosResult: TaosResult): TaosResult {
-
-    if (taosResult.meta && taosResult.data) {
-        let metaList = taosResult.meta;
-
+export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResult: TaosResult): TaosResult {
+    let metaList = taosResult.GetTaosMeta()
+    let dataList = taosResult.GetData()
+    if (metaList && dataList) {
         // console.log(typeof taosResult.timing)
         // console.log(typeof blocks.timing)
         // console.log(blocks.id)
-
-        taosResult.timing = BigInt(taosResult.timing) + blocks.timing
-
+        taosResult.SetTiming(blocks.timing) 
         const INT_32_SIZE = 4;
 
         // Offset num of bytes from rawBlockBuffer.
@@ -106,14 +141,14 @@ export function parseBlock(fetchResponse: WSFetchResponse, blocks: WSFetchBlockR
         let colLengthBlockSize = INT_32_SIZE * metaList.length
         // console.log("===colLengthBlockSize:" + colLengthBlockSize)
 
-        let bitMapSize = (fetchResponse.rows + (1 << 3) - 1) >> 3
+        let bitMapSize = (rows + (1 << 3) - 1) >> 3
 
         // whole raw block ArrayBuffer
         let dataBuffer = blocks.data.slice(bufferOffset);
 
         // record the head of column in block
         let colBlockHead = 0;
-        for (let i = 0; i < fetchResponse.rows; i++) {
+        for (let i = 0; i < rows; i++) {
             let row = [];
             // point to the head of the column in the block
             colBlockHead = 0 + colLengthBlockSize;
@@ -154,9 +189,9 @@ export function parseBlock(fetchResponse: WSFetchResponse, blocks: WSFetchBlockR
                     // console.log("== var type offset:" + varOffset)
                     if (varOffset == -1) {
                         row.push("NULL")
-                        colBlockHead = colBlockHead + INT_32_SIZE * fetchResponse.rows + (new DataView(dataBuffer, j * INT_32_SIZE, INT_32_SIZE).getInt32(0, true))
+                        colBlockHead = colBlockHead + INT_32_SIZE * rows + (new DataView(dataBuffer, j * INT_32_SIZE, INT_32_SIZE).getInt32(0, true))
                     } else {
-                        colDataHead = colBlockHead + INT_32_SIZE * fetchResponse.rows + varOffset
+                        colDataHead = colBlockHead + INT_32_SIZE * rows + varOffset
                         let dataLength = (new DataView(dataBuffer, colDataHead, 2).getInt16(0, true))
                         // console.log("== loop var type length:" + dataLength)
                         if (isVarType == ColumnsBlockType.VARCHAR) {
@@ -166,11 +201,11 @@ export function parseBlock(fetchResponse: WSFetchResponse, blocks: WSFetchBlockR
                         } else {
                             row.push(readNchar(dataBuffer, colDataHead + 2, dataLength))
                         }
-                        colBlockHead = colBlockHead + INT_32_SIZE * fetchResponse.rows + (new DataView(dataBuffer, j * INT_32_SIZE, INT_32_SIZE).getInt32(0, true))
+                        colBlockHead = colBlockHead + INT_32_SIZE * rows + (new DataView(dataBuffer, j * INT_32_SIZE, INT_32_SIZE).getInt32(0, true))
                     }
                 }
             }
-            taosResult.data.push(row);
+            dataList.push(row);
         }
         return taosResult;
     } else {
@@ -240,7 +275,7 @@ function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: Respo
             // could change 
         }
         default: {
-            throw new WebSocketQueryInterFaceError(`unspported type ${meta.type} for column ${meta.name}`)
+            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSPPORTED_TDENGINE_TYPE, `unspported type ${meta.type} for column ${meta.name}`)
         }
     }
 }

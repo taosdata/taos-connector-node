@@ -11,8 +11,3 @@ export interface SchemalessParamsInfo {
   data: string;
 }
 
-export enum SchemalessProto {
-	InfluxDBLineProtocol       = 1,
-	OpenTSDBTelnetLineProtocol = 2,
-	OpenTSDBJsonFormatProtocol = 3
-}

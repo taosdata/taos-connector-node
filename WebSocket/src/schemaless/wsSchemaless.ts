@@ -1,19 +1,40 @@
 import { WSInterface } from '../client/wsInterface';
 import { WSConnResponse } from '../client/wsResponse';
-import { TaosResultError } from '../common/wsError';
-import { SchemalessProto, SchemalessMessageInfo } from './wsProto';
+import { WSConfig } from '../common/config';
+import { GetUrl } from '../common/utils';
+import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/wsError';
+import { SchemalessMessageInfo } from './wsProto';
+
+export const enum SchemalessProto {
+	InfluxDBLineProtocol       = 1,
+	OpenTSDBTelnetLineProtocol = 2,
+	OpenTSDBJsonFormatProtocol = 3
+}
 
 export class WsSchemaless {
   private _wsInterface: WSInterface;
   private _req_id = 4000000;
   private lastAffected = 0;
-  constructor(url: string) {
-    this._wsInterface = new WSInterface(new URL(url));
+  constructor(url: URL, timeout :number | undefined | null) {
+    this._wsInterface = new WSInterface(url, timeout);
   }
 
-  Open(database?: string): Promise<WSConnResponse> {
-    return this._wsInterface.connect(database);
+
+  static NewConnector(wsConfig:WSConfig):Promise<WsSchemaless> {
+      if (!wsConfig.GetUrl()) {
+        throw new WebSocketInterfaceError(ErrorCode.ERR_INVALID_URL, 'invalid url, password or username needed.');
+    }
+
+    let url = GetUrl(wsConfig)
+    let wsSchemaless = new WsSchemaless(url, wsConfig.GetTimeOut());
+    return wsSchemaless.open(wsConfig.GetDb())
   }
+
+  async open(database:string | null | undefined):Promise<WsSchemaless> {
+    return new Promise((resolve, reject) => {
+        this._wsInterface.connect(database).then(()=>{resolve(this)}).catch((e: any)=>{reject(e)});
+    })
+}
 
   //  precision: 1b(纳秒), 1u(微秒)，1a(毫秒)，1s(秒)，1m(分)，1h(小时)，1d(天), 1w(周)。
   Insert(lines: Array<string>, protocol: SchemalessProto, precision: string, ttl: number): Promise<boolean> {
@@ -51,12 +72,12 @@ export class WsSchemaless {
     } else {
       this._req_id += 1;
     }
+    return this._req_id;
   }
 
   private async execute(queryMsg: SchemalessMessageInfo): Promise<boolean> {
     try {
-      this.getReqID();
-      queryMsg.args.req_id = this._req_id;
+      queryMsg.args.req_id = this.getReqID();
       let reqMsg = JSON.stringify(queryMsg);
       let resp = await this._wsInterface.exec(reqMsg);
       console.log('stmt execute result:', resp);

@@ -4,6 +4,7 @@ import { WSInterface } from '../client/wsInterface'
 import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/wsError'
 import { WSConfig } from '../common/config'
 import { GetUrl } from '../common/utils'
+import { WSQueryResponse } from '../client/wsResponse'
  
 export class WsSql{
     private _wsInterface: WSInterface
@@ -53,7 +54,7 @@ export class WsSql{
 
     async execute(sql: string, action:string = 'query'): Promise<TaosResult> {
         try {
-            let wsQueryResponse = await this._wsInterface.exec(this.getSql(sql, action));
+            let wsQueryResponse:WSQueryResponse = await this._wsInterface.exec(this.getSql(sql, action));
             let taosResult = new TaosResult(wsQueryResponse);
             if (wsQueryResponse.is_update == true) {
                 return taosResult;
@@ -71,24 +72,25 @@ export class WsSql{
                     }
                     return taosResult;                    
                 } catch(e){
-                    throw new TaosResultError("query sql fetch block error");
+                    let err :any = e
+                    throw new TaosResultError(err.code, err.message);
                 } finally {
                     this._wsInterface.freeResult(wsQueryResponse)
                 }
             }
         } catch(e) {
-            console.log(e)
-            throw new TaosResultError("exec sql error");
+            let err :any = e
+            throw new TaosResultError(err.code, err.message);
         }
     }
 
     async query(sql: string): Promise<WSRows> {
         try {
-            let wsQueryResponse = await this._wsInterface.exec(this.getSql(sql));
+            let wsQueryResponse:WSQueryResponse = await this._wsInterface.exec(this.getSql(sql));
             return new WSRows(this._wsInterface, wsQueryResponse);
         } catch (e) {
-            console.log(e)
-            throw new TaosResultError("query exec error");
+            let err :any = e
+            throw new TaosResultError(err.code, err.message);
         }
         
     }

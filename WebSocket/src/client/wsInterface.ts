@@ -27,11 +27,11 @@ export class WSInterface {
     if (database) {
       _db = database;
     }
-    this.getReqID();
+    
     let connMsg = {
       action: 'conn',
       args: {
-        req_id: this._req_id,
+        req_id: this.getReqID(),
         user: this._url.username,
         password: this._url.password,
         db: _db,
@@ -55,26 +55,26 @@ export class WSInterface {
             if (e.msg.code == 0) {
               resolve(e);
             } else {
-              reject(new WebSocketQueryError(e.code, e.message));
+              reject(new WebSocketQueryError(e.msg.code, e.msg.message));
             }
           }).catch((e) => {reject(e);});
       }
     });
   }
 
-  // return Response need callor parse .
-  execReturnAny(queryMsg: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
-      this._wsQueryClient.sendMsg(queryMsg).then((e: any) => {
-        if (e.msg.code == 0) {
-          resolve(e);
-        } else {
-          reject(new WebSocketInterfaceError(e.code, e.message));
-        }
-      }).catch((e) => {reject(e);});
-    });
-  }
+  // // return Response need callor parse .
+  // exec(queryMsg: string): Promise<any> {
+  //   return new Promise((resolve, reject) => {
+  //     console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
+  //     this._wsQueryClient.sendMsg(queryMsg).then((e: any) => {
+  //       if (e.msg.code == 0) {
+  //         resolve(e);
+  //       } else {
+  //         reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
+  //       }
+  //     }).catch((e) => {reject(e);});
+  //   });
+  // }
 
   execNoResp(queryMsg: string): Promise<Boolean> {
     return new Promise((resolve, reject) => {
@@ -86,14 +86,19 @@ export class WSInterface {
   }
 
   // need to construct Response.
-  exec(queryMsg: string): Promise<WSQueryResponse> {
+  exec(queryMsg: string, bQurey:boolean = true): Promise<any> {
     return new Promise((resolve, reject) => {
       console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
       this._wsQueryClient.sendMsg(queryMsg).then((e: any) => {
         if (e.msg.code == 0) {
-          resolve(new WSQueryResponse(e));
+          if (bQurey) {
+            resolve(new WSQueryResponse(e));
+          }else{
+            resolve(e)
+          }
+          
         } else {
-          reject(new WebSocketInterfaceError(e.code, e.message));
+          reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
         }
       }).catch((e) => {reject(e);});
     });
@@ -103,12 +108,15 @@ export class WSInterface {
     return this._wsQueryClient.readyState();
   }
 
+  Ready(): Promise<TDWebSocketClient> {
+    return this._wsQueryClient.Ready()
+  }
+
   fetch(res: WSQueryResponse): Promise<WSFetchResponse> {
-    this.getReqID();
     let fetchMsg = {
       action: 'fetch',
       args: {
-        req_id: this._req_id,
+        req_id: this.getReqID(),
         id: res.id,
       },
     };
@@ -121,18 +129,17 @@ export class WSInterface {
         if (e.msg.code == 0) {
             resolve(new WSFetchResponse(e));
         } else {
-            reject(new WebSocketInterfaceError(e.code, e.message));
+            reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
         }
       }).catch((e) => {reject(e);});
     });
   }
 
   fetchBlock(fetchResponse: WSFetchResponse, taosResult: TaosResult): Promise<TaosResult> {
-    this.getReqID();
     let fetchBlockMsg = {
       action: 'fetch_block',
       args: {
-        req_id: this._req_id,
+        req_id: this.getReqID(),
         id: fetchResponse.id,
       },
     };
@@ -149,12 +156,20 @@ export class WSInterface {
     });
   }
 
+  sendMsg(msg:string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      console.log("[wsQueryInterface.sendMsg]===>" + msg)
+      this._wsQueryClient.sendMsg(msg).then((e: any) => {
+          resolve(e);
+        }).catch((e) => reject(e));
+    });
+  }
+
   freeResult(res: WSQueryResponse) {
-    this.getReqID();
     let freeResultMsg = {
       action: 'free_result',
       args: {
-        req_id: this._req_id,
+        req_id: this.getReqID(),
         id: res.id,
       },
     };
@@ -168,11 +183,10 @@ export class WSInterface {
   }
 
   version(): Promise<string> {
-    this.getReqID();
     let versionMsg = {
       action: 'version',
       args: {
-        req_id: this._req_id,
+        req_id: this.getReqID()
       },
     };
     return new Promise((resolve, reject) => {
@@ -183,7 +197,7 @@ export class WSInterface {
             if (e.msg.code == 0) {
               resolve(new WSVersionResponse(e).version);
             } else {
-              reject(new WebSocketInterfaceError(e.code, e.message));
+              reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
             }
           }).catch((e) => reject(e));
       }
@@ -195,7 +209,7 @@ export class WSInterface {
           if (e.msg.code == 0) {
             resolve(new WSVersionResponse(e).version);
           } else {
-            reject(new WebSocketInterfaceError(e.code, e.message));
+            reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
           }
         }).catch((e) => reject(e));
     });
@@ -220,5 +234,6 @@ export class WSInterface {
     } else {
       this._req_id += 1;
     }
+    return this._req_id;
   }
 }

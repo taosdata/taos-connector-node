@@ -2,8 +2,6 @@ import { TDengineMeta, TaosResult } from '../common/taosResult';
 import { TaosResultError } from '../common/wsError';
 import { WSQueryResponse } from '../client/wsResponse';
 import { WSInterface } from '../client/wsInterface';
-import { resolve } from 'path';
-
 
 export class WSRows {
   private _wsInterface: WSInterface;
@@ -49,10 +47,9 @@ export class WSRows {
         return await this._wsInterface.fetchBlock(wsFetchResponse, this._taosResult);
       }
       return this._taosResult;
-    }catch(e){
+    }catch(err:any){
       this.Close();
-      console.log(e);
-      throw new TaosResultError("query fetch error");
+      throw new TaosResultError(err.code, err.message);
     } 
   }
   

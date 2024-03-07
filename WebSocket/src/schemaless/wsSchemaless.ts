@@ -40,7 +40,7 @@ export class WsSchemaless {
   Insert(lines: Array<string>, protocol: SchemalessProto, precision: string, ttl: number): Promise<boolean> {
     let data = '';
     if (!lines || lines.length == 0 || !protocol) {
-      throw new TaosResultError('WsSchemaless Insert params is error!');
+      throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsSchemaless Insert params is error!');
     }
 
     lines.forEach((element, index) => {
@@ -60,6 +60,13 @@ export class WsSchemaless {
       },
     };
     return this.execute(queryMsg);
+  }
+
+  State(){
+    if (this._wsInterface) {
+      return this._wsInterface.getState();
+    }
+    return 0;
   }
 
   Close() {
@@ -82,9 +89,9 @@ export class WsSchemaless {
       let resp = await this._wsInterface.exec(reqMsg);
       console.log('stmt execute result:', resp);
       return true;
-    } catch (e) {
+    } catch (e:any) {
       console.log(e);
-      throw new TaosResultError('stmt execute error: ' + queryMsg);
+      throw new TaosResultError(e.code, e.message);
     }
   }
 }

@@ -71,9 +71,8 @@ export class TDWebSocketClient {
         if (Object.prototype.toString.call(data) === '[object ArrayBuffer]') {
             let id = new DataView(data, 8, 8).getBigUint64(0, true)
             let action: MessageAction | any = undefined;
-
             _msgActionRegister.forEach((v: MessageAction, k: MessageId) => {
-                if (k.id == id) {
+                if (k.id == id || k.req_id == id) {
                     action = v
                     _msgActionRegister.delete(k)
                 }

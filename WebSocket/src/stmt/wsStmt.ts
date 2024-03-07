@@ -25,6 +25,13 @@ export class WsStmtConnect {
     return this.open()
   }
 
+  State(){
+    if (this._wsInterface) {
+      return this._wsInterface.getState();
+    }
+    return 0;
+  }
+
   private async open():Promise<WsStmt> {
     return new Promise(async (resolve, reject) => {
       if (this._wsInterface) {
@@ -35,7 +42,7 @@ export class WsStmtConnect {
           this._bClose = false;
           resolve(wsStmt);
         } catch(e) {
-          console.error(e)
+          console.log(e)
           reject(e);
         }
       }else{
@@ -178,9 +185,11 @@ export class WsStmt {
   private async execute(queryMsg: StmtMessageInfo, register: Boolean = true): Promise<void> {
     try {
       queryMsg.args.req_id = this.getReqID();
+      console.log('stmt execute result:', queryMsg);
       let reqMsg = JSON.stringify(queryMsg);
+      console.log('stmt execute result:', queryMsg);
       if (register) {
-        let result = await this._wsInterface.execReturnAny(reqMsg);
+        let result = await this._wsInterface.exec(reqMsg, false);
         let resp = new WsStmtQueryResponse(result)
         if (resp.stmt_id) {
           this.stmt_id = resp.stmt_id;
@@ -198,9 +207,8 @@ export class WsStmt {
         console.log('stmt execute result:', resp);
       }
       return
-    } catch (e) {
-      console.log(e);
-      throw new TaosResultError('stmt execute error: ' + queryMsg);
+    } catch (e:any) {
+      throw new TaosResultError(e.code, e.message);
     }
   }
 

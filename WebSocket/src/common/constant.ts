@@ -1,8 +1,8 @@
-interface IndexableString {
+export interface IndexableString {
     [index: number]: string
 }
 
-interface StringIndexable {
+export interface StringIndexable {
     [index: string]: number
 }
 
@@ -23,12 +23,16 @@ export const TDengineTypeName: IndexableString = {
     13: 'INT UNSIGNED',
     14: 'BIGINT UNSIGNED',
     15: 'JSON',
+    16: 'VARBINARY',
+    20: 'GEOMETRY',
 }
 
 export const ColumnsBlockType: StringIndexable = {
     'SOLID': 0,
     'VARCHAR': 1,
-    'NCHAR': 2
+    'NCHAR': 2,
+    'GEOMETRY': 3,
+    'VARBINARY':4,
 }
 
 
@@ -50,6 +54,8 @@ export const TDengineTypeCode: StringIndexable = {
     'INT UNSIGNED': 13,
     'BIGINT UNSIGNED': 14,
     'JSON': 15,
+    'VARBINARY': 16,
+    'GEOMETRY': 20,
 }
 
 export const TDenginePrecision: IndexableString = {
@@ -72,4 +78,3 @@ export const TDengineTypeLength: StringIndexable = {
     'INT UNSIGNED': 4,
     'BIGINT UNSIGNED': 8,
 }
-

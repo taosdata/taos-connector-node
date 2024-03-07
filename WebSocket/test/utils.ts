@@ -1,5 +1,22 @@
 import { TDengineMeta } from "../src/common/taosResult";
 
+
+
+export function getInsertBind(valuesLen: number, tagsLen: number, db: string, stable: string): string {
+    let sql = `insert into ? using ${db}.${stable} tags ( ?`
+
+    for (let i = 1; i < tagsLen; i++) {
+        sql += ', ?'
+    }
+
+    sql += ') values( ?'
+    for (let i = 1; i < valuesLen; i++) {
+        sql += ', ?'
+    }
+    sql += ')'
+    return sql;
+}
+
 export function insertStable(values: Array<Array<any>>, tags: Array<any>, stable: string, table: string = 'empty'): string {
     let childTable = table == 'empty' ? stable + '_s_01' : table;
     let sql = `insert into ${childTable} using ${stable} tags (`
@@ -232,5 +249,33 @@ export function expectStableData(rows: Array<Array<any>>, tags: Array<any>): Arr
     })
     return resArr;
 }
+function hexToBytes(hex: string): ArrayBuffer {
+    let byteLen = hex.length / 2;
+    let a = new Uint16Array(byteLen)    
+    for (let i = 0, count = 0; i < hex.length; i += 2, count++) {
+      let item  = parseInt(hex.slice(i, i+2), 16);
+      a[count] = item
+      console.log(item, a[count])
+    }
+    return a.buffer
+}
+
+export function createStmtData():Array<Array<any>> {
+    let multi:any[][] = [
+        [1709183268567, 1709183268568, 1709183268569],
+        [10.2, 10.3, 10.4],
+        [292, 293, 294],
+        [0.32, 0.33, 0.34],
+        ];
+    let res = hexToBytes("0101000020E6100000000000000000F03F0000000000000040")
+    let geom = Array.from(new Uint8Array(res))
+    multi.push([geom, geom, geom])
+
+    
+    res = new TextEncoder().encode("ab")
+    let binary = Array.from(new Uint8Array(res))
+    multi.push([binary, binary, binary])
+    return multi
 
 
+}

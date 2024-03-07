@@ -12,7 +12,7 @@ let dsn = 'ws://root:taosdata@192.168.1.95:6051/rest/ws';
   let wsRows = null;
   try {
     let conf :WSConfig = new WSConfig(dsn)
-    conf.SetDb('power')
+    conf.SetDb('111')
     wsSql = await WsSql.Open(conf)
     let version = await wsSql.Version();
     console.log(version);
@@ -46,7 +46,8 @@ let dsn = 'ws://root:taosdata@192.168.1.95:6051/rest/ws';
     wsRows.Close()
    
   } catch (e) {
-    console.error(e);
+    let err:any = e
+    console.error(err);
   
   } finally {
     if (wsRows) {

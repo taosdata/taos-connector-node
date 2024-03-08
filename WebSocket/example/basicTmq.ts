@@ -40,6 +40,7 @@ async function Prepare() {
 (async () => {
     let consumer = null    
     try {
+        await Prepare()
         consumer = await WsConsumer.NewConsumer(configMap);
         await consumer.Subscribe(topics);
         for (let i = 0; i < 5; i++) { 

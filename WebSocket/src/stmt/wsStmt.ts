@@ -174,7 +174,7 @@ export class WsStmt {
   }
   
   private getReqID() {
-    if (this._req_id == Number.MAX_SAFE_INTEGER) {
+    if (this._req_id == 3999999) {
       this._req_id = 3000000;
     } else {
       this._req_id += 1;

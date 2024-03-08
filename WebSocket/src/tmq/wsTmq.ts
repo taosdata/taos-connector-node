@@ -300,8 +300,8 @@ export class WsConsumer {
   }
 
   private getReqID() {
-    if (this._req_id == Number.MAX_SAFE_INTEGER) {
-      this._req_id = 4000000;
+    if (this._req_id == 5999999) {
+      this._req_id = 5000000;
     } else {
       this._req_id += 1;
     }

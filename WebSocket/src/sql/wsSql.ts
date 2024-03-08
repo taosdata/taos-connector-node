@@ -109,7 +109,7 @@ export class WsSql{
     }
 
     private _reqIDIncrement() {
-        if (this._req_id == Number.MAX_SAFE_INTEGER) {
+        if (this._req_id == 2999999) {
             this._req_id = 2000000;
         } else {
             this._req_id += 1;

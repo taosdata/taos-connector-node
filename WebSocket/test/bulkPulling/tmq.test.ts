@@ -1,11 +1,9 @@
-import { url } from "inspector";
+
 import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { createSTable, insertStable } from "../utils";
-import { AssignmentResp } from "../../src/tmq/tmpResponse";
-import { Sleep } from "../../src/common/utils";
 const stable = 'st';
 const db = 'ws_tmq_test'
 const topics:string[] = ['topic_ws_bean']

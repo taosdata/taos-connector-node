@@ -182,7 +182,7 @@ export class TDWebSocketClient {
 
 
     sendMsg(message: string, register: Boolean = true) {
-        console.log("[wsClient.sendMessage()]===>" + message)
+        // console.log("[wsClient.sendMessage()]===>" + message)
         let msg = JSON.parse(message);
         // console.log(msg.args.req_id)
         if (msg.args.id !== undefined) {
@@ -196,7 +196,7 @@ export class TDWebSocketClient {
                     this._registerCallback({ action: msg.action, req_id: msg.args.req_id, id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id) }, resolve, reject)
                     // console.log("[wsClient.sendMessage._msgActionRegister]===>\n", _msgActionRegister)
                 }
-                
+                console.log("[wsClient.sendMessage.msg]===>\n", message)
                 this._wsConn.send(message)
             } else {
                 reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))

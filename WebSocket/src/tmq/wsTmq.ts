@@ -3,7 +3,7 @@ import { TMQConstants, TMQMessageType } from './constant';
 import { WSInterface } from '../client/wsInterface';
 import { TaosResult } from '../common/taosResult';
 import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/wsError';
-import { AssignmentResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockResponse, WsPollResponse, WsTmqQueryResponse, parseTmpBlock} from './tmpResponse';
+import { AssignmentResp, CommitedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockResponse, WsPollResponse, WsTmqQueryResponse, parseTmpBlock} from './tmpResponse';
 
 export class WsConsumer {
   private _wsInterface: WSInterface;
@@ -66,7 +66,7 @@ export class WsConsumer {
     return this.execute(JSON.stringify(queryMsg));
   }
 
-  Poll(timeoutMs: number):Promise<Map<string, TaosResult>> {
+  Poll(timeoutMs: number):Promise<Map<string, TaosResult>>{
     return new Promise(async (resolve, reject) => {
       try{
         if (this._wsConfig.auto_commit) {
@@ -81,6 +81,7 @@ export class WsConsumer {
             this._commitTime = new Date().getTime();
           }
         }
+
         resolve(await this.poll(timeoutMs)) 
       }catch(e:any){
         reject(new TaosResultError(e.code, e.message));
@@ -144,17 +145,24 @@ export class WsConsumer {
   }
 
   private doCommit():Promise<void> {
-    let queryMsg = {
-      action: TMQMessageType.Commit,
-      args: {
-        req_id    : this.getReqID(),
-        message_id:0
-      },
-    }; 
-    return this.execute(JSON.stringify(queryMsg))
+    return new Promise(async (resolve, reject) => {
+      let queryMsg = {
+        action: TMQMessageType.Commit,
+        args: {
+          req_id    : this.getReqID(),
+          message_id: 0
+        },
+      }; 
+      try {
+        await this.execute(JSON.stringify(queryMsg));
+        resolve()
+      } catch(e:any) {
+        reject(new TaosResultError(e.code, e.message))
+      }
+    })
   }
 
-  Commited(partitions:Array<TopicPartition>):Promise<any>{
+  Commited(partitions:Array<TopicPartition>):Promise<Array<TopicPartition>>{
     if (!partitions || partitions.length == 0 ) {
       throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsTmq Positions params is error!');
     }
@@ -168,7 +176,7 @@ export class WsConsumer {
         };
         offsets[i].vgroup_id = partitions[i].vgroup_id
       }
-      console.log(offsets, "===>" ,partitions)
+      
       let queryMsg = {
         action: TMQMessageType.Committed,
         args: {
@@ -178,8 +186,7 @@ export class WsConsumer {
       };
       try{
         let resp = await this.executeReturnAny(JSON.stringify(queryMsg));
-        resolve(resp)
-        // resolve(new PartitionsResp(resp).SetTopicPartitions(offsets)) 
+        resolve(new CommitedResp(resp).SetTopicPartitions(offsets)) 
       }catch(e:any) {
         reject(new TaosResultError(e.code, e.message));
       }
@@ -215,7 +222,7 @@ export class WsConsumer {
       action: TMQMessageType.CommitOffset,
       args: {
         req_id    : this.getReqID(),
-        group_id :partition.vgroup_id,
+        vgroup_id :partition.vgroup_id,
         topic    :partition.topic,
         offset   :partition.offset,
       },
@@ -265,7 +272,7 @@ export class WsConsumer {
       action: TMQMessageType.Seek,
       args: {
         req_id    : this.getReqID(),
-        group_id :partition.vgroup_id,
+        vgroup_id :partition.vgroup_id,
         topic    :partition.topic,
         offset   :partition.offset,
       },
@@ -328,16 +335,15 @@ export class WsConsumer {
         },
       };
 
-      return new Promise((resolve, reject) => {
+      return new Promise(async (resolve, reject) => {
         let jsonStr = JSON.stringify(fetchMsg);
-        console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
-        this._wsInterface.exec(jsonStr, false).then((e: any) => {
-            if (e.msg.code == 0) {
-              resolve(new WsTmqQueryResponse(e));
-            } else {
-              reject(new WebSocketInterfaceError(e.code, e.message));
-            }
-          }).catch((e) => {reject(e);});
+        // console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
+        try {
+          let result = await this._wsInterface.exec(jsonStr, false);
+          resolve(new WsTmqQueryResponse(result));
+        } catch(e:any) {
+          reject(new WebSocketInterfaceError(e.code, e.message))
+        }
       });
   }
 
@@ -350,12 +356,15 @@ export class WsConsumer {
       },
     };
 
-    return new Promise((resolve, reject) => {
-      let jsonStr = JSON.stringify(fetchMsg);
-      console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
-      this._wsInterface.sendMsg(jsonStr).then((e: any) => {
-        resolve(parseTmpBlock(fetchResponse.rows, new WSTmqFetchBlockResponse(e), taosResult))
-      }).catch((e) => {reject(e);});
+    return new Promise(async (resolve, reject) => {
+      try {
+        let jsonStr = JSON.stringify(fetchMsg);
+        // console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
+        let result = await this._wsInterface.sendMsg(jsonStr)
+        resolve(parseTmpBlock(fetchResponse.rows, new WSTmqFetchBlockResponse(result), taosResult))     
+      } catch (e: any){
+        reject(new WebSocketInterfaceError(e.code, e.message))
+      }
     });
   }
 
@@ -367,37 +376,42 @@ export class WsConsumer {
         blocking_time  :timeoutMs
       },
     };
-
-    try {
-      var taosResults: Map<string, TaosResult> = new Map();
-      let resp = await this._wsInterface.exec(JSON.stringify(queryMsg), false);
-     
-      let pollResp = new WsPollResponse(resp)
-      if (pollResp.have_message == false || pollResp.message_type != TMQMessageType.ResDataType) {
-        return taosResults;
-      }else{
-        
-        while (true) {
-          let fetchResp = await this.fetch(pollResp)
-          if (fetchResp.completed || fetchResp.rows == 0) {
-            break;
+    return new Promise(async (resolve, reject) => {
+      try {
+        var taosResults: Map<string, TaosResult> = new Map();
+        let resp = await this._wsInterface.exec(JSON.stringify(queryMsg), false);
+        let pollResp = new WsPollResponse(resp)
+        if (pollResp.have_message == false || pollResp.message_type != TMQMessageType.ResDataType) {
+          resolve(taosResults);
+        }else{        
+          // let count = 0
+          // let startTime = new Date().getTime();
+          while (true) {
+            // count++
+            let fetchResp = await this.fetch(pollResp)
+            if (fetchResp.completed || fetchResp.rows == 0) {
+              let currTime = new Date().getTime();
+              // console.log("----------count-->", count, Math.abs(currTime - startTime))
+              break;
+            }
+            let taosResult = taosResults.get(pollResp.topic + pollResp.vgroup_id)
+            if (taosResult == null) {
+              taosResult = new TaosTmqResult(fetchResp, pollResp)
+              taosResults.set(pollResp.topic + pollResp.vgroup_id, taosResult)
+            } else {
+              taosResult.SetRowsAndTime(fetchResp.rows);
+            }
+            await this.fetchBlockData(fetchResp, taosResult)
+            
           }
-          let taosResult = taosResults.get(pollResp.topic + pollResp.vgroup_id)
-          if (taosResult == null) {
-            taosResult = new TaosTmqResult(fetchResp, pollResp)
-            taosResults.set(pollResp.topic + pollResp.vgroup_id, taosResult)
-          } else {
-            taosResult.SetRowsAndTime(fetchResp.rows);
-          }
-          await this.fetchBlockData(fetchResp, taosResult)
           
+          resolve(taosResults);
         }
-        return taosResults;
+      } catch (e :any) {
+        console.log(e);
+        reject(new TaosResultError(e.code, e.message));
       }
-    } catch (e :any) {
-      console.log(e);
-      throw new TaosResultError(e.code, e.message);
-    }
+    })
   }
 
   private assignment(topic:string):Promise<Array<TopicPartition>> {
@@ -433,7 +447,7 @@ export class WsConsumer {
           map.set(obj.topic+'_'+obj.vgroup_id, obj)
           return map
         }, new Map<string, TopicPartition>());
-
+  
         const allp:any[] = []
         for(let i in partitions) {
           if(itemMap.has(partitions[i].topic + '_' +partitions[i].vgroup_id)) {
@@ -444,7 +458,6 @@ export class WsConsumer {
               }else{
                 topicPartition.offset = topicPartition.end
               }
-              
               allp.push(this.Seek(topicPartition))
             }
           }

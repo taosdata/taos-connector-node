@@ -47,21 +47,21 @@ const selectTableCN = `select * from ${tableCN}`
 const selectJsonTable = `select * from ${jsonTable}`
 const selectJsonTableCN = `select * from ${jsonTableCN}`
 
-// beforeAll(async () => {
-//     conf.SetDb(db)
-//     let ws = await WsSql.Open(conf);
-//     await ws.Exec(createDB);
-//     await ws.Exec(useDB);
-//     await ws.Exec(createSTable(stable));
-//     await ws.Exec(createSTable(stableCN));
-//     await ws.Exec(createTable(table));
-//     await ws.Exec(createTable(tableCN));
-//     await ws.Exec(createSTableJSON(jsonTable));
-//     await ws.Exec(createSTableJSON(jsonTableCN));
-//     ws.Close()
-// })
+beforeAll(async () => {
+    conf.SetDb(db)
+    let ws = await WsSql.Open(conf);
+    await ws.Exec(createDB);
+    await ws.Exec(useDB);
+    await ws.Exec(createSTable(stable));
+    await ws.Exec(createSTable(stableCN));
+    await ws.Exec(createTable(table));
+    await ws.Exec(createTable(tableCN));
+    await ws.Exec(createSTableJSON(jsonTable));
+    await ws.Exec(createSTableJSON(jsonTableCN));
+    ws.Close()
+})
 
-describe.skip('ws.query(stable)', () => {
+describe('ws.query(stable)', () => {
     test('Insert query stable without CN character', async () => {
         let ws = await WsSql.Open(conf);
         let insert = insertStable(tableValues, stableTags, stable)
@@ -130,7 +130,7 @@ describe.skip('ws.query(stable)', () => {
     })
 })
 
-describe.skip('ws.query(table)', () => {
+describe('ws.query(table)', () => {
     test('Insert query normal table without CN character', async () => {
         let ws = await WsSql.Open(conf);
         let insert = insertNTable(tableValues, table)
@@ -201,7 +201,7 @@ describe.skip('ws.query(table)', () => {
     })
 })
 
-describe.skip('ws.query(jsonTable)', () => {
+describe('ws.query(jsonTable)', () => {
     test('Insert and query json data from table without CN', async () => {
         let ws = await WsSql.Open(conf);
         let insert = insertStable(tableValues, jsonTags, jsonTable)

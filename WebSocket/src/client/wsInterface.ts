@@ -86,12 +86,12 @@ export class WSInterface {
   }
 
   // need to construct Response.
-  exec(queryMsg: string, bQurey:boolean = true): Promise<any> {
+  exec(queryMsg: string, bSqlQurey:boolean = true): Promise<any> {
     return new Promise((resolve, reject) => {
-      console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
+      // console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
       this._wsQueryClient.sendMsg(queryMsg).then((e: any) => {
         if (e.msg.code == 0) {
-          if (bQurey) {
+          if (bSqlQurey) {
             resolve(new WSQueryResponse(e));
           }else{
             resolve(e)
@@ -158,7 +158,7 @@ export class WSInterface {
 
   sendMsg(msg:string): Promise<any> {
     return new Promise((resolve, reject) => {
-      console.log("[wsQueryInterface.sendMsg]===>" + msg)
+      // console.log("[wsQueryInterface.sendMsg]===>" + msg)
       this._wsQueryClient.sendMsg(msg).then((e: any) => {
           resolve(e);
         }).catch((e) => reject(e));

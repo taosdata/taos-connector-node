@@ -2,7 +2,7 @@ import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 
 
-describe.skip('TDWebSocket.WsSql()', () => {
+describe('TDWebSocket.WsSql()', () => {
     test('normal connect', async() => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/rest/ws';
         let wsSql = null;
@@ -98,17 +98,19 @@ describe.skip('TDWebSocket.WsSql()', () => {
         let taosResult = await wsSql.Exec('use ws_tmq_db')
         console.log(taosResult);
         expect(taosResult).toBeTruthy() 
-
-        let wsRows = await wsSql.Query('select * from ws_tmq_stb');
-        expect(wsRows).toBeTruthy()
-        let meta = wsRows.GetMeta()
-        expect(meta).toBeTruthy()
-        console.log("wsRow:meta:=>", meta);
-        while (await wsRows.Next()) {
-            let result = await wsRows.GetData();
-            expect(result).toBeTruthy()
+        for (let i = 0; i < 100; i++) {
+            let wsRows = await wsSql.Query('select * from ws_tmq_stb');
+            expect(wsRows).toBeTruthy()
+            let meta = wsRows.GetMeta()
+            expect(meta).toBeTruthy()
+            console.log("wsRow:meta:=>", meta);
+            while (await wsRows.Next()) {
+                let result = await wsRows.GetData();
+                expect(result).toBeTruthy()
+            }
+            wsRows.Close()
         }
-        wsRows.Close()
+
         wsSql.Close()
     })
 })

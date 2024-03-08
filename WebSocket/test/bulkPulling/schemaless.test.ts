@@ -1,7 +1,7 @@
 import { WSConfig } from "../../src/common/config";
 import { SchemalessProto, WsSchemaless } from "../../src/schemaless/wsSchemaless";
 
-describe.skip('TDWebSocket.WsSchemaless()', () => {
+describe('TDWebSocket.WsSchemaless()', () => {
     let influxdbData = "st,t1=3i64,t2=4f64,t3=\"t3\" c1=3i64,c3=L\"passit\",c2=false,c4=4f64 1626006833639000000"
     let telnetData = "stb0_0 1626006833 4 host=host0 interface=eth0"
     let jsonData = "{\"metric\": \"meter_current\",\"timestamp\": 1626846400,\"value\": 10.3, \"tags\": {\"groupid\": 2, \"location\": \"California.SanFrancisco\", \"id\": \"d1001\"}}"

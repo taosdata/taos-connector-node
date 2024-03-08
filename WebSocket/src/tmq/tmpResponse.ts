@@ -150,6 +150,13 @@ export class PartitionsResp{
     
 }
 
+export class CommitedResp extends PartitionsResp {
+    constructor(resp:MessageResp) {
+        super(resp);
+        this.positions = resp.msg.committed
+    }
+}
+
 export class TopicPartition {
     topic       :string;
     vgroup_id   :number;
@@ -228,6 +235,8 @@ export function parseTmpBlock(rows:number, resp: WSTmqFetchBlockResponse, taosRe
         }
         taosdata.push(...dataList);
     }
+    
+
     return taosResult;
 }
 

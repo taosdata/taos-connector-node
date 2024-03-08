@@ -1,14 +1,5 @@
 import { WSConfig } from "./config";
 
-export function ReqIDIncrement(reqId: number): number {
-    if (reqId == Number.MAX_SAFE_INTEGER) {
-        reqId = 0;
-    } else {
-        reqId += 1;
-    }
-    return reqId;
-}
-
 export function GetUrl(wsConfig:WSConfig):URL {
     let url = new URL(wsConfig.GetUrl())
     if (wsConfig.GetUser()) {
@@ -19,3 +10,8 @@ export function GetUrl(wsConfig:WSConfig):URL {
     }
     return url
 }
+
+export function Sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  

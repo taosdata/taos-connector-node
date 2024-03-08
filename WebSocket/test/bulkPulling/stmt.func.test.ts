@@ -1,7 +1,7 @@
 import { WSConfig } from "../../src/common/config";
 import { WsStmtConnect } from "../../src/stmt/wsStmt";
 
-describe.skip('TDWebSocket.Stmt()', () => {
+describe('TDWebSocket.Stmt()', () => {
     let tags = ['California.SanFrancisco', 3];
     let multi = [
     [1709183268567, 1709183268568, 1709183268569],
@@ -247,7 +247,7 @@ describe.skip('TDWebSocket.Stmt()', () => {
             await stmt.Exec()
         }catch(e) {
             let err:any = e
-            expect(err.message).toMatch("Stmt API usage error")
+            expect(err.message).toMatch("Retry needed")
         }
         stmt.Close()
         connector.Close();

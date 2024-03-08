@@ -67,20 +67,20 @@ const selectJsonTable = `select * from ${jsonTable}`
 const selectJsonTableCN = `select * from ${jsonTableCN}`
 
 
-// beforeAll(async () => {
-//     let dsn = 'ws://root:taosdata@192.168.1.95:6051/rest/ws';
-//     let conf :WSConfig = new WSConfig(dsn)
-//     conf.SetDb(db)
-//     let ws = await WsSql.Open(conf);
-//     await ws.Exec(dropDB);
-//     await ws.Exec(createDB);
-//     await ws.Exec(useDB);
-//     await ws.Exec(createSTable(stable));
-//     await ws.Exec(createSTable(stableCN));
-//     ws.Close()
-// })
+beforeAll(async () => {
+    let dsn = 'ws://root:taosdata@192.168.1.95:6051/rest/ws';
+    let conf :WSConfig = new WSConfig(dsn)
+    conf.SetDb(db)
+    let ws = await WsSql.Open(conf);
+    await ws.Exec(dropDB);
+    await ws.Exec(createDB);
+    await ws.Exec(useDB);
+    await ws.Exec(createSTable(stable));
+    await ws.Exec(createSTable(stableCN));
+    ws.Close()
+})
 
-describe.skip('TDWebSocket.Stmt()', () => {
+describe('TDWebSocket.Stmt()', () => {
     test('normal BindParam', async() => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);

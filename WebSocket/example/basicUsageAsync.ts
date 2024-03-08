@@ -2,7 +2,6 @@
 require('qingwa')();
 
 import { WSConfig } from '../src/common/config';
-import { WSRows } from '../src/sql/wsRows';
 import { WsSql } from '../src/sql/wsSql'
 
 

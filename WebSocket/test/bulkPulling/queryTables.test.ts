@@ -3,9 +3,9 @@
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { createSTable, createSTableJSON, createTable, expectStableData, insertNTable, insertStable, jsonMeta, tableMeta, tagMeta } from "../utils";
-const DSN = 'ws://root:taosdata@127.0.0.1:6041/rest/ws'
+// const DSN = 'ws://root:taosdata@127.0.0.1:6041/ws'
 // const DSN = 'ws://root:taosdata@182.92.127.131:6041/rest/ws'
-let dsn = 'ws://root:taosdata@192.168.1.95:6051/rest/ws';
+let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
 let conf :WSConfig = new WSConfig(dsn)
 const table = 'ws_q_n';
 const stable = 'ws_q_s';
@@ -48,7 +48,6 @@ const selectJsonTable = `select * from ${jsonTable}`
 const selectJsonTableCN = `select * from ${jsonTableCN}`
 
 beforeAll(async () => {
-    conf.SetDb(db)
     let ws = await WsSql.Open(conf);
     await ws.Exec(createDB);
     await ws.Exec(useDB);
@@ -64,6 +63,7 @@ beforeAll(async () => {
 describe('ws.query(stable)', () => {
     test('Insert query stable without CN character', async () => {
         let ws = await WsSql.Open(conf);
+        await ws.Exec(useDB);
         let insert = insertStable(tableValues, stableTags, stable)
         let insertRes = await ws.Exec(insert)
         expect(insertRes.GetAffectRows()).toBe(5)
@@ -96,6 +96,7 @@ describe('ws.query(stable)', () => {
 
     test('query stable with CN character', async () => {
         let ws = await WsSql.Open(conf);
+        await ws.Exec(useDB);
         let insertCN = insertStable(tableCNValues, stableCNTags, stableCN)
         // console.log(insertCN)
         let insertRes = await ws.Exec(insertCN)
@@ -133,6 +134,7 @@ describe('ws.query(stable)', () => {
 describe('ws.query(table)', () => {
     test('Insert query normal table without CN character', async () => {
         let ws = await WsSql.Open(conf);
+        await ws.Exec(useDB);
         let insert = insertNTable(tableValues, table)
         // console.log(insert)
         let insertRes = await ws.Exec(insert)
@@ -166,6 +168,7 @@ describe('ws.query(table)', () => {
 
     test('Insert query normal table with CN character', async () => {
         let ws = await WsSql.Open(conf);
+        await ws.Exec(useDB);
         let insertCN = insertNTable(tableCNValues, tableCN)
         // console.log(insertCN)
         let insertRes = await ws.Exec(insertCN)
@@ -204,6 +207,7 @@ describe('ws.query(table)', () => {
 describe('ws.query(jsonTable)', () => {
     test('Insert and query json data from table without CN', async () => {
         let ws = await WsSql.Open(conf);
+        await ws.Exec(useDB);
         let insert = insertStable(tableValues, jsonTags, jsonTable)
         // console.log(insert)
 
@@ -239,6 +243,7 @@ describe('ws.query(jsonTable)', () => {
 
     test('Insert and query json data from table with CN', async () => {
         let ws = await WsSql.Open(conf);
+        await ws.Exec(useDB);
         let insert = insertStable(tableCNValues, jsonTagsCN, jsonTableCN)
         // console.log(insert)
 

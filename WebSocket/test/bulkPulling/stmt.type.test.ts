@@ -68,9 +68,8 @@ const selectJsonTableCN = `select * from ${jsonTableCN}`
 
 
 beforeAll(async () => {
-    let dsn = 'ws://root:taosdata@192.168.1.95:6051/rest/ws';
+    let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
     let conf :WSConfig = new WSConfig(dsn)
-    conf.SetDb(db)
     let ws = await WsSql.Open(conf);
     await ws.Exec(dropDB);
     await ws.Exec(createDB);

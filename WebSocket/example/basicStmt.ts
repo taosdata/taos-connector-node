@@ -18,7 +18,7 @@ async function Prepare() {
     let conf :WSConfig = new WSConfig(dsn)
     let wsSql = await WsSql.Open(conf)
     await wsSql.Exec(`create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`)
-    await wsSql.Exec(`CREATE STABLE if not exists ${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`);
+    await wsSql.Exec(`CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`);
     wsSql.Close()
 }
 

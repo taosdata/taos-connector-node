@@ -3,9 +3,10 @@ import { WsSql } from "../src/sql/wsSql";
 import { TMQConstants } from "../src/tmq/constant";
 import { WsConsumer } from "../src/tmq/wsTmq";
 
+
 const stable = 'meters';
 const db = 'power'
-const topics:string[] = ['topic_ws_bean']
+const topics:string[] = ['pwer_meters_topic']
 let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
 let configMap = new Map([
     [TMQConstants.GROUP_ID, "gId"],
@@ -19,7 +20,7 @@ let configMap = new Map([
 ]);
 
 async function Prepare() {
-    let dsn = 'ws://root:taosdata@192.168.1.95:6051/rest/ws';
+    let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
     let conf :WSConfig = new WSConfig(dsn)
     const createDB = `create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`
     const createStable = `CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`
@@ -66,6 +67,6 @@ async function Prepare() {
            consumer.Close();
         }
     }
-})
+})();
 
 

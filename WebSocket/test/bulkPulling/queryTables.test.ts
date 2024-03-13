@@ -122,7 +122,6 @@ describe('ws.query(stable)', () => {
                 actualData[i].forEach((d, index) => {
                     // //   console.log(i, index, d, expectData[i][index])
                     expect(d).toBe(expectData[i][index])
-
                 })
             }
         } else {

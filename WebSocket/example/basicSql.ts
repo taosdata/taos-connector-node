@@ -41,7 +41,7 @@ let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
             let result = await wsRows.GetData();
             console.log('queryRes.Scan().then=>', result);
         }
-        wsRows.Close()
+        await wsRows.Close()
     
     } catch (e) {
         let err:any = e
@@ -49,7 +49,7 @@ let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
     
     } finally {
         if (wsRows) {
-        wsRows.Close();
+            await wsRows.Close();
         }
         if (wsSql) {
             wsSql.Close();

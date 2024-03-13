@@ -22,9 +22,9 @@ async function Prepare() {
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
         wsSchemaless = await WsSchemaless.NewConnector(wsConf)
-        await wsSchemaless.Insert([influxdbData], SchemalessProto.InfluxDBLineProtocol, "ms", 0);
-        await wsSchemaless.Insert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, "ms", 0);
-        await wsSchemaless.Insert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, "ms", 0);
+        await wsSchemaless.Insert([influxdbData], SchemalessProto.InfluxDBLineProtocol, "ns", 0);
+        await wsSchemaless.Insert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, "s", 0);
+        await wsSchemaless.Insert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, "s", 0);
     } catch (e) {
         console.error(e);
     }finally {

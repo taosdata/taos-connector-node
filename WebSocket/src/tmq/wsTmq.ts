@@ -33,7 +33,7 @@ export class WsConsumer {
     
     }
 
-    Subscribe(topics: Array<string>): Promise<void> {
+    Subscribe(topics: Array<string>, reqId?:number): Promise<void> {
         if (!topics || topics.length == 0 ) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsTmq Subscribe params is error!');
         }
@@ -41,7 +41,7 @@ export class WsConsumer {
         let queryMsg = {
             action: TMQMessageType.Subscribe,
             args: {
-                req_id    : this.getReqID(),
+                req_id    : this.getReqID(reqId),
                 user      :this._wsConfig.user,
                 password   :this._wsConfig.password,
                 group_id  :this._wsConfig.group_id,
@@ -56,17 +56,17 @@ export class WsConsumer {
         return this.execute(JSON.stringify(queryMsg));
     }
 
-    Unsubscribe(): Promise<void> {
+    Unsubscribe(reqId?:number): Promise<void> {
         let queryMsg = {
             action: TMQMessageType.Unsubscribe,
             args: {
-                req_id    : this.getReqID(),
+                req_id: this.getReqID(reqId),
             },
         };
         return this.execute(JSON.stringify(queryMsg));
     }
 
-    Poll(timeoutMs: number):Promise<Map<string, TaosResult>>{
+    Poll(timeoutMs: number, reqId?:number):Promise<Map<string, TaosResult>>{
         return new Promise(async (resolve, reject) => {
             try {
                 if (this._wsConfig.auto_commit) {
@@ -81,7 +81,7 @@ export class WsConsumer {
                         this._commitTime = new Date().getTime();
                     }
                 }
-                resolve(await this.poll(timeoutMs)) 
+                resolve(await this.poll(timeoutMs,reqId)) 
             } catch(e: any) {
                 reject(new TaosResultError(e.code, e.message));
             }
@@ -113,12 +113,12 @@ export class WsConsumer {
         });
     }
 
-    Subscription():Promise<Array<string>> {
+    Subscription(reqId?:number):Promise<Array<string>> {
         return new Promise(async (resolve, reject) => {
             let queryMsg = {
                 action: TMQMessageType.ListTopics,
                 args: {
-                    req_id: this.getReqID(),
+                    req_id: this.getReqID(reqId),
                 },
             };
             try {
@@ -130,10 +130,10 @@ export class WsConsumer {
         });
     }
 
-    Commit():Promise<Array<TopicPartition>> {
+    Commit(reqId?:number):Promise<Array<TopicPartition>> {
         return new Promise(async (resolve, reject) => {
             try {
-                await this.doCommit()
+                await this.doCommit(reqId)
                 resolve(await this.Assignment())
             } catch (e: any) {
                 reject(new TaosResultError(e.code, e.message));
@@ -141,12 +141,12 @@ export class WsConsumer {
         })
     }
 
-    private doCommit():Promise<void> {
+    private doCommit(reqId?:number):Promise<void> {
         return new Promise(async (resolve, reject) => {
             let queryMsg = {
                 action: TMQMessageType.Commit,
                 args: {
-                    req_id    : this.getReqID(),
+                    req_id    : this.getReqID(reqId),
                     message_id: 0
                 },
             }; 
@@ -159,7 +159,7 @@ export class WsConsumer {
         })
     }
 
-    Commited(partitions:Array<TopicPartition>):Promise<Array<TopicPartition>>{
+    Commited(partitions:Array<TopicPartition>, reqId?:number):Promise<Array<TopicPartition>>{
         if (!partitions || partitions.length == 0 ) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsTmq Positions params is error!');
         }
@@ -177,7 +177,7 @@ export class WsConsumer {
             let queryMsg = {
                 action: TMQMessageType.Committed,
                 args: {
-                    req_id    : this.getReqID(),
+                    req_id    : this.getReqID(reqId),
                     topic_vgroup_ids:offsets
                 },
             };
@@ -210,7 +210,7 @@ export class WsConsumer {
     }
 
 
-    CommitOffset(partition:TopicPartition):Promise<void> {
+    CommitOffset(partition:TopicPartition, reqId?:number):Promise<void> {
         if (!partition) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsTmq CommitOffsets params is error!');
         }
@@ -218,7 +218,7 @@ export class WsConsumer {
         let queryMsg = {
         action: TMQMessageType.CommitOffset,
             args: {
-                req_id    : this.getReqID(),
+                req_id    : this.getReqID(reqId),
                 vgroup_id :partition.vgroup_id,
                 topic    :partition.topic,
                 offset   :partition.offset,
@@ -229,7 +229,7 @@ export class WsConsumer {
     
     }
 
-    Positions(partitions:Array<TopicPartition>):Promise<Array<TopicPartition>> {
+    Positions(partitions:Array<TopicPartition>, reqId?:number):Promise<Array<TopicPartition>> {
         if (!partitions || partitions.length == 0 ) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsTmq Positions params is error!');
         }
@@ -246,7 +246,7 @@ export class WsConsumer {
             let queryMsg = {
                 action: TMQMessageType.Position,
                 args: {
-                    req_id    : this.getReqID(),
+                    req_id    : this.getReqID(reqId),
                     topic_vgroup_ids:offsets
                 },
             };
@@ -259,7 +259,7 @@ export class WsConsumer {
         });
     }
 
-    Seek(partition:TopicPartition):Promise<void> {
+    Seek(partition:TopicPartition, reqId?:number):Promise<void> {
         if (!partition) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsTmq Seek params is error!');
         }
@@ -267,7 +267,7 @@ export class WsConsumer {
         let queryMsg = {
             action: TMQMessageType.Seek,
             args: {
-                req_id    : this.getReqID(),
+                req_id    : this.getReqID(reqId),
                 vgroup_id :partition.vgroup_id,
                 topic    :partition.topic,
                 offset   :partition.offset,
@@ -295,7 +295,10 @@ export class WsConsumer {
         this._wsInterface.close();
     }
 
-    private getReqID() {
+    private getReqID(reqId?:number) {
+        if (reqId) {
+            return reqId;
+        }
         if (this._req_id == 5999999) {
             this._req_id = 5000000;
         } else {
@@ -364,11 +367,11 @@ export class WsConsumer {
         });
     }
 
-    private async poll(timeoutMs: number): Promise<Map<string, TaosResult>> {
+    private async poll(timeoutMs: number, reqId?:number): Promise<Map<string, TaosResult>> {
         let queryMsg = {
             action: TMQMessageType.Poll,
             args: {
-                req_id    : this.getReqID(),
+                req_id    : this.getReqID(reqId),
                 blocking_time  :timeoutMs
             },
         };

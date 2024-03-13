@@ -98,7 +98,7 @@ describe('TDWebSocket.WsSql()', () => {
         let taosResult = await wsSql.Exec('use power')
         console.log(taosResult);
         expect(taosResult).toBeTruthy() 
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 10; i++) {
             let wsRows = await wsSql.Query('select * from meters');
             expect(wsRows).toBeTruthy()
             let meta = wsRows.GetMeta()

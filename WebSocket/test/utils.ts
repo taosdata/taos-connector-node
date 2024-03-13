@@ -153,6 +153,16 @@ export const tableMeta: Array<TDengineMeta> = [
         type: 'INT',
         length: 4
     },
+    {
+        name: 'geo',
+        type: 'GEOMETRY',
+        length: 512
+    },
+    {
+        name: 'vbinary',
+        type: 'VARBINARY',
+        length: 32
+    },
 ]
 
 export const jsonMeta: Array<TDengineMeta> = [
@@ -230,17 +240,31 @@ export const tagMeta: Array<TDengineMeta> = [
     },
 ]
 
-export function createSTable(stable: string): string {
+export function createBaseSTable(stable: string): string {
     return `create table if not exists ${stable}( ts timestamp,i1 tinyint,i2 smallint,i4 int,i8 bigint,u1 tinyint unsigned,u2 smallint unsigned,u4 int unsigned,u8 bigint unsigned,f4 float,d8 double,bnr binary(200),nchr nchar(200),b bool,nilcol int)` +
         'tags( tb bool,ti1 tinyint,ti2 smallint,ti4 int,ti8 bigint,tu1 tinyint unsigned,tu2 smallint unsigned,tu4 int unsigned,tu8 bigint unsigned,tf4 float,td8 double,tbnr binary(200),tnchr nchar(200));'
 }
-export function createSTableJSON(stable: string): string {
+export function createBaseSTableJSON(stable: string): string {
     return `create table if not exists ${stable}(ts timestamp,i1 tinyint,i2 smallint,i4 int,i8 bigint,u1 tinyint unsigned,u2 smallint unsigned,u4 int unsigned,u8 bigint unsigned,f4 float,d8 double,bnr binary(200),nchr nchar(200),b bool,nilcol int)` +
         'tags(json_tag json);'
 }
-export function createTable(table: string): string {
+export function createBaseTable(table: string): string {
     return `create table if not exists ${table}(ts timestamp,i1 tinyint,i2 smallint,i4 int,i8 bigint,u1 tinyint unsigned,u2 smallint unsigned,u4 int unsigned,u8 bigint unsigned,f4 float,d8 double,bnr binary(200),nchr nchar(200),b bool,nilcol int)`
 }
+
+export function createSTable(stable: string): string {
+    return `create table if not exists ${stable}( ts timestamp,i1 tinyint,i2 smallint,i4 int,i8 bigint,u1 tinyint unsigned,u2 smallint unsigned,u4 int unsigned,u8 bigint unsigned,f4 float,d8 double,bnr binary(200),nchr nchar(200),b bool,nilcol int, geo geometry(512), vbinary varbinary(32))` +
+        'tags( tb bool,ti1 tinyint,ti2 smallint,ti4 int,ti8 bigint,tu1 tinyint unsigned,tu2 smallint unsigned,tu4 int unsigned,tu8 bigint unsigned,tf4 float,td8 double,tbnr binary(200),tnchr nchar(200));'
+}
+export function createSTableJSON(stable: string): string {
+    return `create table if not exists ${stable}(ts timestamp,i1 tinyint,i2 smallint,i4 int,i8 bigint,u1 tinyint unsigned,u2 smallint unsigned,u4 int unsigned,u8 bigint unsigned,f4 float,d8 double,bnr binary(200),nchr nchar(200),b bool,nilcol int, geo geometry(512), vbinary varbinary(32))` +
+        'tags(json_tag json);'
+}
+export function createTable(table: string): string {
+    return `create table if not exists ${table}(ts timestamp,i1 tinyint,i2 smallint,i4 int,i8 bigint,u1 tinyint unsigned,u2 smallint unsigned,u4 int unsigned,u8 bigint unsigned,f4 float,d8 double,bnr binary(200),nchr nchar(200),b bool,nilcol int, geo geometry(512), vbinary varbinary(32))`
+}
+
+
 
 export function expectStableData(rows: Array<Array<any>>, tags: Array<any>): Array<Array<any>> {
     let resArr:Array<Array<any>> =[]

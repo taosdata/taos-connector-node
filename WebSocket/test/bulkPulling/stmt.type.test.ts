@@ -1,7 +1,7 @@
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { WsStmtConnect } from "../../src/stmt/wsStmt";
-import { createStmtData, getInsertBind } from "../utils";
+import { createBaseSTable, createStmtData, getInsertBind } from "../utils";
 import { createSTable, createSTableJSON, createTable, expectStableData, insertNTable, insertStable, jsonMeta, tableMeta, tagMeta } from "../utils";
 
 const stable = 'ws_stmt_stb';
@@ -74,8 +74,8 @@ beforeAll(async () => {
     await ws.Exec(dropDB);
     await ws.Exec(createDB);
     await ws.Exec(useDB);
-    await ws.Exec(createSTable(stable));
-    await ws.Exec(createSTable(stableCN));
+    await ws.Exec(createBaseSTable(stable));
+    await ws.Exec(createBaseSTable(stableCN));
     ws.Close()
 })
 

@@ -68,11 +68,11 @@ export class WsStmt {
         this._wsInterface = wsInterface;
     }
 
-    Init(): Promise<void> {
+    Init(reqId?:number): Promise<void> {
         let queryMsg = {
             action: 'init',
             args: {
-                req_id: this._req_id,
+                req_id: this.getReqID(reqId),
             },
         };
 
@@ -83,7 +83,7 @@ export class WsStmt {
         let queryMsg = {
             action: 'prepare',
             args: {
-                req_id: this._req_id,
+                req_id: this.getReqID(),
                 sql: sql,
                 stmt_id: this.stmt_id,
             },
@@ -95,7 +95,7 @@ export class WsStmt {
         let queryMsg = {
             action: 'set_table_name',
             args: {
-                req_id: this._req_id,
+                req_id: this.getReqID(),
                 name: tableName,
                 stmt_id: this.stmt_id,
             },
@@ -107,7 +107,7 @@ export class WsStmt {
         let queryMsg = {
             action: 'set_tags',
             args: {
-                req_id: this._req_id,
+                req_id: this.getReqID(),
                 tags: tags,
                 stmt_id: this.stmt_id,
             },
@@ -119,7 +119,7 @@ export class WsStmt {
         let queryMsg = {
             action: 'bind',
             args: {
-                req_id: this._req_id,
+                req_id: this.getReqID(),
                 columns: paramArray,
                 stmt_id: this.stmt_id,
             },
@@ -131,7 +131,7 @@ export class WsStmt {
         let queryMsg = {
             action: 'add_batch',
             args: {
-                req_id: this._req_id,
+                req_id: this.getReqID(),
                 stmt_id: this.stmt_id,
             },
         };
@@ -149,7 +149,7 @@ export class WsStmt {
         let queryMsg = {
             action: 'exec',
             args: {
-                req_id: this._req_id,
+                req_id: this.getReqID(),
                 stmt_id: this.stmt_id,
             },
         };
@@ -164,14 +164,17 @@ export class WsStmt {
         let queryMsg = {
             action: 'close',
             args: {
-                req_id: this._req_id,
+                req_id: this.getReqID(),
                 stmt_id: this.stmt_id,
             },
         };
         return this.execute(queryMsg, false);
     }
     
-    private getReqID() {
+    private getReqID(reqId?:number) {
+        if (reqId) {
+            return reqId;
+        }
         if (this._req_id == 3999999) {
             this._req_id = 3000000;
         } else {
@@ -182,7 +185,6 @@ export class WsStmt {
 
     private async execute(queryMsg: StmtMessageInfo, register: Boolean = true): Promise<void> {
         try {
-            queryMsg.args.req_id = this.getReqID();
             console.log('stmt execute result:', queryMsg);
             let reqMsg = JSON.stringify(queryMsg);
             console.log('stmt execute result:', queryMsg);

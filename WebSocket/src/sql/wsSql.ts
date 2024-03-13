@@ -35,12 +35,12 @@ export class WsSql{
         return this._wsInterface.version()
     }
 
-    Query(sql:string):Promise<WSRows>{
-        return this.query(sql)
+    Query(sql:string, req_id?:number):Promise<WSRows>{
+        return this.query(sql, req_id)
     }
 
-    Exec(sql:string):Promise<TaosResult>{
-        return this.execute(sql)
+    Exec(sql:string, req_id?: number):Promise<TaosResult>{
+        return this.execute(sql, req_id)
     }
     Close() {
         this._wsInterface.close();
@@ -52,9 +52,9 @@ export class WsSql{
         })
     }
 
-    async execute(sql: string, action:string = 'query'): Promise<TaosResult> {
+    async execute(sql: string, reqId?: number, action:string = 'query'): Promise<TaosResult> {
         try {
-            let wsQueryResponse:WSQueryResponse = await this._wsInterface.exec(this.getSql(sql, action));
+            let wsQueryResponse:WSQueryResponse = await this._wsInterface.exec(this.getSql(sql, reqId, action));
             let taosResult = new TaosResult(wsQueryResponse);
             if (wsQueryResponse.is_update == true) {
                 return taosResult;
@@ -84,9 +84,9 @@ export class WsSql{
         }
     }
 
-    async query(sql: string): Promise<WSRows> {
+    async query(sql: string, reqId?:number): Promise<WSRows> {
         try {
-            let wsQueryResponse:WSQueryResponse = await this._wsInterface.exec(this.getSql(sql));
+            let wsQueryResponse:WSQueryResponse = await this._wsInterface.exec(this.getSql(sql, reqId));
             return new WSRows(this._wsInterface, wsQueryResponse);
         } catch (e) {
             let err :any = e
@@ -94,13 +94,12 @@ export class WsSql{
         }
         
     }
-    private getSql(sql:string, action:string = 'query'):string{
-        this._reqIDIncrement()
+    private getSql(sql:string, reqId?:number, action:string = 'query'):string{
         // construct msg
         let queryMsg = {
             action: action,
             args: {
-                req_id: this._req_id,
+                req_id: this._reqIDIncrement(reqId),
                 sql: sql,
                 id: 0
             },
@@ -108,11 +107,16 @@ export class WsSql{
         return JSON.stringify(queryMsg)
     }
 
-    private _reqIDIncrement() {
+    private _reqIDIncrement(req_id?:number) {
+        if (req_id) {
+            return req_id;
+        }
+
         if (this._req_id == 2999999) {
             this._req_id = 2000000;
         } else {
             this._req_id += 1;
         }
+        return this._req_id;
     }
 } 

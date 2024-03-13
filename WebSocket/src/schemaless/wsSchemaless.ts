@@ -36,7 +36,7 @@ export class WsSchemaless {
     }
 
     //  precision: 1b(纳秒), 1u(微秒)，1a(毫秒)，1s(秒)，1m(分)，1h(小时)，1d(天), 1w(周)。
-    Insert(lines: Array<string>, protocol: SchemalessProto, precision: string, ttl: number): Promise<boolean> {
+    Insert(lines: Array<string>, protocol: SchemalessProto, precision: string, ttl: number, reqId?: number): Promise<boolean> {
         let data = '';
         if (!lines || lines.length == 0 || !protocol) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsSchemaless Insert params is error!');
@@ -52,6 +52,7 @@ export class WsSchemaless {
         let queryMsg = {
             action: 'insert',
             args: {
+                req_id : this.getReqID(reqId),
                 protocol: protocol,
                 precision: precision,
                 data: data,
@@ -72,18 +73,22 @@ export class WsSchemaless {
         this._wsInterface.close();
     }
 
-    private getReqID() {
+    private getReqID(req_id?: number) {
+        if (req_id) {
+            return req_id;
+        }
+
         if (this._req_id == 4999999) {
             this._req_id = 4000000;
         } else {
             this._req_id += 1;
         }
+
         return this._req_id;
     }
 
     private async execute(queryMsg: SchemalessMessageInfo): Promise<boolean> {
         try {
-            queryMsg.args.req_id = this.getReqID();
             let reqMsg = JSON.stringify(queryMsg);
             let resp = await this._wsInterface.exec(reqMsg);
             console.log('stmt execute result:', resp);

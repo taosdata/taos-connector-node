@@ -23,19 +23,19 @@ beforeAll(async () => {
     const stableTags = [true, -1, -2, -3, BigInt(-4), 1, 2, 3, BigInt(4), parseFloat(3.1415.toFixed(5)), parseFloat(3.14159265.toFixed(15)), 'varchar_tag_1', 'nchar_tag_1']
     
     const tableValues = [
-        [BigInt(1656677710000), 0, -1, -2, BigInt(-3), 0, 1, 2, BigInt(3),  parseFloat(3.1415.toFixed(5)), parseFloat(3.14159265.toFixed(15)), 'varchar_col_1', 'nchar_col_1', true, 'NULL'],
-        [BigInt(1656677720000), -1, -2, -3, BigInt(-4), 1, 2, 3, BigInt(4), parseFloat((3.1415 * 2).toFixed(5)), parseFloat((3.14159265 * 2).toFixed(15)), 'varchar_col_2', 'nchar_col_2', false, 'NULL'],
-        [BigInt(1656677730000), -2, -3, -4, BigInt(-5), 2, 3, 4, BigInt(5), parseFloat((3.1415 * 3).toFixed(5)), parseFloat((3.14159265 * 3).toFixed(15)), 'varchar_col_3', 'nchar_col_3', true, 'NULL'],
-        [BigInt(1656677740000), -3, -4, -5, BigInt(-6), 3, 4, 5, BigInt(6), parseFloat((3.1415 * 4).toFixed(5)), parseFloat((3.14159265 * 4).toFixed(15)), 'varchar_col_4', 'nchar_col_4', false, 'NULL'],
-        [BigInt(1656677750000), -4, -5, -6, BigInt(-7), 4, 5, 6, BigInt(7), parseFloat((3.1415 * 5).toFixed(5)), parseFloat((3.14159265 * 5).toFixed(15)), 'varchar_col_5', 'nchar_col_5', true, 'NULL'],
+        [BigInt(1656677710000), 0, -1, -2, BigInt(-3), 0, 1, 2, BigInt(3),  parseFloat(3.1415.toFixed(5)),       parseFloat(3.14159265.toFixed(15)),       'varchar_col_1', 'nchar_col_1', true,  'NULL', 'POINT (4.0 8.0)', '0x7661726332'],
+        [BigInt(1656677720000), -1, -2, -3, BigInt(-4), 1, 2, 3, BigInt(4), parseFloat((3.1415 * 2).toFixed(5)), parseFloat((3.14159265 * 2).toFixed(15)), 'varchar_col_2', 'nchar_col_2', false, 'NULL', 'POINT (3.0 5.0)', '0x7661726333'],
+        [BigInt(1656677730000), -2, -3, -4, BigInt(-5), 2, 3, 4, BigInt(5), parseFloat((3.1415 * 3).toFixed(5)), parseFloat((3.14159265 * 3).toFixed(15)), 'varchar_col_3', 'nchar_col_3', true,  'NULL', 'LINESTRING (1.000000 1.000000, 2.000000 2.000000, 5.000000 5.000000)', '0x7661726334'],
+        [BigInt(1656677740000), -3, -4, -5, BigInt(-6), 3, 4, 5, BigInt(6), parseFloat((3.1415 * 4).toFixed(5)), parseFloat((3.14159265 * 4).toFixed(15)), 'varchar_col_4', 'nchar_col_4', false, 'NULL', 'POLYGON ((3.000000 6.000000, 5.000000 6.000000, 5.000000 8.000000, 3.000000 8.000000, 3.000000 6.000000))', '0x7661726335'],
+        [BigInt(1656677750000), -4, -5, -6, BigInt(-7), 4, 5, 6, BigInt(7), parseFloat((3.1415 * 5).toFixed(5)), parseFloat((3.14159265 * 5).toFixed(15)), 'varchar_col_5', 'nchar_col_5', true,  'NULL', 'POINT (7.0 9.0)', '0x7661726335'],
     ]
     
     const tableCNValues = [
-        [BigInt(1656677760000), 0, -1, -2, BigInt(-3), 0, 1, 2, BigInt(3), parseFloat(3.1415.toFixed(5)), parseFloat(3.14159265.toFixed(15)), 'varchar_列_壹', 'nchar_列_甲', true, 'NULL'],
-        [BigInt(1656677770000), -1, -2, -3, BigInt(-4), 1, 2, 3, BigInt(4), parseFloat((3.1415 * 2).toFixed(5)), parseFloat((3.14159265 * 2).toFixed(15)), 'varchar_列_贰', 'nchar_列_乙', false, 'NULL'],
-        [BigInt(1656677780000), -2, -3, -4, BigInt(-5), 2, 3, 4, BigInt(5), parseFloat((3.1415 * 3).toFixed(5)), parseFloat((3.14159265 * 3).toFixed(15)), 'varchar_列_叁', 'nchar_列_丙', true, 'NULL'],
-        [BigInt(1656677790000), -3, -4, -5, BigInt(-6), 3, 4, 5, BigInt(6), parseFloat((3.1415 * 4).toFixed(5)), parseFloat((3.14159265 * 4).toFixed(15)), 'varchar_列_肆', 'nchar_列_丁', false, 'NULL'],
-        [BigInt(1656677800000), -4, -5, -6, BigInt(-7), 4, 5, 6, BigInt(7), parseFloat((3.1415 * 5).toFixed(5)), parseFloat((3.14159265 * 5).toFixed(15)), 'varchar_列_伍', 'nchar_列_戊', true, 'NULL'],
+        [BigInt(1656677760000), 0, -1, -2, BigInt(-3), 0, 1, 2, BigInt(3), parseFloat(3.1415.toFixed(5)), parseFloat(3.14159265.toFixed(15)), 'varchar_列_壹', 'nchar_列_甲',              true,  'NULL', 'POINT (4.0 8.0)', '0x7661726332'],
+        [BigInt(1656677770000), -1, -2, -3, BigInt(-4), 1, 2, 3, BigInt(4), parseFloat((3.1415 * 2).toFixed(5)), parseFloat((3.14159265 * 2).toFixed(15)), 'varchar_列_贰', 'nchar_列_乙', false, 'NULL', 'POINT (3.0 5.0)', '0x7661726333'],
+        [BigInt(1656677780000), -2, -3, -4, BigInt(-5), 2, 3, 4, BigInt(5), parseFloat((3.1415 * 3).toFixed(5)), parseFloat((3.14159265 * 3).toFixed(15)), 'varchar_列_叁', 'nchar_列_丙', true,  'NULL', 'LINESTRING (1.000000 1.000000, 2.000000 2.000000, 5.000000 5.000000)', '0x7661726334'],
+        [BigInt(1656677790000), -3, -4, -5, BigInt(-6), 3, 4, 5, BigInt(6), parseFloat((3.1415 * 4).toFixed(5)), parseFloat((3.14159265 * 4).toFixed(15)), 'varchar_列_肆', 'nchar_列_丁', false, 'NULL', 'POLYGON ((3.000000 6.000000, 5.000000 6.000000, 5.000000 8.000000, 3.000000 8.000000, 3.000000 6.000000))', '0x7661726335'],
+        [BigInt(1656677800000), -4, -5, -6, BigInt(-7), 4, 5, 6, BigInt(7), parseFloat((3.1415 * 5).toFixed(5)), parseFloat((3.14159265 * 5).toFixed(15)), 'varchar_列_伍', 'nchar_列_戊', true,  'NULL', 'POINT (7.0 9.0)', '0x7661726335'],
     ]
    
     let ws = await WsSql.Open(conf);

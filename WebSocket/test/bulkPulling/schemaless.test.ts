@@ -1,5 +1,7 @@
 import { WSConfig } from "../../src/common/config";
 import { SchemalessProto, WsSchemaless } from "../../src/schemaless/wsSchemaless";
+import { Precision } from "../../src/sql/wsProto";
+import { WsSql } from "../../src/sql/wsSql";
 
 describe('TDWebSocket.WsSchemaless()', () => {
     let influxdbData = "st,t1=3i64,t2=4f64,t3=\"t3\" c1=3i64,c3=L\"passit\",c2=false,c4=4f64 1626006833639000000"
@@ -12,7 +14,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
         conf.SetUser('root')
         conf.SetPwd('taosdata')
         conf.SetDb('power')
-        let wsSchemaless = await WsSchemaless.NewConnector(conf)
+        let wsSchemaless = await WsSql.Open(conf)
         expect(wsSchemaless.State()).toBeGreaterThan(0)
         wsSchemaless.Close();
     });
@@ -26,7 +28,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
             conf.SetUser('root')
             conf.SetPwd('taosdata')
             conf.SetDb('jest')
-            wsSchemaless = await WsSchemaless.NewConnector(conf)
+            wsSchemaless = await WsSql.Open(conf)
         }catch(e :any){
             expect(e.message).toMatch('Database not exist')
         }finally{
@@ -42,11 +44,26 @@ describe('TDWebSocket.WsSchemaless()', () => {
         conf.SetUser('root')
         conf.SetPwd('taosdata')
         conf.SetDb('power')
-        let wsSchemaless = await WsSchemaless.NewConnector(conf)
+        let wsSchemaless = await WsSql.Open(conf)
         expect(wsSchemaless.State()).toBeGreaterThan(0)
-        await wsSchemaless.Insert([influxdbData], SchemalessProto.InfluxDBLineProtocol, "ns", 0);
-        await wsSchemaless.Insert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, "s", 0);
-        await wsSchemaless.Insert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, "s", 0);
+        await wsSchemaless.SchemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NANO_SECONDS, 0);
+        await wsSchemaless.SchemalessInsert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.SECONDS, 0);
+        await wsSchemaless.SchemalessInsert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, Precision.SECONDS, 0);
+        wsSchemaless.Close();
+    });
+
+    test('normal wsSql insert', async() => {
+        let dns = 'ws://192.168.1.95:6051/ws'
+        let conf :WSConfig = new WSConfig(dns)
+        conf.SetUser('root')
+        conf.SetPwd('taosdata')
+        conf.SetDb('power')
+        let wsSchemaless = await WsSql.Open(conf)
+        expect(wsSchemaless.State()).toBeGreaterThan(0)
+        await wsSchemaless.SchemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NOT_CONFIGURED, 0);
+        await wsSchemaless.SchemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NANO_SECONDS, 0);
+        await wsSchemaless.SchemalessInsert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.SECONDS, 0);
+        await wsSchemaless.SchemalessInsert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, Precision.SECONDS, 0);
         wsSchemaless.Close();
     });
 
@@ -56,10 +73,10 @@ describe('TDWebSocket.WsSchemaless()', () => {
         conf.SetUser('root')
         conf.SetPwd('taosdata')
         conf.SetDb('power')
-        let wsSchemaless = await WsSchemaless.NewConnector(conf)
+        let wsSchemaless = await WsSql.Open(conf)
         expect(wsSchemaless.State()).toBeGreaterThan(0)
         try {
-            await wsSchemaless.Insert([influxdbData], SchemalessProto.OpenTSDBTelnetLineProtocol, "ns", 0);
+            await wsSchemaless.SchemalessInsert([influxdbData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.NANO_SECONDS, 0);
         }catch (e:any) {
             expect(e.message).toMatch('invalid timestamp')
         }

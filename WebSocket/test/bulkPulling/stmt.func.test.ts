@@ -1,5 +1,6 @@
 import { WSConfig } from "../../src/common/config";
-import { WsStmtConnect } from "../../src/stmt/wsStmt";
+import { WsSql } from "../../src/sql/wsSql";
+import { WsStmt, WsStmtConnect } from "../../src/stmt/wsStmt";
 
 describe('TDWebSocket.Stmt()', () => {
     let tags = ['California.SanFrancisco', 3];
@@ -112,10 +113,11 @@ describe('TDWebSocket.Stmt()', () => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
-        let connector = WsStmtConnect.NewConnector(wsConf) 
-        let stmt = await connector.Init()
+        // let connector = WsStmtConnect.NewConnector(wsConf) 
+        // let stmt = await connector.Init()
+        let ws = await WsSql.Open(wsConf);
+        let stmt = new WsStmt(ws.GetWsClient())
         expect(stmt).toBeTruthy()      
-        expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.SetTableName('d1001');
         await stmt.SetTags(tags)
@@ -135,7 +137,7 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.Exec()
         expect(stmt.GetLastAffected()).toEqual(30)
         stmt.Close()
-        connector.Close();
+        ws.Close();
     });
 
 

@@ -1,17 +1,23 @@
 import { WSRows } from './wsRows'
 import { TaosResult } from '../common/taosResult'
-import { WSInterface } from '../client/wsInterface'
+import { WsClient } from '../client/wsClient'
 import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/wsError'
 import { WSConfig } from '../common/config'
 import { GetUrl } from '../common/utils'
 import { WSQueryResponse } from '../client/wsResponse'
+import { SchemalessProto } from '../schemaless/wsSchemaless'
+import { Precision, SchemalessMessageInfo } from './wsProto'
  
 export class WsSql{
-    private _wsInterface: WSInterface
+    private _wsClient: WsClient
+
+    public set wsClient(value: WsClient) {
+        this._wsClient = value
+    }
     private _req_id = 2000000;
    
     constructor(url: URL, timeout :number | undefined | null) {
-        this._wsInterface = new WSInterface(url, timeout)
+        this._wsClient = new WsClient(url, timeout)
     }
 
     static Open(wsConfig:WSConfig):Promise<WsSql> {
@@ -25,14 +31,18 @@ export class WsSql{
     }
 
     State(){
-        return this._wsInterface.getState();
+        return this._wsClient.getState();
+    }
+
+    public GetWsClient(): WsClient {
+        return this._wsClient
     }
 
     /**
      * return client version.
      */
     Version(): Promise<string> {
-        return this._wsInterface.version()
+        return this._wsClient.version()
     }
 
     Query(sql:string, req_id?:number):Promise<WSRows>{
@@ -43,30 +53,61 @@ export class WsSql{
         return this.execute(sql, req_id)
     }
     Close() {
-        this._wsInterface.close();
+        this._wsClient.close();
     }
 
-    async open(database:string | null | undefined):Promise<WsSql> {
-        return new Promise((resolve, reject) => {
-            this._wsInterface.connect(database).then(()=>{resolve(this)}).catch((e: any)=>{reject(e)});
+    open(database:string | null | undefined):Promise<WsSql> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                await this._wsClient.connect(database);
+                resolve(this)
+            } catch(e) {
+                reject(e)
+            }
         })
+    }
+
+    SchemalessInsert(lines: Array<string>, protocol: SchemalessProto, precision: Precision, ttl: number, reqId?: number): Promise<void> {
+        let data = '';
+        if (!lines || lines.length == 0 || !protocol) {
+            throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsSchemaless Insert params is error!');
+        }
+
+        lines.forEach((element, index) => {
+            data += element;
+            if (index < lines.length - 1) {
+                data += '\n';
+            }
+        });
+
+        let queryMsg = {
+            action: 'insert',
+            args: {
+                req_id : this.getReqID(reqId),
+                protocol: protocol,
+                precision: precision,
+                data: data,
+                ttl: ttl,
+            },
+        };
+        return this.executeSchemalessInsert(queryMsg);
     }
 
     async execute(sql: string, reqId?: number, action:string = 'query'): Promise<TaosResult> {
         try {
-            let wsQueryResponse:WSQueryResponse = await this._wsInterface.exec(this.getSql(sql, reqId, action));
+            let wsQueryResponse:WSQueryResponse = await this._wsClient.exec(this.getSql(sql, reqId, action));
             let taosResult = new TaosResult(wsQueryResponse);
             if (wsQueryResponse.is_update == true) {
                 return taosResult;
             } else {
                 try{
                     while (true) {
-                        let wsFetchResponse = await this._wsInterface.fetch(wsQueryResponse)
+                        let wsFetchResponse = await this._wsClient.fetch(wsQueryResponse)
                         if (wsFetchResponse.completed == true) {
                             break;
                         } else {
                             taosResult.SetRowsAndTime(wsFetchResponse.rows, wsFetchResponse.timing);
-                            let tmp: TaosResult = await this._wsInterface.fetchBlock(wsFetchResponse, taosResult);
+                            let tmp: TaosResult = await this._wsClient.fetchBlock(wsFetchResponse, taosResult);
                             taosResult = tmp;
                         }
                     }
@@ -75,7 +116,7 @@ export class WsSql{
                     let err :any = e
                     throw new TaosResultError(err.code, err.message);
                 } finally {
-                    this._wsInterface.freeResult(wsQueryResponse)
+                    this._wsClient.freeResult(wsQueryResponse)
                 }
             }
         } catch(e) {
@@ -84,10 +125,22 @@ export class WsSql{
         }
     }
 
+    private async executeSchemalessInsert(queryMsg: SchemalessMessageInfo): Promise<void> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                let reqMsg = JSON.stringify(queryMsg);
+                await this._wsClient.exec(reqMsg);
+                resolve();
+            } catch (e:any) {
+                reject(new TaosResultError(e.code, e.message));
+            }
+        });
+    }
+
     async query(sql: string, reqId?:number): Promise<WSRows> {
         try {
-            let wsQueryResponse:WSQueryResponse = await this._wsInterface.exec(this.getSql(sql, reqId));
-            return new WSRows(this._wsInterface, wsQueryResponse);
+            let wsQueryResponse:WSQueryResponse = await this._wsClient.exec(this.getSql(sql, reqId));
+            return new WSRows(this._wsClient, wsQueryResponse);
         } catch (e) {
             let err :any = e
             throw new TaosResultError(err.code, err.message);
@@ -99,7 +152,7 @@ export class WsSql{
         let queryMsg = {
             action: action,
             args: {
-                req_id: this._reqIDIncrement(reqId),
+                req_id: this.getReqID(reqId),
                 sql: sql,
                 id: 0
             },
@@ -107,7 +160,7 @@ export class WsSql{
         return JSON.stringify(queryMsg)
     }
 
-    private _reqIDIncrement(req_id?:number) {
+    private getReqID(req_id?:number) {
         if (req_id) {
             return req_id;
         }
@@ -119,4 +172,6 @@ export class WsSql{
         }
         return this._req_id;
     }
+
+
 } 

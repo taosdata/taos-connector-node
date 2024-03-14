@@ -1,8 +1,8 @@
-import { WSInterface } from '../client/wsInterface';
+import { WsClient } from '../client/wsClient';
 import { WSConfig } from '../common/config';
 import { GetUrl } from '../common/utils';
 import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/wsError';
-import { SchemalessMessageInfo } from './wsProto';
+import { SchemalessMessageInfo } from '../sql/wsProto';
 
 export const enum SchemalessProto {
 	InfluxDBLineProtocol       = 1,
@@ -11,12 +11,12 @@ export const enum SchemalessProto {
 }
 
 export class WsSchemaless {
-    private _wsInterface: WSInterface;
+    private _wsInterface: WsClient;
     private _req_id = 4000000;
     private lastAffected = 0;
 
     constructor(url: URL, timeout :number | undefined | null) {
-        this._wsInterface = new WSInterface(url, timeout);
+        this._wsInterface = new WsClient(url, timeout);
     }
 
     static NewConnector(wsConfig:WSConfig):Promise<WsSchemaless> {
@@ -29,9 +29,9 @@ export class WsSchemaless {
         return wsSchemaless.open(wsConfig.GetDb())
     }
 
-    async open(database:string | null | undefined):Promise<WsSchemaless> {
-        return new Promise((resolve, reject) => {
-            this._wsInterface.connect(database).then(()=>{resolve(this)}).catch((e: any)=>{reject(e)});
+    open(database:string | null | undefined):Promise<WsSchemaless> {
+        return new Promise(async (resolve, reject) => {
+            await this._wsInterface.connect(database).then(()=>{resolve(this)}).catch((e: any)=>{reject(e)});
         })
     }
 

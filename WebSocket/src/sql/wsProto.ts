@@ -11,3 +11,12 @@ export interface SchemalessParamsInfo {
     data: string;
 }
 
+export enum Precision {
+    NOT_CONFIGURED = '',
+    HOURS = 'h',
+    MINUTES = 'm',
+    SECONDS = 's',
+    MILLI_SECONDS = 'ms',
+    MICRO_SECONDS = 'u',
+    NANO_SECONDS = 'ns',
+}

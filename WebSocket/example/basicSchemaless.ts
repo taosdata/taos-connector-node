@@ -1,5 +1,6 @@
 import { WSConfig } from '../src/common/config';
 import { SchemalessProto, WsSchemaless } from '../src/schemaless/wsSchemaless';
+import { Precision } from '../src/sql/wsProto';
 import { WsSql } from '../src/sql/wsSql';
 let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
 let db = 'power'
@@ -19,12 +20,12 @@ async function Prepare() {
     let wsSchemaless = null
     try {
         await Prepare()
-        let wsConf = new WSConfig(dsn);
-        wsConf.SetDb(db)
-        wsSchemaless = await WsSchemaless.NewConnector(wsConf)
-        await wsSchemaless.Insert([influxdbData], SchemalessProto.InfluxDBLineProtocol, "ns", 0);
-        await wsSchemaless.Insert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, "s", 0);
-        await wsSchemaless.Insert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, "s", 0);
+        let conf = new WSConfig(dsn);
+        conf.SetDb(db)
+        wsSchemaless = await WsSql.Open(conf)
+        await wsSchemaless.SchemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NANO_SECONDS, 0);
+        await wsSchemaless.SchemalessInsert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.SECONDS, 0);
+        await wsSchemaless.SchemalessInsert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, Precision.SECONDS, 0);
     } catch (e) {
         console.error(e);
     }finally {

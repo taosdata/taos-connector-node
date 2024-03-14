@@ -1,12 +1,12 @@
 import { TmqConfig } from './config';
 import { TMQConstants, TMQMessageType } from './constant';
-import { WSInterface } from '../client/wsInterface';
+import { WsClient } from '../client/wsClient';
 import { TaosResult } from '../common/taosResult';
 import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/wsError';
 import { AssignmentResp, CommitedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockResponse, WsPollResponse, WsTmqQueryResponse, parseTmpBlock} from './tmpResponse';
 
 export class WsConsumer {
-    private _wsInterface: WSInterface;
+    private _wsInterface: WsClient;
     private _req_id = 5000000;
     private _wsConfig:TmqConfig;
     private _topics?:string[];
@@ -14,7 +14,7 @@ export class WsConsumer {
     constructor(wsConfig:Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig)
         console.log(this._wsConfig)
-        this._wsInterface = new WSInterface(this._wsConfig.url);
+        this._wsInterface = new WsClient(this._wsConfig.url);
         this._wsInterface.connect();
     }
 

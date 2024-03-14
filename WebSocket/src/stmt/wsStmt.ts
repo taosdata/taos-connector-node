@@ -1,17 +1,17 @@
-import { WSInterface } from '../client/wsInterface';
+import { WsClient } from '../client/wsClient';
 import { ErrorCode, TDWebSocketClientError, TaosResultError, WebSocketInterfaceError } from '../common/wsError';
 import { WSConfig } from '../common/config'
 import { GetUrl } from '../common/utils';
 import { WsStmtQueryResponse, StmtMessageInfo } from './wsProto';
 
 export class WsStmtConnect {
-    private _wsInterface: WSInterface | null;
+    private _wsClient: WsClient | null;
     private _config:WSConfig;
     private _bClose = false
     constructor(wsConfig: WSConfig) {
         let url = GetUrl(wsConfig)
         this._config = wsConfig
-        this._wsInterface = new WSInterface(url, wsConfig.GetTimeOut());
+        this._wsClient = new WsClient(url, wsConfig.GetTimeOut());
     }
 
     static NewConnector(wsConfig:WSConfig):WsStmtConnect {
@@ -26,25 +26,25 @@ export class WsStmtConnect {
     }
 
     State(){
-        if (this._wsInterface) {
-            return this._wsInterface.getState();
+        if (this._wsClient) {
+            return this._wsClient.getState();
         }
         return 0;
     }
 
     Close() {
-        if (!this._bClose && this._wsInterface) {
-            this._wsInterface.close();
+        if (!this._bClose && this._wsClient) {
+            this._wsClient.close();
             this._bClose = true
         }
     }
 
     private async open():Promise<WsStmt> {
         return new Promise(async (resolve, reject) => {
-            if (this._wsInterface) {
+            if (this._wsClient) {
                 try{
-                    await this._wsInterface.connect(this._config.GetDb());
-                    let wsStmt = new WsStmt(this._wsInterface);
+                    await this._wsClient.connect(this._config.GetDb());
+                    let wsStmt = new WsStmt(this._wsClient);
                     await wsStmt.Init();
                     this._bClose = false;
                     resolve(wsStmt);
@@ -60,23 +60,16 @@ export class WsStmtConnect {
 }
 
 export class WsStmt {
-    private _wsInterface: WSInterface;
+    private _wsClient: WsClient;
     private _req_id = 3000000;
     private stmt_id: number | undefined | null;
     private lastAffected: number | undefined | null;
-    constructor(wsInterface: WSInterface) {
-        this._wsInterface = wsInterface;
+    constructor(wsClient: WsClient) {
+        this._wsClient = wsClient;
     }
 
     Init(reqId?:number): Promise<void> {
-        let queryMsg = {
-            action: 'init',
-            args: {
-                req_id: this.getReqID(reqId),
-            },
-        };
-
-        return this.execute(queryMsg);
+        return this.init(reqId);
     }
 
     Prepare(sql: string): Promise<void> {
@@ -142,7 +135,7 @@ export class WsStmt {
      * return client version.
      */
     Version(): Promise<string> {
-        return this._wsInterface.version();
+        return this._wsClient.version();
     }
 
     Exec(): Promise<void> {
@@ -189,7 +182,7 @@ export class WsStmt {
             let reqMsg = JSON.stringify(queryMsg);
             console.log('stmt execute result:', queryMsg);
             if (register) {
-                let result = await this._wsInterface.exec(reqMsg, false);
+                let result = await this._wsClient.exec(reqMsg, false);
                 let resp = new WsStmtQueryResponse(result)
                 if (resp.stmt_id) {
                 this.stmt_id = resp.stmt_id;
@@ -201,7 +194,7 @@ export class WsStmt {
                 
                 console.log('stmt execute result:', resp);     
             }else{
-                let resp = await this._wsInterface.execNoResp(reqMsg);
+                let resp = await this._wsClient.execNoResp(reqMsg);
                 this.stmt_id = null
                 this.lastAffected = null
                 console.log('stmt execute result:', resp);
@@ -211,4 +204,29 @@ export class WsStmt {
             throw new TaosResultError(e.code, e.message);
         }
     }
+
+    private init(reqId?: number):Promise<void> {
+        return new Promise(async (resolve, reject) => {
+            if (this._wsClient) {
+                try{
+                    if (this._wsClient.getState() <= 0) {
+                        await this._wsClient.connect();
+                    }
+                    let queryMsg = {
+                        action: 'init',
+                        args: {
+                            req_id: this.getReqID(reqId),
+                        },
+                    };
+                    await this.execute(queryMsg);
+                    resolve()
+                } catch(e) {
+                    reject(e);
+                }
+            }else{
+                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "stmt connect closed"));
+            }
+        });
+    }
+    
 }

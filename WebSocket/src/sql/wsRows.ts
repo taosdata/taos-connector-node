@@ -1,15 +1,15 @@
 import { TDengineMeta, TaosResult } from '../common/taosResult';
 import { TaosResultError } from '../common/wsError';
 import { WSQueryResponse } from '../client/wsResponse';
-import { WSInterface } from '../client/wsInterface';
+import { WsClient } from '../client/wsClient';
 
 export class WSRows {
-    private _wsInterface: WSInterface;
+    private _wsClient: WsClient;
     private _wsQueryResponse: WSQueryResponse;
     private _taosResult: TaosResult;
     private _isClose : boolean;
-    constructor(wsInterface: WSInterface, resp: WSQueryResponse) {
-        this._wsInterface = wsInterface;
+    constructor(wsInterface: WsClient, resp: WSQueryResponse) {
+        this._wsClient = wsInterface;
         this._wsQueryResponse = resp;
         this._taosResult = new TaosResult(resp);
         this._isClose = false
@@ -37,14 +37,14 @@ export class WSRows {
 
     private async getBlockData():Promise<TaosResult> {
         try {
-            let wsFetchResponse = await this._wsInterface.fetch(this._wsQueryResponse);
+            let wsFetchResponse = await this._wsClient.fetch(this._wsQueryResponse);
             console.log("[wsQuery.execute.wsFetchResponse]==>\n", wsFetchResponse)
             if (wsFetchResponse.completed == true) {
                 this.Close();
                 this._taosResult.SetData(null);
             } else {
                 this._taosResult.SetRowsAndTime(wsFetchResponse.rows, wsFetchResponse.timing);
-                return await this._wsInterface.fetchBlock(wsFetchResponse, this._taosResult);
+                return await this._wsClient.fetchBlock(wsFetchResponse, this._taosResult);
             }
             return this._taosResult;
         }catch(err:any){
@@ -76,7 +76,7 @@ export class WSRows {
             return
         }
         this._isClose = true
-        this._wsInterface.freeResult(this._wsQueryResponse)
+        this._wsClient.freeResult(this._wsQueryResponse)
     }
 
 }

@@ -17,9 +17,9 @@ interface MessageAction {
 
 var _msgActionRegister: Map<MessageId, MessageAction> = new Map();
 
-export class TDWebSocketConnector {
+export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
-    _wsURL: URL;
+    private _wsURL: URL;
     _timeout = 5000;
 
     // create ws
@@ -46,7 +46,7 @@ export class TDWebSocketConnector {
         }
     }
 
-    Ready(): Promise<TDWebSocketConnector> {
+    Ready(): Promise<WebSocketConnector> {
         return new Promise((resolve, reject) => {
             this._wsConn.onopen = () => {
                 console.log("websocket connection opened")
@@ -162,7 +162,7 @@ export class TDWebSocketConnector {
         return this._wsConn.readyState;
     }
 
-    sendMsgNoResp(message: string):Promise<Boolean> {
+    sendMsgNoResp(message: string):Promise<void> {
         console.log("[wsClient.sendMsgNoResp()]===>" + message)
         let msg = JSON.parse(message);
         if (msg.args.id !== undefined) {
@@ -173,7 +173,7 @@ export class TDWebSocketConnector {
         return new Promise((resolve, reject) => {
             if (this._wsConn && this._wsConn.readyState > 0) {            
                 this._wsConn.send(message)
-                resolve(true)
+                resolve()
             } else {
                 reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
             }
@@ -214,9 +214,12 @@ export class TDWebSocketConnector {
             })
     }
 
-    configTimeout(ms: number) {
+    public configTimeout(ms: number) {
         this._timeout = ms;
     }
 
+    public getWsURL(): URL {
+        return this._wsURL;
+    }
 }
 

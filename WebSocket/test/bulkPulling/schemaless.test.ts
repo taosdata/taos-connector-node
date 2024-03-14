@@ -30,6 +30,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
             conf.SetDb('jest')
             wsSchemaless = await WsSql.Open(conf)
         }catch(e :any){
+            console.log(e)
             expect(e.message).toMatch('Database not exist')
         }finally{
             if(wsSchemaless) {

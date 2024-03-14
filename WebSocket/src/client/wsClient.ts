@@ -1,7 +1,8 @@
 import JSONBig from 'json-bigint';
-import { TDWebSocketConnector } from './wsConnector';
+import { WebSocketConnector } from './wsConnector';
+import { WebSocketConnectionPool } from './wsConnectorPool'
 import { parseBlock, MessageResp, TaosResult } from '../common/taosResult';
-import { ErrorCode, WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
+import { ErrorCode, TDWebSocketClientError, WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
 import {
     WSVersionResponse,
     WSFetchBlockResponse,
@@ -9,17 +10,20 @@ import {
     WSFetchResponse,
     WSConnResponse,
 } from './wsResponse';
+import { Url } from 'url';
 
 
 export class WsClient {
-    private _wsConnector: TDWebSocketConnector;
+    private _wsConnector?: WebSocketConnector;
     private _req_id = 1000000;
-    private _url;
+    private _timeout?:number | undefined | null;
+    private _url:URL;
 
     constructor(url: URL, timeout ?:number | undefined | null) {
         this.checkURL(url);
         this._url = url;
-        this._wsConnector = new TDWebSocketConnector(this._url, timeout);
+        this._timeout = timeout;
+    
     }
 
     connect(database?: string | undefined | null): Promise<WSConnResponse> {
@@ -38,36 +42,37 @@ export class WsClient {
             },
         };
         
-        return new Promise((resolve, reject) => {
-            if (this._wsConnector.readyState() > 0) {
-                this._wsConnector.sendMsg(JSON.stringify(connMsg)).then((e: any) => {
-                if (e.msg.code == 0) {
-                    resolve(e);
-                } else {
-                    reject(new WebSocketQueryError(e.code, e.message));
+        return new Promise(async (resolve, reject) => {
+            try {
+                console.log("-------", this._url)
+                this._wsConnector = await WebSocketConnectionPool.Instance().getConnection(this._url, this._timeout);
+                if (this._wsConnector.readyState() <= 0) {
+                    await this._wsConnector.Ready();
                 }
-                }).catch((e) => {reject(e);});
-            } else {
-                this._wsConnector.Ready().then((ws: TDWebSocketConnector) => {
-                    return ws.sendMsg(JSON.stringify(connMsg));
-                })
-                .then((e: any) => {
-                    if (e.msg.code == 0) {
-                        resolve(e);
-                    } else {
-                        reject(new WebSocketQueryError(e.msg.code, e.msg.message));
-                    }
-                }).catch((e) => {reject(e);});
+                let result:any = await this._wsConnector.sendMsg(JSON.stringify(connMsg))
+                if (result.msg.code  == 0) {
+                    resolve(result);
+                }else {
+                    reject(new WebSocketQueryError(result.msg.code, result.msg.message));
+                }
+            } catch(e:any) {
+                reject(e)
             }
+            
         });
     }
 
     execNoResp(queryMsg: string): Promise<Boolean> {
         return new Promise((resolve, reject) => {
             console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
-            this._wsConnector.sendMsgNoResp(queryMsg)
-            .then((e: any) => {resolve(e);})
-            .catch((e) => reject(e));
+            if (this._wsConnector) {
+                this._wsConnector.sendMsgNoResp(queryMsg)
+                .then((e: any) => {resolve(e);})
+                .catch((e) => reject(e));
+            }else{
+                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect"))
+            }
+
         });
     }
 
@@ -75,26 +80,45 @@ export class WsClient {
     exec(queryMsg: string, bSqlQurey:boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
             // console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
-            this._wsConnector.sendMsg(queryMsg).then((e: any) => {
-                if (e.msg.code == 0) {
-                    if (bSqlQurey) {
-                        resolve(new WSQueryResponse(e));
-                    }else{
-                        resolve(e)
+            if (this._wsConnector) {
+                this._wsConnector.sendMsg(queryMsg).then((e: any) => {
+                    if (e.msg.code == 0) {
+                        if (bSqlQurey) {
+                            resolve(new WSQueryResponse(e));
+                        }else{
+                            resolve(e)
+                        }
+                    } else {
+                        reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
                     }
-                } else {
-                    reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
-                }
-            }).catch((e) => {reject(e);});
+                }).catch((e) => {reject(e);});               
+            } else {
+                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect"))
+            }
+
         });
     }
 
     getState() {
-        return this._wsConnector.readyState();
+        if (this._wsConnector) {
+            return this._wsConnector.readyState();
+        }
+        return -1;
+        
     }
 
-    Ready(): Promise<TDWebSocketConnector> {
-        return this._wsConnector.Ready()
+    Ready(): Promise<WebSocketConnector> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                if (!this._wsConnector) {
+                    this._wsConnector = await WebSocketConnectionPool.Instance().getConnection(this._url, this._timeout);
+                }
+                let resoult = this._wsConnector.Ready()  
+                resolve(resoult)              
+            }catch(e: any) {
+                reject(e)
+            }
+        });
     }
 
     fetch(res: WSQueryResponse): Promise<WSFetchResponse> {
@@ -110,13 +134,18 @@ export class WsClient {
         return new Promise((resolve, reject) => {
         let jsonStr = JSONBig.stringify(fetchMsg);
         console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
-            this._wsConnector.sendMsg(jsonStr).then((e: any) => {
-                if (e.msg.code == 0) {
-                    resolve(new WSFetchResponse(e));
-                } else {
-                    reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
-                }
-            }).catch((e) => {reject(e);});
+            if (this._wsConnector) {
+                this._wsConnector.sendMsg(jsonStr).then((e: any) => {
+                    if (e.msg.code == 0) {
+                        resolve(new WSFetchResponse(e));
+                    } else {
+                        reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
+                    }
+                }).catch((e) => {reject(e);});
+            } else {
+                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect"));
+            }
+            
         });
     }
 
@@ -132,22 +161,30 @@ export class WsClient {
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(fetchBlockMsg);
             // console.log("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
-            this._wsConnector.sendMsg(jsonStr).then((e: any) => {
-                let resp:MessageResp = e
-                taosResult.AddtotalTime(resp.totalTime)
-                resolve(parseBlock(fetchResponse.rows, new WSFetchBlockResponse(resp.msg), taosResult));
-                // if retrieve JSON then reject with message
-                // else is binary , so parse raw block to TaosResult
-            }).catch((e) => reject(e));
+            if (this._wsConnector) {
+                this._wsConnector.sendMsg(jsonStr).then((e: any) => {
+                    let resp:MessageResp = e
+                    taosResult.AddtotalTime(resp.totalTime)
+                    resolve(parseBlock(fetchResponse.rows, new WSFetchBlockResponse(resp.msg), taosResult));
+                    // if retrieve JSON then reject with message
+                    // else is binary , so parse raw block to TaosResult
+                }).catch((e) => reject(e));
+            } else {
+                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect"));
+            }
         });
     }
 
     sendMsg(msg:string): Promise<any> {
         return new Promise((resolve, reject) => {
             // console.log("[wsQueryInterface.sendMsg]===>" + msg)
-            this._wsConnector.sendMsg(msg).then((e: any) => {
-                resolve(e);
-            }).catch((e) => reject(e));
+            if (this._wsConnector) {
+                this._wsConnector.sendMsg(msg).then((e: any) => {
+                    resolve(e);
+                }).catch((e) => reject(e));
+            } else {
+                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect"));
+            }
         });
     }
 
@@ -162,9 +199,13 @@ export class WsClient {
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(freeResultMsg);
             // console.log("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
-            this._wsConnector.sendMsg(jsonStr, false)
-            .then((e: any) => {resolve(e);})
-            .catch((e) => reject(e));
+            if (this._wsConnector) {
+                this._wsConnector.sendMsg(jsonStr, false)
+                .then((e: any) => {resolve(e);})
+                .catch((e) => reject(e));
+            } else {
+                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect"));
+            }
         });
     }
 
@@ -175,34 +216,30 @@ export class WsClient {
                 req_id: this.getReqID()
             },
         };
-        return new Promise((resolve, reject) => {
-            if (this._wsConnector.readyState() > 0) {
-                this._wsConnector.sendMsg(JSONBig.stringify(versionMsg))
-                .then((e: any) => {
-                    // console.log(e)
-                    if (e.msg.code == 0) {
-                        resolve(new WSVersionResponse(e).version);
-                    } else {
-                        reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
+        return new Promise(async (resolve, reject) => {
+            if (this._wsConnector) {
+                try {
+                    if (this._wsConnector.readyState() <= 0) {
+                        await this._wsConnector.Ready()
                     }
-                }).catch((e) => reject(e));
-            }
-
-            this._wsConnector.Ready().then((ws: TDWebSocketConnector) => {
-                return ws.sendMsg(JSONBig.stringify(versionMsg));
-            }).then((e: any) => {
-                // console.log(e)
-                if (e.msg.code == 0) {
-                    resolve(new WSVersionResponse(e).version);
-                } else {
-                    reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
+                    let resoult:any = await this._wsConnector.sendMsg(JSONBig.stringify(versionMsg)); 
+                    if (resoult.msg.code == 0) {
+                        resolve(new WSVersionResponse(resoult).version);
+                    } else {
+                        reject(new WebSocketInterfaceError(resoult.msg.code, resoult.msg.message));
+                    }                   
+                } catch (e:any) {
+                    reject(e);
                 }
-            }).catch((e) => reject(e));
+            }
         });
     }
 
     close() {
-        this._wsConnector.close();
+        if (this._wsConnector) {
+            this._wsConnector.close();
+        }
+       
     }
 
     checkURL(url: URL) {

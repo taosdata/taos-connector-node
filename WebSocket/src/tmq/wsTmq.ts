@@ -6,7 +6,7 @@ import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/w
 import { AssignmentResp, CommitedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockResponse, WsPollResponse, WsTmqQueryResponse, parseTmpBlock} from './tmpResponse';
 
 export class WsConsumer {
-    private _wsInterface: WsClient;
+    private _wsClient: WsClient;
     private _req_id = 5000000;
     private _wsConfig:TmqConfig;
     private _topics?:string[];
@@ -14,14 +14,19 @@ export class WsConsumer {
     constructor(wsConfig:Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig)
         console.log(this._wsConfig)
-        this._wsInterface = new WsClient(this._wsConfig.url);
-        this._wsInterface.connect();
+        this._wsClient = new WsClient(this._wsConfig.url, this._wsConfig.timeout);
+        // this._wsClient.connect();
     }
 
     init():Promise<WsConsumer> {
-        return new Promise((resolve, reject) => {
-            this._wsInterface.Ready().then(()=>{resolve(this)}).catch((e: any)=>{reject(e)});
-        })
+        return new Promise(async (resolve, reject) => {
+            try {
+                await this._wsClient.Ready();
+                resolve(this);          
+            } catch (e: any) {
+                reject(e)
+            }
+        });
     }
 
     static NewConsumer(wsConfig:Map<string, any>):Promise<WsConsumer> {
@@ -292,7 +297,7 @@ export class WsConsumer {
     }
 
     Close() {
-        this._wsInterface.close();
+        this._wsClient.close();
     }
 
     private getReqID(reqId?:number) {
@@ -309,7 +314,7 @@ export class WsConsumer {
 
     private async execute(queryMsg: string): Promise<void> {
         try {
-            let resp = await this._wsInterface.exec(queryMsg);
+            let resp = await this._wsClient.exec(queryMsg);
             console.log('stmt execute result:', resp);
         } catch (e:any) {
             throw new TaosResultError(e.code, e.message);
@@ -318,7 +323,7 @@ export class WsConsumer {
 
     private async executeReturnAny(queryMsg: string): Promise<any> {
         try {
-            return await this._wsInterface.exec(queryMsg, false);
+            return await this._wsClient.exec(queryMsg, false);
         } catch (e:any) {
             console.log(e);
             throw new TaosResultError(e.code, e.message);
@@ -338,7 +343,7 @@ export class WsConsumer {
             let jsonStr = JSON.stringify(fetchMsg);
             // console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
             try {
-                let result = await this._wsInterface.exec(jsonStr, false);
+                let result = await this._wsClient.exec(jsonStr, false);
                 resolve(new WsTmqQueryResponse(result));
             } catch (e:any) {
                 reject(new WebSocketInterfaceError(e.code, e.message))
@@ -359,7 +364,7 @@ export class WsConsumer {
             try {
                 let jsonStr = JSON.stringify(fetchMsg);
                 // console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
-                let result = await this._wsInterface.sendMsg(jsonStr)
+                let result = await this._wsClient.sendMsg(jsonStr)
                 resolve(parseTmpBlock(fetchResponse.rows, new WSTmqFetchBlockResponse(result), taosResult))     
             } catch (e: any){
                 reject(new WebSocketInterfaceError(e.code, e.message))
@@ -378,7 +383,7 @@ export class WsConsumer {
         return new Promise(async (resolve, reject) => {
             try {
                 var taosResults: Map<string, TaosResult> = new Map();
-                let resp = await this._wsInterface.exec(JSON.stringify(queryMsg), false);
+                let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
                 let pollResp = new WsPollResponse(resp)
                 if (pollResp.have_message == false || pollResp.message_type != TMQMessageType.ResDataType) {
                     resolve(taosResults);

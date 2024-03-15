@@ -14,8 +14,8 @@ describe('TDWebSocket.Stmt()', () => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
-        let connector = WsStmtConnect.NewConnector(wsConf) 
-        let stmt = await connector.Init()
+        let connector = await WsSql.Open(wsConf) 
+        let stmt = await connector.StmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.State()).toBeGreaterThan(0)
         stmt.Close()
@@ -29,8 +29,8 @@ describe('TDWebSocket.Stmt()', () => {
             let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
             let wsConf :WSConfig = new WSConfig(dsn)
             wsConf.SetDb('jest')
-            connector = await WsStmtConnect.NewConnector(wsConf)  
-            await connector.Init()      
+            connector = await WsSql.Open(wsConf) 
+            await connector.StmtInit()     
         }catch(e){
             let err:any = e
             expect(err.message).toMatch('Database not exist')
@@ -45,8 +45,8 @@ describe('TDWebSocket.Stmt()', () => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
-        let connector = WsStmtConnect.NewConnector(wsConf) 
-        let stmt = await connector.Init()
+        let connector = await WsSql.Open(wsConf) 
+        let stmt = await connector.StmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
@@ -60,8 +60,8 @@ describe('TDWebSocket.Stmt()', () => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
-        let connector = WsStmtConnect.NewConnector(wsConf) 
-        let stmt = await connector.Init()
+        let connector = await WsSql.Open(wsConf) 
+        let stmt = await connector.StmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
@@ -75,8 +75,8 @@ describe('TDWebSocket.Stmt()', () => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
-        let connector = WsStmtConnect.NewConnector(wsConf) 
-        let stmt = await connector.Init()
+        let connector = await WsSql.Open(wsConf) 
+        let stmt = await connector.StmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.State()).toBeGreaterThan(0)
         try{
@@ -94,8 +94,8 @@ describe('TDWebSocket.Stmt()', () => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
-        let connector = WsStmtConnect.NewConnector(wsConf) 
-        let stmt = await connector.Init()
+        let connector = await WsSql.Open(wsConf) 
+        let stmt = await connector.StmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.State()).toBeGreaterThan(0)
         try{
@@ -115,8 +115,8 @@ describe('TDWebSocket.Stmt()', () => {
         wsConf.SetDb('power')
         // let connector = WsStmtConnect.NewConnector(wsConf) 
         // let stmt = await connector.Init()
-        let ws = await WsSql.Open(wsConf);
-        let stmt = new WsStmt(ws.GetWsClient())
+        let connector = await WsSql.Open(wsConf) 
+        let stmt = await connector.StmtInit()
         expect(stmt).toBeTruthy()      
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.SetTableName('d1001');
@@ -137,7 +137,7 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.Exec()
         expect(stmt.GetLastAffected()).toEqual(30)
         stmt.Close()
-        ws.Close();
+        connector.Close();
     });
 
 
@@ -145,8 +145,8 @@ describe('TDWebSocket.Stmt()', () => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
-        let connector = WsStmtConnect.NewConnector(wsConf) 
-        let stmt = await connector.Init()
+        let connector = await WsSql.Open(wsConf) 
+        let stmt = await connector.StmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
@@ -174,8 +174,8 @@ describe('TDWebSocket.Stmt()', () => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
-        let connector = WsStmtConnect.NewConnector(wsConf) 
-        let stmt = await connector.Init()
+        let connector = await WsSql.Open(wsConf) 
+        let stmt = await connector.StmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
@@ -202,8 +202,8 @@ describe('TDWebSocket.Stmt()', () => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
-        let connector = WsStmtConnect.NewConnector(wsConf) 
-        let stmt = await connector.Init()
+        let connector = await WsSql.Open(wsConf) 
+        let stmt = await connector.StmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
@@ -236,8 +236,8 @@ describe('TDWebSocket.Stmt()', () => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
-        let connector = WsStmtConnect.NewConnector(wsConf) 
-        let stmt = await connector.Init()
+        let connector = await WsSql.Open(wsConf) 
+        let stmt = await connector.StmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');

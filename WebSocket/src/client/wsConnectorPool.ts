@@ -35,6 +35,7 @@ export class WebSocketConnectionPool {
             }  
 
             if (connector) {
+                console.log("get connection success:", this._connectionCount)
                 return connector;
             }
             if (this._maxConnections != -1 && this._connectionCount > this._maxConnections) {
@@ -84,7 +85,23 @@ export class WebSocketConnectionPool {
 }
 
 
-process.on('exit', (code) => {
+process.on('beforeExit', (code) => {
     console.log("begin destroy connect")
     WebSocketConnectionPool.Instance().Destroyed()
-})
+});
+
+process.on('SIGINT', () => {
+    console.log('Received SIGINT. Press Control-D to exit.');
+    console.log("begin destroy connect")
+    WebSocketConnectionPool.Instance().Destroyed()
+    process.exit()
+});
+
+process.on('SIGTERM', () => {
+    console.log('Received SIGINT. Press Control-D to exit.');
+    console.log("begin destroy connect")
+    WebSocketConnectionPool.Instance().Destroyed()
+    process.exit()
+});
+
+// process.kill(process.pid, 'SIGINT');

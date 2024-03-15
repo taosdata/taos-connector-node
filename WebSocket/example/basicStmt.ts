@@ -27,7 +27,7 @@ async function Prepare() {
     let connector = null;
     try {
         await Prepare();
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/stmt';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
         connector = await WsStmtConnect.NewConnector(wsConf)

@@ -1,5 +1,6 @@
 import { WsClient } from '../client/wsClient';
 import { WSConfig } from '../common/config';
+// import { ReqId } from '../common/reqid';
 import { GetUrl } from '../common/utils';
 import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/wsError';
 import { SchemalessMessageInfo } from '../sql/wsProto';

@@ -194,10 +194,9 @@ export class WsStmt {
                 
                 console.log('stmt execute result:', resp);     
             }else{
-                let resp = await this._wsClient.execNoResp(reqMsg);
+                await this._wsClient.execNoResp(reqMsg);
                 this.stmt_id = null
                 this.lastAffected = null
-                console.log('stmt execute result:', resp);
             }
             return
         } catch (e:any) {

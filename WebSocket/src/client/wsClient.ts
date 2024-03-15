@@ -62,12 +62,12 @@ export class WsClient {
         });
     }
 
-    execNoResp(queryMsg: string): Promise<Boolean> {
+    execNoResp(queryMsg: string): Promise<void> {
         return new Promise((resolve, reject) => {
             console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
             if (this._wsConnector) {
                 this._wsConnector.sendMsgNoResp(queryMsg)
-                .then((e: any) => {resolve(e);})
+                .then(() => {resolve();})
                 .catch((e) => reject(e));
             }else{
                 reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect"))

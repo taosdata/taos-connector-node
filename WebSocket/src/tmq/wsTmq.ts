@@ -310,8 +310,7 @@ export class WsConsumer {
 
     private async execute(queryMsg: string): Promise<void> {
         try {
-            let resp = await this._wsClient.exec(queryMsg);
-            console.log('stmt execute result:', resp);
+            await this._wsClient.exec(queryMsg);
         } catch (e:any) {
             throw new TaosResultError(e.code, e.message);
         }

@@ -118,21 +118,17 @@ export class WsStmt {
             if (this._wsClient.getState() <= 0) {
                 throw new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "websocket connect has closed!");
             }
-            console.log('stmt execute result:', queryMsg);
             let reqMsg = JSON.stringify(queryMsg);
-            console.log('stmt execute result:', queryMsg);
             if (register) {
                 let result = await this._wsClient.exec(reqMsg, false);
                 let resp = new WsStmtQueryResponse(result)
                 if (resp.stmt_id) {
-                this.stmt_id = resp.stmt_id;
+                    this.stmt_id = resp.stmt_id;
                 }
 
                 if (resp.affected) {
-                this.lastAffected = resp.affected
-                }
-                
-                console.log('stmt execute result:', resp);     
+                    this.lastAffected = resp.affected
+                } 
             }else{
                 await this._wsClient.execNoResp(reqMsg);
                 this.stmt_id = null

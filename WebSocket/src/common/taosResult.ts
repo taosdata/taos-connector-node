@@ -199,7 +199,7 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
                     } else {
                         colDataHead = colBlockHead + INT_32_SIZE * rows + varOffset
                         let dataLength = (new DataView(dataBuffer, colDataHead, 2).getInt16(0, true))
-                        console.log("== loop var type length:" + dataLength, isVarType)
+                        // console.log("== loop var type length:" + dataLength, isVarType)
                         if (isVarType == ColumnsBlockType.VARCHAR) {
                             row.push(readVarchar(dataBuffer, colDataHead + 2, dataLength))
                         } else if(isVarType == ColumnsBlockType.GEOMETRY || isVarType == ColumnsBlockType.VARBINARY) {
@@ -211,7 +211,6 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
                     }
                 }
             }
-            console.log(row)
             dataList.push(row);
         }
         return taosResult;

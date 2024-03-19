@@ -8,3 +8,4 @@ WebSocket/tsc/
 WebSocket/coverage/
 .DS_Store
 WebSocket/*.log
+.idea

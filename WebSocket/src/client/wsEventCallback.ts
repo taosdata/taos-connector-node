@@ -39,7 +39,6 @@ export class WsEventCallback {
     async RegisterCallback(id: MessageId, res: (args: unknown) => void, rej: (reason: any) => void) {
         let release = await eventMutex.acquire()
         try {
-            console.log("RegisterCallback id=", id)
             WsEventCallback._msgActionRegister.set(id,
                 {
                     sendTime: new Date().getTime(),

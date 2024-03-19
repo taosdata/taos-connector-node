@@ -1,8 +1,8 @@
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { WsStmt, WsStmtConnect } from "../../src/stmt/wsStmt";
 
 describe('TDWebSocket.Stmt()', () => {
+    jest.setTimeout(20 * 1000)
     let tags = ['California.SanFrancisco', 3];
     let multi = [
     [1709183268567, 1709183268568, 1709183268569],
@@ -11,7 +11,7 @@ describe('TDWebSocket.Stmt()', () => {
     [0.32, 0.33, 0.34],
     ];
     test('normal connect', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
         let connector = await WsSql.Open(wsConf) 
@@ -26,7 +26,7 @@ describe('TDWebSocket.Stmt()', () => {
         expect.assertions(1)
         let connector = null;
         try {
-            let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+            let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
             let wsConf :WSConfig = new WSConfig(dsn)
             wsConf.SetDb('jest')
             connector = await WsSql.Open(wsConf) 
@@ -42,7 +42,7 @@ describe('TDWebSocket.Stmt()', () => {
     })
 
     test('normal Prepare', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
         let connector = await WsSql.Open(wsConf) 
@@ -57,7 +57,7 @@ describe('TDWebSocket.Stmt()', () => {
     }); 
 
     test('normal Prepare', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
         let connector = await WsSql.Open(wsConf) 
@@ -72,7 +72,7 @@ describe('TDWebSocket.Stmt()', () => {
     });    
     
     test('error Prepare table', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
         let connector = await WsSql.Open(wsConf) 
@@ -91,7 +91,7 @@ describe('TDWebSocket.Stmt()', () => {
     }); 
 
     test('error Prepare tag', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
         let connector = await WsSql.Open(wsConf) 
@@ -110,7 +110,7 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('normal BindParam', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
         // let connector = WsStmtConnect.NewConnector(wsConf) 
@@ -142,7 +142,7 @@ describe('TDWebSocket.Stmt()', () => {
 
 
     test('error BindParam', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
         let connector = await WsSql.Open(wsConf) 
@@ -156,7 +156,7 @@ describe('TDWebSocket.Stmt()', () => {
             [1709183268567, 1709183268568],
             [10.2, 10.3, 10.4, 10.5],
             [292, 293, 294],
-            [0.32, 0.33],
+            [0.32, 0.33, 0.31],
             ];
         try{
             await stmt.BindParam(multi)
@@ -171,7 +171,7 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('no Batch', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
         let connector = await WsSql.Open(wsConf) 
@@ -199,7 +199,7 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('Batch after BindParam', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
         let connector = await WsSql.Open(wsConf) 
@@ -233,7 +233,7 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('no set tag', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
         let connector = await WsSql.Open(wsConf) 

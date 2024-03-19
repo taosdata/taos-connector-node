@@ -8,9 +8,8 @@ import {
     WSFetchBlockResponse,
     WSQueryResponse,
     WSFetchResponse,
-    WSConnResponse,
 } from './wsResponse';
-import { Url } from 'url';
+import { ReqId } from '../common/reqid';
 
 
 export class WsClient {
@@ -26,7 +25,7 @@ export class WsClient {
     
     }
 
-    connect(database?: string | undefined | null): Promise<WSConnResponse> {
+    connect(database?: string | undefined | null): Promise<void> {
         let _db = this._url.pathname.split('/')[3];
         if (database) {
             _db = database;
@@ -35,7 +34,7 @@ export class WsClient {
         let connMsg = {
             action: 'conn',
             args: {
-                req_id: this.getReqID(),
+                req_id: ReqId.getReqID(),
                 user: this._url.username,
                 password: this._url.password,
                 db: _db,
@@ -44,17 +43,19 @@ export class WsClient {
         
         return new Promise(async (resolve, reject) => {
             try {
-                console.log("-------", this._url)
                 this._wsConnector = await WebSocketConnectionPool.Instance().getConnection(this._url, this._timeout);
-                if (this._wsConnector.readyState() <= 0) {
-                    await this._wsConnector.Ready();
-                }
-                let result:any = await this._wsConnector.sendMsg(JSON.stringify(connMsg))
-                if (result.msg.code  == 0) {
-                    resolve(result);
-                }else {
-                    reject(new WebSocketQueryError(result.msg.code, result.msg.message));
-                }
+                if (this._wsConnector.readyState() > 0) {
+                    resolve()
+                } else {
+                    await this._wsConnector.Ready(); 
+                    let result:any = await this._wsConnector.sendMsg(JSON.stringify(connMsg))
+                    if (result.msg.code  == 0) {
+                        resolve();
+                    }else {
+                        reject(new WebSocketQueryError(result.msg.code, result.msg.message));
+                    }
+                } 
+
             } catch(e:any) {
                 reject(e)
             }
@@ -65,7 +66,7 @@ export class WsClient {
     execNoResp(queryMsg: string): Promise<void> {
         return new Promise((resolve, reject) => {
             console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
-            if (this._wsConnector) {
+            if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsgNoResp(queryMsg)
                 .then(() => {resolve();})
                 .catch((e) => reject(e));
@@ -80,7 +81,7 @@ export class WsClient {
     exec(queryMsg: string, bSqlQurey:boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
             // console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
-            if (this._wsConnector) {
+            if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(queryMsg).then((e: any) => {
                     if (e.msg.code == 0) {
                         if (bSqlQurey) {
@@ -107,14 +108,15 @@ export class WsClient {
         
     }
 
-    Ready(): Promise<WebSocketConnector> {
+    Ready(): Promise<void> {
         return new Promise(async (resolve, reject) => {
             try {
-                if (!this._wsConnector) {
-                    this._wsConnector = await WebSocketConnectionPool.Instance().getConnection(this._url, this._timeout);
+                this._wsConnector = await WebSocketConnectionPool.Instance().getConnection(this._url, this._timeout);
+                if (this._wsConnector.readyState() <= 0) {
+                    await this._wsConnector.Ready()
                 }
-                let resoult = this._wsConnector.Ready()  
-                resolve(resoult)              
+                console.log("ready status ", this._url, this._wsConnector.readyState())  
+                resolve()              
             }catch(e: any) {
                 reject(e)
             }
@@ -125,7 +127,7 @@ export class WsClient {
         let fetchMsg = {
             action: 'fetch',
             args: {
-                req_id: this.getReqID(),
+                req_id: ReqId.getReqID(),
                 id: res.id,
             },
         };
@@ -134,7 +136,7 @@ export class WsClient {
         return new Promise((resolve, reject) => {
         let jsonStr = JSONBig.stringify(fetchMsg);
         console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
-            if (this._wsConnector) {
+            if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(jsonStr).then((e: any) => {
                     if (e.msg.code == 0) {
                         resolve(new WSFetchResponse(e));
@@ -153,7 +155,7 @@ export class WsClient {
         let fetchBlockMsg = {
             action: 'fetch_block',
             args: {
-                req_id: this.getReqID(),
+                req_id: ReqId.getReqID(),
                 id: fetchResponse.id,
             },
         };
@@ -161,7 +163,7 @@ export class WsClient {
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(fetchBlockMsg);
             // console.log("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
-            if (this._wsConnector) {
+            if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(jsonStr).then((e: any) => {
                     let resp:MessageResp = e
                     taosResult.AddtotalTime(resp.totalTime)
@@ -178,7 +180,7 @@ export class WsClient {
     sendMsg(msg:string): Promise<any> {
         return new Promise((resolve, reject) => {
             // console.log("[wsQueryInterface.sendMsg]===>" + msg)
-            if (this._wsConnector) {
+            if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(msg).then((e: any) => {
                     resolve(e);
                 }).catch((e) => reject(e));
@@ -192,14 +194,14 @@ export class WsClient {
         let freeResultMsg = {
         action: 'free_result',
         args: {
-            req_id: this.getReqID(),
+            req_id: ReqId.getReqID(),
             id: res.id,
         },
         };
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(freeResultMsg);
             // console.log("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
-            if (this._wsConnector) {
+            if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(jsonStr, false)
                 .then((e: any) => {resolve(e);})
                 .catch((e) => reject(e));
@@ -213,7 +215,7 @@ export class WsClient {
         let versionMsg = {
             action: 'version',
             args: {
-                req_id: this.getReqID()
+                req_id: ReqId.getReqID()
             },
         };
         return new Promise(async (resolve, reject) => {
@@ -237,7 +239,9 @@ export class WsClient {
 
     close() {
         if (this._wsConnector) {
-            this._wsConnector.close();
+            WebSocketConnectionPool.Instance().releaseConnection(this._wsConnector)
+            this._wsConnector = undefined
+            // this._wsConnector.close();
         }
        
     }
@@ -251,12 +255,13 @@ export class WsClient {
         }
     }
 
-    private getReqID() {
-        if (this._req_id == 1999999) {
-            this._req_id = 1000000;
-        } else {
-            this._req_id += 1;
-        }
-        return this._req_id;
-    }
+    // private getReqID() {
+    //     return ReqId.getReqID()
+    //     // if (this._req_id == 1999999) {
+    //     //     this._req_id = 1000000;
+    //     // } else {
+    //     //     this._req_id += 1;
+    //     // }
+    //     // return this._req_id;
+    // }
 }

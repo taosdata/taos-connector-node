@@ -41,6 +41,7 @@ export class WebSocketConnectionPool {
             if (this._maxConnections != -1 && this._connectionCount > this._maxConnections) {
                 throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT, "websocket connect arrived limite:" + this._connectionCount)
             }
+            
             this._connectionCount++
             return new WebSocketConnector(url, timeout);          
         }finally{
@@ -50,20 +51,24 @@ export class WebSocketConnectionPool {
 
     async releaseConnection(connector: WebSocketConnector) {
         if (connector) {
-            let url = connector.getWsURL();
-            let connectAddr = origin.concat(url.pathname).concat(url.search)   
-            const unlock = await mutex.acquire()         
+            const unlock = await mutex.acquire();
             try {
-                let connectors = this.pool.get(connectAddr);
-                if (!connectors) {
-                    connectors = new Array();
-                    connectors.push(connector);
-                    this.pool.set(connectAddr, connectors); 
+                if (connector.readyState() > 0) {
+                    let url = connector.getWsURL();
+                    let connectAddr = url.origin.concat(url.pathname).concat(url.search)   
+                    let connectors = this.pool.get(connectAddr);
+                    if (!connectors) {
+                        connectors = new Array();
+                        connectors.push(connector);
+                        this.pool.set(connectAddr, connectors); 
 
+                    } else {
+                        connectors.push(connector);
+                    }                    
                 } else {
-                    connectors.push(connector)
+                    this._connectionCount--;
+                    connector.close()
                 }
-
             } finally {
                 unlock();
             }

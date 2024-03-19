@@ -1,8 +1,6 @@
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { WsStmtConnect } from "../../src/stmt/wsStmt";
-import { createBaseSTable, createStmtData, getInsertBind } from "../utils";
-import { createSTable, createSTableJSON, createTable, expectStableData, insertNTable, insertStable, jsonMeta, tableMeta, tagMeta } from "../utils";
+import { createBaseSTable, getInsertBind } from "../utils";
 
 const stable = 'ws_stmt_stb';
 const table = 'stmt_001';
@@ -68,7 +66,7 @@ const selectJsonTableCN = `select * from ${jsonTableCN}`
 
 
 beforeAll(async () => {
-    let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+    let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.Open(conf);
     await ws.Exec(dropDB);
@@ -80,12 +78,13 @@ beforeAll(async () => {
 })
 
 describe('TDWebSocket.Stmt()', () => {
+    jest.setTimeout(20 * 1000)
     test('normal BindParam', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
-        let connector = WsStmtConnect.NewConnector(wsConf) 
-        let stmt = await connector.Init()
+        let connector = await WsSql.Open(wsConf) 
+        let stmt = await (await connector).StmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare(getInsertBind(tableValues.length, stableTags.length, db, stable));

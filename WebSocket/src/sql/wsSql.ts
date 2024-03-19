@@ -5,10 +5,9 @@ import { ErrorCode, TDWebSocketClientError, TaosResultError, WebSocketInterfaceE
 import { WSConfig } from '../common/config'
 import { GetUrl } from '../common/utils'
 import { WSQueryResponse } from '../client/wsResponse'
-import { SchemalessProto } from '../schemaless/wsSchemaless'
-import { Precision, SchemalessMessageInfo } from './wsProto'
+import { Precision, SchemalessMessageInfo, SchemalessProto } from './wsProto'
 import { WsStmt } from '../stmt/wsStmt'
-// import { ReqId } from '../common/reqid'
+import { ReqId } from '../common/reqid'
  
 export class WsSql{
     private _wsClient: WsClient
@@ -16,7 +15,6 @@ export class WsSql{
     public set wsClient(value: WsClient) {
         this._wsClient = value
     }
-    private _req_id = 2000000;
    
     constructor(url: URL, timeout :number | undefined | null) {
         this._wsClient = new WsClient(url, timeout)
@@ -74,7 +72,7 @@ export class WsSql{
         let queryMsg = {
             action: 'insert',
             args: {
-                req_id : this.getReqID(reqId),
+                req_id : ReqId.getReqID(reqId),
                 protocol: protocol,
                 precision: precision,
                 data: data,
@@ -88,8 +86,7 @@ export class WsSql{
         return new Promise(async (resolve, reject) => {
             if (this._wsClient) {
                 try{
-                    let wsStmt = new WsStmt(this._wsClient);
-                    await wsStmt.Init(reqId);
+                    let wsStmt = await WsStmt.NewStmt(this._wsClient, reqId);
                     resolve(wsStmt);
                 } catch(e) {
                     console.log(e)
@@ -105,6 +102,9 @@ export class WsSql{
         return new Promise(async (resolve, reject) => {
             try {
                 await this._wsClient.connect(database);
+                if(database && database.length > 0) {
+                    await this.execute(`use ${database}`)
+                }
                 resolve(this)
             } catch(e) {
                 reject(e)
@@ -171,26 +171,11 @@ export class WsSql{
         let queryMsg = {
             action: action,
             args: {
-                req_id: this.getReqID(reqId),
+                req_id: ReqId.getReqID(reqId),
                 sql: sql,
                 id: 0
             },
         }
         return JSON.stringify(queryMsg)
     }
-
-    private getReqID(req_id?:number) {
-        if (req_id) {
-            return req_id;
-        }
-
-        if (this._req_id == 2999999) {
-            this._req_id = 2000000;
-        } else {
-            this._req_id += 1;
-        }
-        return this._req_id;
-    }
-
-
 }

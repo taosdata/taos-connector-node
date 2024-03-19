@@ -51,7 +51,8 @@ export class TaosResult {
                 }
                 this._meta = _meta;
             } else {
-                throw new TaosResultError(ErrorCode.ERR_INVALID_FETCH_MESSAGE_DATA, `fields_count,fields_names,fields_types,fields_lengths of the update query response should be null`)
+                throw new TaosResultError(ErrorCode.ERR_INVALID_FETCH_MESSAGE_DATA, 
+                    `fields_count,fields_names,fields_types,fields_lengths of the update query response should be null`)
             }
             this._data = [];
         }
@@ -215,7 +216,8 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
         }
         return taosResult;
     } else {
-        throw new TaosResultError(ErrorCode.ERR_INVALID_FETCH_MESSAGE_DATA , "cannot fetch block for an update query.")
+        throw new TaosResultError(ErrorCode.ERR_INVALID_FETCH_MESSAGE_DATA , 
+            "cannot fetch block for an update query.")
     }
 }
 
@@ -244,7 +246,9 @@ export function _isVarTye(meta: ResponseMeta): Number {
         }
     }
 }
-export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number, rows:number, meta: ResponseMeta, bitMapArr: ArrayBuffer): any[] {
+export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number, 
+    rows:number, meta: ResponseMeta, bitMapArr: ArrayBuffer): any[] {
+
     let dataBuffer = new DataView(buffer)
     let result:any[] = []
     switch (meta.type) {

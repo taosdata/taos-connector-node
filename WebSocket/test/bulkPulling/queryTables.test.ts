@@ -3,7 +3,7 @@ import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { createSTable, createSTableJSON, createTable, expectStableData, insertNTable, insertStable, jsonMeta, tableMeta, tagMeta } from "../utils";
 // const DSN = 'ws://root:taosdata@127.0.0.1:6041/ws'
-let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
 let conf :WSConfig = new WSConfig(dsn)
 const table = 'ws_q_n';
 const stable = 'ws_q_s';
@@ -60,6 +60,7 @@ beforeAll(async () => {
 })
 
 describe('ws.query(stable)', () => {
+    jest.setTimeout(20 * 1000)
     test('Insert query stable without CN character', async () => {
         let ws = await WsSql.Open(conf);
         await ws.Exec(useDB);

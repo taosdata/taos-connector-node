@@ -1,7 +1,6 @@
 require('qingwa')();
 import { WSConfig } from '../src/common/config';
 import { WsSql } from '../src/sql/wsSql';
-import { WsStmtConnect } from '../src/stmt/wsStmt';
 
 let db = 'power'
 let stable = 'meters'
@@ -30,8 +29,8 @@ async function Prepare() {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
-        connector = await WsStmtConnect.NewConnector(wsConf)
-        stmt = await connector.Init()
+        connector = await WsSql.Open(wsConf);
+        stmt = await connector.StmtInit()
         await stmt.Prepare(`INSERT INTO ? USING ${db}.${stable} TAGS (?, ?) VALUES (?, ?, ?, ?)`);
         await stmt.SetTableName('d1001');
         await stmt.SetTags(tags);

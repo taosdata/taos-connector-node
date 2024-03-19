@@ -1,6 +1,5 @@
 import { WSConfig } from '../src/common/config';
-import { SchemalessProto, WsSchemaless } from '../src/schemaless/wsSchemaless';
-import { Precision } from '../src/sql/wsProto';
+import { Precision, SchemalessProto } from '../src/sql/wsProto';
 import { WsSql } from '../src/sql/wsSql';
 let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
 let db = 'power'

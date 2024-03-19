@@ -34,10 +34,6 @@ export class WsSql{
         return this._wsClient.getState();
     }
 
-    public GetWsClient(): WsClient {
-        return this._wsClient
-    }
-
     /**
      * return client version.
      */

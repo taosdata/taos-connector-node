@@ -8,7 +8,7 @@ export class WsStmt {
     private stmt_id: number | undefined | null;
 
     private lastAffected: number | undefined | null;
-    constructor(wsClient: WsClient) {
+    private constructor(wsClient: WsClient) {
         this._wsClient = wsClient;
     }
 

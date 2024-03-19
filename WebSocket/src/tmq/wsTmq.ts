@@ -12,7 +12,7 @@ export class WsConsumer {
     private _wsConfig:TmqConfig;
     private _topics?:string[];
     private _commitTime?:number;
-    constructor(wsConfig:Map<string, any>) {
+    private constructor(wsConfig:Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig)
         console.log(this._wsConfig)
         this._wsClient = new WsClient(this._wsConfig.url, this._wsConfig.timeout);

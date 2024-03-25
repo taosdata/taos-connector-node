@@ -447,3 +447,20 @@ function isNull(bitMapArr:ArrayBuffer, n:number) {
     let index = n & 0x7;
     return (c[position] & (1 << (7 - index))) == (1 << (7 - index));
 }
+
+
+export function CharOffset(n:number):number {
+	return n >> 3
+}
+
+export function BMSetNull(c:number, n:number):number {
+	return c + (1 << (7 - BitPos(n)))
+}
+
+function BitPos(n:number):number {
+	return n & ((1 << 3) - 1)
+}
+
+export function BitmapLen(n: number): number {
+	return ((n) + ((1 << 3) - 1)) >> 3
+}

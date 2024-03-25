@@ -78,3 +78,9 @@ export const TDengineTypeLength: StringIndexable = {
     'INT UNSIGNED': 4,
     'BIGINT UNSIGNED': 8,
 }
+
+export const PrecisionLength: StringIndexable = {
+    'ms': 13,
+    'us': 16,
+    'ns': 19
+}

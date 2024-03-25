@@ -100,6 +100,30 @@ export class WsClient {
         });
     }
 
+
+    // need to construct Response.
+    sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, bSqlQurey:boolean = true): Promise<any> {
+        return new Promise((resolve, reject) => {
+            if (this._wsConnector && this._wsConnector.readyState() > 0) {
+                this._wsConnector.sendBinaryMsg(reqId, action, message).then((e: any) => {
+                    if (e.msg.code == 0) {
+                        if (bSqlQurey) {
+                            resolve(new WSQueryResponse(e));
+                        }else{
+                            resolve(e)
+                        }
+                    } else {
+                        reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
+                    }
+                }).catch((e) => {reject(e);});               
+            } else {
+                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect"))
+            }
+
+        });
+    }
+
+
     getState() {
         if (this._wsConnector) {
             return this._wsConnector.readyState();

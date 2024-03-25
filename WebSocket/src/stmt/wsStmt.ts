@@ -1,19 +1,25 @@
 import { WsClient } from '../client/wsClient';
-import { ErrorCode, TDWebSocketClientError, TaosResultError } from '../common/wsError';
-import { WsStmtQueryResponse, StmtMessageInfo } from './wsProto';
+import { ErrorCode, TDWebSocketClientError, TaosError, TaosResultError } from '../common/wsError';
+import { WsStmtQueryResponse, StmtMessageInfo, binaryBlockEncode, StmtBindType } from './wsProto';
 import { ReqId } from '../common/reqid';
+import { PrecisionLength } from '../common/constant';
+import { StmtBindParams } from './wsParams';
 
 export class WsStmt {
     private _wsClient: WsClient;
-    private stmt_id: number | undefined | null;
+    private _stmt_id: number | undefined | null;
+    private _precision:number = PrecisionLength['ms'];
 
     private lastAffected: number | undefined | null;
-    private constructor(wsClient: WsClient) {
+    private constructor(wsClient: WsClient, precision?:number) {
         this._wsClient = wsClient;
+        if (precision) {
+            this._precision = precision;
+        }
     }
 
-    static NewStmt(wsClient: WsClient, reqId?:number): Promise<WsStmt> {
-        let wsStmt = new WsStmt(wsClient)
+    static NewStmt(wsClient: WsClient, precision?:number, reqId?:number): Promise<WsStmt> {
+        let wsStmt = new WsStmt(wsClient, precision)
         return wsStmt.init(reqId);
     }
 
@@ -23,7 +29,7 @@ export class WsStmt {
             args: {
                 req_id: ReqId.getReqID(),
                 sql: sql,
-                stmt_id: this.stmt_id,
+                stmt_id: this._stmt_id,
             },
         };
         return this.execute(queryMsg);
@@ -35,7 +41,7 @@ export class WsStmt {
             args: {
                 req_id: ReqId.getReqID(),
                 name: tableName,
-                stmt_id: this.stmt_id,
+                stmt_id: this._stmt_id,
             },
         };
         return this.execute(queryMsg);
@@ -47,19 +53,51 @@ export class WsStmt {
             args: {
                 req_id: ReqId.getReqID(),
                 tags: tags,
-                stmt_id: this.stmt_id,
+                stmt_id: this._stmt_id,
             },
         };
         return this.execute(queryMsg);
     }
 
-    BindParam(paramArray: Array<Array<any>>): Promise<void> {
+    NewStmtParam():StmtBindParams {
+        return new StmtBindParams(this._precision);
+    }
+
+    SetBinaryTags(paramsArray:StmtBindParams): Promise<void> {
+        if (!paramsArray || !this._stmt_id) {
+            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBinaryTags paramArray is invalid!")
+        }
+
+        let columnInfos = paramsArray.GetParams();
+        if (!columnInfos) {
+            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBinaryTags paramArray is invalid!") 
+        }
+        let reqId = BigInt(ReqId.getReqID())
+        let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_TAG, this._stmt_id, reqId, paramsArray.GetDataRows())
+        return this.sendBinaryMsg(reqId, 'set_tags', dataBlock);
+    }
+
+    BinaryBind(paramsArray:StmtBindParams): Promise<void> {
+        if (!paramsArray || !this._stmt_id) {
+            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "BinaryBind paramArray is invalid!")
+        }
+
+        let columnInfos = paramsArray.GetParams();
+        if (!columnInfos) {
+            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "BinaryBind paramArray is invalid!") 
+        }
+        let reqId = BigInt(ReqId.getReqID())
+        let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_BIND, this._stmt_id, reqId, paramsArray.GetDataRows());
+        return this.sendBinaryMsg(reqId, 'bind', dataBlock);
+    }
+
+    Bind(paramArray: Array<Array<any>>): Promise<void> {
         let queryMsg = {
             action: 'bind',
             args: {
                 req_id: ReqId.getReqID(),
                 columns: paramArray,
-                stmt_id: this.stmt_id,
+                stmt_id: this._stmt_id,
             },
         };
         return this.execute(queryMsg);
@@ -70,7 +108,7 @@ export class WsStmt {
             action: 'add_batch',
             args: {
                 req_id: ReqId.getReqID(),
-                stmt_id: this.stmt_id,
+                stmt_id: this._stmt_id,
             },
         };
         return this.execute(queryMsg);
@@ -88,7 +126,7 @@ export class WsStmt {
             action: 'exec',
             args: {
                 req_id: ReqId.getReqID(),
-                stmt_id: this.stmt_id,
+                stmt_id: this._stmt_id,
             },
         };
         return this.execute(queryMsg);
@@ -103,14 +141,14 @@ export class WsStmt {
             action: 'close',
             args: {
                 req_id: ReqId.getReqID(),
-                stmt_id: this.stmt_id,
+                stmt_id: this._stmt_id,
             },
         };
         return this.execute(queryMsg, false);
     }
 
     public getStmtId(): number | undefined | null {
-        return this.stmt_id;
+        return this._stmt_id;
     } 
     
     private async execute(queryMsg: StmtMessageInfo, register: Boolean = true): Promise<void> {
@@ -123,7 +161,7 @@ export class WsStmt {
                 let result = await this._wsClient.exec(reqMsg, false);
                 let resp = new WsStmtQueryResponse(result)
                 if (resp.stmt_id) {
-                    this.stmt_id = resp.stmt_id;
+                    this._stmt_id = resp.stmt_id;
                 }
 
                 if (resp.affected) {
@@ -131,9 +169,29 @@ export class WsStmt {
                 } 
             }else{
                 await this._wsClient.execNoResp(reqMsg);
-                this.stmt_id = null
+                this._stmt_id = null
                 this.lastAffected = null
             }
+            return
+        } catch (e:any) {
+            throw new TaosResultError(e.code, e.message);
+        }
+    }
+
+    private async sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer): Promise<void> {
+        try {
+            if (this._wsClient.getState() <= 0) {
+                throw new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "websocket connect has closed!");
+            }
+            let result = await this._wsClient.sendBinaryMsg(reqId, action, message, false);
+            let resp = new WsStmtQueryResponse(result)
+            if (resp.stmt_id) {
+                this._stmt_id = resp.stmt_id;
+            }
+
+            if (resp.affected) {
+                this.lastAffected = resp.affected
+            } 
             return
         } catch (e:any) {
             throw new TaosResultError(e.code, e.message);

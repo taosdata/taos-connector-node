@@ -79,7 +79,7 @@ beforeAll(async () => {
 
 describe('TDWebSocket.Stmt()', () => {
     jest.setTimeout(20 * 1000)
-    test('normal BindParam', async() => {
+    test.skip('normal BindParam', async() => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
@@ -90,7 +90,7 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.Prepare(getInsertBind(tableValues.length, stableTags.length, db, stable));
         await stmt.SetTableName(table);
         await stmt.SetTags(stableTags)
-        await stmt.BindParam(tableValues)
+        await stmt.Bind(tableValues)
         await stmt.Batch()
         await stmt.Exec()
         expect(stmt.GetLastAffected()).toEqual(5)

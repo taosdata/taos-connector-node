@@ -34,7 +34,7 @@ async function Prepare() {
         await stmt.Prepare(`INSERT INTO ? USING ${db}.${stable} TAGS (?, ?) VALUES (?, ?, ?, ?)`);
         await stmt.SetTableName('d1001');
         await stmt.SetTags(tags);
-        await stmt.BindParam(multi);
+        await stmt.Bind(multi);
         await stmt.Batch();
         await stmt.Exec();
     } catch (e) {

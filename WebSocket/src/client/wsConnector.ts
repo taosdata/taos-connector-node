@@ -141,6 +141,24 @@ export class WebSocketConnector {
         })
     }
 
+    sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, register: Boolean = true) {
+        
+        return new Promise((resolve, reject) => {
+            if (this._wsConn && this._wsConn.readyState > 0) {
+                if (register) {
+                    WsEventCallback.Instance().RegisterCallback({ action: action, req_id: reqId, 
+                        timeout:this._timeout, id: reqId}, 
+                        resolve, reject);
+                }
+                console.log("[wsClient.sendBinaryMsg()]===>" + reqId, action, message.byteLength)
+                this._wsConn.send(message)
+            } else {
+                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, 
+                    `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
+            }
+        })
+    }
+
     public configTimeout(ms: number) {
         this._timeout = ms;
     }

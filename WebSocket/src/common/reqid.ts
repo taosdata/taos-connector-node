@@ -26,7 +26,6 @@ function uuidToHash(): number {
 }  
 
 export class ReqId {
-    private static _reqIdHead:number = 0;
     private static _uuid = 0;
     private static _pid = 0
     private static sharedBuffer = new SharedArrayBuffer(4);  

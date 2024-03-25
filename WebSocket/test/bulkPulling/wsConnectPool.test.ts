@@ -64,7 +64,7 @@ async function stmtConnect() {
             multi[0][j] = multi[0][0] + j;
             lastTs = multi[0][j]
         }
-        allp.push(stmt.BindParam(multi))
+        allp.push(stmt.Bind(multi))
         multi[0][0] = lastTs + 1
 
     }

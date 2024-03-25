@@ -8,25 +8,22 @@ import { WSQueryResponse } from '../client/wsResponse'
 import { Precision, SchemalessMessageInfo, SchemalessProto } from './wsProto'
 import { WsStmt } from '../stmt/wsStmt'
 import { ReqId } from '../common/reqid'
+import { PrecisionLength } from '../common/constant'
  
 export class WsSql{
-    private _wsClient: WsClient
-
-    public set wsClient(value: WsClient) {
-        this._wsClient = value
-    }
-   
-    constructor(url: URL, timeout :number | undefined | null) {
-        this._wsClient = new WsClient(url, timeout)
+    private wsConfig:WSConfig;
+    private _wsClient: WsClient;   
+    constructor(wsConfig:WSConfig) {
+        let url = GetUrl(wsConfig);
+        this._wsClient = new WsClient(url, wsConfig.GetTimeOut());
+        this.wsConfig = wsConfig;
     }
 
     static Open(wsConfig:WSConfig):Promise<WsSql> {
         if (!wsConfig.GetUrl()) {
             throw new WebSocketInterfaceError(ErrorCode.ERR_INVALID_URL, 'invalid url, password or username needed.');
         }
-
-        let url = GetUrl(wsConfig)
-        let wsSql = new WsSql(url, wsConfig.GetTimeOut());
+        let wsSql = new WsSql(wsConfig);
         return wsSql.open(wsConfig.GetDb())
     }
 
@@ -82,7 +79,17 @@ export class WsSql{
         return new Promise(async (resolve, reject) => {
             if (this._wsClient) {
                 try{
-                    let wsStmt = await WsStmt.NewStmt(this._wsClient, reqId);
+                    let precision = PrecisionLength["ms"];
+                    if (this.wsConfig.GetDb()) {
+                        let sql = "select `precision` from information_schema.ins_databases where name = '" + this.wsConfig.GetDb() + "'";
+                        let result = await this.Exec(sql);
+                        let data =result.GetData()
+                         
+                        if (data && data[0] && data[0][0]) {
+                            precision = PrecisionLength[data[0][0]]
+                        }
+                    }
+                    let wsStmt = await WsStmt.NewStmt(this._wsClient, precision, reqId);
                     resolve(wsStmt);
                 } catch(e) {
                     console.log(e)

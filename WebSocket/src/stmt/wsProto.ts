@@ -54,8 +54,9 @@ export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindT
     arrayView.setBigUint64(0, reqId, true);
     arrayView.setBigUint64(8, BigInt(stmtId), true);
     arrayView.setBigUint64(16, BigInt(bindType), true);
+
     arrayView.setUint32(24, 1, true);
-    arrayView.setUint32(28, 0, true);
+    arrayView.setUint32(28, arrayBuffer.byteLength, true);
     arrayView.setUint32(32, row, true);
     arrayView.setUint32(36, columns, true);
     arrayView.setUint32(40, 0, true);
@@ -76,10 +77,11 @@ export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindT
             const destView = new Uint8Array(arrayBuffer, dataOffset, columnsData[i].data.byteLength);  
             destView.set(sourceView);  
             dataOffset += columnsData[i].data.byteLength;  
-            console.log("end:",dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());          
+            // console.log("end:",dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());          
         }
         headOffset += 5
     }
+
     // console.log('bindParams.GetDataTotalLen -->', new Uint8Array(arrayBuffer))
 
     // throw new TaosResultError(ErrorCode.ERR_INVALID_FETCH_MESSAGE_DATA, `test`)

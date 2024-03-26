@@ -3,12 +3,11 @@ import { TMQConstants, TMQMessageType } from './constant';
 import { WsClient } from '../client/wsClient';
 import { TaosResult } from '../common/taosResult';
 import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/wsError';
-import { AssignmentResp, CommitedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockResponse, WsPollResponse, WsTmqQueryResponse, parseTmpBlock} from './tmpResponse';
+import { AssignmentResp, CommitedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockResponse, WsPollResponse, WsTmqQueryResponse, parseTmqBlock} from './tmqResponse';
 import { ReqId } from '../common/reqid';
 
 export class WsConsumer {
     private _wsClient: WsClient;
-    private _req_id = 5000000;
     private _wsConfig:TmqConfig;
     private _topics?:string[];
     private _commitTime?:number;
@@ -360,7 +359,7 @@ export class WsConsumer {
                 let jsonStr = JSON.stringify(fetchMsg);
                 // console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
                 let result = await this._wsClient.sendMsg(jsonStr)
-                resolve(parseTmpBlock(fetchResponse.rows, new WSTmqFetchBlockResponse(result), taosResult))     
+                resolve(parseTmqBlock(fetchResponse.rows, new WSTmqFetchBlockResponse(result), taosResult))     
             } catch (e: any){
                 reject(new WebSocketInterfaceError(e.code, e.message))
             }

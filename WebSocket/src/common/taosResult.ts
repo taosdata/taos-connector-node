@@ -163,7 +163,7 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
             // traverse row after row. 
             for (let j = 0; j < metaList.length; j++) {
 
-                let isVarType = _isVarTye(metaList[j])
+                let isVarType = _isVarType(metaList[j])
                 // console.log("== dataBuffer Length:" + dataBuffer.byteLength)
                 // console.log("== loop i:" + i + "J=" + j + "col:" + metaList[j].name + "type:" + metaList[j].type)
                 // console.log("== loop isVarType:" + isVarType);
@@ -220,7 +220,7 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
     }
 }
 
-export function _isVarTye(meta: ResponseMeta): Number {
+export function _isVarType(meta: ResponseMeta): Number {
     switch (meta.type) {
         case TDengineTypeCode['NCHAR']: {
             return ColumnsBlockType['NCHAR']

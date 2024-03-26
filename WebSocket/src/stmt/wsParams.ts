@@ -1,4 +1,3 @@
-import { throws } from "assert";
 import { PrecisionLength, TDengineTypeCode, TDengineTypeLength } from "../common/constant";
 import { ErrorCode, TaosError } from "../common/wsError";
 import { CharOffset, BMSetNull, BitmapLen} from "../common/taosResult"
@@ -15,7 +14,6 @@ export class ColumnInfo {
         this.length = length;
         this.typeLen = typeLen;
     }
-
 }
 
 export class StmtBindParams {
@@ -163,15 +161,20 @@ export class StmtBindParams {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SeTimestampColumn params is invalid!");
         } 
         
-        let nullCount = 0;
+        //computing bitmap length
         let bitMapLen:number = BitmapLen(params.length)
+        //Computing the length of data
         let arrayBuffer = new ArrayBuffer(bitMapLen + TDengineTypeLength['TIMESTAMP'] * params.length);
+        //bitmap get data range
+        let bitmapBuffer = new DataView(arrayBuffer)
+        //skip bitmap get data range 
         let dataBuffer = new DataView(arrayBuffer, bitMapLen)
         this._rows = params.length;
         for (let i = 0; i < params.length; i++) {
-            if (params[i]) {
+            if (!IsEmpty(params[i])) {
                 if (params[i] instanceof Date) {
                     let date:Date = params[i]
+                    //node only support milliseconds, need fill 0
                     if (this.precisionLength == PrecisionLength['us']) {
                         let ms =  date.getMilliseconds() * 1000
                         dataBuffer.setBigInt64(i * 8, BigInt(ms), true);
@@ -190,7 +193,9 @@ export class StmtBindParams {
                     }else {
                         data = params[i]
                     }
+                    //statistical bits of digit
                     let ndigit = this.countBigintDigits(data)
+                    //check digit same table Precision 
                     if (this.precisionLength == PrecisionLength['ns']) {
                         if (this.precisionLength <= ndigit) {
                             dataBuffer.setBigInt64(i * 8, data, true);
@@ -204,17 +209,13 @@ export class StmtBindParams {
                     }        
                 }
             }else{
-
-                let bitmapBuffer = new DataView(arrayBuffer)
+                //set bitmap bit is null
                 let charOffset = CharOffset(i);
                 let nullVal = BMSetNull(dataBuffer.getInt8(charOffset), i);
-                bitmapBuffer.setInt8(charOffset, nullVal);
-                nullCount++;                      
+                bitmapBuffer.setInt8(charOffset, nullVal);                    
             }
         }
-        if (nullCount > 0) {
-            arrayBuffer = arrayBuffer.slice(0, arrayBuffer.byteLength - nullCount * TDengineTypeLength['TIMESTAMP']); 
-        } 
+
         this._dataTotalLen += arrayBuffer.byteLength; 
         this._params.push(new ColumnInfo([TDengineTypeLength['TIMESTAMP'] * params.length, arrayBuffer], TDengineTypeCode['TIMESTAMP'], TDengineTypeLength['TIMESTAMP']));  
     }
@@ -226,7 +227,6 @@ export class StmtBindParams {
         let bitmapBuffer = new DataView(arrayBuffer)
         let dataBuffer = new DataView(arrayBuffer, bitMapLen)
         this._rows = params.length;
-        let nullCount = 0;
         for (let i = 0; i < params.length; i++) {
             if (!IsEmpty(params[i])) {
                 // console.log("ddddd=>", bitMapLen, typeLen * params.length, columnType, params[i])
@@ -294,16 +294,12 @@ export class StmtBindParams {
                     throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetTinyIntColumn params is invalid! param:=" + params[i])
                 }  
             } else {
+                //set bitmap bit is null
                 let charOffset = CharOffset(i);
                 let nullVal = BMSetNull(bitmapBuffer.getUint8(charOffset), i);
                 bitmapBuffer.setInt8(charOffset, nullVal);                  
             }
         }
-        // if (nullCount > 0) {
-        //     arrayBuffer = arrayBuffer.slice(0, arrayBuffer.byteLength - nullCount * typeLen); 
-        // }
-
-        // console.log("nullCount", bitMapLen, nullCount, new Uint8Array(arrayBuffer))
         this._dataTotalLen += dataBuffer.buffer.byteLength;
         return [typeLen * params.length, dataBuffer.buffer];
     }
@@ -311,19 +307,25 @@ export class StmtBindParams {
     private encodeVarLengthColumn(params:any[]):[number, ArrayBuffer] {
         let data:ArrayBuffer[] = []
         let dataLength = 0;
-        let indexBuffer = new ArrayBuffer(TDengineTypeLength['INT'] * params.length)
-        let indexView = new DataView(indexBuffer)
+        //create params length buffer
+        let paramsLenBuffer = new ArrayBuffer(TDengineTypeLength['INT'] * params.length)
+        let paramsLenView = new DataView(paramsLenBuffer)
         this._rows = params.length;
         for (let i = 0; i <  params.length; i++) {
+            //get param length offset 4byte
             let offset = TDengineTypeLength['INT'] * i;
             if (!IsEmpty(params[i])) {
-                indexView.setInt32(offset, dataLength, true);
+                //save param length offset 4byte
+                paramsLenView.setInt32(offset, dataLength, true);
                 if (typeof params[i] == 'string' ) {
+                    //string TextEncoder
                     let encode = new TextEncoder();
                     let value = encode.encode(params[i]).buffer;
                     data.push(value);
+                    //add offset length
                     dataLength += value.byteLength + TDengineTypeLength['SMALLINT'];
                 } else if (params[i] instanceof ArrayBuffer) {
+                    //input arraybuffer, save not need encode
                     let value:ArrayBuffer = params[i];
                     dataLength += value.byteLength + TDengineTypeLength['SMALLINT'];
                     data.push(value);
@@ -333,28 +335,34 @@ export class StmtBindParams {
                 }  
                 
             }else{
+                //set length -1, param is null
                 for (let j = 0; j < TDengineTypeLength['INT']; j++) {
-                    indexView.setInt8(offset+j, 255);
+                    paramsLenView.setInt8(offset+j, 255);
                 }
                 
             }
         }
         
-        this._dataTotalLen += indexBuffer.byteLength + dataLength;
-        return [dataLength, this.getBinaryColumnArrayBuffer(data, indexView.buffer, dataLength)];
+        this._dataTotalLen += paramsLenBuffer.byteLength + dataLength;
+        return [dataLength, this.getBinaryColumnArrayBuffer(data, paramsLenView.buffer, dataLength)];
     }
-
-    private getBinaryColumnArrayBuffer(data:ArrayBuffer[], indexBuffer: ArrayBuffer, dataLength:number):ArrayBuffer {
-        let paramsBuffer = new ArrayBuffer(indexBuffer.byteLength + dataLength)
+    //splicing encode params to arraybuffer
+    private getBinaryColumnArrayBuffer(data:ArrayBuffer[], paramsLenBuffer: ArrayBuffer, dataLength:number):ArrayBuffer {
+        //creat arraybuffer 
+        let paramsBuffer = new ArrayBuffer(paramsLenBuffer.byteLength + dataLength)
+        //get length data range
         const paramsUint8 = new Uint8Array(paramsBuffer);
-        const indexView = new Uint8Array(indexBuffer);
-        paramsUint8.set(indexView, 0);
-        const paramsView = new DataView(paramsBuffer, indexBuffer.byteLength);
+        const paramsLenView = new Uint8Array(paramsLenBuffer);
+        paramsUint8.set(paramsLenView, 0);
+        //get data range
+        const paramsView = new DataView(paramsBuffer, paramsLenBuffer.byteLength);
         
         let offset = 0;
         for (let i = 0; i < data.length;  i++) {
+            //save param field length
             paramsView.setInt16(offset, data[i].byteLength, true)
             const dataView = new DataView(data[i]);
+            //save data
             for (let j = 0; j < data[i].byteLength; j++) {
                 paramsView.setUint8(offset + 2 + j, dataView.getUint8(j))
             }
@@ -363,7 +371,7 @@ export class StmtBindParams {
         
         return paramsBuffer
     }
-
+    //encode nchar type params
     private encodeNcharColumn(params:any[]):[number, ArrayBuffer] {
         let data:ArrayBuffer[] = []
         let dataLength = 0;
@@ -378,12 +386,14 @@ export class StmtBindParams {
                     let codes:number[] = [];
                     let strNcharParams:string = params[i];
                     for (let j = 0; j < params[i].length; j++) { 
+                        //get char, cn char neet 3~4 byte
                         codes.push(strNcharParams.charCodeAt(j));
                     }
 
                     let ncharBuffer:ArrayBuffer = new ArrayBuffer(codes.length * 4);
                     let ncharView = new DataView(ncharBuffer);
                     for (let j = 0; j  < codes.length; j++) {
+                        //1char, save into uint32
                         ncharView.setUint32(j*4, codes[j], true);
                     }
                     data.push(ncharBuffer);
@@ -398,6 +408,7 @@ export class StmtBindParams {
                 }  
                 
             }else{
+                //set length -1, param is null
                 for (let j = 0; j < TDengineTypeLength['INT']; j++) {
                     indexView.setInt8(offset+j, 255)
                 }
@@ -408,7 +419,6 @@ export class StmtBindParams {
         this._dataTotalLen += indexBuffer.byteLength + dataLength;
         return [dataLength, this.getBinaryColumnArrayBuffer(data, indexView.buffer, dataLength)];
     }
-
 
     private countBigintDigits(numeral: bigint): number {  
         if (numeral === 0n) {  
@@ -421,12 +431,7 @@ export class StmtBindParams {
           count++;  
         }  
         return count;  
-    }
-
-    // private isFloat(numeral: number): boolean {  
-    //     return numeral % 1 !== 0;  
-    // }
-    
+    }   
 
 }
 

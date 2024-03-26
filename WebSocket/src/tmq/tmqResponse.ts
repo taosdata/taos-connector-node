@@ -2,7 +2,7 @@
 
 import { WSQueryResponse } from "../client/wsResponse";
 import { ColumnsBlockType, TDengineTypeLength } from "../common/constant";
-import { MessageResp, TaosResult, _isVarTye, readBinary, readNchar, readSolidData, readSolidDataToArray, readVarchar } from "../common/taosResult";
+import { MessageResp, TaosResult, _isVarType, readBinary, readNchar, readSolidData, readSolidDataToArray, readVarchar } from "../common/taosResult";
 import { WebSocketInterfaceError, ErrorCode } from "../common/wsError";
 
 export class WsPollResponse {
@@ -172,7 +172,7 @@ export class TopicPartition {
     }
 }
 
-export function parseTmpBlock(rows:number, resp: WSTmqFetchBlockResponse, taosResult: TaosResult): TaosResult {
+export function parseTmqBlock(rows:number, resp: WSTmqFetchBlockResponse, taosResult: TaosResult): TaosResult {
     let dataList:any[][] = new Array(rows);
     if (!resp || !taosResult) {
         return taosResult;
@@ -181,27 +181,35 @@ export function parseTmpBlock(rows:number, resp: WSTmqFetchBlockResponse, taosRe
     let metaList = taosResult.GetTaosMeta()
     let taosdata = taosResult.GetData()
     if (metaList && rows && taosdata) {
+        //get bitmap length
         let bitMapOffset:number = BitmapLen(rows);
+        //skip data head
         let bufferOffset = 24 + 28 + 5 * metaList.length
         
         let dataBuffer:ArrayBuffer = resp.blockData.slice(bufferOffset);
         let metaLens:number[]= []
         for (let i = 0; i< metaList.length; i++) {
+            //get data len
             metaLens.push(new DataView(dataBuffer, i*4, 4).getInt32(0, true)) 
         }
         bufferOffset = metaList.length * 4;
         
         for (let i = 0; i < metaList.length; i++) {
             let data:any[] = [];
-            let isVarType = _isVarTye(metaList[i])
+            //get type code
+            let isVarType = _isVarType(metaList[i])
+            //fixed length type 
             if (isVarType == ColumnsBlockType.SOLID) {
                 let bitMapArr = dataBuffer.slice(bufferOffset, bufferOffset + bitMapOffset);
                 bufferOffset += bitMapOffset;
+                //decode column data, data is array
                 data = readSolidDataToArray(dataBuffer, bufferOffset, rows, metaList[i], bitMapArr);
-            } else {     
+            } else {  
+                //Variable length type   
                 let offset = bufferOffset;
                 let offsets:number[]= [];
                 for (let i = 0; i< rows; i++, offset += TDengineTypeLength['INT']) {
+                    //get data length, -1 is null
                     offsets.push(new DataView(dataBuffer, offset, 4).getInt32(0, true)) 
                 }
                 let start = offset
@@ -213,10 +221,13 @@ export function parseTmpBlock(rows:number, resp: WSTmqFetchBlockResponse, taosRe
                         let header = start + offsets[i];
                         let dataLength = new DataView(dataBuffer, header, 2).getInt16(0, true) & 0xFFFF;
                         if (isVarType == ColumnsBlockType.VARCHAR) {
+                            //decode var char
                             value = readVarchar(dataBuffer, header + 2, dataLength)
                         } else if(isVarType == ColumnsBlockType.GEOMETRY || isVarType == ColumnsBlockType.VARBINARY) {
+                            //decode binary
                             value = readBinary(dataBuffer, header + 2, dataLength)
                         } else {
+                            //decode nchar
                             value = readNchar(dataBuffer, header + 2, dataLength)
                         }
                         
@@ -226,6 +237,7 @@ export function parseTmpBlock(rows:number, resp: WSTmqFetchBlockResponse, taosRe
                 bufferOffset += rows * 4
             }
             bufferOffset += metaLens[i]
+            //column data to row data
             for (let row = 0; row < data.length; row++) {
                 if (dataList[row] == null) {
                     dataList[row] = []

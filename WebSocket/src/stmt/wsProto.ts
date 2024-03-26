@@ -42,6 +42,7 @@ export const enum SchemalessProto {
 
 
 export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindType, stmtId:number, reqId:bigint, row:number): ArrayBuffer {
+    //Computing the length of data
     let columns = bindParams.GetParams().length;
     let length = TDengineTypeLength['BIGINT'] * 4;
     length += TDengineTypeLength['INT'] * 5;
@@ -54,28 +55,42 @@ export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindT
     arrayView.setBigUint64(0, reqId, true);
     arrayView.setBigUint64(8, BigInt(stmtId), true);
     arrayView.setBigUint64(16, BigInt(bindType), true);
-
+    //version int32
     arrayView.setUint32(24, 1, true);
+    //data length int32
     arrayView.setUint32(28, arrayBuffer.byteLength, true);
+    //rows int32
     arrayView.setUint32(32, row, true);
+    //columns int32
     arrayView.setUint32(36, columns, true);
+    //flagSegment int32
     arrayView.setUint32(40, 0, true);
+    //groupID uint64
     arrayView.setBigUint64(44, BigInt(0), true);
+    //head length
     let offset = 52;
+    //type data range
     let typeView = new DataView(arrayBuffer, offset);
+    //length data range
     let lenView = new DataView(arrayBuffer, offset + columns * 5);
+    //data range offset
     let dataOffset = offset + columns * 5 + columns * 4;
     let headOffset = 0;
     let columnsData = bindParams.GetParams()
     for (let i = 0; i< columnsData.length; i++) {
+        //set column data type
         typeView.setUint8(headOffset, columnsData[i].type)
+        //set column type length
         typeView.setUint32(headOffset+1, columnsData[i].typeLen, true)
+        //set column data length
         lenView.setUint32(i * 4, columnsData[i].length, true)
         if (columnsData[i].data) { 
+            //get encode column data
             const sourceView = new Uint8Array(columnsData[i].data);  
-            // console.log("begin:", dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());
+            //console.log("begin:", dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());
             const destView = new Uint8Array(arrayBuffer, dataOffset, columnsData[i].data.byteLength);  
-            destView.set(sourceView);  
+            //splicing data
+            destView.set(sourceView);
             dataOffset += columnsData[i].data.byteLength;  
             // console.log("end:",dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());          
         }

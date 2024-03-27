@@ -55,12 +55,15 @@ describe('TDWebSocket.Stmt()', () => {
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.SetTableName('d1001');
-        await stmt.SetTags(tags)
+        let params = stmt.NewStmtParam()
+        params.SetVarcharColumn([tags[0]]);
+        params.SetIntColumn([tags[1]]);        
+        await stmt.SetBinaryTags(params)
         stmt.Close()
         connector.Close();
     }); 
 
-    test('normal Prepare', async() => {
+    test('set tag error', async() => {
         let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb('power')
@@ -70,7 +73,13 @@ describe('TDWebSocket.Stmt()', () => {
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.SetTableName('d1001');
-        await stmt.SetTags(['California.SanFrancisco'])
+        let params = stmt.NewStmtParam()
+        params.SetVarcharColumn([tags[0]]);
+        try {
+          await stmt.SetBinaryTags(params)          
+        } catch(err:any) {
+            expect(err.message).toMatch('stmt tags count not match')
+        }       
         stmt.Close()
         connector.Close();
     });    
@@ -124,7 +133,12 @@ describe('TDWebSocket.Stmt()', () => {
         expect(stmt).toBeTruthy()      
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.SetTableName('d1001');
-        await stmt.SetTags(tags)
+
+        let params = stmt.NewStmtParam()
+        params.SetVarcharColumn(['SanFrancisco']);
+        params.SetIntColumn([7]);
+        await stmt.SetBinaryTags(params) 
+
         let lastTs = 0
         const allp:any[] = []
         for (let i = 0; i < 10; i++) {
@@ -132,7 +146,13 @@ describe('TDWebSocket.Stmt()', () => {
                 multi[0][j] = multi[0][0] + j;
                 lastTs = multi[0][j]
             }
-            allp.push(stmt.Bind(multi))
+
+            let dataParams = stmt.NewStmtParam()
+            dataParams.SetTimestampColumn(multi[0])
+            dataParams.SetFloatColumn(multi[1])
+            dataParams.SetIntColumn(multi[2])
+            dataParams.SetFloatColumn(multi[3])
+            allp.push(stmt.BinaryBind(dataParams))
             multi[0][0] = lastTs + 1
 
         }
@@ -155,7 +175,10 @@ describe('TDWebSocket.Stmt()', () => {
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.SetTableName('d1001');
-        await stmt.SetTags(tags)
+        let params = stmt.NewStmtParam()
+        params.SetVarcharColumn(['SanFrancisco']);
+        params.SetIntColumn([7]);
+        await stmt.SetBinaryTags(params) 
         let multi = [
             [1709183268567, 1709183268568],
             [10.2, 10.3, 10.4, 10.5],
@@ -163,7 +186,12 @@ describe('TDWebSocket.Stmt()', () => {
             [0.32, 0.33, 0.31],
             ];
         try{
-            await stmt.Bind(multi)
+            let dataParams = stmt.NewStmtParam()
+            dataParams.SetTimestampColumn(multi[0])
+            dataParams.SetFloatColumn(multi[1])
+            dataParams.SetIntColumn(multi[2])
+            dataParams.SetFloatColumn(multi[3])
+            await stmt.BinaryBind(dataParams)
             await stmt.Batch()
             await stmt.Exec()
         }catch(e) {
@@ -184,7 +212,10 @@ describe('TDWebSocket.Stmt()', () => {
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.SetTableName('d1001');
-        await stmt.SetTags(tags)
+        let params = stmt.NewStmtParam()
+        params.SetVarcharColumn(['SanFrancisco']);
+        params.SetIntColumn([7]);
+        await stmt.SetBinaryTags(params) 
         let multi = [
             [1709183268567, 1709183268568],
             [10.2, 10.3],
@@ -192,7 +223,12 @@ describe('TDWebSocket.Stmt()', () => {
             [0.32, 0.33],
             ];
         try{
-            await stmt.Bind(multi)
+            let dataParams = stmt.NewStmtParam()
+            dataParams.SetTimestampColumn(multi[0])
+            dataParams.SetFloatColumn(multi[1])
+            dataParams.SetIntColumn(multi[2])
+            dataParams.SetFloatColumn(multi[3])
+            await stmt.BinaryBind(dataParams)
             await stmt.Exec()
         }catch(e) {
             let err:any = e
@@ -212,7 +248,10 @@ describe('TDWebSocket.Stmt()', () => {
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.SetTableName('d1001');
-        await stmt.SetTags(tags)
+        let params = stmt.NewStmtParam()
+        params.SetVarcharColumn(['SanFrancisco']);
+        params.SetIntColumn([7]);
+        await stmt.SetBinaryTags(params) 
         let multi1 = [
             [1709188881548, 1709188881549],
             [10.2, 10.3],
@@ -226,9 +265,20 @@ describe('TDWebSocket.Stmt()', () => {
             [0.32, 0.33],
             ];    
         
-        await stmt.Bind(multi1)
+        let dataParams = stmt.NewStmtParam()
+        dataParams.SetTimestampColumn(multi1[0])
+        dataParams.SetFloatColumn(multi1[1])
+        dataParams.SetIntColumn(multi1[2])
+        dataParams.SetFloatColumn(multi1[3])
+        await stmt.BinaryBind(dataParams)
         await stmt.Batch()
-        await stmt.Bind(multi2)
+
+        dataParams = stmt.NewStmtParam()
+        dataParams.SetTimestampColumn(multi2[0])
+        dataParams.SetFloatColumn(multi2[1])
+        dataParams.SetIntColumn(multi2[2])
+        dataParams.SetFloatColumn(multi2[3])
+        await stmt.BinaryBind(dataParams)
         await stmt.Batch()
         await stmt.Exec()
         expect(stmt.GetLastAffected()).toEqual(4)
@@ -248,7 +298,12 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.SetTableName('d1001');
         // await stmt.SetTags(tags)
         try{
-            await stmt.Bind(multi)
+            let dataParams = stmt.NewStmtParam()
+            dataParams.SetTimestampColumn(multi[0])
+            dataParams.SetFloatColumn(multi[1])
+            dataParams.SetIntColumn(multi[2])
+            dataParams.SetFloatColumn(multi[3])
+            await stmt.BinaryBind(dataParams)
             await stmt.Batch()
             await stmt.Exec()
         }catch(e) {
@@ -300,14 +355,22 @@ describe('TDWebSocket.Stmt()', () => {
         expect(connector.State()).toBeGreaterThan(0)
         await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.SetTableName('d1001');
-        await stmt.SetTags(tags)
+        let params = stmt.NewStmtParam()
+        params.SetVarcharColumn(['SanFrancisco']);
+        params.SetIntColumn([7]);
+        await stmt.SetBinaryTags(params) 
         let multi1 = [
             [1709188881548, 1709188881549],
             [10.2, 10.3],
             [292, 293],
             [0.32, 0.33],
             ];        
-        await stmt.Bind(multi1)
+        let dataParams = stmt.NewStmtParam()
+        dataParams.SetTimestampColumn(multi1[0])
+        dataParams.SetFloatColumn(multi1[1])
+        dataParams.SetIntColumn(multi1[2])
+        dataParams.SetFloatColumn(multi1[3])
+        await stmt.BinaryBind(dataParams)
         await stmt.Batch()
         await stmt.Exec()
         stmt.Close()

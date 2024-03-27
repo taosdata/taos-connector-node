@@ -169,7 +169,14 @@ export class StmtBindParams {
         let bitmapBuffer = new DataView(arrayBuffer)
         //skip bitmap get data range 
         let dataBuffer = new DataView(arrayBuffer, bitMapLen)
-        this._rows = params.length;
+        if (this._rows > 0) {
+            if (this._rows !== params.length) {
+                throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "wrong row length!")
+            }
+        }else {
+            this._rows = params.length;
+        }
+        
         for (let i = 0; i < params.length; i++) {
             if (!IsEmpty(params[i])) {
                 if (params[i] instanceof Date) {
@@ -200,7 +207,7 @@ export class StmtBindParams {
                         if (this.precisionLength <= ndigit) {
                             dataBuffer.setBigInt64(i * 8, data, true);
                         } else {
-                            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SeTimestampColumn params is invalid! param:=" + params[i])
+                            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SeTimestampColumn params precisionLength is invalid! param:=" + params[i])
                         }          
                     } else if (this.precisionLength == ndigit) {
                         dataBuffer.setBigInt64(i * 8, data, true);
@@ -226,7 +233,14 @@ export class StmtBindParams {
         let arrayBuffer = new ArrayBuffer(typeLen * params.length + bitMapLen);
         let bitmapBuffer = new DataView(arrayBuffer)
         let dataBuffer = new DataView(arrayBuffer, bitMapLen)
-        this._rows = params.length;
+        if (this._rows > 0) {
+            if (this._rows !== params.length) {
+                throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "wrong row length!")
+            }
+        }else {
+            this._rows = params.length;
+        }
+
         for (let i = 0; i < params.length; i++) {
             if (!IsEmpty(params[i])) {
                 // console.log("ddddd=>", bitMapLen, typeLen * params.length, columnType, params[i])
@@ -310,7 +324,13 @@ export class StmtBindParams {
         //create params length buffer
         let paramsLenBuffer = new ArrayBuffer(TDengineTypeLength['INT'] * params.length)
         let paramsLenView = new DataView(paramsLenBuffer)
-        this._rows = params.length;
+        if (this._rows > 0) {
+            if (this._rows !== params.length) {
+                throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "wrong row length!")
+            }
+        }else {
+            this._rows = params.length;
+        }
         for (let i = 0; i <  params.length; i++) {
             //get param length offset 4byte
             let offset = TDengineTypeLength['INT'] * i;
@@ -377,7 +397,14 @@ export class StmtBindParams {
         let dataLength = 0;
         let indexBuffer = new ArrayBuffer(TDengineTypeLength['INT'] * params.length)
         let indexView = new DataView(indexBuffer)
-        this._rows = params.length;
+        if (this._rows > 0) {
+            if (this._rows !== params.length) {
+                throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "wrong row length!")
+            }
+        }else {
+            this._rows = params.length;
+        }
+        
         for (let i = 0; i <  params.length; i++) {
             let offset = TDengineTypeLength['INT'] * i;
             if (!IsEmpty(params[i])) {

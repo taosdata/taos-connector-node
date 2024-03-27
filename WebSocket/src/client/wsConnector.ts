@@ -3,18 +3,6 @@ import { ErrorCode, TDWebSocketClientError, WebSocketQueryError } from '../commo
 import { MessageResp } from '../common/taosResult';
 import { OnMessageType, WsEventCallback } from './wsEventCallback';
 
-interface MessageId {
-    action: string,
-    req_id: bigint,
-    id?: bigint
-}
-
-interface MessageAction {
-    reject: Function,
-    resolve: Function,
-    timer: ReturnType<typeof setTimeout>,
-    sendTime: number,
-}
 
 export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
@@ -33,7 +21,6 @@ export class WebSocketConnector {
                 this._timeout = timeout
             }
             this._wsConn = new w3cwebsocket(origin.concat(pathname).concat(search));
-
             this._wsConn.onerror = function (err: Error) { console.log(err.message); throw err }
 
             this._wsConn.onclose = this._onclose

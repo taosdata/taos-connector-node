@@ -33,10 +33,12 @@ async function Prepare() {
         stmt = await connector.StmtInit()
         await stmt.Prepare(`INSERT INTO ? USING ${db}.${stable} TAGS (?, ?) VALUES (?, ?, ?, ?)`);
         await stmt.SetTableName('d1001');
+        
         let tagParams = stmt.NewStmtParam()
         tagParams.SetVarcharColumn([tags[0]])
         tagParams.SetIntColumn([tags[1]])
         await stmt.SetBinaryTags(tagParams);
+
         let bindParams = stmt.NewStmtParam()
         bindParams.SetTimestampColumn(multi[0]);
         bindParams.SetFloatColumn(multi[1])

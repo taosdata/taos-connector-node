@@ -1,6 +1,5 @@
-import { ICloseEvent, IMessageEvent, w3cwebsocket } from 'websocket';
+import { ICloseEvent, w3cwebsocket } from 'websocket';
 import { ErrorCode, TDWebSocketClientError, WebSocketQueryError } from '../common/wsError'
-import { MessageResp } from '../common/taosResult';
 import { OnMessageType, WsEventCallback } from './wsEventCallback';
 
 

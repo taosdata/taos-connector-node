@@ -2,7 +2,7 @@
 
 import { WSQueryResponse } from "../client/wsResponse";
 import { ColumnsBlockType, TDengineTypeLength } from "../common/constant";
-import { MessageResp, TaosResult, _isVarType, readBinary, readNchar, readSolidData, readSolidDataToArray, readVarchar } from "../common/taosResult";
+import { MessageResp, TaosResult, _isVarType, readBinary, readNchar, readSolidDataToArray, readVarchar } from "../common/taosResult";
 import { WebSocketInterfaceError, ErrorCode } from "../common/wsError";
 
 export class WsPollResponse {

@@ -3,19 +3,20 @@
   "version": "3.0.0",
   "description": "TDengine Connector for nodejs and browser using WebSocket.",
   "source": "index.ts",
-  "main": "dist/main/index.js",
+  "main": "dist/index.js",
   "module": "dist/module/index.mjs",
-  "types": "dist/types.d.ts",
+  "types": "dist/index.d.ts",
   "directories": {
     "example": "example",
     "test": "test"
   },
   "scripts": {
     "test": "jest --coverage",
-    "example": "tsc && node tsc/example/basicUsage.js",
-    "build": "parcel build --no-source-maps",
+    "example": "tsc && node dist/example/basicSql.js",
+    "build": "tsc",
     "watch": "parcel watch",
-    "prepare": "parcel build"
+    "prepare": "parcel build",
+    "prepublish": "npm run build"
   },
   "repository": {
     "type": "git",

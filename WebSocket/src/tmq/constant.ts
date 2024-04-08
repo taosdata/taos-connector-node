@@ -1,5 +1,3 @@
-import { IndexableString } from '../common/constant';
-
 export class TMQConstants {
     public static GROUP_ID: string = 'group.id';
 

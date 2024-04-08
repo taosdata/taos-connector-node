@@ -1,7 +1,6 @@
 import { WSQueryResponse } from "../client/wsResponse";
 import { TDengineTypeLength } from "../common/constant";
 import { MessageResp } from "../common/taosResult";
-import { ErrorCode, TaosResultError } from "../common/wsError";
 import { StmtBindParams } from "./wsParams";
 
 export interface StmtMessageInfo {

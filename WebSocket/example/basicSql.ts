@@ -2,7 +2,7 @@
 require('qingwa')();
 
 import { WSConfig } from '../src/common/config';
-import { WsSql } from '../src/sql/wsSql'
+import { sqlConnect } from '../index'
 
 let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
 (async () => {
@@ -11,7 +11,7 @@ let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
     let reqId = 0;
     try {
         let conf :WSConfig = new WSConfig(dsn)
-        wsSql = await WsSql.Open(conf)
+        wsSql = await sqlConnect(conf)
 
         let version = await wsSql.Version();
         console.log(version);

@@ -1,6 +1,6 @@
 require('qingwa')();
 import { WSConfig } from '../src/common/config';
-import { WsSql } from '../src/sql/wsSql';
+import { sqlConnect } from '../index';
 
 let db = 'power'
 let stable = 'meters'
@@ -15,7 +15,7 @@ let multi = [
 async function Prepare() {
     let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
     let conf :WSConfig = new WSConfig(dsn)
-    let wsSql = await WsSql.Open(conf)
+    let wsSql = await sqlConnect(conf)
     await wsSql.Exec(`create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`)
     await wsSql.Exec(`CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`);
     wsSql.Close()
@@ -29,7 +29,7 @@ async function Prepare() {
         let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
-        connector = await WsSql.Open(wsConf);
+        connector = await sqlConnect(wsConf);
         stmt = await connector.StmtInit()
         await stmt.Prepare(`INSERT INTO ? USING ${db}.${stable} TAGS (?, ?) VALUES (?, ?, ?, ?)`);
         await stmt.SetTableName('d1001');

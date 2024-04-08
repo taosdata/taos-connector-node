@@ -1,7 +1,6 @@
 import { WSConfig } from "../src/common/config";
-import { WsSql } from "../src/sql/wsSql";
 import { TMQConstants } from "../src/tmq/constant";
-import { WsConsumer } from "../src/tmq/wsTmq";
+import { sqlConnect, tmqConnect } from "../index";
 
 
 const stable = 'meters';
@@ -27,7 +26,7 @@ async function Prepare() {
     let createTopic = `create topic if not exists ${topics[0]} as select * from ${db}.${stable}`
     const useDB = `use ${db}`
   
-    let ws = await WsSql.Open(conf);
+    let ws = await sqlConnect(conf);
     await ws.Exec(createDB);
     await ws.Exec(useDB);
     await ws.Exec(createStable);
@@ -42,7 +41,7 @@ async function Prepare() {
     let consumer = null    
     try {
         await Prepare()
-        consumer = await WsConsumer.NewConsumer(configMap);
+        consumer = await tmqConnect(configMap);
         await consumer.Subscribe(topics);
         for (let i = 0; i < 5; i++) { 
             let res = await consumer.Poll(500); 

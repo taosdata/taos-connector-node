@@ -1,8 +1,8 @@
-import { WsSql } from './sql/wsSql'
-import { WSConfig } from './common/config';
-import { WsConsumer } from './tmq/wsTmq';
+import { WsSql } from './src/sql/wsSql'
+import { WSConfig } from './src/common/config';
+import { WsConsumer } from './src/tmq/wsTmq';
 
-let wsSql = async (conf: WSConfig) => {
+let sqlConnect = async (conf: WSConfig) => {
     try {
         return await WsSql.Open(conf)
     } catch (err: any) {
@@ -11,7 +11,7 @@ let wsSql = async (conf: WSConfig) => {
     }  
 };
 
-let wsTmq = async (configMap: Map<string, string>) => {
+let tmqConnect = async (configMap: Map<string, string>) => {
     try {
         return await WsConsumer.NewConsumer(configMap);
     } catch (err: any) {
@@ -20,4 +20,4 @@ let wsTmq = async (configMap: Map<string, string>) => {
     }  
 };
 
-export { wsSql, wsTmq };
+export { sqlConnect, tmqConnect };

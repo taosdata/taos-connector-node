@@ -9,3 +9,4 @@ nodejs/coverage/
 nodejs/*.log
 .idea
 node_modules/
+npminstall-debug.log

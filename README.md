@@ -201,3 +201,352 @@ let cursor = conn.cursor();
 })()
 
 ```
+## `@tdengine/websocket`
+This is a TDengine's WEBSOCKET connector in TypeScript. 
+
+### Installation
+
+```bash
+npm i @tdengine/websocket
+```
+### Usage
+
+Create a connection using DSN
+
+### DSN
+
+User can connect to the TDengine by passing DSN to WebSocket client. The description about the DSN like before.
+
+```text
+[+<protocol>]://[[<username>:<password>@]<host>:<port>][/<database>][?<p1>=<v1>[&<p2>=<v2>]]
+|------------|---|-----------|-----------|------|------|------------|-----------------------|
+|   protocol |   | username  | password  | host | port |  database  |  params               |
+```
+
+- **protocol**: Display using websocket protocol to establish connection. eg. `ws://localhost:6041`
+- **username/password**: Database's username and password.
+- **host/port**: Declare host and port. eg. `localhost:6041`
+- **database**: Optional, use to specify database name.
+- **params**: Other parameters. Like cloud Token.
+
+A complete DSN string example：
+```TypeScript
+import { WSConfig } from '../src/common/config';
+import { sqlConnect } from '../index'
+let dsn = 'ws://root:taosdata@127.0.0.1:6041/ws';
+(async () => {
+    let wsSql = null;
+    try {
+        let conf :WSConfig = new WSConfig(dsn)
+        wsSql = await sqlConnect(conf)
+    } catch (err:any) {
+        console.error(err);
+    } finally {
+        if (wsSql) {
+            wsSql.Close();
+        }
+    }
+})();
+```
+
+Create a connection using config
+
+```TypeScript
+import { WSConfig } from '../src/common/config';
+import { sqlConnect } from '../index'
+
+let dns = 'ws://127.0.0.1:6041/ws'
+let conf :WSConfig = new WSConfig(dns)
+conf.SetUser('root')
+conf.SetPwd('taosdata')
+(async () => {
+    let wsSql = null;
+    try {
+        wsSql = await sqlConnect(conf)
+    } catch (err:any) {
+        console.error(err);
+    
+    } finally {
+        if (wsSql) {
+            wsSql.Close();
+        }
+    }
+})();
+```
+Sql usage examples
+```TypeScript
+import { WSConfig } from '../src/common/config';
+import { sqlConnect } from '../index'
+
+let dns = 'ws://127.0.0.1:6041/ws'
+let conf :WSConfig = new WSConfig(dns)
+conf.SetUser('root')
+conf.SetPwd('taosdata')
+(async () => {
+    let wsSql = null;
+    let wsRows = null;
+    let reqId = 0;
+    try {
+        wsSql = await sqlConnect(conf)
+
+        let version = await wsSql.Version();
+        console.log(version);
+
+        let taosResult = await wsSql.Exec('show databases', reqId++)
+        console.log(taosResult);
+        
+        taosResult = await wsSql.Exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;',reqId++);
+        console.log(taosResult);
+
+        taosResult = await wsSql.Exec('use power',reqId++)
+        console.log(taosResult);
+
+        taosResult = await wsSql.Exec('CREATE STABLE if not exists meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);', reqId++);
+        console.log(taosResult);
+    
+        taosResult = await wsSql.Exec('describe meters', reqId++)
+        console.log(taosResult);
+
+        taosResult = await wsSql.Exec('INSERT INTO d1001 USING meters TAGS ("California.SanFrancisco", 3) VALUES (NOW, 10.2, 219, 0.32)', reqId++)
+        console.log(taosResult);
+
+        wsRows = await wsSql.Query('select * from meters', reqId++);
+        let meta = wsRows.GetMeta()
+        console.log("wsRow:meta:=>", meta);
+
+        while (await wsRows.Next()) {
+            let result = await wsRows.GetData();
+            console.log('queryRes.Scan().then=>', result);
+        }
+        await wsRows.Close()
+    
+    } catch (e) {
+        let err:any = e
+        console.error(err);
+    
+    } finally {
+        if (wsRows) {
+            await wsRows.Close();
+        }
+        if (wsSql) {
+            wsSql.Close();
+        }
+    }
+})();
+```
+
+Writing data via parameter binding
+
+TDengine's node.js connection implementation has significantly improved its support for data writing (INSERT) scenarios via bind interface. Writing data in this way avoids the resource consumption of SQL syntax parsing, resulting in significant write performance improvements in many cases.
+
+usage examples
+
+```TypeScript
+import { WSConfig } from '../src/common/config';
+import { sqlConnect } from '../index';
+
+let db = 'power'
+let stable = 'meters'
+let tags = ['California.SanFrancisco', 3];
+let multi = [
+    [1706786044994, 1706786044995, 1706786044996],
+    [10.2, 10.3, 10.4],
+    [292, 293, 294],
+    [0.32, 0.33, 0.34],
+];
+
+(async () => {
+    let stmt = null;
+    let connector = null;
+    try {
+        await Prepare();
+        let dsn = 'ws://root:taosdata@127.0.0.1:6041/ws';
+        let wsConf = new WSConfig(dsn);
+        wsConf.SetDb(db)
+        connector = await sqlConnect(wsConf);
+        stmt = await connector.StmtInit()
+        await stmt.Prepare(`INSERT INTO ? USING ${db}.${stable} TAGS (?, ?) VALUES (?, ?, ?, ?)`);
+        await stmt.SetTableName('d1001');
+
+        let tagParams = stmt.NewStmtParam()
+        tagParams.SetVarcharColumn([tags[0]])
+        tagParams.SetIntColumn([tags[1]])
+        await stmt.SetBinaryTags(tagParams);
+
+        let bindParams = stmt.NewStmtParam()
+        bindParams.SetTimestampColumn(multi[0]);
+        bindParams.SetFloatColumn(multi[1])
+        bindParams.SetIntColumn(multi[2])
+        bindParams.SetFloatColumn(multi[3])
+        await stmt.BinaryBind(bindParams);
+        await stmt.Batch();
+        await stmt.Exec();
+    } catch (e) {
+        console.error(e);
+    }finally {
+        if (stmt) {
+            stmt.Close();
+        }
+        if (connector) {
+            connector.Close();
+        }
+    }
+})();
+```
+Schemaless Writing
+
+TDengine has added the ability to schemaless writing. It is compatible with InfluxDB's Line Protocol, OpenTSDB's telnet line protocol, and OpenTSDB's JSON format protocol. See schemaless writing for details.
+
+usage examples
+```TypeScript
+import { WSConfig } from '../src/common/config';
+import { Precision, SchemalessProto } from '../src/sql/wsProto';
+import { sqlConnect } from '../index';
+
+let db = 'power'
+let dsn = 'ws://root:taosdata@127.0.0.1:6041/ws';
+let influxdbData = "st,t1=3i64,t2=4f64,t3=\"t3\" c1=3i64,c3=L\"passit\",c2=false,c4=4f64 1626006833639000000";
+let telnetData = "stb0_0 1626006833 4 host=host0 interface=eth0";
+let jsonData = "{\"metric\": \"meter_current\",\"timestamp\": 1626846400,\"value\": 10.3, \"tags\": {\"groupid\": 2, \"location\": \"California.SanFrancisco\", \"id\": \"d1001\"}}";
+
+async function Prepare() {
+    let conf :WSConfig = new WSConfig(dsn)
+    let wsSql = await sqlConnect(conf)
+    await wsSql.Exec(`create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`)
+    wsSql.Close()
+}
+
+(async () => {
+    let wsSchemaless = null
+    try {
+        await Prepare()
+        let conf = new WSConfig(dsn);
+        conf.SetDb(db)
+        wsSchemaless = await sqlConnect(conf)
+        await wsSchemaless.SchemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NANO_SECONDS, 0);
+        await wsSchemaless.SchemalessInsert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.SECONDS, 0);
+        await wsSchemaless.SchemalessInsert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, Precision.SECONDS, 0);
+    } catch (e) {
+        console.error(e);
+    }finally {
+        if (wsSchemaless) {
+            wsSchemaless.Close();
+        }
+    }
+})();
+```
+
+Subscriptions
+
+The TDengine node.js Connector supports subscription functionality with the following application API.
+
+create subscriptions
+
+```TypeScript
+    let createTopic = `create topic if not exists pwer_meters_topic as select * from power.meters`
+    let dsn = 'ws://root:taosdata@127.0.0.1:6041/ws';
+    let conf :WSConfig = new WSConfig(dsn)
+    let ws = await sqlConnect(conf);
+    await ws.Exec(createTopic);
+    ws.Close()
+```
+
+The two parameters of the subscribe() method have the following meanings.
+
+pwer_meters_topic: the subscribed topic (i.e., name). This parameter is the unique identifier of the subscription.
+
+sql: the query statement of the subscription, this statement can only be select statement, only the original data should be queried, and you can query only the data in the positive time order
+The above example will use the SQL command select ts, speed from speed_table to create a subscription named topic_speed. If the subscription exists.
+
+Create Consumer and Subscribe topic
+```TypeScript
+    let configMap = new Map([
+        [TMQConstants.GROUP_ID, "gId"],
+        [TMQConstants.CONNECT_USER, "root"],
+        [TMQConstants.CONNECT_PASS, "taosdata"],
+        [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
+        [TMQConstants.CLIENT_ID, 'test_tmq_client'],
+        [TMQConstants.WS_URL, 'ws://127.0.0.1:6041/rest/tmq'],
+        [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
+        [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
+    ]);
+    consumer = await tmqConnect(configMap);
+    await consumer.Subscribe(topics);
+```
+    enable.auto.commit: whether to allow auto commit.
+    group.id: group id of consumer
+    client.id: client id, maximum length: 192
+    auto.offset.reset:earliest: subscribe from the earliest data; latest: subscribe from the latest data
+    auto.commit.interval.ms:Interval for automatic commits, in milliseconds
+
+usage examples
+
+```TypeScript
+import { WSConfig } from "../src/common/config";
+import { TMQConstants } from "../src/tmq/constant";
+import { sqlConnect, tmqConnect } from "../index";
+
+const stable = 'meters';
+const db = 'power'
+const topics:string[] = ['pwer_meters_topic']
+let configMap = new Map([
+    [TMQConstants.GROUP_ID, "gId"],
+    [TMQConstants.CONNECT_USER, "root"],
+    [TMQConstants.CONNECT_PASS, "taosdata"],
+    [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
+    [TMQConstants.CLIENT_ID, 'test_tmq_client'],
+    [TMQConstants.WS_URL, 'ws://127.0.0.1:6041/rest/tmq'],
+    [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
+    [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
+]);
+
+async function Prepare() {
+    let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+    let conf :WSConfig = new WSConfig(dsn)
+    const createDB = `create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`
+    const createStable = `CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`
+    let createTopic = `create topic if not exists ${topics[0]} as select * from ${db}.${stable}`
+    const useDB = `use ${db}`
+  
+    let ws = await sqlConnect(conf);
+    await ws.Exec(createDB);
+    await ws.Exec(useDB);
+    await ws.Exec(createStable);
+    await ws.Exec(createTopic);
+    for (let i = 0; i < 10; i++) {
+        await ws.Exec(`INSERT INTO d1001 USING ${stable} TAGS ("California.SanFrancisco", 3) VALUES (NOW, ${10+i}, ${200+i}, ${0.32 + i})`)
+    }
+    ws.Close()
+}
+
+(async () => {
+    let consumer = null
+    try {
+        await Prepare()
+        consumer = await tmqConnect(configMap);
+        await consumer.Subscribe(topics);
+        for (let i = 0; i < 5; i++) {
+            let res = await consumer.Poll(500);
+            for (let [key, value] of res) {
+                console.log(key, value);
+            }
+            if (res.size == 0) {
+                break;
+            }
+            await consumer.Commit();
+        }
+
+        let assignment = await consumer.Assignment()
+        console.log(assignment)
+        await consumer.SeekToBeginning(assignment)
+        await consumer.Unsubscribe()
+    } catch (e:any) {
+        console.error(e);
+    } finally {
+        if (consumer) {
+            consumer.Close();
+        }
+    }
+})();
+
+```

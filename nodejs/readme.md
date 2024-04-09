@@ -1,161 +1,59 @@
-# TDengine Node.js connector
+# WebSocket APIs
 
-[![minzip](https://img.shields.io/bundlephobia/minzip/td2.0-connector.svg)](https://github.com/taosdata/TDengine/tree/master/src/connector/nodejs) [![NPM](https://img.shields.io/npm/l/td2.0-connector.svg)](https://github.com/taosdata/TDengine/#what-is-tdengine)
+## Bulk Pulling
 
-This is the Node.js library that lets you connect to [TDengine](https://www.github.com/taosdata/tdengine) 2.0 version. It is built so that you can use as much of it as you want or as little of it as you want through providing an extensive API. If you want the raw data in the form of an array of arrays for the row data retrieved from a table, you can do that. If you want to wrap that data with objects that allow you easily manipulate and display data such as using a prettifier function, you can do that!
+### DSN
 
-## Installation
+User can connect to the TDengine by passing DSN to WebSocket client. The description about the DSN like before.
 
-To get started, just type in the following to install the connector through [npm](https://www.npmjs.com/)
-
-```cmd
-npm install td2.0-connector
+```text
+[+<protocol>]://[[<username>:<password>@]<host>:<port>][/<database>][?<p1>=<v1>[&<p2>=<v2>]]
+|------------|---|-----------|-----------|------|------|------------|-----------------------|
+|   protocol |   | username  | password  | host | port |  database  |  params               |
 ```
 
-To interact with TDengine, we make use of the [node-gyp](https://github.com/nodejs/node-gyp) library. To install, you will need to install the following depending on platform (the following instructions are quoted from node-gyp)
+- **protocol**: Display using websocket protocol to establish connection. eg. `ws://localhost:6041`
+- **username/password**: Database's username and password.
+- **host/port**: Declare host and port. eg. `localhost:6041`
+- **database**: Optional, use to specify database name.
+- **params**: Other parameters. Like cloud Token.
 
-### On Linux
+A complete DSN string example：
 
-- `python` (`v2.7` recommended, `v3.x.x` is **not** supported)
-- `make`
-- A proper C/C++ compiler toolchain, like [GCC](https://gcc.gnu.org)
-- `node` (between `v10.x` and `v11.x`, other version has some dependency compatibility problems)
-
-### On macOS
-
-- `python` (`v2.7` recommended, `v3.x.x` is **not** supported) (already installed on macOS)
-
-- Xcode
-
-  - You also need to install the
-
-    ```
-    Command Line Tools
-    ```
-
-     via Xcode. You can find this under the menu
-
-    ```
-    Xcode -> Preferences -> Locations
-    ```
-
-     (or by running
-
-    ```
-    xcode-select --install
-    ```
-
-     in your Terminal)
-
-    - This step will install `gcc` and the related toolchain containing `make`
-
-### On Windows
-
-#### Option 1
-
-Install all the required tools and configurations using Microsoft's [windows-build-tools](https://github.com/felixrieseberg/windows-build-tools) using `npm install --global --production windows-build-tools` from an elevated PowerShell or CMD.exe (run as Administrator).
-
-#### Option 2
-
-Install tools and configuration manually:
-
-- Install Visual C++ Build Environment: [Visual Studio Build Tools](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools) (using "Visual C++ build tools" workload) or [Visual Studio 2017 Community](https://visualstudio.microsoft.com/pl/thank-you-downloading-visual-studio/?sku=Community) (using the "Desktop development with C++" workload)
-- Install [Python 2.7](https://www.python.org/downloads/) (`v3.x.x` is not supported), and run `npm config set python python2.7` (or see below for further instructions on specifying the proper Python version and path.)
-- Launch cmd, `npm config set msvs_version 2017`
-
-If the above steps didn't work for you, please visit [Microsoft's Node.js Guidelines for Windows](https://github.com/Microsoft/nodejs-guidelines/blob/master/windows-environment.md#compiling-native-addon-modules) for additional tips.
-
-To target native ARM64 Node.js on Windows 10 on ARM, add the  components "Visual C++ compilers and libraries for ARM64" and "Visual  C++ ATL for ARM64".
-
-## Usage
-
-The following is a short summary of the basic usage of the connector, the  full api and documentation can be found [here](https://www.taosdata.com/docs/cn/v2.0/connector#nodejs)
-
-### Connection
-
-To use the connector, first require the library ```td2.0-connector```. Running the function ```taos.connect``` with the connection options passed in as an object will return a TDengine connection object. The required connection option is ```host```, other options if not set, will be the default values as shown below.
-
-A cursor also needs to be initialized in order to interact with TDengine from Node.js.
-
-```javascript
-const taos = require('td2.0-connector');
-var conn = taos.connect({host:"127.0.0.1", user:"root", password:"taosdata", config:"/etc/taos",port:0})
-var cursor = conn.cursor(); // Initializing a new cursor
+```text
+ws://localhost:6041/test
 ```
 
-Close a connection
+### Basic Usage
 
-```javascript
-conn.close();
+``` typescript
+import {connect} from '@tdengine/websocket'
+let dsn = "ws://host:port/rest/ws/db"
+// create an instance of taoWS, while the returned websocket connection of the returned instance 'ws' may is not in 'OPEN' status
+var ws = connect(dsn)
 ```
 
-### Queries
-
-We can now start executing simple queries through the ```cursor.query``` function, which returns a TaosQuery object.
-
-```javascript
-var query = cursor.query('show databases;')
+``` typescript
+// build connect with tdengine
+ws.connect().then(connectRes=>console.log(connectRes)).catch(e=>{/*do some thing to  handle error*/})
 ```
 
-We can get the results of the queries through the ```query.execute()``` function, which returns a promise that resolves with a TaosResult object, which contains the raw data and additional functionalities such as pretty printing the results.
-
-```javascript
-var promise = query.execute();
-promise.then(function(result) {
-  result.pretty(); //logs the results to the console as if you were in the taos shell
-});
+``` typescript
+//query data with SQL
+ws.query(sql).then(taosResult=>{console.log(taosResult)}).catch(e=>{/*do some thing to  handle error*/})
 ```
 
-You can also query by binding parameters to a query by filling in the question marks in a string as so. The query will automatically parse what was binded and convert it to the proper format for use with TDengine
-
-```javascript
-var query = cursor.query('select * from meterinfo.meters where ts <= ? and areaid = ?;').bind(new Date(), 5);
-query.execute().then(function(result) {
-  result.pretty();
-})
+```typescript
+// get client version
+ws.version().then(version=>console.log(version)).catch(e=>{/*do some thing to  handle error*/})
 ```
 
-The TaosQuery object can also be immediately executed upon creation by passing true as the second argument, returning a promise instead of a TaosQuery.
-
-```javascript
-var promise = cursor.query('select * from meterinfo.meters where v1 = 30;', true)
-promise.then(function(result) {
-  result.pretty();
-})
+``` typescript
+// get current WebSocket connection status
+let status:number = ws.status()
 ```
 
-If you want to execute queries without objects being wrapped around the data, use `cursor.execute()` directly and `cursor.fetchall()` to retrieve data if there is any.
-
-```javascript
-cursor.execute('select count(*), avg(v1), min(v2) from meterinfo.meters where ts >= \"2019-07-20 00:00:00.000\";');
-var data = cursor.fetchall();
-console.log(cursor.fields); // Latest query's Field metadata is stored in cursor.fields
-console.log(cursor.data); // Latest query's result data is stored in cursor.data, also returned by fetchall.
+``` typescript
+// close current WebSocket connection
+ws.close();
 ```
-
-### Async functionality
-
-Async queries can be performed using the same functions such as `cursor.execute`, `TaosQuery.query`, but now with `_a` appended to them.
-
-Say you want to execute an two async query on two separate tables, using `cursor.query`, you can do that and get a TaosQuery object, which upon executing with the `execute_a` function, returns a promise that resolves with a TaosResult object.
-
-```javascript
-var promise1 = cursor.query('select count(*), avg(v1), avg(v2) from meter1;').execute_a()
-var promise2 = cursor.query('select count(*), avg(v1), avg(v2) from meter2;').execute_a();
-promise1.then(function(result) {
-  result.pretty();
-})
-promise2.then(function(result) {
-  result.pretty();
-})
-```
-
-## Example
-
-An example of using the NodeJS connector to create a table with weather data and create and execute queries can be found [here](https://github.com/taosdata/TDengine/blob/master/examples/nodejs/node-example.js) (The preferred method for using the connector)
-
-An example of using the NodeJS connector to achieve the same things but without all the object wrappers that wrap around the data returned to achieve higher functionality can be found [here](https://github.com/taosdata/TDengine/blob/master/examples/nodejs/node-example-raw.js)
-
-## Contributing to TDengine
-
-Please follow the [contribution guidelines](https://github.com/taosdata/TDengine/blob/master/CONTRIBUTING.md) to contribute to the project.

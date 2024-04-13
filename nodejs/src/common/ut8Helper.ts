@@ -22,8 +22,6 @@ const rune3Max = (1 << 16) - 1;
 // it appends the encoding of RuneError.
 export function AppendRune(r:any) {
     let p:Array<any> = [];
-    // console.log("== AppendRun r:");
-    // console.log(r)
     if (r <= rune1Max) {
         p.push(r & 0xff);  
         return Buffer.from(p).toString();

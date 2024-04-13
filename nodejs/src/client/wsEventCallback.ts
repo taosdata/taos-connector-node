@@ -1,6 +1,7 @@
 import { Mutex } from "async-mutex";
 import { ErrorCode, TDWebSocketClientError, WebSocketQueryError } from "../common/wsError";
 import { MessageResp } from "../common/taosResult";
+import logger from "../common/log";
 
 interface MessageId {
     action: string,
@@ -93,7 +94,7 @@ export class WsEventCallback {
             };
             action.resolve(resp);
         } else {
-            console.log("no find callback msg:=", msg)
+            logger.error("no find callback msg:=", msg)
             throw new TDWebSocketClientError(ErrorCode.ERR_WS_NO_CALLBACK, 
                 "no callback registered for fetch_block with req_id=" + msg.req_id + " action" + msg.action);
         }    

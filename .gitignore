@@ -10,3 +10,4 @@ nodejs/*.log
 .idea
 node_modules/
 npminstall-debug.log
+.vscode/

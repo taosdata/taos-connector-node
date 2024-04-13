@@ -1,7 +1,7 @@
 import { ICloseEvent, w3cwebsocket } from 'websocket';
 import { ErrorCode, TDWebSocketClientError, WebSocketQueryError } from '../common/wsError'
 import { OnMessageType, WsEventCallback } from './wsEventCallback';
-
+import logger from '../common/log';
 
 export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
@@ -20,7 +20,7 @@ export class WebSocketConnector {
                 this._timeout = timeout
             }
             this._wsConn = new w3cwebsocket(origin.concat(pathname).concat(search));
-            this._wsConn.onerror = function (err: Error) { console.log(err.message); throw err }
+            this._wsConn.onerror = function (err: Error) { logger.error(err.message); throw err }
 
             this._wsConn.onclose = this._onclose
 
@@ -34,7 +34,7 @@ export class WebSocketConnector {
     Ready(): Promise<WebSocketConnector> {
         return new Promise((resolve, reject) => {
             this._wsConn.onopen = () => {
-                console.log("websocket connection opened")
+                logger.debug("websocket connection opened")
                 resolve(this);
             }
         })
@@ -49,7 +49,7 @@ export class WebSocketConnector {
 
     private _onmessage(event: any) {
         let data = event.data;
-        console.log("wsClient._onMessage()===="+ (Object.prototype.toString.call(data)))
+        logger.debug("wsClient._onMessage()===="+ (Object.prototype.toString.call(data)))
         if (Object.prototype.toString.call(data) === '[object ArrayBuffer]') {
             let id = new DataView(data, 8, 8).getBigUint64(0, true);
             WsEventCallback.Instance().HandleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
@@ -64,7 +64,7 @@ export class WebSocketConnector {
 
         } else if (Object.prototype.toString.call(data) === '[object String]') {
             let msg = JSON.parse(data)
-            console.log("[_onmessage.stringType]==>:" + data);
+            logger.debug("[_onmessage.stringType]==>:" + data);
             WsEventCallback.Instance().HandleEventCallback({id:BigInt(0), action:msg.action, req_id:msg.req_id}, 
                 OnMessageType.MESSAGE_TYPE_STRING, msg);
         } else {
@@ -86,7 +86,7 @@ export class WebSocketConnector {
     }
 
     sendMsgNoResp(message: string):Promise<void> {
-        console.log("[wsClient.sendMsgNoResp()]===>" + message)
+        logger.debug("[wsClient.sendMsgNoResp()]===>" + message)
         let msg = JSON.parse(message);
         if (msg.args.id !== undefined) {
             msg.args.id = BigInt(msg.args.id)
@@ -105,7 +105,7 @@ export class WebSocketConnector {
 
 
     sendMsg(message: string, register: Boolean = true) {
-        console.log("[wsClient.sendMessage()]===>" + message)
+        logger.debug("[wsClient.sendMessage()]===>" + message)
         let msg = JSON.parse(message);
         if (msg.args.id !== undefined) {
             msg.args.id = BigInt(msg.args.id)
@@ -118,7 +118,7 @@ export class WebSocketConnector {
                         timeout:this._timeout, id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id) }, 
                         resolve, reject);
                 }
-                console.log("[wsClient.sendMessage.msg]===>\n", message)
+                logger.debug("[wsClient.sendMessage.msg]===>\n", message)
                 this._wsConn.send(message)
             } else {
                 reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, 
@@ -128,7 +128,6 @@ export class WebSocketConnector {
     }
 
     sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, register: Boolean = true) {
-        
         return new Promise((resolve, reject) => {
             if (this._wsConn && this._wsConn.readyState > 0) {
                 if (register) {
@@ -136,7 +135,7 @@ export class WebSocketConnector {
                         timeout:this._timeout, id: reqId}, 
                         resolve, reject);
                 }
-                console.log("[wsClient.sendBinaryMsg()]===>" + reqId, action, message.byteLength)
+                logger.debug("[wsClient.sendBinaryMsg()]===>" + reqId, action, message.byteLength)
                 this._wsConn.send(message)
             } else {
                 reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, 

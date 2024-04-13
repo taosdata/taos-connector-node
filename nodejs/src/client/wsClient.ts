@@ -10,13 +10,13 @@ import {
     WSFetchResponse,
 } from './wsResponse';
 import { ReqId } from '../common/reqid';
+import logger from '../common/log';
 
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
-    private _req_id = 1000000;
     private _timeout?:number | undefined | null;
-    private _url:URL;
+    private readonly _url:URL;
 
     constructor(url: URL, timeout ?:number | undefined | null) {
         this.checkURL(url);
@@ -65,7 +65,7 @@ export class WsClient {
 
     execNoResp(queryMsg: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
+            logger.debug('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsgNoResp(queryMsg)
                 .then(() => {resolve();})
@@ -78,13 +78,13 @@ export class WsClient {
     }
 
     // need to construct Response.
-    exec(queryMsg: string, bSqlQurey:boolean = true): Promise<any> {
+    exec(queryMsg: string, bSqlQuery:boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
             // console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(queryMsg).then((e: any) => {
                     if (e.msg.code == 0) {
-                        if (bSqlQurey) {
+                        if (bSqlQuery) {
                             resolve(new WSQueryResponse(e));
                         }else{
                             resolve(e)
@@ -102,12 +102,12 @@ export class WsClient {
 
 
     // need to construct Response.
-    sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, bSqlQurey:boolean = true): Promise<any> {
+    sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, bSqlQuery:boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendBinaryMsg(reqId, action, message).then((e: any) => {
                     if (e.msg.code == 0) {
-                        if (bSqlQurey) {
+                        if (bSqlQuery) {
                             resolve(new WSQueryResponse(e));
                         }else{
                             resolve(e)
@@ -139,7 +139,7 @@ export class WsClient {
                 if (this._wsConnector.readyState() <= 0) {
                     await this._wsConnector.Ready()
                 }
-                console.log("ready status ", this._url, this._wsConnector.readyState())  
+                logger.debug("ready status ", this._url, this._wsConnector.readyState())  
                 resolve()              
             }catch(e: any) {
                 reject(e)
@@ -159,7 +159,7 @@ export class WsClient {
         // console.log(res)
         return new Promise((resolve, reject) => {
         let jsonStr = JSONBig.stringify(fetchMsg);
-        console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
+        logger.debug('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(jsonStr).then((e: any) => {
                     if (e.msg.code == 0) {
@@ -190,7 +190,7 @@ export class WsClient {
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(jsonStr).then((e: any) => {
                     let resp:MessageResp = e
-                    taosResult.AddtotalTime(resp.totalTime)
+                    taosResult.AddTotalTime(resp.totalTime)
                     resolve(parseBlock(fetchResponse.rows, new WSFetchBlockResponse(resp.msg), taosResult));
                     // if retrieve JSON then reject with message
                     // else is binary , so parse raw block to TaosResult
@@ -248,11 +248,11 @@ export class WsClient {
                     if (this._wsConnector.readyState() <= 0) {
                         await this._wsConnector.Ready()
                     }
-                    let resoult:any = await this._wsConnector.sendMsg(JSONBig.stringify(versionMsg)); 
-                    if (resoult.msg.code == 0) {
-                        resolve(new WSVersionResponse(resoult).version);
+                    let result:any = await this._wsConnector.sendMsg(JSONBig.stringify(versionMsg)); 
+                    if (result.msg.code == 0) {
+                        resolve(new WSVersionResponse(result).version);
                     } else {
-                        reject(new WebSocketInterfaceError(resoult.msg.code, resoult.msg.message));
+                        reject(new WebSocketInterfaceError(result.msg.code, result.msg.message));
                     }                   
                 } catch (e:any) {
                     reject(e);
@@ -279,13 +279,4 @@ export class WsClient {
         }
     }
 
-    // private getReqID() {
-    //     return ReqId.getReqID()
-    //     // if (this._req_id == 1999999) {
-    //     //     this._req_id = 1000000;
-    //     // } else {
-    //     //     this._req_id += 1;
-    //     // }
-    //     // return this._req_id;
-    // }
 }

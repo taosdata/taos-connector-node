@@ -83,7 +83,7 @@ const selectJsonTableCN = `select * from ${jsonTableCN}`
 
 
 beforeAll(async () => {
-    let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
+    let dsn = 'ws://root:taosdata@192.168.1.95:6041';
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.Open(conf);
     await ws.Exec(dropDB);
@@ -97,7 +97,7 @@ beforeAll(async () => {
 describe('TDWebSocket.Stmt()', () => {
     jest.setTimeout(20 * 1000)
     test('normal BindParam', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
         let connector = await WsSql.Open(wsConf) 
@@ -154,7 +154,7 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('normal CN BindParam', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
         let connector = await WsSql.Open(wsConf) 
@@ -205,13 +205,13 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.Exec()
         expect(stmt.GetLastAffected()).toEqual(5)
         await stmt.Close()
-        let result = await connector.Exec(`select * from ${db}.${stable}`)
+        let result = await connector.Exec(`select count(*) from ${db}.${stable}`)
         console.log(result)
         connector.Close();
     });
 
     test('normal json tag BindParam', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
         let connector = await WsSql.Open(wsConf) 
@@ -255,7 +255,7 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('normal json cn tag BindParam', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
+        let dsn = 'ws://root:taosdata@192.168.1.95:6041';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
         let connector = await WsSql.Open(wsConf) 

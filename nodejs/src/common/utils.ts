@@ -8,6 +8,12 @@ export function GetUrl(wsConfig:WSConfig):URL {
     if (wsConfig.GetPwd()) {
         url.password = wsConfig.GetPwd() || ''
     }
+
+    let token = wsConfig.GetToken()
+    if (token) {
+        url.searchParams.set("token", token)
+    }
+    url.pathname = '/ws'
     return url
 }
 

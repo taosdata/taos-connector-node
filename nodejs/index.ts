@@ -1,6 +1,8 @@
 import { WsSql } from './src/sql/wsSql'
 import { WSConfig } from './src/common/config';
 import { WsConsumer } from './src/tmq/wsTmq';
+import logger from "./src/common/log"
+import winston from 'winston';
 
 let sqlConnect = async (conf: WSConfig) => {
     try {
@@ -20,4 +22,10 @@ let tmqConnect = async (configMap: Map<string, string>) => {
     }  
 };
 
-export { sqlConnect, tmqConnect };
+let setLogLevel = (level: string) => {
+    logger.level = level
+    if (level == 'debug') {
+        logger.transports.push(new winston.transports.Console())
+    }
+};
+export { sqlConnect, tmqConnect, setLogLevel };

@@ -2,10 +2,11 @@ import { TDengineMeta, TaosResult } from '../common/taosResult';
 import { TaosResultError } from '../common/wsError';
 import { WSQueryResponse } from '../client/wsResponse';
 import { WsClient } from '../client/wsClient';
+import logger from '../common/log';
 
 export class WSRows {
     private _wsClient: WsClient;
-    private _wsQueryResponse: WSQueryResponse;
+    private readonly _wsQueryResponse: WSQueryResponse;
     private _taosResult: TaosResult;
     private _isClose : boolean;
     constructor(wsInterface: WsClient, resp: WSQueryResponse) {
@@ -16,8 +17,8 @@ export class WSRows {
     }
 
     async Next(): Promise<boolean> {
-        if (this._wsQueryResponse.is_update == true || this._isClose) {
-            console.log("WSRows::Next::End=>", this._taosResult, this._isClose)
+        if (this._wsQueryResponse.is_update || this._isClose) {
+            logger.debug("WSRows::Next::End=>", this._taosResult, this._isClose)
             return false;
         }
         
@@ -29,17 +30,17 @@ export class WSRows {
         }
 
         this._taosResult = await this.getBlockData();
-        if (this._taosResult.GetData() == null) {
-            return false;
+        if (this._taosResult.GetData()) {
+            return true;
         }
-        return true;
+        return false;
     }
 
     private async getBlockData():Promise<TaosResult> {
         try {
             let wsFetchResponse = await this._wsClient.fetch(this._wsQueryResponse);
-            console.log("[wsQuery.execute.wsFetchResponse]==>\n", wsFetchResponse)
-            if (wsFetchResponse.completed == true) {
+            logger.debug("[wsQuery.execute.wsFetchResponse]==>\n", wsFetchResponse)
+            if (wsFetchResponse.completed) {
                 this.Close();
                 this._taosResult.SetData(null);
             } else {
@@ -58,7 +59,7 @@ export class WSRows {
     }
 
     GetData(): Array<any> | undefined {
-        if (this._wsQueryResponse.is_update == true) {
+        if (this._wsQueryResponse.is_update) {
             return undefined; 
         }
 

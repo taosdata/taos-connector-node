@@ -4,10 +4,17 @@ export class WSConfig {
     private _db: string | undefined | null;
     private _url: string;
     private _timeout:number| undefined | null;
-
+    private _token:string | undefined | null;
 
     constructor(url:string) {
         this._url = url;
+    }
+
+    public GetToken(): string | undefined | null {
+        return this._token;
+    }
+    public SetToken(token: string) {
+        this._token = token;
     }
 
     public GetUser(): string | undefined | null {

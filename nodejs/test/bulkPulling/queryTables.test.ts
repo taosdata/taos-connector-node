@@ -2,8 +2,8 @@
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { createSTable, createSTableJSON, createTable, expectStableData, insertNTable, insertStable, jsonMeta, tableMeta, tagMeta } from "../utils";
-// const DSN = 'ws://root:taosdata@127.0.0.1:6041/ws'
-let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
+// const DSN = 'ws://root:taosdata@127.0.0.1:6041'
+let dsn = 'ws://root:taosdata@192.168.1.95:6041';
 let conf :WSConfig = new WSConfig(dsn)
 const table = 'ws_q_n';
 const stable = 'ws_q_s';
@@ -119,13 +119,13 @@ describe('ws.query(stable)', () => {
                 expect(meta.name).toBe(expectMeta[index].name)
                 expect(meta.type).toBe(expectMeta[index].type)
                 expect(meta.length).toBe(expectMeta[index].length)
-                ////   console.log(meta);
             })
 
             for (let i = 0; i < actualData.length; i++) {
                 actualData[i].forEach((d, index) => {
                     if (expectMeta[index].name == 'geo' || expectMeta[index].name == 'vbinary') {
                         expect(d).toBeTruthy()
+                        
                     } else {
                         expect(d).toBe(expectData[i][index])
                     }

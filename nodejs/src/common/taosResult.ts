@@ -2,6 +2,7 @@ import { WSFetchBlockResponse, WSQueryResponse } from "../client/wsResponse";
 import { ColumnsBlockType, TDengineTypeCode, TDengineTypeName } from './constant'
 import { ErrorCode, TaosResultError, WebSocketQueryInterFaceError } from "./wsError";
 import { AppendRune } from "./ut8Helper"
+import logger from "./log";
 
 export interface TDengineMeta {
     name: string,
@@ -61,7 +62,6 @@ export class TaosResult {
         this._timing = queryResponse.timing
         this._precision = queryResponse.precision
         this._totalTime = queryResponse.totalTime
-        // console.log(`typeof this.timing:${typeof this.timing}, typeof fetchResponse.timing:${typeof queryResponse.timing}`)
     }
 
     public SetRowsAndTime(rows: number, timing?:bigint) {
@@ -100,7 +100,7 @@ export class TaosResult {
     public GetTotalTime() {
         return this._totalTime;
     }
-    public  AddtotalTime(totalTime:number) {
+    public  AddTotalTime(totalTime:number) {
         this._totalTime += totalTime;
     }
 
@@ -136,9 +136,6 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
     let metaList = taosResult.GetTaosMeta()
     let dataList = taosResult.GetData()
     if (metaList && dataList) {
-        // console.log(typeof taosResult.timing)
-        // console.log(typeof blocks.timing)
-        // console.log(blocks.id)
         taosResult.SetTiming(blocks.timing) 
         const INT_32_SIZE = 4;
 
@@ -164,9 +161,6 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
             for (let j = 0; j < metaList.length; j++) {
 
                 let isVarType = _isVarType(metaList[j])
-                // console.log("== dataBuffer Length:" + dataBuffer.byteLength)
-                // console.log("== loop i:" + i + "J=" + j + "col:" + metaList[j].name + "type:" + metaList[j].type)
-                // console.log("== loop isVarType:" + isVarType);
                 if (isVarType == ColumnsBlockType.SOLID) {
 
                     colDataHead = colBlockHead + bitMapSize + metaList[j].length * i
@@ -174,11 +168,6 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
                     let byteArrayIndex = i >> 3;
                     let bitwiseOffset = 7 - (i & 7)
                     let bitMapArr = dataBuffer.slice(colBlockHead, colBlockHead + bitMapSize)
-                    // console.log("==i:" + i + "byteArrayIndex=" + byteArrayIndex)
-                    // console.log("== loop colblockhead:" + colBlockHead)
-                    // console.log("== loop bitmap:" + bitMapSize)
-                    // console.log("== loop bitMap length=" + bitMapArr.byteLength)
-                    // console.log("==loop bitMap bitwiseoffset:" + bitwiseOffset + "byteArrayIndex:" + byteArrayIndex)
                     let bitFlag = ((new DataView(bitMapArr).getUint8(byteArrayIndex)) & (1 << bitwiseOffset)) >> bitwiseOffset
 
                     if (bitFlag == 1) {
@@ -186,20 +175,18 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
                     } else {
                         row.push(readSolidData(dataBuffer, colDataHead, metaList[j]))
                     }
-                    // console.log("=====(new DataView(dataBuffer, INT_32_SIZE * j, INT_32_SIZE).getInt32(0))=" + (new DataView(dataBuffer, INT_32_SIZE * j, INT_32_SIZE).getInt32(0, true)));
+                    
                     colBlockHead = colBlockHead + bitMapSize + (new DataView(dataBuffer, INT_32_SIZE * j, INT_32_SIZE).getInt32(0, true))
 
                 } else {
                     // if null check
                     let varOffset = new DataView(dataBuffer, colBlockHead + (INT_32_SIZE * i), INT_32_SIZE).getInt32(0, true)
-                    // console.log("== var type offset:" + varOffset)
                     if (varOffset == -1) {
                         row.push("NULL")
                         colBlockHead = colBlockHead + INT_32_SIZE * rows + (new DataView(dataBuffer, j * INT_32_SIZE, INT_32_SIZE).getInt32(0, true))
                     } else {
                         colDataHead = colBlockHead + INT_32_SIZE * rows + varOffset
                         let dataLength = (new DataView(dataBuffer, colDataHead, 2).getInt16(0, true))
-                        // console.log("== loop var type length:" + dataLength, isVarType)
                         if (isVarType == ColumnsBlockType.VARCHAR) {
                             row.push(readVarchar(dataBuffer, colDataHead + 2, dataLength))
                         } else if(isVarType == ColumnsBlockType.GEOMETRY || isVarType == ColumnsBlockType.VARBINARY) {
@@ -356,7 +343,7 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             break;
         }
         default: {
-            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSPPORTED_TDENGINE_TYPE, `unspported type ${meta.type} for column ${meta.name}`)
+            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unspported type ${meta.type} for column ${meta.name}`)
         }
     }
     return result;
@@ -403,7 +390,7 @@ export function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta
             // could change 
         }
         default: {
-            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSPPORTED_TDENGINE_TYPE, `unspported type ${meta.type} for column ${meta.name}`)
+            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unspported type ${meta.type} for column ${meta.name}`)
         }
     }
 }
@@ -421,11 +408,9 @@ export function readVarchar(dataBuffer: ArrayBuffer, colDataHead: number, length
 }
 
 export function readNchar(dataBuffer: ArrayBuffer, colDataHead: number, length: number): string {
-    let decoder = new TextDecoder();
     let data = "";
     let buff: ArrayBuffer = dataBuffer.slice(colDataHead, colDataHead + length);
     for (let i = 0; i < length / 4; i++) {
-        // console.log("== readNchar data:" + new DataView(buff, i * 4, 4).getUint32(0, true))
         data += AppendRune(new DataView(buff, i * 4, 4).getUint32(0, true))
 
     }
@@ -436,7 +421,7 @@ export function readNchar(dataBuffer: ArrayBuffer, colDataHead: number, length: 
 function iteratorBuff(arr: ArrayBuffer) {
     let buf = Buffer.from(arr);
     for (const value of buf) {
-        console.log(value.toString())
+        logger.debug(value.toString())
     }
 
 }

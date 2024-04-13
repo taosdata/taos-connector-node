@@ -193,7 +193,7 @@ export class WsStmt {
                 this.lastAffected = resp.affected
             } 
             return
-        } catch (e:any) {
+        } catch (e: any) {
             throw new TaosResultError(e.code, e.message);
         }
     }

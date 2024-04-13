@@ -6,7 +6,7 @@ import { WsSql } from "../../src/sql/wsSql";
 
 
 beforeAll(async () => {
-    let dns = 'ws://192.168.1.95:6041/ws'  
+    let dns = 'ws://192.168.1.95:6041'  
     let conf :WSConfig = new WSConfig(dns)
     conf.SetUser('root')
     conf.SetPwd('taosdata')
@@ -25,7 +25,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
     let jsonData = "{\"metric\": \"meter_current\",\"timestamp\": 1626846400,\"value\": 10.3, \"tags\": {\"groupid\": 2, \"location\": \"California.SanFrancisco\", \"id\": \"d1001\"}}"
 
     test('normal connect', async() => {
-        let dns = 'ws://192.168.1.95:6041/ws'
+        let dns = 'ws://192.168.1.95:6041'
         let conf :WSConfig = new WSConfig(dns)
         conf.SetUser('root')
         conf.SetPwd('taosdata')
@@ -39,7 +39,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
         expect.assertions(1)
         let wsSchemaless = null;
         try {
-            let dns = 'ws://192.168.1.95:6041/ws'
+            let dns = 'ws://192.168.1.95:6041'
             let conf :WSConfig = new WSConfig(dns)
             conf.SetUser('root')
             conf.SetPwd('taosdata')
@@ -56,7 +56,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
     })
 
     test('normal insert', async() => {
-        let dns = 'ws://192.168.1.95:6041/ws'
+        let dns = 'ws://192.168.1.95:6041'
         let conf :WSConfig = new WSConfig(dns)
         conf.SetUser('root')
         conf.SetPwd('taosdata')
@@ -70,7 +70,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
     });
 
     test('normal wsSql insert', async() => {
-        let dns = 'ws://192.168.1.95:6041/ws'
+        let dns = 'ws://192.168.1.95:6041'
         let conf :WSConfig = new WSConfig(dns)
         conf.SetUser('root')
         conf.SetPwd('taosdata')
@@ -81,11 +81,12 @@ describe('TDWebSocket.WsSchemaless()', () => {
         await wsSchemaless.SchemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NANO_SECONDS, 0);
         await wsSchemaless.SchemalessInsert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.SECONDS, 0);
         await wsSchemaless.SchemalessInsert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, Precision.SECONDS, 0);
+        
         wsSchemaless.Close();
     });
 
     test('SchemalessProto error', async() => {
-        let dns = 'ws://192.168.1.95:6041/ws'
+        let dns = 'ws://192.168.1.95:6041'
         let conf :WSConfig = new WSConfig(dns)
         conf.SetUser('root')
         conf.SetPwd('taosdata')

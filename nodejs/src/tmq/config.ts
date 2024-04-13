@@ -6,7 +6,7 @@ export class TmqConfig {
     user: string;
     password: string;
     group_id: string;
-    clien_id: string;
+    client_id: string;
     offset_rest: string;
     topics?: Array<string>;
     auto_commit: boolean;
@@ -19,7 +19,7 @@ export class TmqConfig {
         this.user = wsConfig.get(TMQConstants.CONNECT_USER);
         this.password = wsConfig.get(TMQConstants.CONNECT_PASS);
         this.group_id = wsConfig.get(TMQConstants.GROUP_ID);
-        this.clien_id = wsConfig.get(TMQConstants.CLIENT_ID);
+        this.client_id = wsConfig.get(TMQConstants.CLIENT_ID);
         this.offset_rest = wsConfig.get(TMQConstants.AUTO_OFFSET_RESET);
         this.auto_commit = wsConfig.get(TMQConstants.ENABLE_AUTO_COMMIT);
         
@@ -49,6 +49,7 @@ export class TmqConfig {
             }else{
                 this.password = this.url.password;
             }
+            this.url.pathname = '/rest/tmq'
         }
 
     }     

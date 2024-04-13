@@ -96,9 +96,6 @@ export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindT
         headOffset += 5
     }
 
-    // console.log('bindParams.GetDataTotalLen -->', new Uint8Array(arrayBuffer))
-
-    // throw new TaosResultError(ErrorCode.ERR_INVALID_FETCH_MESSAGE_DATA, `test`)
     return arrayBuffer;
 
 }

@@ -1,5 +1,3 @@
-//  resp: {"code":0,"message":"","action":"poll","req_id":3,"have_message":true,"topic":"test_tmq_ws_topic","database":"test_ws_tmq","vgroup_id":6,"message_id":1}
-
 import { WSQueryResponse } from "../client/wsResponse";
 import { ColumnsBlockType, TDengineTypeLength } from "../common/constant";
 import { MessageResp, TaosResult, _isVarType, readBinary, readNchar, readSolidDataToArray, readVarchar } from "../common/taosResult";
@@ -150,7 +148,7 @@ export class PartitionsResp{
     
 }
 
-export class CommitedResp extends PartitionsResp {
+export class CommittedResp extends PartitionsResp {
     constructor(resp:MessageResp) {
         super(resp);
         this.positions = resp.msg.committed

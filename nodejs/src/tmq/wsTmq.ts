@@ -3,8 +3,9 @@ import { TMQConstants, TMQMessageType } from './constant';
 import { WsClient } from '../client/wsClient';
 import { TaosResult } from '../common/taosResult';
 import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/wsError';
-import { AssignmentResp, CommitedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockResponse, WsPollResponse, WsTmqQueryResponse, parseTmqBlock} from './tmqResponse';
+import { AssignmentResp, CommittedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockResponse, WsPollResponse, WsTmqQueryResponse, parseTmqBlock} from './tmqResponse';
 import { ReqId } from '../common/reqid';
+import logger from '../common/log';
 
 export class WsConsumer {
     private _wsClient: WsClient;
@@ -13,7 +14,7 @@ export class WsConsumer {
     private _commitTime?:number;
     private constructor(wsConfig:Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig)
-        console.log(this._wsConfig)
+        logger.debug(this._wsConfig)
         this._wsClient = new WsClient(this._wsConfig.url, this._wsConfig.timeout);
     }
 
@@ -51,7 +52,7 @@ export class WsConsumer {
                 user      :this._wsConfig.user,
                 password  :this._wsConfig.password,
                 group_id  :this._wsConfig.group_id,
-                clien_id  :this._wsConfig.clien_id,
+                client_id  :this._wsConfig.client_id,
                 topics    :topics,
                 offset_rest:this._wsConfig.offset_rest,
                 auto_commit:this._wsConfig.auto_commit,
@@ -165,7 +166,7 @@ export class WsConsumer {
         })
     }
 
-    Commited(partitions:Array<TopicPartition>, reqId?:number):Promise<Array<TopicPartition>>{
+    Committed(partitions:Array<TopicPartition>, reqId?:number):Promise<Array<TopicPartition>>{
         if (!partitions || partitions.length == 0 ) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsTmq Positions params is error!');
         }
@@ -189,7 +190,7 @@ export class WsConsumer {
             };
             try {
                 let resp = await this.executeReturnAny(JSON.stringify(queryMsg));
-                resolve(new CommitedResp(resp).SetTopicPartitions(offsets)) 
+                resolve(new CommittedResp(resp).SetTopicPartitions(offsets)) 
             } catch (e:any) {
                 reject(new TaosResultError(e.code, e.message));
             }
@@ -209,7 +210,7 @@ export class WsConsumer {
                     allp.push(this.CommitOffset(e))         
                 })
                 await Promise.all(allp)
-                resolve(await this.Commited(partitions))     
+                resolve(await this.Committed(partitions))     
             }catch(e:any) {
                 reject(new TaosResultError(e.code, e.message));
             }
@@ -319,7 +320,7 @@ export class WsConsumer {
         try {
             return await this._wsClient.exec(queryMsg, false);
         } catch (e:any) {
-            console.log(e);
+            logger.error(e);
             throw new TaosResultError(e.code, e.message);
         }
     }
@@ -379,17 +380,12 @@ export class WsConsumer {
                 var taosResults: Map<string, TaosResult> = new Map();
                 let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
                 let pollResp = new WsPollResponse(resp)
-                if (pollResp.have_message == false || pollResp.message_type != TMQMessageType.ResDataType) {
+                if (!pollResp.have_message || pollResp.message_type != TMQMessageType.ResDataType) {
                     resolve(taosResults);
                 } else {        
-                    // let count = 0
-                    // let startTime = new Date().getTime();
                     while (true) {
-                        // count++
                         let fetchResp = await this.fetch(pollResp)
                         if (fetchResp.completed || fetchResp.rows == 0) {
-                            let currTime = new Date().getTime();
-                            // console.log("----------count-->", count, Math.abs(currTime - startTime))
                             break;
                         }
                         let taosResult = taosResults.get(pollResp.topic + pollResp.vgroup_id)
@@ -406,7 +402,7 @@ export class WsConsumer {
                     resolve(taosResults);
                 }
             } catch (e :any) {
-                console.log(e);
+                logger.error(e);
                 reject(new TaosResultError(e.code, e.message));
             }
         })

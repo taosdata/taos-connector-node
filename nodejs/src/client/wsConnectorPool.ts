@@ -1,13 +1,14 @@
 import { Mutex } from "async-mutex";
 import { WebSocketConnector } from "./wsConnector";
 import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
+import logger from "../common/log";
 
 const mutex = new Mutex();
 export class WebSocketConnectionPool {
     private static _instance?:WebSocketConnectionPool;
     private pool: Map<string, WebSocketConnector[]> = new Map();
-    private  _connectionCount: number;
-    private  _maxConnections: number;
+    private _connectionCount: number;
+    private readonly _maxConnections: number;
     private constructor(maxConnections: number = -1) {
         this._maxConnections = maxConnections;
         this._connectionCount = 0;
@@ -35,11 +36,11 @@ export class WebSocketConnectionPool {
             }  
 
             if (connector) {
-                console.log("get connection success:", this._connectionCount)
+                logger.debug("get connection success:", this._connectionCount)
                 return connector;
             }
             if (this._maxConnections != -1 && this._connectionCount > this._maxConnections) {
-                throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT, "websocket connect arrived limite:" + this._connectionCount)
+                throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT, "websocket connect arrived limited:" + this._connectionCount)
             }
             
             this._connectionCount++
@@ -83,7 +84,7 @@ export class WebSocketConnectionPool {
                 }
             }
         }
-        console.log("destroyed connect:" + this._connectionCount)
+        logger.debug("destroyed connect:" + this._connectionCount)
         this._connectionCount = 0
         this.pool = new Map()
     }
@@ -91,20 +92,18 @@ export class WebSocketConnectionPool {
 
 
 process.on('beforeExit', (code) => {
-    console.log("begin destroy connect")
+    logger.info("begin destroy connect")
     WebSocketConnectionPool.Instance().Destroyed()
 });
 
 process.on('SIGINT', () => {
-    console.log('Received SIGINT. Press Control-D to exit.');
-    console.log("begin destroy connect")
+    logger.info('Received SIGINT. Press Control-D to exit, begin destroy connect...');
     WebSocketConnectionPool.Instance().Destroyed()
     process.exit()
 });
 
 process.on('SIGTERM', () => {
-    console.log('Received SIGINT. Press Control-D to exit.');
-    console.log("begin destroy connect")
+    console.log('Received SIGINT. Press Control-D to exit, begin destroy connect');
     WebSocketConnectionPool.Instance().Destroyed()
     process.exit()
 });

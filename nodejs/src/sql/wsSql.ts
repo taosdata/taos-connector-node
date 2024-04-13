@@ -9,6 +9,7 @@ import { Precision, SchemalessMessageInfo, SchemalessProto } from './wsProto'
 import { WsStmt } from '../stmt/wsStmt'
 import { ReqId } from '../common/reqid'
 import { PrecisionLength } from '../common/constant'
+import logger from '../common/log'
  
 export class WsSql{
     private wsConfig:WSConfig;
@@ -92,7 +93,7 @@ export class WsSql{
                     let wsStmt = await WsStmt.NewStmt(this._wsClient, precision, reqId);
                     resolve(wsStmt);
                 } catch(e) {
-                    console.log(e)
+                    logger.error(e)
                     reject(e);
                 }
             }else{
@@ -119,30 +120,27 @@ export class WsSql{
         try {
             let wsQueryResponse:WSQueryResponse = await this._wsClient.exec(this.getSql(sql, reqId, action));
             let taosResult = new TaosResult(wsQueryResponse);
-            if (wsQueryResponse.is_update == true) {
+            if (wsQueryResponse.is_update) {
                 return taosResult;
             } else {
                 try{
                     while (true) {
                         let wsFetchResponse = await this._wsClient.fetch(wsQueryResponse)
-                        if (wsFetchResponse.completed == true) {
+                        if (wsFetchResponse.completed) {
                             break;
                         } else {
                             taosResult.SetRowsAndTime(wsFetchResponse.rows, wsFetchResponse.timing);
-                            let tmp: TaosResult = await this._wsClient.fetchBlock(wsFetchResponse, taosResult);
-                            taosResult = tmp;
+                            taosResult = await this._wsClient.fetchBlock(wsFetchResponse, taosResult);
                         }
                     }
                     return taosResult;                    
-                } catch(e){
-                    let err :any = e
+                } catch(err: any){
                     throw new TaosResultError(err.code, err.message);
                 } finally {
                     this._wsClient.freeResult(wsQueryResponse)
                 }
             }
-        } catch(e) {
-            let err :any = e
+        } catch(err: any) {
             throw new TaosResultError(err.code, err.message);
         }
     }
@@ -163,8 +161,7 @@ export class WsSql{
         try {
             let wsQueryResponse:WSQueryResponse = await this._wsClient.exec(this.getSql(sql, reqId));
             return new WSRows(this._wsClient, wsQueryResponse);
-        } catch (e) {
-            let err :any = e
+        } catch (err: any) {
             throw new TaosResultError(err.code, err.message);
         }
         

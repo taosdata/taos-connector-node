@@ -59,8 +59,8 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: test typescript-rest
-      working-directory: node-taos/typescript-rest
+    - name: test nodejs websocket
+      working-directory: nodejs
       run: |
         ls -al
         npm install

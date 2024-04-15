@@ -5,9 +5,11 @@ nodejs/dist/
 nodejs/node_modules/
 nodejs/tsc/
 nodejs/coverage/
+nodejs/logs/
 .DS_Store
 nodejs/*.log
 .idea
 node_modules/
 npminstall-debug.log
 .vscode/
+

@@ -1,6 +1,3 @@
-
-require('qingwa')();
-
 import { WSConfig } from '../src/common/config';
 import { sqlConnect } from '../index'
 
@@ -55,5 +52,6 @@ let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
         if (wsSql) {
             wsSql.Close();
         }
+        console.log("finish!")
     }
 })();

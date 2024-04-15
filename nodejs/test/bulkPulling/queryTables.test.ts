@@ -1,10 +1,23 @@
 
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { createSTable, createSTableJSON, createTable, expectStableData, insertNTable, insertStable, jsonMeta, tableMeta, tagMeta } from "../utils";
+import { compareUint8Arrays, createSTable, createSTableJSON, createTable, expectStableData, hexToBytes, insertNTable, insertStable, jsonMeta, tableMeta, tagMeta } from "../utils";
 // const DSN = 'ws://root:taosdata@127.0.0.1:6041'
 let dsn = 'ws://root:taosdata@192.168.1.95:6041';
 let conf :WSConfig = new WSConfig(dsn)
+const resultMap:Map<string, any> = new Map();
+resultMap.set("POINT (4.0 8.0)", hexToBytes("010100000000000000000010400000000000002040"));
+resultMap.set("POINT (3.0 5.0)", hexToBytes("010100000000000000000008400000000000001440"));
+resultMap.set("LINESTRING (1.000000 1.000000, 2.000000 2.000000, 5.000000 5.000000)", 
+    hexToBytes("010200000003000000000000000000f03f000000000000f03f0000000000000040000000000000004000000000000014400000000000001440"));
+resultMap.set("POLYGON ((3.000000 6.000000, 5.000000 6.000000, 5.000000 8.000000, 3.000000 8.000000, 3.000000 6.000000))", 
+    hexToBytes("010300000001000000050000000000000000000840000000000000184000000000000014400000000000001840000000000000144000000000000020400000000000000840000000000000204000000000000008400000000000001840"));
+resultMap.set("POINT (7.0 9.0)", hexToBytes("01010000000000000000001c400000000000002240"));
+resultMap.set("0x7661726332", hexToBytes("307837363631373236333332"));
+resultMap.set("0x7661726333", hexToBytes("307837363631373236333333"));
+resultMap.set("0x7661726334", hexToBytes("307837363631373236333334"));
+resultMap.set("0x7661726335", hexToBytes("307837363631373236333335"));
+
 const table = 'ws_q_n';
 const stable = 'ws_q_s';
 const tableCN = 'ws_q_n_cn';
@@ -85,7 +98,13 @@ describe('ws.query(stable)', () => {
                 actualData[i].forEach((d, index) => {
                     // //   console.log(i, index, d, expectData[i][index])
                     if (expectMeta[index].name == 'geo' || expectMeta[index].name == 'vbinary') {
-                        expect(d).toBeTruthy()
+                        let buffer:ArrayBuffer = resultMap.get(expectData[i][index])
+                        if (buffer) {
+                            let dbData :ArrayBuffer  = d
+                            console.log(i, index, dbData, expectData[i][index], buffer, compareUint8Arrays(new Uint8Array(dbData), new Uint8Array(buffer)))
+                            expect(compareUint8Arrays(new Uint8Array(dbData), new Uint8Array(buffer))).toBe(true)
+                        }
+
                     } else {
                         expect(d).toBe(expectData[i][index])
                     }
@@ -124,8 +143,13 @@ describe('ws.query(stable)', () => {
             for (let i = 0; i < actualData.length; i++) {
                 actualData[i].forEach((d, index) => {
                     if (expectMeta[index].name == 'geo' || expectMeta[index].name == 'vbinary') {
-                        expect(d).toBeTruthy()
-                        
+                        let buffer:ArrayBuffer = resultMap.get(expectData[i][index])
+                        if (buffer) {
+                            let dbData :ArrayBuffer  = d
+                            console.log(i, index, dbData, expectData[i][index], buffer, compareUint8Arrays(new Uint8Array(dbData), new Uint8Array(buffer)))
+                            expect(compareUint8Arrays(new Uint8Array(dbData), new Uint8Array(buffer))).toBe(true)
+                        }
+
                     } else {
                         expect(d).toBe(expectData[i][index])
                     }
@@ -294,5 +318,7 @@ describe('ws.query(jsonTable)', () => {
     })
 
 })
+
+
 
 //--detectOpenHandles --maxConcurrency=1 --forceExit

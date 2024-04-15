@@ -14,8 +14,6 @@
     "test": "jest --coverage",
     "example": "tsc && node dist/example/basicSql.js",
     "build": "tsc",
-    "watch": "parcel watch",
-    "prepare": "parcel build",
     "prepublish": "npm run build"
   },
   "repository": {

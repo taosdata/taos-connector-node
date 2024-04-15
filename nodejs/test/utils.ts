@@ -274,14 +274,14 @@ export function expectStableData(rows: Array<Array<any>>, tags: Array<any>): Arr
     return resArr;
 }
 
-function hexToBytes(hex: string): ArrayBuffer {
+export function hexToBytes(hex: string): ArrayBuffer {
     let byteLen = hex.length / 2;
-    let a = new Uint16Array(byteLen)    
+    let a = new Uint8Array(byteLen)    
     for (let i = 0, count = 0; i < hex.length; i += 2, count++) {
       let item  = parseInt(hex.slice(i, i+2), 16);
       a[count] = item
-      console.log(item, a[count])
     }
+    console.log(hex, "===>", a.buffer)
     return a.buffer
 }
 
@@ -305,11 +305,14 @@ export function createStmtData(varbinary:string = "ab",
 }
 
 export function compareUint8Arrays(arr1: Uint8Array, arr2: Uint8Array): boolean {  
+    console.log(arr1,"!==", arr2)
     if (arr1.length !== arr2.length) {  
+        console.log(arr1.length,"!==", arr2.length) 
         return false; 
     }  
     for (let i = 0; i < arr1.length; i++) {  
-        if (arr1[i] !== arr2[i]) {  
+        if (arr1[i] !== arr2[i]) { 
+            console.log(arr1[i],"!==", arr2[i]) 
             return false;   
         }  
     }  

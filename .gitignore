@@ -12,4 +12,6 @@ nodejs/*.log
 node_modules/
 npminstall-debug.log
 .vscode/
+package-lock.json
+nodejs/package-lock.json
 

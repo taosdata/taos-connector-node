@@ -1,7 +1,7 @@
 import { WSConfig } from '../src/common/config';
 import { sqlConnect } from '../index'
 
-let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+let dsn = 'ws://root:taosdata@localhost:6041';
 (async () => {
     let wsSql = null;
     let wsRows = null;

@@ -20,7 +20,7 @@ let configMap = new Map([
     [TMQConstants.CONNECT_PASS, "taosdata"],
     [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
     [TMQConstants.CLIENT_ID, 'test_tmq_client'],
-    [TMQConstants.WS_URL, 'ws://192.168.1.95:6041/rest/tmq'],
+    [TMQConstants.WS_URL, 'ws://localhost:6041'],
     [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
     [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
 ]);
@@ -31,7 +31,7 @@ let createTopic = `create topic if not exists ${topics[0]} as select * from ${db
 let stmtIds:number[] = []
 
 async function connect() {
-    let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
+    let dsn = 'ws://root:taosdata@localhost:6041';
     let wsSql = null;
     let conf :WSConfig = new WSConfig(dsn)
     conf.SetDb('power')
@@ -42,7 +42,7 @@ async function connect() {
 }
 
 async function stmtConnect() {
-    let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
+    let dsn = 'ws://root:taosdata@localhost:6041';
     let wsConf = new WSConfig(dsn);
     wsConf.SetDb('power')
     // let connector = WsStmtConnect.NewConnector(wsConf) 
@@ -106,7 +106,7 @@ async function tmqConnect() {
 }
 
 beforeAll(async () => {
-    let dsn = 'ws://root:taosdata@192.168.1.95:6041/ws';
+    let dsn = 'ws://root:taosdata@localhost:6041';
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.Open(conf);
     await ws.Exec(createTopic, ReqId.getReqID());

@@ -13,7 +13,7 @@ let multi = [
 ];
 
 async function Prepare() {
-    let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+    let dsn = 'ws://root:taosdata@localhost:6041';
     let conf :WSConfig = new WSConfig(dsn)
     let wsSql = await sqlConnect(conf)
     await wsSql.Exec(`create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`)
@@ -26,7 +26,7 @@ async function Prepare() {
     let connector = null;
     try {
         await Prepare();
-        let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+        let dsn = 'ws://root:taosdata@localhost:6041';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
         connector = await sqlConnect(wsConf);

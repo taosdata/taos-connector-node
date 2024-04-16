@@ -2,7 +2,7 @@ import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 
 beforeAll(async () => {
-    let dns = 'ws://192.168.1.95:6041'
+    let dns = 'ws://localhost:6041'
     let conf :WSConfig = new WSConfig(dns)
     conf.SetUser('root')
     conf.SetPwd('taosdata')
@@ -16,7 +16,7 @@ beforeAll(async () => {
 describe('TDWebSocket.WsSql()', () => {
     jest.setTimeout(20 * 1000)
     test('normal connect', async() => {
-        let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+        let dsn = 'ws://root:taosdata@localhost:6041';
         let wsSql = null;
         let conf :WSConfig = new WSConfig(dsn)
         conf.SetDb('power')
@@ -29,7 +29,7 @@ describe('TDWebSocket.WsSql()', () => {
         expect.assertions(1)
         let wsSql = null;
         try {
-            let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+            let dsn = 'ws://root:taosdata@localhost:6041';
             let conf :WSConfig = new WSConfig(dsn)
             conf.SetDb('jest')
             wsSql = await WsSql.Open(conf)
@@ -43,7 +43,7 @@ describe('TDWebSocket.WsSql()', () => {
         }
     })
     test('get taosc version', async() => {  
-        let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+        let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
         let wsSql = await WsSql.Open(conf)
         let version = await wsSql.Version()
@@ -53,7 +53,7 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('show databases', async()=>{
-        let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+        let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
         let wsSql = await WsSql.Open(conf)
         let taosResult = await wsSql.Exec('show databases')
@@ -63,7 +63,7 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('create databases', async()=>{
-        let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+        let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
         let wsSql = await WsSql.Open(conf)
         let taosResult = await wsSql.Exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;')
@@ -73,7 +73,7 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('create stable', async()=>{
-        let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+        let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
         let wsSql = await WsSql.Open(conf)
         let taosResult = await wsSql.Exec('use power')
@@ -87,7 +87,7 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('insert recoder', async()=>{
-        let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+        let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
         let wsSql = await WsSql.Open(conf)
         let taosResult = await wsSql.Exec('use power')
@@ -104,7 +104,7 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('query sql', async()=>{
-        let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+        let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
         let wsSql = await WsSql.Open(conf)
         let taosResult = await wsSql.Exec('use power')

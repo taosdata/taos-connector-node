@@ -233,7 +233,7 @@ A complete DSN string example：
 ```TypeScript
 import { WSConfig } from '../src/common/config';
 import { sqlConnect } from '../index'
-let dsn = 'ws://root:taosdata@127.0.0.1:6041/ws';
+let dsn = 'ws://root:taosdata@127.0.0.1:6041';
 (async () => {
     let wsSql = null;
     try {
@@ -360,7 +360,7 @@ let multi = [
     let connector = null;
     try {
         await Prepare();
-        let dsn = 'ws://root:taosdata@127.0.0.1:6041/ws';
+        let dsn = 'ws://root:taosdata@127.0.0.1:6041';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
         connector = await sqlConnect(wsConf);
@@ -404,7 +404,7 @@ import { Precision, SchemalessProto } from '../src/sql/wsProto';
 import { sqlConnect } from '../index';
 
 let db = 'power'
-let dsn = 'ws://root:taosdata@127.0.0.1:6041/ws';
+let dsn = 'ws://root:taosdata@127.0.0.1:6041';
 let influxdbData = "st,t1=3i64,t2=4f64,t3=\"t3\" c1=3i64,c3=L\"passit\",c2=false,c4=4f64 1626006833639000000";
 let telnetData = "stb0_0 1626006833 4 host=host0 interface=eth0";
 let jsonData = "{\"metric\": \"meter_current\",\"timestamp\": 1626846400,\"value\": 10.3, \"tags\": {\"groupid\": 2, \"location\": \"California.SanFrancisco\", \"id\": \"d1001\"}}";
@@ -444,7 +444,7 @@ create subscriptions
 
 ```TypeScript
     let createTopic = `create topic if not exists pwer_meters_topic as select * from power.meters`
-    let dsn = 'ws://root:taosdata@127.0.0.1:6041/ws';
+    let dsn = 'ws://root:taosdata@127.0.0.1:6041';
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await sqlConnect(conf);
     await ws.Exec(createTopic);
@@ -466,7 +466,7 @@ Create Consumer and Subscribe topic
         [TMQConstants.CONNECT_PASS, "taosdata"],
         [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
         [TMQConstants.CLIENT_ID, 'test_tmq_client'],
-        [TMQConstants.WS_URL, 'ws://127.0.0.1:6041/rest/tmq'],
+        [TMQConstants.WS_URL, 'ws://127.0.0.1:6041'],
         [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
         [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
     ]);
@@ -495,13 +495,13 @@ let configMap = new Map([
     [TMQConstants.CONNECT_PASS, "taosdata"],
     [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
     [TMQConstants.CLIENT_ID, 'test_tmq_client'],
-    [TMQConstants.WS_URL, 'ws://127.0.0.1:6041/rest/tmq'],
+    [TMQConstants.WS_URL, 'ws://127.0.0.1:6041'],
     [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
     [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
 ]);
 
 async function Prepare() {
-    let dsn = 'ws://root:taosdata@192.168.1.95:6051/ws';
+    let dsn = 'ws://root:taosdata@localhost:6041';
     let conf :WSConfig = new WSConfig(dsn)
     const createDB = `create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`
     const createStable = `CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`

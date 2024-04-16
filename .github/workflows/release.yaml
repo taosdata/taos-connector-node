@@ -60,7 +60,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
 
     - name: test nodejs websocket
-      working-directory: nodejs
+      working-directory: node-taos/nodejs
       run: |
         ls -al
         npm install

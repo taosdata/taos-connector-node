@@ -30,7 +30,7 @@ jobs:
           fetch-depth: 1
           repository: 'taosdata/TDengine'
           path: 'TDengine'
-          ref: '3.0'
+          ref: 'main'
           submodules: 'recursive'
 
     - name: install TDengine

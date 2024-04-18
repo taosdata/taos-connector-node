@@ -93,7 +93,8 @@ describe('TDWebSocket.Tmq()', () => {
             consumer = await WsConsumer.NewConsumer(errConfigMap);
             await consumer.Subscribe(topics);
         }catch(e :any){
-            expect(e.message).toMatch('new consumer return nil')
+            console.log(e)
+            expect(e.code).toBe(65535)
         }finally{
             if(consumer) {
                await consumer.Close()

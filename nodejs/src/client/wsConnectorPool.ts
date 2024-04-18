@@ -1,0 +1,118 @@
+import { Mutex } from "async-mutex";
+import { WebSocketConnector } from "./wsConnector";
+import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
+import logger from "../common/log";
+
+const mutex = new Mutex();
+export class WebSocketConnectionPool {
+    private static _instance?:WebSocketConnectionPool;
+    private pool: Map<string, WebSocketConnector[]> = new Map();
+    private _connectionCount: number;
+    private readonly _maxConnections: number;
+    private constructor(maxConnections: number = -1) {
+        this._maxConnections = maxConnections;
+        this._connectionCount = 0;
+    }
+
+    public static Instance(maxConnections: number = -1):WebSocketConnectionPool {
+        if (!WebSocketConnectionPool._instance) {
+            WebSocketConnectionPool._instance = new WebSocketConnectionPool(maxConnections);
+        }
+        return WebSocketConnectionPool._instance;
+    }
+
+    async getConnection(url:URL, timeout: number | undefined | null): Promise<WebSocketConnector> {
+        let connectAddr = url.origin.concat(url.pathname).concat(url.search)
+        let connector:WebSocketConnector | undefined;
+        const unlock = await mutex.acquire()
+        try {
+            if (this.pool.has(connectAddr)) {
+                let connectors = this.pool.get(connectAddr);
+                if (connectors) {
+                    if (connectors.length > 0) {
+                        connector = connectors.pop();
+                    }
+                }
+            }  
+
+            if (connector) {
+                logger.debug("get connection success:", this._connectionCount)
+                return connector;
+            }
+            if (this._maxConnections != -1 && this._connectionCount > this._maxConnections) {
+                throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT, "websocket connect arrived limited:" + this._connectionCount)
+            }
+            
+            this._connectionCount++
+            return new WebSocketConnector(url, timeout);          
+        }finally{
+            unlock()
+        }
+    }
+
+    async releaseConnection(connector: WebSocketConnector):Promise<void> {
+        if (connector) {
+            const unlock = await mutex.acquire();
+            try {
+                if (connector.readyState() > 0) {
+                    let url = connector.getWsURL();
+                    let connectAddr = url.origin.concat(url.pathname).concat(url.search)   
+                    let connectors = this.pool.get(connectAddr);
+                    if (!connectors) {
+                        connectors = new Array();
+                        connectors.push(connector);
+                        this.pool.set(connectAddr, connectors); 
+
+                    } else {
+                        connectors.push(connector);
+                    }                    
+                } else {
+                    this._connectionCount--;
+                    connector.close()
+                }
+            } finally {
+                unlock();
+            }
+        }
+    }
+
+    Destroyed() {
+        if (this.pool) {
+            for (let values of this.pool.values()) {
+                for (let i in values ) {
+                    values.pop()?.close();
+                }
+            }
+        }
+        logger.info("destroyed connect:" + this._connectionCount)
+        this._connectionCount = 0
+        this.pool = new Map()
+    }
+}
+
+
+// process.on('beforeExit', (code) => {
+//     console.log("begin destroy connect")
+//     WebSocketConnectionPool.Instance().Destroyed()
+//     process.exit()
+// });
+
+process.on('SIGINT', () => {
+    console.log('Received SIGINT. Press Control-D to exit, begin destroy connect...');
+    WebSocketConnectionPool.Instance().Destroyed()
+    process.exit()
+});
+
+process.on('SIGTERM', () => {
+    console.log('Received SIGINT. Press Control-D to exit, begin destroy connect');
+    WebSocketConnectionPool.Instance().Destroyed()
+    process.exit()
+});
+
+
+process.on('unhandledRejection', (reason, promise) => {  
+    console.error('未处理的 Promise 拒绝:', promise, '原因:', reason);  
+    // 这里你可以记录日志、抛出错误或执行其他操作  
+    // 注意：通常不建议在这里简单地抛出错误，因为这可能会中断你的应用程序  
+});
+// process.kill(process.pid, 'SIGINT');

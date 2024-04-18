@@ -1,6 +1,6 @@
 require('qingwa')();
 import { WSConfig } from '../src/common/config';
-import { sqlConnect } from '../index';
+import { connectorDestroy, sqlConnect } from '../index';
 
 let db = 'power'
 let stable = 'meters'
@@ -11,9 +11,9 @@ let multi = [
     [292, 293, 294],
     [0.32, 0.33, 0.34],
 ];
-
+let dsn = 'ws://root:taosdata@localhost:6041';
 async function Prepare() {
-    let dsn = 'ws://root:taosdata@localhost:6041';
+    
     let conf :WSConfig = new WSConfig(dsn)
     let wsSql = await sqlConnect(conf)
     await wsSql.Exec(`create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`)
@@ -26,12 +26,11 @@ async function Prepare() {
     let connector = null;
     try {
         await Prepare();
-        let dsn = 'ws://root:taosdata@localhost:6041';
         let wsConf = new WSConfig(dsn);
         wsConf.SetDb(db)
         connector = await sqlConnect(wsConf);
         stmt = await connector.StmtInit()
-        await stmt.Prepare(`INSERT INTO ? USING ${db}.${stable} TAGS (?, ?) VALUES (?, ?, ?, ?)`);
+        await stmt.Prepare(`INSERT INTO ? USING ${db}.${stable} (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)`);
         await stmt.SetTableName('d1001');
         
         let tagParams = stmt.NewStmtParam()
@@ -51,10 +50,11 @@ async function Prepare() {
         console.error(e);
     }finally {
         if (stmt) {
-            stmt.Close();
+            await stmt.Close();
         }
         if (connector) {
-            connector.Close();
+            await connector.Close();
         }
+        connectorDestroy()
     }
 })();

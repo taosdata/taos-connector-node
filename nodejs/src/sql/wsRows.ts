@@ -72,12 +72,12 @@ export class WSRows {
         return undefined;
     }
 
-    Close() {
+    async Close():Promise<void> {
         if (this._isClose) {
             return
         }
         this._isClose = true
-        this._wsClient.freeResult(this._wsQueryResponse)
+        await this._wsClient.freeResult(this._wsQueryResponse)
     }
 
 }

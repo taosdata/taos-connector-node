@@ -4,6 +4,7 @@ import { WsConsumer } from "../../src/tmq/wsTmq";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { createSTable, insertStable } from "../utils";
+import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 const stable = 'st';
 const db = 'ws_tmq_test'
 const topics:string[] = ['topic_ws_bean']
@@ -51,7 +52,7 @@ beforeAll(async () => {
     let insertRes = await ws.Exec(insert)
     insert = insertStable(tableCNValues, stableTags, stable)
     insertRes = await ws.Exec(insert)
-    ws.Close()
+    await ws.Close()
 })
 
 
@@ -94,7 +95,7 @@ describe('TDWebSocket.Tmq()', () => {
             expect(e.message).toMatch('fail')
         }finally{
             if(consumer) {
-                consumer.Close()
+               await consumer.Close()
             }
         }
     })
@@ -148,7 +149,7 @@ describe('TDWebSocket.Tmq()', () => {
         assignment = await consumer.Committed(assignment)
         console.log(assignment)
         await consumer.Unsubscribe()
-        consumer.Close();
+        await consumer.Close();
         console.log("------------->", useTime)
         console.log("------------->", counts)
         expect(counts).toEqual([10, 10])
@@ -161,7 +162,7 @@ describe('TDWebSocket.Tmq()', () => {
         }catch(e:any) {
             expect(e.message).toMatch("Topic not exist");
         }
-        consumer.Close();
+        await consumer.Close();
     });
 
     test('normal seek', async() => {
@@ -180,7 +181,11 @@ describe('TDWebSocket.Tmq()', () => {
         }
         
         await consumer.Unsubscribe()
-        consumer.Close();
+        await consumer.Close();
     });
 
+})
+
+afterAll(async () => {
+    WebSocketConnectionPool.Instance().Destroyed()
 })

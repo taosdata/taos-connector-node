@@ -1,6 +1,6 @@
 import { WSConfig } from "../src/common/config";
 import { TMQConstants } from "../src/tmq/constant";
-import { sqlConnect, tmqConnect } from "../index";
+import { connectorDestroy, sqlConnect, tmqConnect } from "../index";
 
 
 const stable = 'meters';
@@ -17,9 +17,8 @@ let configMap = new Map([
     [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
     [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
 ]);
-
+let dsn = 'ws://root:taosdata@localhost:6041';
 async function Prepare() {
-    let dsn = 'ws://root:taosdata@localhost:6041';
     let conf :WSConfig = new WSConfig(dsn)
     const createDB = `create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`
     const createStable = `CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`
@@ -32,7 +31,7 @@ async function Prepare() {
     await ws.Exec(createStable);
     await ws.Exec(createTopic);
     for (let i = 0; i < 10; i++) {
-        await ws.Exec(`INSERT INTO d1001 USING ${stable} TAGS ("California.SanFrancisco", 3) VALUES (NOW, ${10+i}, ${200+i}, ${0.32 + i})`)
+        await ws.Exec(`INSERT INTO d1001 USING ${stable} (location, groupId) TAGS ("California.SanFrancisco", 3) VALUES (NOW, ${10+i}, ${200+i}, ${0.32 + i})`)
     }
     ws.Close()
 }
@@ -63,8 +62,9 @@ async function Prepare() {
         console.error(e);
     } finally {
         if (consumer) {
-           consumer.Close();
+           await consumer.Close();
         }
+        connectorDestroy()
     }
 })();
 

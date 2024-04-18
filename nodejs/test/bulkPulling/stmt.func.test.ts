@@ -1,3 +1,4 @@
+import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 
@@ -9,7 +10,7 @@ beforeAll(async () => {
     let wsSql = await WsSql.Open(conf)
     await wsSql.Exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
     await wsSql.Exec('CREATE STABLE if not exists power.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
-    wsSql.Close()
+    await wsSql.Close()
 })
 describe('TDWebSocket.Stmt()', () => {
     jest.setTimeout(20 * 1000)
@@ -32,8 +33,8 @@ describe('TDWebSocket.Stmt()', () => {
         let stmt = await connector.StmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.State()).toBeGreaterThan(0)
-        stmt.Close()
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
     });
 
     test('connect db with error', async() => {
@@ -44,13 +45,14 @@ describe('TDWebSocket.Stmt()', () => {
             let wsConf :WSConfig = new WSConfig(dsn)
             wsConf.SetDb('jest')
             connector = await WsSql.Open(wsConf) 
-            await connector.StmtInit()     
+            let stmt = await connector.StmtInit() 
+            await stmt.Close()
         }catch(e){
             let err:any = e
             expect(err.message).toMatch('Database not exist')
         }finally{
             if(connector) {
-                connector.Close()
+                await connector.Close()
             }
         }
     })
@@ -69,8 +71,8 @@ describe('TDWebSocket.Stmt()', () => {
         params.SetVarcharColumn([tags[0]]);
         params.SetIntColumn([tags[1]]);        
         await stmt.SetBinaryTags(params)
-        stmt.Close()
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
     }); 
 
     test('set tag error', async() => {
@@ -90,8 +92,8 @@ describe('TDWebSocket.Stmt()', () => {
         } catch(err:any) {
             expect(err.message).toMatch('stmt tags count not match')
         }       
-        stmt.Close()
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
     });    
     
     test('error Prepare table', async() => {
@@ -109,8 +111,8 @@ describe('TDWebSocket.Stmt()', () => {
             let err:any = e
             expect(err.message).toMatch("syntax error near '? into ? using powr.meters tags (?, ?) values (?, ?, ?, ?)' (keyword INTO is expected)")
         }
-        stmt.Close()
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
     }); 
 
     test('error Prepare tag', async() => {
@@ -128,8 +130,8 @@ describe('TDWebSocket.Stmt()', () => {
             let err:any = e
             expect(err.message).toMatch("Database not exist")
         }
-        stmt.Close()
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
     });
 
     test('normal BindParam', async() => {
@@ -170,8 +172,8 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.Batch()
         await stmt.Exec()
         expect(stmt.GetLastAffected()).toEqual(30)
-        stmt.Close()
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
     });
 
 
@@ -208,8 +210,8 @@ describe('TDWebSocket.Stmt()', () => {
             let err:any = e
             expect(err.message).toMatch("wrong row length")
         }
-        stmt.Close()
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
     });
 
     test('no Batch', async() => {
@@ -244,8 +246,8 @@ describe('TDWebSocket.Stmt()', () => {
             let err:any = e
             expect(err.message).toMatch("Stmt API usage error")
         }
-        stmt.Close()
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
     });
 
     test('Batch after BindParam', async() => {
@@ -292,8 +294,8 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.Batch()
         await stmt.Exec()
         expect(stmt.GetLastAffected()).toEqual(4)
-        stmt.Close()
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
     });
 
     test('no set tag', async() => {
@@ -320,8 +322,8 @@ describe('TDWebSocket.Stmt()', () => {
             let err:any = e
             expect(err.message).toMatch("Retry needed")
         }
-        stmt.Close()
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
     });
 
     test('normal binary BindParam', async() => {
@@ -347,11 +349,11 @@ describe('TDWebSocket.Stmt()', () => {
         
         await stmt.Batch()
         await stmt.Exec()
-        stmt.Close()
 
         let result = await connector.Exec("select * from power.meters")
         console.log(result)
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
 
     });
 
@@ -383,7 +385,11 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.BinaryBind(dataParams)
         await stmt.Batch()
         await stmt.Exec()
-        stmt.Close()
-        connector.Close();
+        await stmt.Close()
+        await connector.Close();
     });
+})
+
+afterAll(async () => {
+    WebSocketConnectionPool.Instance().Destroyed()
 })

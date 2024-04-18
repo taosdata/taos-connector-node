@@ -50,7 +50,7 @@ export class WebSocketConnectionPool {
         }
     }
 
-    async releaseConnection(connector: WebSocketConnector) {
+    async releaseConnection(connector: WebSocketConnector):Promise<void> {
         if (connector) {
             const unlock = await mutex.acquire();
             try {
@@ -84,20 +84,21 @@ export class WebSocketConnectionPool {
                 }
             }
         }
-        logger.debug("destroyed connect:" + this._connectionCount)
+        logger.info("destroyed connect:" + this._connectionCount)
         this._connectionCount = 0
         this.pool = new Map()
     }
 }
 
 
-process.on('beforeExit', (code) => {
-    logger.info("begin destroy connect")
-    WebSocketConnectionPool.Instance().Destroyed()
-});
+// process.on('beforeExit', (code) => {
+//     console.log("begin destroy connect")
+//     WebSocketConnectionPool.Instance().Destroyed()
+//     process.exit()
+// });
 
 process.on('SIGINT', () => {
-    logger.info('Received SIGINT. Press Control-D to exit, begin destroy connect...');
+    console.log('Received SIGINT. Press Control-D to exit, begin destroy connect...');
     WebSocketConnectionPool.Instance().Destroyed()
     process.exit()
 });
@@ -108,4 +109,10 @@ process.on('SIGTERM', () => {
     process.exit()
 });
 
+
+process.on('unhandledRejection', (reason, promise) => {  
+    console.error('未处理的 Promise 拒绝:', promise, '原因:', reason);  
+    // 这里你可以记录日志、抛出错误或执行其他操作  
+    // 注意：通常不建议在这里简单地抛出错误，因为这可能会中断你的应用程序  
+});
 // process.kill(process.pid, 'SIGINT');

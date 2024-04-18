@@ -41,7 +41,8 @@
     "websocket": "^1.0.34",
     "winston": "^3.13.0",
     "async-mutex": "^0.5.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "moment-timezone": "^0.5.45"
   },
   "devDependencies": {
     "@parcel/packager-ts": "^2.7.0",
@@ -58,6 +59,7 @@
     "async-mutex": "^0.5.0",
     "uuid": "^9.0.1",
     "winston": "^3.13.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "moment-timezone": "^0.5.45"
   }
 }

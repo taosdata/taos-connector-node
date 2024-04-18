@@ -31,7 +31,7 @@ export class WebSocketConnector {
         }
     }
 
-    Ready(): Promise<WebSocketConnector> {
+    async Ready(): Promise<WebSocketConnector> {
         return new Promise((resolve, reject) => {
             this._wsConn.onopen = () => {
                 logger.debug("websocket connection opened")
@@ -40,10 +40,8 @@ export class WebSocketConnector {
         })
     }
 
-    private _onclose(e: ICloseEvent) {
-        return new Promise((resolve, reject) => {
-            resolve("websocket connection closed")
-        })
+    private async _onclose(e: ICloseEvent) {
+        logger.info("websocket connection closed")
     }
 
 
@@ -76,6 +74,7 @@ export class WebSocketConnector {
     close() {
         if (this._wsConn) {
             this._wsConn.close();
+            
         } else {
             throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION, "WebSocket connection is undefined.")
         }
@@ -85,7 +84,7 @@ export class WebSocketConnector {
         return this._wsConn.readyState;
     }
 
-    sendMsgNoResp(message: string):Promise<void> {
+    async sendMsgNoResp(message: string):Promise<void> {
         logger.debug("[wsClient.sendMsgNoResp()]===>" + message)
         let msg = JSON.parse(message);
         if (msg.args.id !== undefined) {
@@ -104,7 +103,7 @@ export class WebSocketConnector {
     }
 
 
-    sendMsg(message: string, register: Boolean = true) {
+    async sendMsg(message: string, register: Boolean = true) {
         logger.debug("[wsClient.sendMessage()]===>" + message)
         let msg = JSON.parse(message);
         if (msg.args.id !== undefined) {
@@ -127,7 +126,7 @@ export class WebSocketConnector {
         })
     }
 
-    sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, register: Boolean = true) {
+    async sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, register: Boolean = true) {
         return new Promise((resolve, reject) => {
             if (this._wsConn && this._wsConn.readyState > 0) {
                 if (register) {

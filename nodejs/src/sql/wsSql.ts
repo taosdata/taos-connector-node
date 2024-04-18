@@ -20,12 +20,20 @@ export class WsSql{
         this.wsConfig = wsConfig;
     }
 
-    static Open(wsConfig:WSConfig):Promise<WsSql> {
+    static async Open(wsConfig:WSConfig):Promise<WsSql> {
         if (!wsConfig.GetUrl()) {
             throw new WebSocketInterfaceError(ErrorCode.ERR_INVALID_URL, 'invalid url, password or username needed.');
         }
         let wsSql = new WsSql(wsConfig);
-        return wsSql.open(wsConfig.GetDb())
+        return await wsSql.open(wsConfig.GetDb())
+    }
+
+    private async open(database:string | null | undefined):Promise<WsSql> {  
+        await this._wsClient.connect(database);
+        if(database && database.length > 0) {
+            await this.Exec(`use ${database}`);
+        }
+        return this;
     }
 
     State(){
@@ -35,22 +43,15 @@ export class WsSql{
     /**
      * return client version.
      */
-    Version(): Promise<string> {
-        return this._wsClient.version()
+    async Version(): Promise<string> {
+        return await this._wsClient.version()
+    }
+    
+    async Close():Promise<void> {
+        await this._wsClient.close();
     }
 
-    Query(sql:string, req_id?:number):Promise<WSRows>{
-        return this.query(sql, req_id)
-    }
-
-    Exec(sql:string, req_id?: number):Promise<TaosResult>{
-        return this.execute(sql, req_id)
-    }
-    Close() {
-        this._wsClient.close();
-    }
-
-    SchemalessInsert(lines: Array<string>, protocol: SchemalessProto, precision: Precision, ttl: number, reqId?: number): Promise<void> {
+    async SchemalessInsert(lines: Array<string>, protocol: SchemalessProto, precision: Precision, ttl: number, reqId?: number): Promise<void> {
         let data = '';
         if (!lines || lines.length == 0 || !protocol) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsSchemaless Insert params is error!');
@@ -73,50 +74,27 @@ export class WsSql{
                 ttl: ttl,
             },
         };
-        return this.executeSchemalessInsert(queryMsg);
+        return await this.executeSchemalessInsert(queryMsg);
     }
 
-    StmtInit(reqId?:number): Promise<WsStmt> {
-        return new Promise(async (resolve, reject) => {
-            if (this._wsClient) {
-                try{
-                    let precision = PrecisionLength["ms"];
-                    if (this.wsConfig.GetDb()) {
-                        let sql = "select `precision` from information_schema.ins_databases where name = '" + this.wsConfig.GetDb() + "'";
-                        let result = await this.Exec(sql);
-                        let data =result.GetData()
-                         
-                        if (data && data[0] && data[0][0]) {
-                            precision = PrecisionLength[data[0][0]]
-                        }
-                    }
-                    let wsStmt = await WsStmt.NewStmt(this._wsClient, precision, reqId);
-                    resolve(wsStmt);
-                } catch(e) {
-                    logger.error(e)
-                    reject(e);
+    async StmtInit(reqId?:number): Promise<WsStmt> {
+        if (this._wsClient) {   
+            let precision = PrecisionLength["ms"];
+            if (this.wsConfig.GetDb()) {
+                let sql = "select `precision` from information_schema.ins_databases where name = '" + this.wsConfig.GetDb() + "'";
+                let result = await this.Exec(sql);
+                let data =result.GetData()
+                    
+                if (data && data[0] && data[0][0]) {
+                    precision = PrecisionLength[data[0][0]]
                 }
-            }else{
-                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "stmt connect closed"));
             }
-        });
+            return await WsStmt.NewStmt(this._wsClient, precision, reqId);     
+        }
+        throw(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "stmt connect closed")); 
     }
 
-    private open(database:string | null | undefined):Promise<WsSql> {
-        return new Promise(async (resolve, reject) => {
-            try {
-                await this._wsClient.connect(database);
-                if(database && database.length > 0) {
-                    await this.execute(`use ${database}`)
-                }
-                resolve(this)
-            } catch(e) {
-                reject(e)
-            }
-        })
-    }
-
-    async execute(sql: string, reqId?: number, action:string = 'query'): Promise<TaosResult> {
+    async Exec(sql: string, reqId?: number, action:string = 'query'): Promise<TaosResult> {
         try {
             let wsQueryResponse:WSQueryResponse = await this._wsClient.exec(this.getSql(sql, reqId, action));
             let taosResult = new TaosResult(wsQueryResponse);
@@ -149,7 +127,8 @@ export class WsSql{
         return new Promise(async (resolve, reject) => {
             try {
                 let reqMsg = JSON.stringify(queryMsg);
-                await this._wsClient.exec(reqMsg);
+                let result = await this._wsClient.exec(reqMsg);
+                logger.debug("executeSchemalessInsert:", reqMsg, result)
                 resolve();
             } catch (e:any) {
                 reject(new TaosResultError(e.code, e.message));
@@ -157,7 +136,7 @@ export class WsSql{
         });
     }
 
-    async query(sql: string, reqId?:number): Promise<WSRows> {
+    async Query(sql: string, reqId?:number): Promise<WSRows> {
         try {
             let wsQueryResponse:WSQueryResponse = await this._wsClient.exec(this.getSql(sql, reqId));
             return new WSRows(this._wsClient, wsQueryResponse);

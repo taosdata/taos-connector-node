@@ -1,4 +1,5 @@
 
+import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { compareUint8Arrays, createSTable, createSTableJSON, createTable, expectStableData, hexToBytes, insertNTable, insertStable, jsonMeta, tableMeta, tagMeta } from "../utils";
@@ -69,7 +70,7 @@ beforeAll(async () => {
     await ws.Exec(createTable(tableCN));
     await ws.Exec(createSTableJSON(jsonTable));
     await ws.Exec(createSTableJSON(jsonTableCN));
-    ws.Close()
+    await ws.Close()
 })
 
 describe('ws.query(stable)', () => {
@@ -86,7 +87,7 @@ describe('ws.query(stable)', () => {
         let expectData = expectStableData(tableValues, stableTags)
         let actualMeta = queryRes.GetMeta()
         let actualData = queryRes.GetData()
-        ws.Close()
+        await ws.Close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 expect(meta.name).toBe(expectMeta[index].name)
@@ -132,7 +133,7 @@ describe('ws.query(stable)', () => {
         let expectData = expectStableData(tableCNValues, stableCNTags)
         let actualMeta = queryRes.GetMeta()
         let actualData = queryRes.GetData()
-        ws.Close()
+        await ws.Close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 expect(meta.name).toBe(expectMeta[index].name)
@@ -176,7 +177,7 @@ describe('ws.query(table)', () => {
         let expectData = tableValues
         let actualMeta = queryRes.GetMeta()
         let actualData = queryRes.GetData()
-        ws.Close()
+        await ws.Close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 // console.log(meta,expectMeta[index]);
@@ -214,7 +215,7 @@ describe('ws.query(table)', () => {
         let expectData = tableCNValues
         let actualMeta = queryRes.GetMeta()
         let actualData = queryRes.GetData()
-        ws.Close()
+        await ws.Close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 // console.log(meta, expectMeta[index]);
@@ -255,7 +256,7 @@ describe('ws.query(jsonTable)', () => {
         let expectData = expectStableData(tableValues, jsonTags)
         let actualMeta = queryRes.GetMeta()
         let actualData = queryRes.GetData()
-        ws.Close()
+        await ws.Close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 //   console.log(meta);
@@ -294,7 +295,7 @@ describe('ws.query(jsonTable)', () => {
         let expectData = expectStableData(tableCNValues, jsonTagsCN)
         let actualMeta = queryRes.GetMeta()
         let actualData = queryRes.GetData()
-        ws.Close()
+        await ws.Close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 //   console.log(meta);
@@ -319,6 +320,9 @@ describe('ws.query(jsonTable)', () => {
 
 })
 
+afterAll(async () => {
+    WebSocketConnectionPool.Instance().Destroyed()
+})
 
 
 //--detectOpenHandles --maxConcurrency=1 --forceExit

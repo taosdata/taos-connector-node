@@ -1,5 +1,5 @@
 import { WSConfig } from '../src/common/config';
-import { sqlConnect } from '../index'
+import { sqlConnect, connectorDestroy } from '../index'
 
 let dsn = 'ws://root:taosdata@localhost:6041';
 (async () => {
@@ -36,7 +36,7 @@ let dsn = 'ws://root:taosdata@localhost:6041';
         console.log("wsRow:meta:=>", meta);
 
         while (await wsRows.Next()) {
-            let result = await wsRows.GetData();
+            let result = wsRows.GetData();
             console.log('queryRes.Scan().then=>', result);
         }
         wsRows.Close()
@@ -47,11 +47,12 @@ let dsn = 'ws://root:taosdata@localhost:6041';
     
     } finally {
         if (wsRows) {
-            wsRows.Close();
+            await wsRows.Close();
         }
         if (wsSql) {
-            wsSql.Close();
+           await wsSql.Close();
         }
+        connectorDestroy()
         console.log("finish!")
     }
 })();

@@ -1,5 +1,11 @@
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
+import moment from 'moment-timezone'; 
+
+const customFormat = winston.format.printf(({ timestamp, level, message, label, ...meta }) => {  
+    const formattedTime = moment(timestamp).tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss.SSS'); // 使用上海时区  
+    return `${formattedTime} [${label}] ${level}: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''}`;  
+  });
 
 const transport = new DailyRotateFile({
     filename: './logs/app-%DATE%.log', // Here is the file name template
@@ -11,9 +17,7 @@ const transport = new DailyRotateFile({
     json: false, // Whether to output logs in JSON format
     format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.printf(({ timestamp, level, message }) => {
-        return `${timestamp} [${level.toUpperCase()}]: ${message}`;
-        }),
+        customFormat
     ),
     level: 'info', // set log level
 });

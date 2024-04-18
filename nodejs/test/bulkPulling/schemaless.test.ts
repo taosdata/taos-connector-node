@@ -1,12 +1,12 @@
+import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { Precision, SchemalessProto } from "../../src/sql/wsProto";
 import { WsSql } from "../../src/sql/wsSql";
-
+let dns = 'ws://localhost:6041'  
 
 
 
 beforeAll(async () => {
-    let dns = 'ws://localhost:6041'  
     let conf :WSConfig = new WSConfig(dns)
     conf.SetUser('root')
     conf.SetPwd('taosdata')
@@ -14,7 +14,7 @@ beforeAll(async () => {
     let wsSql = await WsSql.Open(conf)
     await wsSql.Exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
     await wsSql.Exec('CREATE STABLE if not exists power.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
-    wsSql.Close()
+    await wsSql.Close()
 })
 
 
@@ -25,21 +25,19 @@ describe('TDWebSocket.WsSchemaless()', () => {
     let jsonData = "{\"metric\": \"meter_current\",\"timestamp\": 1626846400,\"value\": 10.3, \"tags\": {\"groupid\": 2, \"location\": \"California.SanFrancisco\", \"id\": \"d1001\"}}"
 
     test('normal connect', async() => {
-        let dns = 'ws://localhost:6041'
         let conf :WSConfig = new WSConfig(dns)
         conf.SetUser('root')
         conf.SetPwd('taosdata')
         conf.SetDb('power')
         let wsSchemaless = await WsSql.Open(conf)
         expect(wsSchemaless.State()).toBeGreaterThan(0)
-        wsSchemaless.Close();
+        await wsSchemaless.Close();
     });
 
     test('connect db with error', async() => {
         expect.assertions(1)
         let wsSchemaless = null;
         try {
-            let dns = 'ws://localhost:6041'
             let conf :WSConfig = new WSConfig(dns)
             conf.SetUser('root')
             conf.SetPwd('taosdata')
@@ -50,13 +48,12 @@ describe('TDWebSocket.WsSchemaless()', () => {
             expect(e.message).toMatch('Database not exist')
         }finally{
             if(wsSchemaless) {
-                wsSchemaless.Close()
+                await wsSchemaless.Close()
             }
         }
     })
 
     test('normal insert', async() => {
-        let dns = 'ws://localhost:6041'
         let conf :WSConfig = new WSConfig(dns)
         conf.SetUser('root')
         conf.SetPwd('taosdata')
@@ -66,11 +63,11 @@ describe('TDWebSocket.WsSchemaless()', () => {
         await wsSchemaless.SchemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NANO_SECONDS, 0);
         await wsSchemaless.SchemalessInsert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.SECONDS, 0);
         await wsSchemaless.SchemalessInsert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, Precision.SECONDS, 0);
-        wsSchemaless.Close();
+        await wsSchemaless.Close();
     });
 
     test('normal wsSql insert', async() => {
-        let dns = 'ws://localhost:6041'
+       
         let conf :WSConfig = new WSConfig(dns)
         conf.SetUser('root')
         conf.SetPwd('taosdata')
@@ -82,11 +79,11 @@ describe('TDWebSocket.WsSchemaless()', () => {
         await wsSchemaless.SchemalessInsert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.SECONDS, 0);
         await wsSchemaless.SchemalessInsert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, Precision.SECONDS, 0);
         
-        wsSchemaless.Close();
+        await wsSchemaless.Close();
     });
 
     test('SchemalessProto error', async() => {
-        let dns = 'ws://localhost:6041'
+     
         let conf :WSConfig = new WSConfig(dns)
         conf.SetUser('root')
         conf.SetPwd('taosdata')
@@ -99,6 +96,10 @@ describe('TDWebSocket.WsSchemaless()', () => {
             expect(e.message).toMatch('invalid timestamp')
         }
 
-        wsSchemaless.Close();
+        await wsSchemaless.Close();
     });
+})
+
+afterAll(async () => {
+    WebSocketConnectionPool.Instance().Destroyed()
 })

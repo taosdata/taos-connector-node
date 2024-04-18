@@ -1,3 +1,4 @@
+import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { createBaseSTable, createBaseSTableJSON, createSTableJSON, getInsertBind } from "../utils";
@@ -91,7 +92,7 @@ beforeAll(async () => {
     await ws.Exec(useDB);
     await ws.Exec(createBaseSTable(stable));
     await ws.Exec(createSTableJSON(jsonTable));
-    ws.Close()
+    await ws.Close()
 })
 
 describe('TDWebSocket.Stmt()', () => {
@@ -150,7 +151,7 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.Close()
         let result = await connector.Exec(`select * from ${db}.${stable}`)
         console.log(result)
-        connector.Close();
+        await connector.Close();
     });
 
     test('normal CN BindParam', async() => {
@@ -207,7 +208,7 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.Close()
         let result = await connector.Exec(`select count(*) from ${db}.${stable}`)
         console.log(result)
-        connector.Close();
+        await connector.Close();
     });
 
     test('normal json tag BindParam', async() => {
@@ -251,7 +252,7 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.Close()
         let result = await connector.Exec(`select * from ${db}.${jsonTable}`)
         console.log(result)
-        connector.Close();
+        await connector.Close();
     });
 
     test('normal json cn tag BindParam', async() => {
@@ -295,7 +296,11 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.Close()
         let result = await connector.Exec(`select * from ${db}.${jsonTable}`)
         console.log(result)
-        connector.Close();
+        await connector.Close();
     });
 
+})
+
+afterAll(async () => {
+    WebSocketConnectionPool.Instance().Destroyed()
 })

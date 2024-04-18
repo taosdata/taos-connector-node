@@ -18,12 +18,12 @@ export class WsStmt {
         }
     }
 
-    static NewStmt(wsClient: WsClient, precision?:number, reqId?:number): Promise<WsStmt> {
+    static async NewStmt(wsClient: WsClient, precision?:number, reqId?:number): Promise<WsStmt> {
         let wsStmt = new WsStmt(wsClient, precision)
-        return wsStmt.init(reqId);
+        return await wsStmt.init(reqId);
     }
 
-    Prepare(sql: string): Promise<void> {
+    async Prepare(sql: string): Promise<void> {
         let queryMsg = {
             action: 'prepare',
             args: {
@@ -32,10 +32,10 @@ export class WsStmt {
                 stmt_id: this._stmt_id,
             },
         };
-        return this.execute(queryMsg);
+        return await this.execute(queryMsg);
     }
 
-    SetTableName(tableName: string): Promise<void> {
+    async SetTableName(tableName: string): Promise<void> {
         let queryMsg = {
             action: 'set_table_name',
             args: {
@@ -44,10 +44,10 @@ export class WsStmt {
                 stmt_id: this._stmt_id,
             },
         };
-        return this.execute(queryMsg);
+        return await this.execute(queryMsg);
     }
 
-    SetTags(tags: Array<any>): Promise<void> {
+    async SetTags(tags: Array<any>): Promise<void> {
         let queryMsg = {
             action: 'set_tags',
             args: {
@@ -56,14 +56,14 @@ export class WsStmt {
                 stmt_id: this._stmt_id,
             },
         };
-        return this.execute(queryMsg);
+        return await this.execute(queryMsg);
     }
 
     NewStmtParam():StmtBindParams {
         return new StmtBindParams(this._precision);
     }
 
-    SetBinaryTags(paramsArray:StmtBindParams): Promise<void> {
+    async SetBinaryTags(paramsArray:StmtBindParams): Promise<void> {
         if (!paramsArray || !this._stmt_id) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBinaryTags paramArray is invalid!")
         }
@@ -74,10 +74,10 @@ export class WsStmt {
         }
         let reqId = BigInt(ReqId.getReqID())
         let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_TAG, this._stmt_id, reqId, paramsArray.GetDataRows())
-        return this.sendBinaryMsg(reqId, 'set_tags', dataBlock);
+        return await this.sendBinaryMsg(reqId, 'set_tags', dataBlock);
     }
 
-    BinaryBind(paramsArray:StmtBindParams): Promise<void> {
+    async BinaryBind(paramsArray:StmtBindParams): Promise<void> {
         if (!paramsArray || !this._stmt_id) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "BinaryBind paramArray is invalid!")
         }
@@ -88,10 +88,10 @@ export class WsStmt {
         }
         let reqId = BigInt(ReqId.getReqID())
         let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_BIND, this._stmt_id, reqId, paramsArray.GetDataRows());
-        return this.sendBinaryMsg(reqId, 'bind', dataBlock);
+        return await this.sendBinaryMsg(reqId, 'bind', dataBlock);
     }
 
-    Bind(paramArray: Array<Array<any>>): Promise<void> {
+    async Bind(paramArray: Array<Array<any>>): Promise<void> {
         let queryMsg = {
             action: 'bind',
             args: {
@@ -100,10 +100,10 @@ export class WsStmt {
                 stmt_id: this._stmt_id,
             },
         };
-        return this.execute(queryMsg);
+        return await this.execute(queryMsg);
     }
 
-    Batch(): Promise<void> {
+    async Batch(): Promise<void> {
         let queryMsg = {
             action: 'add_batch',
             args: {
@@ -111,17 +111,17 @@ export class WsStmt {
                 stmt_id: this._stmt_id,
             },
         };
-        return this.execute(queryMsg);
+        return await this.execute(queryMsg);
     }
 
     /**
      * return client version.
      */
-    Version(): Promise<string> {
-        return this._wsClient.version();
+    async Version(): Promise<string> {
+        return await this._wsClient.version();
     }
 
-    Exec(): Promise<void> {
+    async Exec(): Promise<void> {
         let queryMsg = {
             action: 'exec',
             args: {
@@ -129,14 +129,14 @@ export class WsStmt {
                 stmt_id: this._stmt_id,
             },
         };
-        return this.execute(queryMsg);
+        return await this.execute(queryMsg);
     }
 
     GetLastAffected() {
         return this.lastAffected;
     }
 
-    Close(): Promise<void> {
+    async Close(): Promise<void> {
         let queryMsg = {
             action: 'close',
             args: {
@@ -144,7 +144,7 @@ export class WsStmt {
                 stmt_id: this._stmt_id,
             },
         };
-        return this.execute(queryMsg, false);
+        return await this.execute(queryMsg, false);
     }
 
     public getStmtId(): number | undefined | null {
@@ -179,47 +179,35 @@ export class WsStmt {
     }
 
     private async sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer): Promise<void> {
-        try {
-            if (this._wsClient.getState() <= 0) {
-                throw new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "websocket connect has closed!");
-            }
-            let result = await this._wsClient.sendBinaryMsg(reqId, action, message, false);
-            let resp = new WsStmtQueryResponse(result)
-            if (resp.stmt_id) {
-                this._stmt_id = resp.stmt_id;
-            }
-
-            if (resp.affected) {
-                this.lastAffected = resp.affected
-            } 
-            return
-        } catch (e: any) {
-            throw new TaosResultError(e.code, e.message);
+        if (this._wsClient.getState() <= 0) {
+            throw new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "websocket connect has closed!");
         }
+        let result = await this._wsClient.sendBinaryMsg(reqId, action, message, false);
+        let resp = new WsStmtQueryResponse(result)
+        if (resp.stmt_id) {
+            this._stmt_id = resp.stmt_id;
+        }
+
+        if (resp.affected) {
+            this.lastAffected = resp.affected
+        } 
     }
 
-    private init(reqId?: number):Promise<WsStmt> {
-        return new Promise(async (resolve, reject) => {
-            if (this._wsClient) {
-                try{
-                    if (this._wsClient.getState() <= 0) {
-                        await this._wsClient.connect();
-                    }
-                    let queryMsg = {
-                        action: 'init',
-                        args: {
-                            req_id: ReqId.getReqID(reqId),
-                        },
-                    };
-                    await this.execute(queryMsg);
-                    resolve(this)
-                } catch(e) {
-                    reject(e);
-                }
-            }else{
-                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "stmt connect closed"));
+    private async init(reqId?: number):Promise<WsStmt> {      
+        if (this._wsClient) {       
+            if (this._wsClient.getState() <= 0) {
+                await this._wsClient.connect();
             }
-        });
+            let queryMsg = {
+                action: 'init',
+                args: {
+                    req_id: ReqId.getReqID(reqId),
+                },
+            };
+            await this.execute(queryMsg);
+            return this;      
+        }
+        throw(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "stmt connect closed"));        
     }
     
 }

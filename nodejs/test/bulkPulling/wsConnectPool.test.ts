@@ -110,7 +110,7 @@ beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.Open(conf);
     await ws.Exec(createTopic, ReqId.getReqID());
-    ws.Close()
+    await ws.Close()
 })
 
 describe('TDWebSocket.WsSql()', () => {
@@ -134,4 +134,8 @@ describe('TDWebSocket.WsSql()', () => {
         WebSocketConnectionPool.Instance().Destroyed()
         console.log(stmtIds)
     });
+})
+
+afterAll(async () => {
+    WebSocketConnectionPool.Instance().Destroyed()
 })

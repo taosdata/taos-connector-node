@@ -18,28 +18,23 @@ export class WsConsumer {
         this._wsClient = new WsClient(this._wsConfig.url, this._wsConfig.timeout);
     }
 
-    private init():Promise<WsConsumer> {
-        return new Promise(async (resolve, reject) => {
-            try {
-                await this._wsClient.Ready();
-                resolve(this);          
-            } catch (e: any) {
-                reject(e)
-            }
-        });
+    private async init():Promise<WsConsumer> {   
+        await this._wsClient.Ready();
+        return this;          
+          
     }
 
-    static NewConsumer(wsConfig:Map<string, any>):Promise<WsConsumer> {
+    static async NewConsumer(wsConfig:Map<string, any>):Promise<WsConsumer> {
         if (wsConfig.size == 0 || !wsConfig.get(TMQConstants.WS_URL)) {
             throw new WebSocketInterfaceError(ErrorCode.ERR_INVALID_URL, 
                 'invalid url, password or username needed.');
         }
         let wsConsumer = new WsConsumer(wsConfig);
-        return wsConsumer.init()
+        return await wsConsumer.init()
     
     }
 
-    Subscribe(topics: Array<string>, reqId?:number): Promise<void> {
+    async Subscribe(topics: Array<string>, reqId?:number): Promise<void> {
         if (!topics || topics.length == 0 ) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 
                 'WsTmq Subscribe params is error!');
@@ -60,165 +55,125 @@ export class WsConsumer {
             },
         };
         this._topics = topics
-        return this.execute(JSON.stringify(queryMsg));
+        return await this._wsClient.exec(JSON.stringify(queryMsg));
     }
 
-    Unsubscribe(reqId?:number): Promise<void> {
+    async Unsubscribe(reqId?:number): Promise<void> {
         let queryMsg = {
             action: TMQMessageType.Unsubscribe,
             args: {
                 req_id: ReqId.getReqID(reqId),
             },
         };
-        return this.execute(JSON.stringify(queryMsg));
+        return await this._wsClient.exec(JSON.stringify(queryMsg));
     }
 
-    Poll(timeoutMs: number, reqId?:number):Promise<Map<string, TaosResult>>{
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (this._wsConfig.auto_commit) {
-                    if (this._commitTime) {
-                        let currTime = new Date().getTime();
-                        let diff = Math.abs(currTime - this._commitTime);
-                        if (diff >= this._wsConfig.auto_commit_interval_ms) {
-                            await this.doCommit()
-                            this._commitTime = new Date().getTime();
-                        }
-                    } else {
-                        this._commitTime = new Date().getTime();
-                    }
+    async Poll(timeoutMs: number, reqId?:number):Promise<Map<string, TaosResult>>{      
+        if (this._wsConfig.auto_commit) {
+            if (this._commitTime) {
+                let currTime = new Date().getTime();
+                let diff = Math.abs(currTime - this._commitTime);
+                if (diff >= this._wsConfig.auto_commit_interval_ms) {
+                    await this.doCommit()
+                    this._commitTime = new Date().getTime();
                 }
-                resolve(await this.poll(timeoutMs,reqId)) 
-            } catch(e: any) {
-                reject(new TaosResultError(e.code, e.message));
+            } else {
+                this._commitTime = new Date().getTime();
             }
-        })
+        }
+        return await this.poll(timeoutMs,reqId)
     }
 
-    Assignment(topics?:string[]):Promise<Array<TopicPartition>> {
-        return new Promise(async (resolve, reject) => {
-            if (!topics || topics.length == 0) {
-                topics = this._topics
-            }
+    async Assignment(topics?:string[]):Promise<Array<TopicPartition>> {
+        if (!topics || topics.length == 0) {
+            topics = this._topics
+        }
 
-            let topicPartitions:TopicPartition[] = [];
-            try {
-                if (topics && topics.length > 0) {
-                    const allp:any[] = [];
-                    for (let i in topics) {
-                        allp.push(this.assignment(topics[i]));
-                    }
-                    let result = await Promise.all(allp)
-                    result.forEach(e => { 
-                        topicPartitions.push(...e);         
-                    })
-                }
-                resolve(topicPartitions)
-            } catch (e: any){
-                reject(new TaosResultError(e.code, e.message));
+        let topicPartitions:TopicPartition[] = [];
+        
+        if (topics && topics.length > 0) {
+            const allp:any[] = [];
+            for (let i in topics) {
+                allp.push(this.assignment(topics[i]));
             }
-        });
+            let result = await Promise.all(allp)
+            result.forEach(e => { 
+                topicPartitions.push(...e);         
+            })
+        }
+        return topicPartitions;  
     }
 
-    Subscription(reqId?:number):Promise<Array<string>> {
-        return new Promise(async (resolve, reject) => {
-            let queryMsg = {
-                action: TMQMessageType.ListTopics,
-                args: {
-                    req_id: ReqId.getReqID(reqId),
-                },
-            };
-            try {
-                let resp = await this.executeReturnAny(JSON.stringify(queryMsg));
-                resolve(new SubscriptionResp(resp).topics) 
-            } catch (e:any) {
-                reject(new TaosResultError(e.code, e.message));
-            }
-        });
+    async Subscription(reqId?:number):Promise<Array<string>> {
+        let queryMsg = {
+            action: TMQMessageType.ListTopics,
+            args: {
+                req_id: ReqId.getReqID(reqId),
+            },
+        };
+        
+        let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
+        return new SubscriptionResp(resp).topics;   
     }
 
-    Commit(reqId?:number):Promise<Array<TopicPartition>> {
-        return new Promise(async (resolve, reject) => {
-            try {
-                await this.doCommit(reqId)
-                resolve(await this.Assignment())
-            } catch (e: any) {
-                reject(new TaosResultError(e.code, e.message));
-            }    
-        })
+    async Commit(reqId?:number):Promise<Array<TopicPartition>> {          
+        await this.doCommit(reqId)
+        return await this.Assignment()
     }
 
-    private doCommit(reqId?:number):Promise<void> {
-        return new Promise(async (resolve, reject) => {
-            let queryMsg = {
-                action: TMQMessageType.Commit,
-                args: {
-                    req_id    : ReqId.getReqID(reqId),
-                    message_id: 0
-                },
-            }; 
-            try {
-                await this.execute(JSON.stringify(queryMsg));
-                resolve()
-            } catch(e: any) {
-                reject(new TaosResultError(e.code, e.message))
-            }
-        })
+    private async doCommit(reqId?:number):Promise<void> {     
+        let queryMsg = {
+            action: TMQMessageType.Commit,
+            args: {
+                req_id    : ReqId.getReqID(reqId),
+                message_id: 0
+            },
+        }; 
+        
+        await this._wsClient.exec(JSON.stringify(queryMsg));
     }
 
-    Committed(partitions:Array<TopicPartition>, reqId?:number):Promise<Array<TopicPartition>>{
+    async Committed(partitions:Array<TopicPartition>, reqId?:number):Promise<Array<TopicPartition>>{
         if (!partitions || partitions.length == 0 ) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsTmq Positions params is error!');
         }
 
-        return new Promise(async (resolve, reject) => {
-            let offsets: TopicPartition[] = new Array(partitions.length);
-            for (let i = 0; i < partitions.length; i++) {
-                offsets[i] = {
-                    topic: partitions[i].topic,
-                    vgroup_id: partitions[i].vgroup_id
-                };
-                offsets[i].vgroup_id = partitions[i].vgroup_id
-            }
-            
-            let queryMsg = {
-                action: TMQMessageType.Committed,
-                args: {
-                    req_id    : ReqId.getReqID(reqId),
-                    topic_vgroup_ids:offsets
-                },
+        let offsets: TopicPartition[] = new Array(partitions.length);
+        for (let i = 0; i < partitions.length; i++) {
+            offsets[i] = {
+                topic: partitions[i].topic,
+                vgroup_id: partitions[i].vgroup_id
             };
-            try {
-                let resp = await this.executeReturnAny(JSON.stringify(queryMsg));
-                resolve(new CommittedResp(resp).SetTopicPartitions(offsets)) 
-            } catch (e:any) {
-                reject(new TaosResultError(e.code, e.message));
-            }
-        });   
+            offsets[i].vgroup_id = partitions[i].vgroup_id;
+        }
+        
+        let queryMsg = {
+            action: TMQMessageType.Committed,
+            args: {
+                req_id    : ReqId.getReqID(reqId),
+                topic_vgroup_ids:offsets
+            },
+        };
+        
+            let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
+            return new CommittedResp(resp).SetTopicPartitions(offsets);   
     }
 
-    CommitOffsets(partitions:Array<TopicPartition>):Promise<Array<TopicPartition>> {
+    async CommitOffsets(partitions:Array<TopicPartition>):Promise<Array<TopicPartition>> {
         if (!partitions || partitions.length == 0) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 
                 'WsTmq CommitOffsets params is error!');
-        }
-
-        return new Promise(async (resolve, reject) => {
-            try{
-                const allp:any[] = []
-                partitions.forEach(e => { 
-                    allp.push(this.CommitOffset(e))         
-                })
-                await Promise.all(allp)
-                resolve(await this.Committed(partitions))     
-            }catch(e:any) {
-                reject(new TaosResultError(e.code, e.message));
-            }
+        }      
+        const allp:any[] = [];
+        partitions.forEach(e => { 
+            allp.push(this.CommitOffset(e));       
         })
+        await Promise.all(allp);
+        return await this.Committed(partitions);
     }
 
 
-    CommitOffset(partition:TopicPartition, reqId?:number):Promise<void> {
+    async CommitOffset(partition:TopicPartition, reqId?:number):Promise<void> {
         if (!partition) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 
                 'WsTmq CommitOffsets params is error!');
@@ -233,43 +188,36 @@ export class WsConsumer {
                 offset   :partition.offset,
             },
         };
-        return this.execute(JSON.stringify(queryMsg));
-
-    
+        return await this._wsClient.exec(JSON.stringify(queryMsg));
     }
 
-    Positions(partitions:Array<TopicPartition>, reqId?:number):Promise<Array<TopicPartition>> {
+    async Positions(partitions:Array<TopicPartition>, reqId?:number):Promise<Array<TopicPartition>> {
         if (!partitions || partitions.length == 0 ) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 
                 'WsTmq Positions params is error!');
         }
 
-        return new Promise(async (resolve, reject) => {
-            let offsets: TopicPartition[] = new Array(partitions.length);
-            for (let i = 0; i < partitions.length; i++) {
-                offsets[i] = {
-                    topic: partitions[i].topic,
-                    vgroup_id: partitions[i].vgroup_id
-                };
-                offsets[i].vgroup_id = partitions[i].vgroup_id
-            }
-            let queryMsg = {
-                action: TMQMessageType.Position,
-                args: {
-                    req_id    : ReqId.getReqID(reqId),
-                    topic_vgroup_ids:offsets
-                },
+        let offsets: TopicPartition[] = new Array(partitions.length);
+        for (let i = 0; i < partitions.length; i++) {
+            offsets[i] = {
+                topic: partitions[i].topic,
+                vgroup_id: partitions[i].vgroup_id
             };
-            try {
-                let resp = await this.executeReturnAny(JSON.stringify(queryMsg));
-                resolve(new PartitionsResp(resp).SetTopicPartitions(offsets)) 
-            } catch (e:any) {
-                reject(new TaosResultError(e.code, e.message));
-            }
-        });
+            offsets[i].vgroup_id = partitions[i].vgroup_id
+        }
+        let queryMsg = {
+            action: TMQMessageType.Position,
+            args: {
+                req_id    : ReqId.getReqID(reqId),
+                topic_vgroup_ids:offsets
+            },
+        };
+            
+        let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
+        return new PartitionsResp(resp).SetTopicPartitions(offsets);   
     }
 
-    Seek(partition:TopicPartition, reqId?:number):Promise<void> {
+    async Seek(partition:TopicPartition, reqId?:number):Promise<void> {
         if (!partition) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 
                 'WsTmq Seek params is error!');
@@ -284,48 +232,31 @@ export class WsConsumer {
                 offset   :partition.offset,
             },
         };
-        return this.execute(JSON.stringify(queryMsg));
+        return await this._wsClient.exec(JSON.stringify(queryMsg));
     }
 
-    SeekToBeginning(partitions:Array<TopicPartition>):Promise<void> {
+    async SeekToBeginning(partitions:Array<TopicPartition>):Promise<void> {
         if (!partitions || partitions.length == 0) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 
                 'WsTmq SeekToBeginning params is error!');
         }  
-        return this.seekToBeginOrEnd(partitions)
+        return await this.seekToBeginOrEnd(partitions)
     }
 
-    SeekToEnd(partitions:Array<TopicPartition>):Promise<void> {
+    async SeekToEnd(partitions:Array<TopicPartition>):Promise<void> {
         if (!partitions || partitions.length == 0) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 
                 'WsTmq SeekToEnd params is error!');
         } 
 
-        return this.seekToBeginOrEnd(partitions, false)
+        return await this.seekToBeginOrEnd(partitions, false)
     }
 
-    Close() {
-        this._wsClient.close();
+    async Close():Promise<void> {
+        await this._wsClient.close();
     }
 
-    private async execute(queryMsg: string): Promise<void> {
-        try {
-            await this._wsClient.exec(queryMsg);
-        } catch (e:any) {
-            throw new TaosResultError(e.code, e.message);
-        }
-    }
-
-    private async executeReturnAny(queryMsg: string): Promise<any> {
-        try {
-            return await this._wsClient.exec(queryMsg, false);
-        } catch (e:any) {
-            logger.error(e);
-            throw new TaosResultError(e.code, e.message);
-        }
-    }
-
-    private fetch(pollResp: WsPollResponse):Promise<WsTmqQueryResponse> {
+    private async fetch(pollResp: WsPollResponse):Promise<WsTmqQueryResponse> {
         let fetchMsg = {
             action: 'fetch',
             args: {
@@ -333,38 +264,25 @@ export class WsConsumer {
                 message_id:pollResp.message_id,
             },
         };
-
-        return new Promise(async (resolve, reject) => {
-            let jsonStr = JSON.stringify(fetchMsg);
-            // console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
-            try {
-                let result = await this._wsClient.exec(jsonStr, false);
-                resolve(new WsTmqQueryResponse(result));
-            } catch (e:any) {
-                reject(new WebSocketInterfaceError(e.code, e.message))
-            }
-        });
+        let jsonStr = JSON.stringify(fetchMsg);
+        // console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);    
+        let result = await this._wsClient.exec(jsonStr, false);
+        return new WsTmqQueryResponse(result);
     }
 
-    private fetchBlockData(fetchResponse: WsTmqQueryResponse, taosResult: TaosResult):Promise<TaosResult> {
+    private async fetchBlockData(fetchResponse: WsTmqQueryResponse, taosResult: TaosResult):Promise<TaosResult> {
         let fetchMsg = {
             action: 'fetch_block',
             args: {
                 req_id: fetchResponse.req_id,
                 message_id: fetchResponse.message_id,
             },
-        };
-
-        return new Promise(async (resolve, reject) => {
-            try {
-                let jsonStr = JSON.stringify(fetchMsg);
-                // console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
-                let result = await this._wsClient.sendMsg(jsonStr)
-                resolve(parseTmqBlock(fetchResponse.rows, new WSTmqFetchBlockResponse(result), taosResult))     
-            } catch (e: any){
-                reject(new WebSocketInterfaceError(e.code, e.message))
-            }
-        });
+        };   
+        let jsonStr = JSON.stringify(fetchMsg);
+        // console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
+        let result = await this._wsClient.sendMsg(jsonStr)
+        parseTmqBlock(fetchResponse.rows, new WSTmqFetchBlockResponse(result), taosResult)    
+        return taosResult;
     }
 
     private async poll(timeoutMs: number, reqId?:number): Promise<Map<string, TaosResult>> {
@@ -375,92 +293,73 @@ export class WsConsumer {
                 blocking_time  :timeoutMs
             },
         };
-        return new Promise(async (resolve, reject) => {
-            try {
-                var taosResults: Map<string, TaosResult> = new Map();
-                let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
-                let pollResp = new WsPollResponse(resp)
-                if (!pollResp.have_message || pollResp.message_type != TMQMessageType.ResDataType) {
-                    resolve(taosResults);
-                } else {        
-                    while (true) {
-                        let fetchResp = await this.fetch(pollResp)
-                        if (fetchResp.completed || fetchResp.rows == 0) {
-                            break;
-                        }
-                        let taosResult = taosResults.get(pollResp.topic + pollResp.vgroup_id)
-                        if (taosResult == null) {
-                            taosResult = new TaosTmqResult(fetchResp, pollResp)
-                            taosResults.set(pollResp.topic + pollResp.vgroup_id, taosResult)
-                        } else {
-                            taosResult.SetRowsAndTime(fetchResp.rows);
-                        }
-                        await this.fetchBlockData(fetchResp, taosResult)
-                        
-                    }
-                    
-                    resolve(taosResults);
-                }
-            } catch (e :any) {
-                logger.error(e);
-                reject(new TaosResultError(e.code, e.message));
-            }
-        })
-    }
-
-    private assignment(topic:string):Promise<Array<TopicPartition>> {
-        return new Promise(async (resolve, reject) => {
-            try {
-                let queryMsg = {
-                    action: TMQMessageType.GetTopicAssignment,
-                    args: {
-                        req_id: ReqId.getReqID(),
-                        topic: topic
-                    }
-                }
-                
-                let resp = await this.executeReturnAny(JSON.stringify(queryMsg))
-                let assignmentInfo = new AssignmentResp(resp, queryMsg.args.topic);
-                resolve(assignmentInfo.topicPartition)
-            } catch (e:any){
-                reject(new TaosResultError(e.code, e.message));
-            }
-        });
-    }
-
-    private seekToBeginOrEnd(partitions:Array<TopicPartition>, bBegin:boolean = true):Promise<void> {
-        return new Promise(async (resolve, reject) => {
-            let topics: string[] = [];
-            partitions.forEach(e => { 
-                topics.push(e.topic)
-            })
-            try {
-                let topicPartitions = await this.Assignment(topics)
-                let itemMap = topicPartitions.reduce((map, obj)=> {
-                    map.set(obj.topic+'_'+obj.vgroup_id, obj)
-                    return map
-                }, new Map<string, TopicPartition>());
         
-                const allp:any[] = []
-                for(let i in partitions) {
-                    if(itemMap.has(partitions[i].topic + '_' +partitions[i].vgroup_id)) {
-                        let topicPartition = itemMap.get(partitions[i].topic + '_' +partitions[i].vgroup_id)
-                        if (topicPartition) {
-                            if(bBegin) {
-                                topicPartition.offset = topicPartition.begin
-                            }else{
-                                topicPartition.offset = topicPartition.end
-                            }
-                            allp.push(this.Seek(topicPartition))
-                        }
-                    }
-                }
-                await Promise.all(allp)
-                resolve()       
-            } catch (e:any){
-                reject(new TaosResultError(e.code, e.message));
+        var taosResults: Map<string, TaosResult> = new Map();
+        let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
+        let pollResp = new WsPollResponse(resp)
+        if (!pollResp.have_message || pollResp.message_type != TMQMessageType.ResDataType) {
+            return taosResults;
+        }        
+        while (true) {
+            let fetchResp = await this.fetch(pollResp)
+            if (fetchResp.completed || fetchResp.rows == 0) {
+                break;
             }
+            let taosResult = taosResults.get(pollResp.topic + pollResp.vgroup_id)
+            if (taosResult == null) {
+                taosResult = new TaosTmqResult(fetchResp, pollResp)
+                taosResults.set(pollResp.topic + pollResp.vgroup_id, taosResult)
+            } else {
+                taosResult.SetRowsAndTime(fetchResp.rows);
+            }
+            await this.fetchBlockData(fetchResp, taosResult)
+            
+        }
+        
+        return taosResults;    
+    }
+
+    private async assignment(topic:string):Promise<Array<TopicPartition>> {         
+        let queryMsg = {
+            action: TMQMessageType.GetTopicAssignment,
+            args: {
+                req_id: ReqId.getReqID(),
+                topic: topic
+            }
+        };
+        
+        let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
+        let assignmentInfo = new AssignmentResp(resp, queryMsg.args.topic);
+        return assignmentInfo.topicPartition;  
+    }
+
+    private async seekToBeginOrEnd(partitions:Array<TopicPartition>, bBegin:boolean = true):Promise<void> {    
+        let topics: string[] = [];
+        partitions.forEach(e => { 
+            topics.push(e.topic)
         })
+           
+        let topicPartitions = await this.Assignment(topics)
+        let itemMap = topicPartitions.reduce((map, obj)=> {
+            map.set(obj.topic+'_'+obj.vgroup_id, obj)
+            return map
+        }, new Map<string, TopicPartition>());
+
+        const allp:any[] = []
+        for(let i in partitions) {
+            if(itemMap.has(partitions[i].topic + '_' +partitions[i].vgroup_id)) {
+                let topicPartition = itemMap.get(partitions[i].topic + '_' +partitions[i].vgroup_id)
+                if (topicPartition) {
+                    if(bBegin) {
+                        topicPartition.offset = topicPartition.begin
+                    }else{
+                        topicPartition.offset = topicPartition.end
+                    }
+                    allp.push(this.Seek(topicPartition))
+                }
+            }
+        }
+        await Promise.all(allp)    
     }
 
 }

@@ -69,7 +69,8 @@ describe('TDWebSocket.Tmq()', () => {
         [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
     ]);
 
-
+    console.log(configMap);
+    
     test('normal connect', async() => {
         let consumer = await WsConsumer.NewConsumer(configMap);
         consumer.Close();
@@ -92,7 +93,7 @@ describe('TDWebSocket.Tmq()', () => {
             consumer = await WsConsumer.NewConsumer(errConfigMap);
             await consumer.Subscribe(topics);
         }catch(e :any){
-            expect(e.message).toMatch('fail')
+            expect(e.message).toMatch('new consumer return nil')
         }finally{
             if(consumer) {
                await consumer.Close()

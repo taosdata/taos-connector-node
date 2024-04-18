@@ -90,12 +90,17 @@ export class WebSocketConnectionPool {
     }
 }
 
+process.on('exit', (code) => {
+    console.log("begin destroy connect")
+    WebSocketConnectionPool.Instance().Destroyed()
+    process.exit()
+});
 
-// process.on('beforeExit', (code) => {
-//     console.log("begin destroy connect")
-//     WebSocketConnectionPool.Instance().Destroyed()
-//     process.exit()
-// });
+process.on('beforeExit', (code) => {
+    console.log("begin destroy connect")
+    WebSocketConnectionPool.Instance().Destroyed()
+    process.exit()
+});
 
 process.on('SIGINT', () => {
     console.log('Received SIGINT. Press Control-D to exit, begin destroy connect...');
@@ -109,10 +114,4 @@ process.on('SIGTERM', () => {
     process.exit()
 });
 
-
-process.on('unhandledRejection', (reason, promise) => {  
-    console.error('未处理的 Promise 拒绝:', promise, '原因:', reason);  
-    // 这里你可以记录日志、抛出错误或执行其他操作  
-    // 注意：通常不建议在这里简单地抛出错误，因为这可能会中断你的应用程序  
-});
 // process.kill(process.pid, 'SIGINT');

@@ -1,6 +1,6 @@
 {
   "name": "@tdengine/websocket",
-  "version": "3.0.0",
+  "version": "3.0.2",
   "description": "TDengine Connector for nodejs and browser using WebSocket.",
   "source": "index.ts",
   "main": "dist/index.js",
@@ -14,7 +14,7 @@
     "test": "jest --coverage",
     "example": "tsc && node dist/example/basicSql.js",
     "build": "tsc",
-    "prepublish": "npm run build"
+    "prepublish": "node ./prepare.js"
   },
   "repository": {
     "type": "git",
@@ -33,8 +33,15 @@
   "bugs": {
     "url": "https://github.com/taosdata/taos-connector-node/issues"
   },
+  "files": [
+    "dist"
+  ],
   "homepage": "https://github.com/taosdata/taos-connector-node#readme",
   "dependencies": {
+    "@types/json-bigint": "^1.0.1",
+    "@types/node": "^18.0.0",
+    "@types/websocket": "^1.0",
+    "@types/uuid": "^9.0.8",
     "json-bigint": "^1.0.0",
     "typescript": "^5.3.3",
     "uuid": "^9.0.1",

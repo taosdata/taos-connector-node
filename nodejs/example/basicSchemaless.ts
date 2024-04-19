@@ -1,6 +1,6 @@
 import { WSConfig } from '../src/common/config';
 import { Precision, SchemalessProto } from '../src/sql/wsProto';
-import { sqlConnect, connectorDestroy, setLogLevel } from '../index';
+import { sqlConnect, connectorDestroy, setLogLevel } from '../src';
 let dsn = 'ws://root:taosdata@localhost:6041';
 let db = 'power'
 let influxdbData = "st,t1=3i64,t2=4f64,t3=\"t3\" c1=3i64,c3=L\"passit\",c2=false,c4=4f64 1626006833639000000"

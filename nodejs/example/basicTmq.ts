@@ -1,6 +1,6 @@
 import { WSConfig } from "../src/common/config";
 import { TMQConstants } from "../src/tmq/constant";
-import { connectorDestroy, sqlConnect, tmqConnect } from "../index";
+import { connectorDestroy, sqlConnect, tmqConnect } from "../src";
 
 
 const stable = 'meters';
@@ -24,7 +24,7 @@ async function Prepare() {
     const createStable = `CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`
     let createTopic = `create topic if not exists ${topics[0]} as select * from ${db}.${stable}`
     const useDB = `use ${db}`
-  
+
     let ws = await sqlConnect(conf);
     await ws.Exec(createDB);
     await ws.Exec(useDB);
@@ -37,13 +37,13 @@ async function Prepare() {
 }
 
 (async () => {
-    let consumer = null    
+    let consumer = null
     try {
         await Prepare()
         consumer = await tmqConnect(configMap);
         await consumer.Subscribe(topics);
-        for (let i = 0; i < 5; i++) { 
-            let res = await consumer.Poll(500); 
+        for (let i = 0; i < 5; i++) {
+            let res = await consumer.Poll(500);
             for (let [key, value] of res) {
                 console.log(key, value);
             }
@@ -52,11 +52,11 @@ async function Prepare() {
             }
             await consumer.Commit();
         }
-        
+
         let assignment = await consumer.Assignment()
         console.log(assignment)
         await consumer.SeekToBeginning(assignment)
-        
+
         await consumer.Unsubscribe()
     } catch (e) {
         console.error(e);

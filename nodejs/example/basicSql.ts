@@ -1,5 +1,5 @@
 import { WSConfig } from '../src/common/config';
-import { sqlConnect, connectorDestroy } from '../index'
+import { sqlConnect, connectorDestroy } from '../src'
 
 let dsn = 'ws://root:taosdata@localhost:6041';
 (async () => {
@@ -15,7 +15,7 @@ let dsn = 'ws://root:taosdata@localhost:6041';
 
         let taosResult = await wsSql.Exec('show databases', reqId++)
         console.log(taosResult);
-        
+
         taosResult = await wsSql.Exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;',reqId++);
         console.log(taosResult);
 
@@ -24,7 +24,7 @@ let dsn = 'ws://root:taosdata@localhost:6041';
 
         taosResult = await wsSql.Exec('CREATE STABLE if not exists meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);', reqId++);
         console.log(taosResult);
-    
+
         taosResult = await wsSql.Exec('describe meters', reqId++)
         console.log(taosResult);
 
@@ -40,11 +40,11 @@ let dsn = 'ws://root:taosdata@localhost:6041';
             console.log('queryRes.Scan().then=>', result);
         }
         wsRows.Close()
-    
+
     } catch (e) {
         let err:any = e
         console.error(err);
-    
+
     } finally {
         if (wsRows) {
             await wsRows.Close();

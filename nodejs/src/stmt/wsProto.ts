@@ -23,20 +23,14 @@ export class WsStmtQueryResponse extends WSQueryResponse {
     stmt_id?: number | undefined | null;
     constructor(resp:MessageResp) {
         super(resp);
-        this.stmt_id = resp.msg.stmt_id  
-        this.affected = resp.msg.affected 
+        this.stmt_id = resp.msg.stmt_id
+        this.affected = resp.msg.affected
     }
 }
 
 export const enum StmtBindType {
     STMT_TYPE_TAG=1,
     STMT_TYPE_BIND=2,
-}
-
-export const enum SchemalessProto {
-	InfluxDBLineProtocol       = 1,
-	OpenTSDBTelnetLineProtocol = 2,
-	OpenTSDBJsonFormatProtocol = 3
 }
 
 
@@ -47,10 +41,10 @@ export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindT
     length += TDengineTypeLength['INT'] * 5;
     length += columns * 5 + columns * 4;
     length += bindParams.GetDataTotalLen();
-    
+
     let arrayBuffer = new ArrayBuffer(length);
     let arrayView = new DataView(arrayBuffer)
-    
+
     arrayView.setBigUint64(0, reqId, true);
     arrayView.setBigUint64(8, BigInt(stmtId), true);
     arrayView.setBigUint64(16, BigInt(bindType), true);
@@ -83,15 +77,15 @@ export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindT
         typeView.setUint32(headOffset+1, columnsData[i].typeLen, true)
         //set column data length
         lenView.setUint32(i * 4, columnsData[i].length, true)
-        if (columnsData[i].data) { 
+        if (columnsData[i].data) {
             //get encode column data
-            const sourceView = new Uint8Array(columnsData[i].data);  
+            const sourceView = new Uint8Array(columnsData[i].data);
             //console.log("begin:", dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());
-            const destView = new Uint8Array(arrayBuffer, dataOffset, columnsData[i].data.byteLength);  
+            const destView = new Uint8Array(arrayBuffer, dataOffset, columnsData[i].data.byteLength);
             //splicing data
             destView.set(sourceView);
-            dataOffset += columnsData[i].data.byteLength;  
-            // console.log("end:",dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());          
+            dataOffset += columnsData[i].data.byteLength;
+            // console.log("end:",dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());
         }
         headOffset += 5
     }

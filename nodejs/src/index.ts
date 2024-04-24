@@ -1,7 +1,7 @@
 import { WsSql } from './sql/wsSql'
 import { WSConfig } from './common/config';
 import { WsConsumer } from './tmq/wsTmq';
-import logger from "./common/log"
+import logger, { setLevel } from "./common/log"
 import winston from 'winston';
 import { WebSocketConnectionPool } from './client/wsConnectorPool';
 
@@ -19,10 +19,7 @@ let tmqConnect = async (configMap: Map<string, string>) => {
 };
 
 let setLogLevel = (level: string) => {
-    logger.level = level
-    if (level == 'debug') {
-        logger.transports.push(new winston.transports.Console())
-    }
+    setLevel(level)
 };
 
 let connectorDestroy = () => {

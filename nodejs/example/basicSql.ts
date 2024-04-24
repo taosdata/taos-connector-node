@@ -1,12 +1,13 @@
 import { WSConfig } from '../src/common/config';
-import { sqlConnect, connectorDestroy } from '../src'
+import { sqlConnect, connectorDestroy, setLogLevel } from '../src'
 
-let dsn = 'ws://root:taosdata@localhost:6041';
+let dsn = 'ws://root:taosdata@192.168.1.95:6041';
 (async () => {
     let wsSql = null;
     let wsRows = null;
     let reqId = 0;
     try {
+        setLogLevel("debug")
         let conf :WSConfig = new WSConfig(dsn)
         wsSql = await sqlConnect(conf)
 

@@ -13,11 +13,11 @@ let configMap = new Map([
     [TMQConstants.CONNECT_PASS, "taosdata"],
     [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
     [TMQConstants.CLIENT_ID, 'test_tmq_client'],
-    [TMQConstants.WS_URL, 'ws://localhost:6041'],
+    [TMQConstants.WS_URL, 'ws://192.168.1.95:6041'],
     [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
     [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
 ]);
-let dsn = 'ws://root:taosdata@localhost:6041';
+let dsn = 'ws://root:taosdata@192.168.1.95:6041';
 async function Prepare() {
     let conf :WSConfig = new WSConfig(dsn)
     const createDB = `create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`
@@ -26,14 +26,15 @@ async function Prepare() {
     const useDB = `use ${db}`
 
     let ws = await sqlConnect(conf);
-    await ws.Exec(createDB);
-    await ws.Exec(useDB);
-    await ws.Exec(createStable);
-    await ws.Exec(createTopic);
+    await ws.exec(createDB);
+    await ws.exec(useDB);
+    await ws.exec(createStable);
+    await ws.exec(createTopic);
     for (let i = 0; i < 10; i++) {
-        await ws.Exec(`INSERT INTO d1001 USING ${stable} (location, groupId) TAGS ("California.SanFrancisco", 3) VALUES (NOW, ${10+i}, ${200+i}, ${0.32 + i})`)
+        await ws.exec(`INSERT INTO d1001 USING ${stable} (location, groupId) TAGS ("California.SanFrancisco", 3) VALUES (NOW, ${10+i}, ${200+i}, ${0.32 + i})`)
     }
-    ws.Close()
+    ws.close()
+    
 }
 
 (async () => {
@@ -41,28 +42,31 @@ async function Prepare() {
     try {
         await Prepare()
         consumer = await tmqConnect(configMap);
-        await consumer.Subscribe(topics);
+        await consumer.subscribe(topics);
         for (let i = 0; i < 5; i++) {
-            let res = await consumer.Poll(500);
+            let res = await consumer.poll(500);
             for (let [key, value] of res) {
                 console.log(key, value);
             }
             if (res.size == 0) {
                 break;
             }
-            await consumer.Commit();
+            await consumer.commit();
         }
 
-        let assignment = await consumer.Assignment()
+        let assignment = await consumer.assignment()
         console.log(assignment)
-        await consumer.SeekToBeginning(assignment)
-
-        await consumer.Unsubscribe()
+        await consumer.seekToBeginning(assignment)
+        assignment = await consumer.assignment()
+        for(let i in assignment) {
+            console.log("seek after:", assignment[i])
+        }
+        await consumer.unsubscribe()
     } catch (e) {
         console.error(e);
     } finally {
         if (consumer) {
-           await consumer.Close();
+           await consumer.close();
         }
         connectorDestroy()
     }

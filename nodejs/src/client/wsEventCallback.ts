@@ -30,14 +30,14 @@ export class WsEventCallback {
     private constructor() {
     }
 
-    public static Instance():WsEventCallback {
+    public static instance():WsEventCallback {
         if (!WsEventCallback._instance) {
             WsEventCallback._instance = new WsEventCallback();
         }
         return WsEventCallback._instance;
     }
 
-    async RegisterCallback(id: MessageId, res: (args: unknown) => void, rej: (reason: any) => void) {
+    async registerCallback(id: MessageId, res: (args: unknown) => void, rej: (reason: any) => void) {
         let release = await eventMutex.acquire()
         try {
             WsEventCallback._msgActionRegister.set(id,
@@ -53,7 +53,7 @@ export class WsEventCallback {
         }          
     }
 
-    async HandleEventCallback(msg: MessageId, messageType:OnMessageType, data:any) {
+    async handleEventCallback(msg: MessageId, messageType:OnMessageType, data:any) {
         let action: MessageAction | any = undefined;
 
         // console.log("HandleEventCallback msg=", msg, messageType)

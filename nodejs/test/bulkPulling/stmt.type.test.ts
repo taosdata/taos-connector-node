@@ -86,13 +86,13 @@ const selectJsonTableCN = `select * from ${jsonTableCN}`
 beforeAll(async () => {
     let dsn = 'ws://root:taosdata@localhost:6041';
     let conf :WSConfig = new WSConfig(dsn)
-    let ws = await WsSql.Open(conf);
-    await ws.Exec(dropDB);
-    await ws.Exec(createDB);
-    await ws.Exec(useDB);
-    await ws.Exec(createBaseSTable(stable));
-    await ws.Exec(createSTableJSON(jsonTable));
-    await ws.Close()
+    let ws = await WsSql.open(conf);
+    await ws.exec(dropDB);
+    await ws.exec(createDB);
+    await ws.exec(useDB);
+    await ws.exec(createBaseSTable(stable));
+    await ws.exec(createSTableJSON(jsonTable));
+    await ws.close()
 })
 
 describe('TDWebSocket.Stmt()', () => {
@@ -100,207 +100,207 @@ describe('TDWebSocket.Stmt()', () => {
     test('normal BindParam', async() => {
         let dsn = 'ws://root:taosdata@localhost:6041';
         let wsConf = new WSConfig(dsn);
-        wsConf.SetDb(db)
-        let connector = await WsSql.Open(wsConf) 
-        let stmt = await (await connector).StmtInit()
+        wsConf.setDb(db)
+        let connector = await WsSql.open(wsConf) 
+        let stmt = await (await connector).stmtInit()
         expect(stmt).toBeTruthy()      
-        expect(connector.State()).toBeGreaterThan(0)
-        await stmt.Prepare(getInsertBind(tableValues.length + 2, stableTags.length, db, stable));
-        await stmt.SetTableName(table);
-        let tagParams = stmt.NewStmtParam();
-        tagParams.SetBooleanColumn([stableTags[0]])
-        tagParams.SetTinyIntColumn([stableTags[1]])
-        tagParams.SetSmallIntColumn([stableTags[2]])
-        tagParams.SetIntColumn([stableTags[3]])
-        tagParams.SetBigIntColumn([BigInt(stableTags[4])])
-        tagParams.SetUTinyIntColumn([stableTags[5]])
+        expect(connector.state()).toBeGreaterThan(0)
+        await stmt.prepare(getInsertBind(tableValues.length + 2, stableTags.length, db, stable));
+        await stmt.setTableName(table);
+        let tagParams = stmt.newStmtParam();
+        tagParams.setBoolean([stableTags[0]])
+        tagParams.setTinyInt([stableTags[1]])
+        tagParams.setSmallInt([stableTags[2]])
+        tagParams.setInt([stableTags[3]])
+        tagParams.setBigint([BigInt(stableTags[4])])
+        tagParams.setUTinyInt([stableTags[5]])
 
-        tagParams.SetUSmallIntColumn([stableTags[6]])
-        tagParams.SetUIntColumn([stableTags[7]])
-        tagParams.SetUBigIntColumn([BigInt(stableTags[8])])
-        tagParams.SetFloatColumn([stableTags[9]])
-        tagParams.SetDoubleColumn([stableTags[10]])
-        tagParams.SetBinaryColumn([stableTags[11]])
-        tagParams.SetNcharColumn([stableTags[12]])
-        await stmt.SetBinaryTags(tagParams);
+        tagParams.setUSmallInt([stableTags[6]])
+        tagParams.setUInt([stableTags[7]])
+        tagParams.setUBigint([BigInt(stableTags[8])])
+        tagParams.setFloat([stableTags[9]])
+        tagParams.setDouble([stableTags[10]])
+        tagParams.setBinary([stableTags[11]])
+        tagParams.setNchar([stableTags[12]])
+        await stmt.setBinaryTags(tagParams);
 
-        let bindParams = stmt.NewStmtParam();
-        bindParams.SetTimestampColumn(tableValues[0])
-        bindParams.SetTinyIntColumn(tableValues[1])
-        bindParams.SetSmallIntColumn(tableValues[2])
-        bindParams.SetIntColumn(tableValues[3])
-        bindParams.SetBigIntColumn(tableValues[4])
-        bindParams.SetUTinyIntColumn(tableValues[5])
-        bindParams.SetUSmallIntColumn(tableValues[6])
-        bindParams.SetUIntColumn(tableValues[7])
-        bindParams.SetUBigIntColumn(tableValues[8])
-        bindParams.SetFloatColumn(tableValues[9])
-        bindParams.SetDoubleColumn(tableValues[10])
+        let bindParams = stmt.newStmtParam();
+        bindParams.setTimestamp(tableValues[0])
+        bindParams.setTinyInt(tableValues[1])
+        bindParams.setSmallInt(tableValues[2])
+        bindParams.setInt(tableValues[3])
+        bindParams.setBigint(tableValues[4])
+        bindParams.setUTinyInt(tableValues[5])
+        bindParams.setUSmallInt(tableValues[6])
+        bindParams.setUInt(tableValues[7])
+        bindParams.setUBigint(tableValues[8])
+        bindParams.setFloat(tableValues[9])
+        bindParams.setDouble(tableValues[10])
         
-        bindParams.SetBinaryColumn(tableValues[11])
-        bindParams.SetNcharColumn(tableValues[12])
-        bindParams.SetBooleanColumn(tableValues[13])
-        bindParams.SetIntColumn(tableValues[14])
-        bindParams.SetGeometryColumn(geoDataArray)
-        bindParams.SetVarBinaryColumn(varbinary)
+        bindParams.setBinary(tableValues[11])
+        bindParams.setNchar(tableValues[12])
+        bindParams.setBoolean(tableValues[13])
+        bindParams.setInt(tableValues[14])
+        bindParams.setGeometry(geoDataArray)
+        bindParams.setVarBinary(varbinary)
     
-        await stmt.BinaryBind(bindParams);
-        await stmt.Batch()
-        await stmt.Exec()
-        expect(stmt.GetLastAffected()).toEqual(5)
-        await stmt.Close()
-        let result = await connector.Exec(`select * from ${db}.${stable}`)
+        await stmt.binaryBind(bindParams);
+        await stmt.batch()
+        await stmt.exec()
+        expect(stmt.getLastAffected()).toEqual(5)
+        await stmt.close()
+        let result = await connector.exec(`select * from ${db}.${stable}`)
         console.log(result)
-        await connector.Close();
+        await connector.close();
     });
 
     test('normal CN BindParam', async() => {
         let dsn = 'ws://root:taosdata@localhost:6041';
         let wsConf = new WSConfig(dsn);
-        wsConf.SetDb(db)
-        let connector = await WsSql.Open(wsConf) 
-        let stmt = await (await connector).StmtInit()
+        wsConf.setDb(db)
+        let connector = await WsSql.open(wsConf) 
+        let stmt = await (await connector).stmtInit()
         expect(stmt).toBeTruthy()      
-        expect(connector.State()).toBeGreaterThan(0)
-        await stmt.Prepare(getInsertBind(tableValues.length + 2, stableTags.length, db, stable));
-        await stmt.SetTableName(table);
-        let tagParams = stmt.NewStmtParam();
-        tagParams.SetBooleanColumn([stableCNTags[0]])
-        tagParams.SetTinyIntColumn([stableCNTags[1]])
-        tagParams.SetSmallIntColumn([stableCNTags[2]])
-        tagParams.SetIntColumn([stableCNTags[3]])
-        tagParams.SetBigIntColumn([BigInt(stableCNTags[4])])
-        tagParams.SetUTinyIntColumn([stableCNTags[5]])
+        expect(connector.state()).toBeGreaterThan(0)
+        await stmt.prepare(getInsertBind(tableValues.length + 2, stableTags.length, db, stable));
+        await stmt.setTableName(table);
+        let tagParams = stmt.newStmtParam();
+        tagParams.setBoolean([stableCNTags[0]])
+        tagParams.setTinyInt([stableCNTags[1]])
+        tagParams.setSmallInt([stableCNTags[2]])
+        tagParams.setInt([stableCNTags[3]])
+        tagParams.setBigint([BigInt(stableCNTags[4])])
+        tagParams.setUTinyInt([stableCNTags[5]])
 
-        tagParams.SetUSmallIntColumn([stableCNTags[6]])
-        tagParams.SetUIntColumn([stableCNTags[7]])
-        tagParams.SetUBigIntColumn([BigInt(stableCNTags[8])])
-        tagParams.SetFloatColumn([stableCNTags[9]])
-        tagParams.SetDoubleColumn([stableCNTags[10]])
-        tagParams.SetBinaryColumn([stableCNTags[11]])
-        tagParams.SetNcharColumn([stableCNTags[12]])
-        await stmt.SetBinaryTags(tagParams);
+        tagParams.setUSmallInt([stableCNTags[6]])
+        tagParams.setUInt([stableCNTags[7]])
+        tagParams.setUBigint([BigInt(stableCNTags[8])])
+        tagParams.setFloat([stableCNTags[9]])
+        tagParams.setDouble([stableCNTags[10]])
+        tagParams.setBinary([stableCNTags[11]])
+        tagParams.setNchar([stableCNTags[12]])
+        await stmt.setBinaryTags(tagParams);
 
-        let bindParams = stmt.NewStmtParam();
-        bindParams.SetTimestampColumn(tableCNValues[0])
-        bindParams.SetTinyIntColumn(tableCNValues[1])
-        bindParams.SetSmallIntColumn(tableCNValues[2])
-        bindParams.SetIntColumn(tableCNValues[3])
-        bindParams.SetBigIntColumn(tableCNValues[4])
-        bindParams.SetUTinyIntColumn(tableCNValues[5])
-        bindParams.SetUSmallIntColumn(tableCNValues[6])
-        bindParams.SetUIntColumn(tableCNValues[7])
-        bindParams.SetUBigIntColumn(tableCNValues[8])
-        bindParams.SetFloatColumn(tableCNValues[9])
-        bindParams.SetDoubleColumn(tableCNValues[10])
+        let bindParams = stmt.newStmtParam();
+        bindParams.setTimestamp(tableCNValues[0])
+        bindParams.setTinyInt(tableCNValues[1])
+        bindParams.setSmallInt(tableCNValues[2])
+        bindParams.setInt(tableCNValues[3])
+        bindParams.setBigint(tableCNValues[4])
+        bindParams.setUTinyInt(tableCNValues[5])
+        bindParams.setUSmallInt(tableCNValues[6])
+        bindParams.setUInt(tableCNValues[7])
+        bindParams.setUBigint(tableCNValues[8])
+        bindParams.setFloat(tableCNValues[9])
+        bindParams.setDouble(tableCNValues[10])
         
-        bindParams.SetBinaryColumn(tableCNValues[11])
-        bindParams.SetNcharColumn(tableCNValues[12])
-        bindParams.SetBooleanColumn(tableCNValues[13])
-        bindParams.SetIntColumn(tableCNValues[14])
-        bindParams.SetGeometryColumn(geoDataArray)
-        bindParams.SetVarBinaryColumn(varbinary)
+        bindParams.setBinary(tableCNValues[11])
+        bindParams.setNchar(tableCNValues[12])
+        bindParams.setBoolean(tableCNValues[13])
+        bindParams.setInt(tableCNValues[14])
+        bindParams.setGeometry(geoDataArray)
+        bindParams.setVarBinary(varbinary)
     
-        await stmt.BinaryBind(bindParams);
-        await stmt.Batch()
-        await stmt.Exec()
-        expect(stmt.GetLastAffected()).toEqual(5)
-        await stmt.Close()
-        let result = await connector.Exec(`select count(*) from ${db}.${stable}`)
+        await stmt.binaryBind(bindParams);
+        await stmt.batch()
+        await stmt.exec()
+        expect(stmt.getLastAffected()).toEqual(5)
+        await stmt.close()
+        let result = await connector.exec(`select count(*) from ${db}.${stable}`)
         console.log(result)
-        await connector.Close();
+        await connector.close();
     });
 
     test('normal json tag BindParam', async() => {
         let dsn = 'ws://root:taosdata@localhost:6041';
         let wsConf = new WSConfig(dsn);
-        wsConf.SetDb(db)
-        let connector = await WsSql.Open(wsConf) 
-        let stmt = await (await connector).StmtInit()
+        wsConf.setDb(db)
+        let connector = await WsSql.open(wsConf) 
+        let stmt = await (await connector).stmtInit()
         expect(stmt).toBeTruthy()      
-        expect(connector.State()).toBeGreaterThan(0)
-        await stmt.Prepare(getInsertBind(tableValues.length + 2, jsonTags.length, db, jsonTable));
-        await stmt.SetTableName(`${jsonTable}_001`);
-        let tagParams = stmt.NewStmtParam();
-        tagParams.SetJsonColumn(jsonTags);
-        await stmt.SetBinaryTags(tagParams);
+        expect(connector.state()).toBeGreaterThan(0)
+        await stmt.prepare(getInsertBind(tableValues.length + 2, jsonTags.length, db, jsonTable));
+        await stmt.setTableName(`${jsonTable}_001`);
+        let tagParams = stmt.newStmtParam();
+        tagParams.setJson(jsonTags);
+        await stmt.setBinaryTags(tagParams);
 
-        let bindParams = stmt.NewStmtParam();
-        bindParams.SetTimestampColumn(tableCNValues[0])
-        bindParams.SetTinyIntColumn(tableCNValues[1])
-        bindParams.SetSmallIntColumn(tableCNValues[2])
-        bindParams.SetIntColumn(tableCNValues[3])
-        bindParams.SetBigIntColumn(tableCNValues[4])
-        bindParams.SetUTinyIntColumn(tableCNValues[5])
-        bindParams.SetUSmallIntColumn(tableCNValues[6])
-        bindParams.SetUIntColumn(tableCNValues[7])
-        bindParams.SetUBigIntColumn(tableCNValues[8])
-        bindParams.SetFloatColumn(tableCNValues[9])
-        bindParams.SetDoubleColumn(tableCNValues[10])
+        let bindParams = stmt.newStmtParam();
+        bindParams.setTimestamp(tableCNValues[0])
+        bindParams.setTinyInt(tableCNValues[1])
+        bindParams.setSmallInt(tableCNValues[2])
+        bindParams.setInt(tableCNValues[3])
+        bindParams.setBigint(tableCNValues[4])
+        bindParams.setUTinyInt(tableCNValues[5])
+        bindParams.setUSmallInt(tableCNValues[6])
+        bindParams.setUInt(tableCNValues[7])
+        bindParams.setUBigint(tableCNValues[8])
+        bindParams.setFloat(tableCNValues[9])
+        bindParams.setDouble(tableCNValues[10])
         
-        bindParams.SetBinaryColumn(tableCNValues[11])
-        bindParams.SetNcharColumn(tableCNValues[12])
-        bindParams.SetBooleanColumn(tableCNValues[13])
-        bindParams.SetIntColumn(tableCNValues[14])
-        bindParams.SetGeometryColumn(geoDataArray)
-        bindParams.SetVarBinaryColumn(varbinary)
+        bindParams.setBinary(tableCNValues[11])
+        bindParams.setNchar(tableCNValues[12])
+        bindParams.setBoolean(tableCNValues[13])
+        bindParams.setInt(tableCNValues[14])
+        bindParams.setGeometry(geoDataArray)
+        bindParams.setVarBinary(varbinary)
     
-        await stmt.BinaryBind(bindParams);
-        await stmt.Batch()
-        await stmt.Exec()
-        expect(stmt.GetLastAffected()).toEqual(5)
-        await stmt.Close()
-        let result = await connector.Exec(`select * from ${db}.${jsonTable}`)
+        await stmt.binaryBind(bindParams);
+        await stmt.batch()
+        await stmt.exec()
+        expect(stmt.getLastAffected()).toEqual(5)
+        await stmt.close()
+        let result = await connector.exec(`select * from ${db}.${jsonTable}`)
         console.log(result)
-        await connector.Close();
+        await connector.close();
     });
 
     test('normal json cn tag BindParam', async() => {
         let dsn = 'ws://root:taosdata@localhost:6041';
         let wsConf = new WSConfig(dsn);
-        wsConf.SetDb(db)
-        let connector = await WsSql.Open(wsConf) 
-        let stmt = await (await connector).StmtInit()
+        wsConf.setDb(db)
+        let connector = await WsSql.open(wsConf) 
+        let stmt = await (await connector).stmtInit()
         expect(stmt).toBeTruthy()      
-        expect(connector.State()).toBeGreaterThan(0)
-        await stmt.Prepare(getInsertBind(tableValues.length + 2, jsonTags.length, db, jsonTable));
-        await stmt.SetTableName(`${jsonTable}_001`);
-        let tagParams = stmt.NewStmtParam();
-        tagParams.SetJsonColumn(jsonTagsCN);
-        await stmt.SetBinaryTags(tagParams);
+        expect(connector.state()).toBeGreaterThan(0)
+        await stmt.prepare(getInsertBind(tableValues.length + 2, jsonTags.length, db, jsonTable));
+        await stmt.setTableName(`${jsonTable}_001`);
+        let tagParams = stmt.newStmtParam();
+        tagParams.setJson(jsonTagsCN);
+        await stmt.setBinaryTags(tagParams);
 
-        let bindParams = stmt.NewStmtParam();
-        bindParams.SetTimestampColumn(tableCNValues[0])
-        bindParams.SetTinyIntColumn(tableCNValues[1])
-        bindParams.SetSmallIntColumn(tableCNValues[2])
-        bindParams.SetIntColumn(tableCNValues[3])
-        bindParams.SetBigIntColumn(tableCNValues[4])
-        bindParams.SetUTinyIntColumn(tableCNValues[5])
-        bindParams.SetUSmallIntColumn(tableCNValues[6])
-        bindParams.SetUIntColumn(tableCNValues[7])
-        bindParams.SetUBigIntColumn(tableCNValues[8])
-        bindParams.SetFloatColumn(tableCNValues[9])
-        bindParams.SetDoubleColumn(tableCNValues[10])
+        let bindParams = stmt.newStmtParam();
+        bindParams.setTimestamp(tableCNValues[0])
+        bindParams.setTinyInt(tableCNValues[1])
+        bindParams.setSmallInt(tableCNValues[2])
+        bindParams.setInt(tableCNValues[3])
+        bindParams.setBigint(tableCNValues[4])
+        bindParams.setUTinyInt(tableCNValues[5])
+        bindParams.setUSmallInt(tableCNValues[6])
+        bindParams.setUInt(tableCNValues[7])
+        bindParams.setUBigint(tableCNValues[8])
+        bindParams.setFloat(tableCNValues[9])
+        bindParams.setDouble(tableCNValues[10])
         
-        bindParams.SetBinaryColumn(tableCNValues[11])
-        bindParams.SetNcharColumn(tableCNValues[12])
-        bindParams.SetBooleanColumn(tableCNValues[13])
-        bindParams.SetIntColumn(tableCNValues[14])
-        bindParams.SetGeometryColumn(geoDataArray)
-        bindParams.SetVarBinaryColumn(varbinary)
+        bindParams.setBinary(tableCNValues[11])
+        bindParams.setNchar(tableCNValues[12])
+        bindParams.setBoolean(tableCNValues[13])
+        bindParams.setInt(tableCNValues[14])
+        bindParams.setGeometry(geoDataArray)
+        bindParams.setVarBinary(varbinary)
     
-        await stmt.BinaryBind(bindParams);
-        await stmt.Batch()
-        await stmt.Exec()
-        expect(stmt.GetLastAffected()).toEqual(5)
-        await stmt.Close()
-        let result = await connector.Exec(`select * from ${db}.${jsonTable}`)
+        await stmt.binaryBind(bindParams);
+        await stmt.batch()
+        await stmt.exec()
+        expect(stmt.getLastAffected()).toEqual(5)
+        await stmt.close()
+        let result = await connector.exec(`select * from ${db}.${jsonTable}`)
         console.log(result)
-        await connector.Close();
+        await connector.close();
     });
 
 })
 
 afterAll(async () => {
-    WebSocketConnectionPool.Instance().Destroyed()
+    WebSocketConnectionPool.instance().destroyed()
 })

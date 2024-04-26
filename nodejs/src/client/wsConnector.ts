@@ -31,7 +31,7 @@ export class WebSocketConnector {
         }
     }
 
-    async Ready(): Promise<WebSocketConnector> {
+    async ready(): Promise<WebSocketConnector> {
         return new Promise((resolve, reject) => {
             this._wsConn.onopen = () => {
                 logger.debug("websocket connection opened")
@@ -50,20 +50,20 @@ export class WebSocketConnector {
         logger.debug("wsClient._onMessage()===="+ (Object.prototype.toString.call(data)))
         if (Object.prototype.toString.call(data) === '[object ArrayBuffer]') {
             let id = new DataView(data, 8, 8).getBigUint64(0, true);
-            WsEventCallback.Instance().HandleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
+            WsEventCallback.instance().handleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
                 OnMessageType.MESSAGE_TYPE_ARRAYBUFFER, data);
 
         } else if (Object.prototype.toString.call(data) === '[object Blob]') {
             data.arrayBuffer().then((d: ArrayBuffer) => {
                 let id = new DataView(d, 8, 8).getBigUint64(0, true);
-                WsEventCallback.Instance().HandleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
+                WsEventCallback.instance().handleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
                     OnMessageType.MESSAGE_TYPE_BLOB, d);
             })
 
         } else if (Object.prototype.toString.call(data) === '[object String]') {
             let msg = JSON.parse(data)
             logger.debug("[_onmessage.stringType]==>:" + data);
-            WsEventCallback.Instance().HandleEventCallback({id:BigInt(0), action:msg.action, req_id:msg.req_id}, 
+            WsEventCallback.instance().handleEventCallback({id:BigInt(0), action:msg.action, req_id:msg.req_id}, 
                 OnMessageType.MESSAGE_TYPE_STRING, msg);
         } else {
             throw new TDWebSocketClientError(ErrorCode.ERR_INVALID_MESSAGE_TYPE, 
@@ -113,7 +113,7 @@ export class WebSocketConnector {
         return new Promise((resolve, reject) => {
             if (this._wsConn && this._wsConn.readyState > 0) {
                 if (register) {
-                    WsEventCallback.Instance().RegisterCallback({ action: msg.action, req_id: msg.args.req_id, 
+                    WsEventCallback.instance().registerCallback({ action: msg.action, req_id: msg.args.req_id, 
                         timeout:this._timeout, id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id) }, 
                         resolve, reject);
                 }
@@ -130,7 +130,7 @@ export class WebSocketConnector {
         return new Promise((resolve, reject) => {
             if (this._wsConn && this._wsConn.readyState > 0) {
                 if (register) {
-                    WsEventCallback.Instance().RegisterCallback({ action: action, req_id: reqId, 
+                    WsEventCallback.instance().registerCallback({ action: action, req_id: reqId, 
                         timeout:this._timeout, id: reqId}, 
                         resolve, reject);
                 }

@@ -11,36 +11,36 @@ let dsn = 'ws://root:taosdata@192.168.1.95:6041';
         let conf :WSConfig = new WSConfig(dsn)
         wsSql = await sqlConnect(conf)
 
-        let version = await wsSql.Version();
+        let version = await wsSql.version();
         console.log(version);
 
-        let taosResult = await wsSql.Exec('show databases', reqId++)
+        let taosResult = await wsSql.exec('show databases', reqId++)
         console.log(taosResult);
 
-        taosResult = await wsSql.Exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;',reqId++);
+        taosResult = await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;',reqId++);
         console.log(taosResult);
 
-        taosResult = await wsSql.Exec('use power',reqId++)
+        taosResult = await wsSql.exec('use power',reqId++)
         console.log(taosResult);
 
-        taosResult = await wsSql.Exec('CREATE STABLE if not exists meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);', reqId++);
+        taosResult = await wsSql.exec('CREATE STABLE if not exists meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);', reqId++);
         console.log(taosResult);
 
-        taosResult = await wsSql.Exec('describe meters', reqId++)
+        taosResult = await wsSql.exec('describe meters', reqId++)
         console.log(taosResult);
 
-        taosResult = await wsSql.Exec('INSERT INTO d1001 USING meters TAGS ("California.SanFrancisco", 3) VALUES (NOW, 10.2, 219, 0.32)', reqId++)
+        taosResult = await wsSql.exec('INSERT INTO d1001 USING meters TAGS ("California.SanFrancisco", 3) VALUES (NOW, 10.2, 219, 0.32)', reqId++)
         console.log(taosResult);
 
-        wsRows = await wsSql.Query('select * from meters', reqId++);
-        let meta = wsRows.GetMeta()
+        wsRows = await wsSql.query('select * from meters', reqId++);
+        let meta = wsRows.getMeta()
         console.log("wsRow:meta:=>", meta);
 
-        while (await wsRows.Next()) {
-            let result = wsRows.GetData();
+        while (await wsRows.next()) {
+            let result = wsRows.getData();
             console.log('queryRes.Scan().then=>', result);
         }
-        wsRows.Close()
+        wsRows.close()
 
     } catch (e) {
         let err:any = e
@@ -48,10 +48,10 @@ let dsn = 'ws://root:taosdata@192.168.1.95:6041';
 
     } finally {
         if (wsRows) {
-            await wsRows.Close();
+            await wsRows.close();
         }
         if (wsSql) {
-           await wsSql.Close();
+           await wsSql.close();
         }
         connectorDestroy()
         console.log("finish!")

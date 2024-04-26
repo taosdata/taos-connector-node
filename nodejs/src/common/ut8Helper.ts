@@ -20,7 +20,7 @@ const rune3Max = (1 << 16) - 1;
 // AppendRune appends the UTF-8 encoding of r to the end of p and
 // returns the extended buffer. If the rune is out of range,
 // it appends the encoding of RuneError.
-export function AppendRune(r:any) {
+export function appendRune(r:any) {
     let p:Array<any> = [];
     if (r <= rune1Max) {
         p.push(r & 0xff);  

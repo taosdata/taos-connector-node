@@ -18,12 +18,12 @@ export class WsStmt {
         }
     }
 
-    static async NewStmt(wsClient: WsClient, precision?:number, reqId?:number): Promise<WsStmt> {
+    static async newStmt(wsClient: WsClient, precision?:number, reqId?:number): Promise<WsStmt> {
         let wsStmt = new WsStmt(wsClient, precision)
         return await wsStmt.init(reqId);
     }
 
-    async Prepare(sql: string): Promise<void> {
+    async prepare(sql: string): Promise<void> {
         let queryMsg = {
             action: 'prepare',
             args: {
@@ -35,7 +35,7 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    async SetTableName(tableName: string): Promise<void> {
+    async setTableName(tableName: string): Promise<void> {
         let queryMsg = {
             action: 'set_table_name',
             args: {
@@ -47,7 +47,7 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    async SetTags(tags: Array<any>): Promise<void> {
+    async setTags(tags: Array<any>): Promise<void> {
         let queryMsg = {
             action: 'set_tags',
             args: {
@@ -59,39 +59,39 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    NewStmtParam():StmtBindParams {
+    newStmtParam():StmtBindParams {
         return new StmtBindParams(this._precision);
     }
 
-    async SetBinaryTags(paramsArray:StmtBindParams): Promise<void> {
+    async setBinaryTags(paramsArray:StmtBindParams): Promise<void> {
         if (!paramsArray || !this._stmt_id) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBinaryTags paramArray is invalid!")
         }
 
-        let columnInfos = paramsArray.GetParams();
+        let columnInfos = paramsArray.getParams();
         if (!columnInfos) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBinaryTags paramArray is invalid!") 
         }
         let reqId = BigInt(ReqId.getReqID())
-        let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_TAG, this._stmt_id, reqId, paramsArray.GetDataRows())
+        let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_TAG, this._stmt_id, reqId, paramsArray.getDataRows())
         return await this.sendBinaryMsg(reqId, 'set_tags', dataBlock);
     }
 
-    async BinaryBind(paramsArray:StmtBindParams): Promise<void> {
+    async binaryBind(paramsArray:StmtBindParams): Promise<void> {
         if (!paramsArray || !this._stmt_id) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "BinaryBind paramArray is invalid!")
         }
 
-        let columnInfos = paramsArray.GetParams();
+        let columnInfos = paramsArray.getParams();
         if (!columnInfos) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "BinaryBind paramArray is invalid!") 
         }
         let reqId = BigInt(ReqId.getReqID())
-        let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_BIND, this._stmt_id, reqId, paramsArray.GetDataRows());
+        let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_BIND, this._stmt_id, reqId, paramsArray.getDataRows());
         return await this.sendBinaryMsg(reqId, 'bind', dataBlock);
     }
 
-    async Bind(paramArray: Array<Array<any>>): Promise<void> {
+    async bind(paramArray: Array<Array<any>>): Promise<void> {
         let queryMsg = {
             action: 'bind',
             args: {
@@ -103,7 +103,7 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    async Batch(): Promise<void> {
+    async batch(): Promise<void> {
         let queryMsg = {
             action: 'add_batch',
             args: {
@@ -117,11 +117,11 @@ export class WsStmt {
     /**
      * return client version.
      */
-    async Version(): Promise<string> {
+    async version(): Promise<string> {
         return await this._wsClient.version();
     }
 
-    async Exec(): Promise<void> {
+    async exec(): Promise<void> {
         let queryMsg = {
             action: 'exec',
             args: {
@@ -132,11 +132,11 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    GetLastAffected() {
+    getLastAffected() {
         return this.lastAffected;
     }
 
-    async Close(): Promise<void> {
+    async close(): Promise<void> {
         let queryMsg = {
             action: 'close',
             args: {

@@ -11,36 +11,36 @@ setLogLevel("debug")
 
 async function Prepare() {
     let conf :WSConfig = new WSConfig(dsn)
-    conf.SetUser('root')
-    conf.SetPwd('taosdata')
+    conf.setUser('root')
+    conf.setPwd('taosdata')
     let wsSql = await sqlConnect(conf)
     const topics:string[] = ['pwer_meters_topic']
     let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
-    await wsSql.Exec(dropTopic);
-    await wsSql.Exec(dropDB);
+    await wsSql.exec(dropTopic);
+    await wsSql.exec(dropDB);
 
-    await wsSql.Exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
-    await wsSql.Exec('CREATE STABLE if not exists power.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
-    wsSql.Close();
+    await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
+    await wsSql.exec('CREATE STABLE if not exists power.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
+    wsSql.close();
 }
 
 (async () => {
     let wsSchemaless = null
     try {
         let conf :WSConfig = new WSConfig(dsn)
-        conf.SetUser('root')
-        conf.SetPwd('taosdata')
-        conf.SetDb('power')
+        conf.setUser('root')
+        conf.setPwd('taosdata')
+        conf.setDb('power')
         wsSchemaless = await sqlConnect(conf)
-        await wsSchemaless.SchemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NANO_SECONDS, 0);
-        await wsSchemaless.SchemalessInsert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.SECONDS, 0);
-        await wsSchemaless.SchemalessInsert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, Precision.SECONDS, 0);
-        wsSchemaless.Close();
+        await wsSchemaless.schemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NANO_SECONDS, 0);
+        await wsSchemaless.schemalessInsert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.SECONDS, 0);
+        await wsSchemaless.schemalessInsert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, Precision.SECONDS, 0);
+        wsSchemaless.close();
     } catch (e) {
         console.error(e);
     }finally {
         if (wsSchemaless) {
-            await wsSchemaless.Close();
+            await wsSchemaless.close();
         }
         connectorDestroy()
     }

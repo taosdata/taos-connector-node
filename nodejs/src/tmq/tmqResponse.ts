@@ -136,7 +136,7 @@ export class PartitionsResp{
         this.positions = resp.msg.position;
     }
 
-    SetTopicPartitions(topicPartitions:TopicPartition[]):TopicPartition[] {
+    setTopicPartitions(topicPartitions:TopicPartition[]):TopicPartition[] {
         if (topicPartitions.length != this.positions.length) {
             throw new WebSocketInterfaceError(ErrorCode.ERR_PARTITIONS_TOPIC_VGROUP_LENGTH_NOT_EQUAL, 'TopicPartitions and positions are not equal in length');
         }
@@ -176,11 +176,11 @@ export function parseTmqBlock(rows:number, resp: WSTmqFetchBlockResponse, taosRe
         return taosResult;
     }
 
-    let metaList = taosResult.GetTaosMeta()
-    let taosdata = taosResult.GetData()
+    let metaList = taosResult.getTaosMeta()
+    let taosdata = taosResult.getData()
     if (metaList && rows && taosdata) {
         //get bitmap length
-        let bitMapOffset:number = BitmapLen(rows);
+        let bitMapOffset:number = getBitmapLen(rows);
         //skip data head
         let bufferOffset = 24 + 28 + 5 * metaList.length
         
@@ -250,6 +250,6 @@ export function parseTmqBlock(rows:number, resp: WSTmqFetchBlockResponse, taosRe
     return taosResult;
 }
 
-function BitmapLen(n:number) {
+function getBitmapLen(n:number) {
     return (n + 0x7) >> 3;
 }

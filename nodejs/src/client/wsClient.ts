@@ -41,11 +41,11 @@ export class WsClient {
             },
         };
          
-        this._wsConnector = await WebSocketConnectionPool.Instance().getConnection(this._url, this._timeout);
+        this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
         if (this._wsConnector.readyState() > 0) {
             return;
         } 
-        await this._wsConnector.Ready(); 
+        await this._wsConnector.ready(); 
         let result:any = await this._wsConnector.sendMsg(JSON.stringify(connMsg))
         if (result.msg.code  == 0) {
             return;
@@ -118,10 +118,10 @@ export class WsClient {
         
     }
 
-    async Ready(): Promise<void> {     
-        this._wsConnector = await WebSocketConnectionPool.Instance().getConnection(this._url, this._timeout);
+    async ready(): Promise<void> {     
+        this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
         if (this._wsConnector.readyState() <= 0) {
-            await this._wsConnector.Ready()
+            await this._wsConnector.ready()
         }
         logger.debug("ready status ", this._url, this._wsConnector.readyState())  
         return;              
@@ -168,7 +168,7 @@ export class WsClient {
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(jsonStr).then((e: any) => {
                     let resp:MessageResp = e
-                    taosResult.AddTotalTime(resp.totalTime)
+                    taosResult.addTotalTime(resp.totalTime)
                     // if retrieve JSON then reject with message
                     // else is binary , so parse raw block to TaosResult
                     parseBlock(fetchResponse.rows, new WSFetchBlockResponse(resp.msg), taosResult)
@@ -224,7 +224,7 @@ export class WsClient {
         
         if (this._wsConnector) {
             if (this._wsConnector.readyState() <= 0) {
-                await this._wsConnector.Ready();
+                await this._wsConnector.ready();
             }
             let result:any = await this._wsConnector.sendMsg(JSONBig.stringify(versionMsg)); 
             if (result.msg.code == 0) {
@@ -238,7 +238,7 @@ export class WsClient {
 
     async close():Promise<void> {
         if (this._wsConnector) {
-            await WebSocketConnectionPool.Instance().releaseConnection(this._wsConnector)
+            await WebSocketConnectionPool.instance().releaseConnection(this._wsConnector)
             this._wsConnector = undefined
             // this._wsConnector.close();
         }

@@ -10,48 +10,50 @@ export class WSConfig {
         this._url = url;
     }
 
-    public GetToken(): string | undefined | null {
+    public getToken(): string | undefined | null {
         return this._token;
     }
-    public SetToken(token: string) {
+    public setToken(token: string) {
         this._token = token;
     }
 
-    public GetUser(): string | undefined | null {
+    public getUser(): string | undefined | null {
         return this._user;
     }
-    public SetUser(user: string) {
+    public setUser(user: string) {
         this._user = user;
     }
 
-    public GetPwd(): string | undefined | null {
+    public getPwd(): string | undefined | null {
         return this._password;
     }
-    public SetPwd(pws:string) {
+    public setPwd(pws:string) {
         this._password = pws;
     }
 
-    public GetDb(): string | undefined | null {
+    public getDb(): string | undefined | null {
         return this._db;
     }
-    public SetDb(db: string) {
+    public setDb(db: string) {
         this._db = db;
     }
 
-    public GetUrl(): string {
+    public getUrl(): string {
         return this._url;
     }
 
-    public SetUrl(url: string) {
+    public setUrl(url: string) {
         this._url = url;
     }
     
-    public SetTimeOut(ms : number) {
+    public setTimeOut(ms : number) {
         this._timeout = ms
     }
-    public GetTimeOut(): number | undefined | null {
+    public getTimeOut(): number | undefined | null {
         return this._timeout
     }
 
     
 }
+
+

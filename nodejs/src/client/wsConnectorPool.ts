@@ -14,7 +14,7 @@ export class WebSocketConnectionPool {
         this._connectionCount = 0;
     }
 
-    public static Instance(maxConnections: number = -1):WebSocketConnectionPool {
+    public static instance(maxConnections: number = -1):WebSocketConnectionPool {
         if (!WebSocketConnectionPool._instance) {
             WebSocketConnectionPool._instance = new WebSocketConnectionPool(maxConnections);
         }
@@ -76,7 +76,7 @@ export class WebSocketConnectionPool {
         }
     }
 
-    Destroyed() {
+    destroyed() {
         if (this.pool) {
             for (let values of this.pool.values()) {
                 for (let i in values ) {
@@ -91,28 +91,22 @@ export class WebSocketConnectionPool {
 }
 
 
-// process.on('beforeExit', (code) => {
-//     console.log("begin destroy connect")
-//     WebSocketConnectionPool.Instance().Destroyed()
-//     process.exit()
-// });
+process.on('exit', (code) => {
+    console.log("begin destroy connect")
+    WebSocketConnectionPool.instance().destroyed()
+    process.exit()
+});
 
 process.on('SIGINT', () => {
     console.log('Received SIGINT. Press Control-D to exit, begin destroy connect...');
-    WebSocketConnectionPool.Instance().Destroyed()
+    WebSocketConnectionPool.instance().destroyed()
     process.exit()
 });
 
 process.on('SIGTERM', () => {
     console.log('Received SIGINT. Press Control-D to exit, begin destroy connect');
-    WebSocketConnectionPool.Instance().Destroyed()
+    WebSocketConnectionPool.instance().destroyed()
     process.exit()
 });
 
-
-process.on('unhandledRejection', (reason, promise) => {  
-    console.error('未处理的 Promise 拒绝:', promise, '原因:', reason);  
-    // 这里你可以记录日志、抛出错误或执行其他操作  
-    // 注意：通常不建议在这里简单地抛出错误，因为这可能会中断你的应用程序  
-});
 // process.kill(process.pid, 'SIGINT');

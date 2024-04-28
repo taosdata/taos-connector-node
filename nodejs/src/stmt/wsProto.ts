@@ -80,12 +80,10 @@ export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindT
         if (columnsData[i].data) {
             //get encode column data
             const sourceView = new Uint8Array(columnsData[i].data);
-            //console.log("begin:", dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());
             const destView = new Uint8Array(arrayBuffer, dataOffset, columnsData[i].data.byteLength);
             //splicing data
             destView.set(sourceView);
             dataOffset += columnsData[i].data.byteLength;
-            // console.log("end:",dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());
         }
         headOffset += 5
     }

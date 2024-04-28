@@ -74,7 +74,7 @@ export class WsClient {
     // need to construct Response.
     async exec(queryMsg: string, bSqlQuery:boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
-            // console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
+            logger.debug('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(queryMsg).then((e: any) => {
                     if (e.msg.code == 0) {
@@ -177,7 +177,7 @@ export class WsClient {
 
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(fetchBlockMsg);
-            // console.log("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
+            logger.debug("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(jsonStr).then((e: any) => {
                     let resp:MessageResp = e
@@ -195,7 +195,7 @@ export class WsClient {
 
     async sendMsg(msg:string): Promise<any> {
         return new Promise((resolve, reject) => {
-            // console.log("[wsQueryInterface.sendMsg]===>" + msg)
+            logger.debug("[wsQueryInterface.sendMsg]===>" + msg)
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(msg).then((e: any) => {
                     resolve(e);
@@ -216,7 +216,7 @@ export class WsClient {
         };
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(freeResultMsg);
-            // console.log("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
+            logger.debug("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(jsonStr, false)
                 .then((e: any) => {resolve(e);})

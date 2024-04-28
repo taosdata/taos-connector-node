@@ -92,19 +92,19 @@ export class WebSocketConnectionPool {
 
 
 process.on('exit', (code) => {
-    console.log("begin destroy connect")
+    logger.info("begin destroy connect")
     WebSocketConnectionPool.instance().destroyed()
     process.exit()
 });
 
 process.on('SIGINT', () => {
-    console.log('Received SIGINT. Press Control-D to exit, begin destroy connect...');
+    logger.info('Received SIGINT. Press Control-D to exit, begin destroy connect...');
     WebSocketConnectionPool.instance().destroyed()
     process.exit()
 });
 
 process.on('SIGTERM', () => {
-    console.log('Received SIGINT. Press Control-D to exit, begin destroy connect');
+    logger.info('Received SIGINT. Press Control-D to exit, begin destroy connect');
     WebSocketConnectionPool.instance().destroyed()
     process.exit()
 });

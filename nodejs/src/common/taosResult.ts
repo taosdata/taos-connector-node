@@ -142,7 +142,7 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
         // Offset num of bytes from rawBlockBuffer.
         let bufferOffset = (4 * 5) + 8 + (4 + 1) * metaList.length
         let colLengthBlockSize = INT_32_SIZE * metaList.length
-        // console.log("===colLengthBlockSize:" + colLengthBlockSize)
+        logger.debug("===colLengthBlockSize:" + colLengthBlockSize)
 
         let bitMapSize = (rows + (1 << 3) - 1) >> 3
 

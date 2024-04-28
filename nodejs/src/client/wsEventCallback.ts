@@ -57,10 +57,10 @@ export class WsEventCallback {
     async handleEventCallback(msg: MessageId, messageType:OnMessageType, data:any) {
         let action: MessageAction | any = undefined;
 
-        // console.log("HandleEventCallback msg=", msg, messageType)
+        logger.debug("HandleEventCallback msg=", msg, messageType)
         let release = await eventMutex.acquire()
-        // console.log("HandleEventCallback get lock msg=", msg, messageType)
-        // console.log(WsEventCallback._msgActionRegister)
+        logger.debug("HandleEventCallback get lock msg=", msg, messageType)
+        logger.debug(WsEventCallback._msgActionRegister)
         try {
             for (let [k, v] of  WsEventCallback._msgActionRegister) {
                 if (messageType == OnMessageType.MESSAGE_TYPE_ARRAYBUFFER) {

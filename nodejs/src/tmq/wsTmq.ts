@@ -247,7 +247,7 @@ export class WsConsumer {
             },
         };
         let jsonStr = JSON.stringify(fetchMsg);
-        // console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);    
+        logger.debug('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);    
         let result = await this._wsClient.exec(jsonStr, false);
         return new WsTmqQueryResponse(result);
     }
@@ -261,7 +261,7 @@ export class WsConsumer {
             },
         };   
         let jsonStr = JSON.stringify(fetchMsg);
-        // console.log('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
+        logger.debug('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
         let result = await this._wsClient.sendMsg(jsonStr)
         parseTmqBlock(fetchResponse.rows, new WSTmqFetchBlockResponse(result), taosResult)    
         return taosResult;

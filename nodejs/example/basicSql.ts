@@ -43,7 +43,7 @@ let dsn = 'ws://root:taosdata@localhost:6041';
         wsRows.close()
 
     } catch (err: any) {
-        console.error("dddd", err.code, err.message);
+        console.error(err.code, err.message);
 
     } finally {
         if (wsRows) {

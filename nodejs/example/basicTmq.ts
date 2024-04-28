@@ -1,6 +1,6 @@
 import { WSConfig } from "../src/common/config";
 import { TMQConstants } from "../src/tmq/constant";
-import { connectorDestroy, sqlConnect, tmqConnect } from "../src";
+import { destroy, sqlConnect, tmqConnect } from "../src";
 
 
 const stable = 'meters';
@@ -68,7 +68,7 @@ async function Prepare() {
         if (consumer) {
            await consumer.close();
         }
-        connectorDestroy()
+        destroy()
     }
 })();
 

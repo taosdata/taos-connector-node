@@ -1,7 +1,7 @@
 import { WSConfig } from '../src/common/config';
-import { sqlConnect, connectorDestroy, setLogLevel } from '../src'
+import { sqlConnect, destroy, setLogLevel } from '../src'
 
-let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+let dsn = 'ws://root:taosdata@localhost:6041';
 (async () => {
     let wsSql = null;
     let wsRows = null;
@@ -42,9 +42,8 @@ let dsn = 'ws://root:taosdata@192.168.1.95:6041';
         }
         wsRows.close()
 
-    } catch (e) {
-        let err:any = e
-        console.error(err);
+    } catch (err: any) {
+        console.error("dddd", err.code, err.message);
 
     } finally {
         if (wsRows) {
@@ -53,7 +52,7 @@ let dsn = 'ws://root:taosdata@192.168.1.95:6041';
         if (wsSql) {
            await wsSql.close();
         }
-        connectorDestroy()
+        destroy()
         console.log("finish!")
     }
 })();

@@ -26,11 +26,17 @@ export class WsSql{
         }
         let wsSql = new WsSql(wsConfig);
         let database = wsConfig.getDb();
-        await wsSql._wsClient.connect(database);
-        if(database && database.length > 0) {
-            await wsSql.exec(`use ${database}`);
+        try {
+            await wsSql._wsClient.connect(database);
+            if(database && database.length > 0) {
+                await wsSql.exec(`use ${database}`);
+            }
+            return wsSql;
+        } catch (e: any) {
+            logger.error(e.code, e.message);
+            throw(e);
         }
-        return wsSql;
+
     }
 
     state(){
@@ -75,18 +81,24 @@ export class WsSql{
     }
 
     async stmtInit(reqId?:number): Promise<WsStmt> {
-        if (this._wsClient) {   
-            let precision = PrecisionLength["ms"];
-            if (this.wsConfig.getDb()) {
-                let sql = "select `precision` from information_schema.ins_databases where name = '" + this.wsConfig.getDb() + "'";
-                let result = await this.exec(sql);
-                let data =result.getData()
-                    
-                if (data && data[0] && data[0][0]) {
-                    precision = PrecisionLength[data[0][0]]
+        if (this._wsClient) { 
+            try {
+                let precision = PrecisionLength["ms"];
+                if (this.wsConfig.getDb()) {
+                    let sql = "select `precision` from information_schema.ins_databases where name = '" + this.wsConfig.getDb() + "'";
+                    let result = await this.exec(sql);
+                    let data =result.getData()
+                        
+                    if (data && data[0] && data[0][0]) {
+                        precision = PrecisionLength[data[0][0]]
+                    }
                 }
+                return await WsStmt.newStmt(this._wsClient, precision, reqId);               
+            } catch (e: any) {
+                logger.error(e.code, e.message);
+                throw(e);
             }
-            return await WsStmt.newStmt(this._wsClient, precision, reqId);     
+      
         }
         throw(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "stmt connect closed")); 
     }

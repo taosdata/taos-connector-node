@@ -1,6 +1,6 @@
 require('qingwa')();
 import { WSConfig } from '../src/common/config';
-import { connectorDestroy, sqlConnect } from '../src';
+import { destroy, sqlConnect } from '../src';
 
 let db = 'power'
 let stable = 'meters'
@@ -36,14 +36,14 @@ async function Prepare() {
         let tagParams = stmt.newStmtParam()
         tagParams.setVarchar([tags[0]])
         tagParams.setInt([tags[1]])
-        await stmt.setBinaryTags(tagParams);
+        await stmt.setTags(tagParams);
 
         let bindParams = stmt.newStmtParam()
         bindParams.setTimestamp(multi[0]);
         bindParams.setFloat(multi[1])
         bindParams.setInt(multi[2])
         bindParams.setFloat(multi[3])
-        await stmt.binaryBind(bindParams);
+        await stmt.bind(bindParams);
         await stmt.batch();
         await stmt.exec();
     } catch (e) {
@@ -55,6 +55,6 @@ async function Prepare() {
         if (connector) {
             await connector.close();
         }
-        connectorDestroy()
+        destroy()
     }
 })();

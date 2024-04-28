@@ -56,7 +56,7 @@ async function stmtConnect() {
     expect(stmt).toBeTruthy()      
     await stmt.prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
     await stmt.setTableName('d1001');
-    await stmt.setTags(tags)
+    await stmt.setJsonTags(tags)
     let lastTs = 0
     const allp:any[] = []
     for (let i = 0; i < 10; i++) {
@@ -64,7 +64,7 @@ async function stmtConnect() {
             multi[0][j] = multi[0][0] + j;
             lastTs = multi[0][j]
         }
-        allp.push(stmt.bind(multi))
+        allp.push(stmt.jsonBind(multi))
         multi[0][0] = lastTs + 1
 
     }

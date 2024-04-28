@@ -122,7 +122,7 @@ describe('TDWebSocket.Stmt()', () => {
         tagParams.setDouble([stableTags[10]])
         tagParams.setBinary([stableTags[11]])
         tagParams.setNchar([stableTags[12]])
-        await stmt.setBinaryTags(tagParams);
+        await stmt.setTags(tagParams);
 
         let bindParams = stmt.newStmtParam();
         bindParams.setTimestamp(tableValues[0])
@@ -144,7 +144,7 @@ describe('TDWebSocket.Stmt()', () => {
         bindParams.setGeometry(geoDataArray)
         bindParams.setVarBinary(varbinary)
     
-        await stmt.binaryBind(bindParams);
+        await stmt.bind(bindParams);
         await stmt.batch()
         await stmt.exec()
         expect(stmt.getLastAffected()).toEqual(5)
@@ -179,7 +179,7 @@ describe('TDWebSocket.Stmt()', () => {
         tagParams.setDouble([stableCNTags[10]])
         tagParams.setBinary([stableCNTags[11]])
         tagParams.setNchar([stableCNTags[12]])
-        await stmt.setBinaryTags(tagParams);
+        await stmt.setTags(tagParams);
 
         let bindParams = stmt.newStmtParam();
         bindParams.setTimestamp(tableCNValues[0])
@@ -201,7 +201,7 @@ describe('TDWebSocket.Stmt()', () => {
         bindParams.setGeometry(geoDataArray)
         bindParams.setVarBinary(varbinary)
     
-        await stmt.binaryBind(bindParams);
+        await stmt.bind(bindParams);
         await stmt.batch()
         await stmt.exec()
         expect(stmt.getLastAffected()).toEqual(5)
@@ -223,7 +223,7 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.setTableName(`${jsonTable}_001`);
         let tagParams = stmt.newStmtParam();
         tagParams.setJson(jsonTags);
-        await stmt.setBinaryTags(tagParams);
+        await stmt.setTags(tagParams);
 
         let bindParams = stmt.newStmtParam();
         bindParams.setTimestamp(tableCNValues[0])
@@ -245,7 +245,7 @@ describe('TDWebSocket.Stmt()', () => {
         bindParams.setGeometry(geoDataArray)
         bindParams.setVarBinary(varbinary)
     
-        await stmt.binaryBind(bindParams);
+        await stmt.bind(bindParams);
         await stmt.batch()
         await stmt.exec()
         expect(stmt.getLastAffected()).toEqual(5)
@@ -267,7 +267,7 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.setTableName(`${jsonTable}_001`);
         let tagParams = stmt.newStmtParam();
         tagParams.setJson(jsonTagsCN);
-        await stmt.setBinaryTags(tagParams);
+        await stmt.setTags(tagParams);
 
         let bindParams = stmt.newStmtParam();
         bindParams.setTimestamp(tableCNValues[0])
@@ -289,7 +289,7 @@ describe('TDWebSocket.Stmt()', () => {
         bindParams.setGeometry(geoDataArray)
         bindParams.setVarBinary(varbinary)
     
-        await stmt.binaryBind(bindParams);
+        await stmt.bind(bindParams);
         await stmt.batch()
         await stmt.exec()
         expect(stmt.getLastAffected()).toEqual(5)

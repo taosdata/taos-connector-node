@@ -40,19 +40,27 @@ export class WsClient {
                 db: _db,
             },
         };
-         
+        
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
         if (this._wsConnector.readyState() > 0) {
+            
             return;
         } 
-        await this._wsConnector.ready(); 
-        let result:any = await this._wsConnector.sendMsg(JSON.stringify(connMsg))
-        if (result.msg.code  == 0) {
-            return;
-        }
-
-        throw(new WebSocketQueryError(result.msg.code, result.msg.message));
+        try {
+            this._wsConnector.ready();
         
+            let result: any = await this._wsConnector.sendMsg(JSON.stringify(connMsg))
+            if (result.msg.code  == 0) {
+                return;
+            }
+            throw(new WebSocketQueryError(result.msg.code, result.msg.message));            
+       
+        } catch (e: any) {
+            logger.error(e.code, e.message);
+            throw(e);
+        }
+     
+
     }
 
     async execNoResp(queryMsg: string): Promise<void> {
@@ -121,7 +129,7 @@ export class WsClient {
     async ready(): Promise<void> {     
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
         if (this._wsConnector.readyState() <= 0) {
-            await this._wsConnector.ready()
+            this._wsConnector.ready()
         }
         logger.debug("ready status ", this._url, this._wsConnector.readyState())  
         return;              
@@ -224,7 +232,7 @@ export class WsClient {
         
         if (this._wsConnector) {
             if (this._wsConnector.readyState() <= 0) {
-                await this._wsConnector.ready();
+                this._wsConnector.ready();
             }
             let result:any = await this._wsConnector.sendMsg(JSONBig.stringify(versionMsg)); 
             if (result.msg.code == 0) {

@@ -70,7 +70,7 @@ describe('TDWebSocket.Stmt()', () => {
         let params = stmt.newStmtParam()
         params.setVarchar([tags[0]]);
         params.setInt([tags[1]]);        
-        await stmt.setBinaryTags(params)
+        await stmt.setTags(params)
         await stmt.close()
         await connector.close();
     }); 
@@ -88,7 +88,7 @@ describe('TDWebSocket.Stmt()', () => {
         let params = stmt.newStmtParam()
         params.setVarchar([tags[0]]);
         try {
-          await stmt.setBinaryTags(params)          
+          await stmt.setTags(params)          
         } catch(err:any) {
             expect(err.message).toMatch('stmt tags count not match')
         }       
@@ -149,7 +149,7 @@ describe('TDWebSocket.Stmt()', () => {
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
         params.setInt([7]);
-        await stmt.setBinaryTags(params) 
+        await stmt.setTags(params) 
 
         let lastTs = 0
         const allp:any[] = []
@@ -164,7 +164,7 @@ describe('TDWebSocket.Stmt()', () => {
             dataParams.setFloat(multi[1])
             dataParams.setInt(multi[2])
             dataParams.setFloat(multi[3])
-            allp.push(stmt.binaryBind(dataParams))
+            allp.push(stmt.bind(dataParams))
             multi[0][0] = lastTs + 1
 
         }
@@ -190,7 +190,7 @@ describe('TDWebSocket.Stmt()', () => {
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
         params.setInt([7]);
-        await stmt.setBinaryTags(params) 
+        await stmt.setTags(params) 
         let multi = [
             [1709183268567, 1709183268568],
             [10.2, 10.3, 10.4, 10.5],
@@ -203,7 +203,7 @@ describe('TDWebSocket.Stmt()', () => {
             dataParams.setFloat(multi[1])
             dataParams.setInt(multi[2])
             dataParams.setFloat(multi[3])
-            await stmt.binaryBind(dataParams)
+            await stmt.bind(dataParams)
             await stmt.batch()
             await stmt.exec()
         }catch(e) {
@@ -227,7 +227,7 @@ describe('TDWebSocket.Stmt()', () => {
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
         params.setInt([7]);
-        await stmt.setBinaryTags(params) 
+        await stmt.setTags(params) 
         let multi = [
             [1709183268567, 1709183268568],
             [10.2, 10.3],
@@ -240,7 +240,7 @@ describe('TDWebSocket.Stmt()', () => {
             dataParams.setFloat(multi[1])
             dataParams.setInt(multi[2])
             dataParams.setFloat(multi[3])
-            await stmt.binaryBind(dataParams)
+            await stmt.bind(dataParams)
             await stmt.exec()
         }catch(e) {
             let err:any = e
@@ -263,7 +263,7 @@ describe('TDWebSocket.Stmt()', () => {
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
         params.setInt([7]);
-        await stmt.setBinaryTags(params) 
+        await stmt.setTags(params) 
         let multi1 = [
             [1709188881548, 1709188881549],
             [10.2, 10.3],
@@ -282,7 +282,7 @@ describe('TDWebSocket.Stmt()', () => {
         dataParams.setFloat(multi1[1])
         dataParams.setInt(multi1[2])
         dataParams.setFloat(multi1[3])
-        await stmt.binaryBind(dataParams)
+        await stmt.bind(dataParams)
         await stmt.batch()
 
         dataParams = stmt.newStmtParam()
@@ -290,7 +290,7 @@ describe('TDWebSocket.Stmt()', () => {
         dataParams.setFloat(multi2[1])
         dataParams.setInt(multi2[2])
         dataParams.setFloat(multi2[3])
-        await stmt.binaryBind(dataParams)
+        await stmt.bind(dataParams)
         await stmt.batch()
         await stmt.exec()
         expect(stmt.getLastAffected()).toEqual(4)
@@ -315,7 +315,7 @@ describe('TDWebSocket.Stmt()', () => {
             dataParams.setFloat(multi[1])
             dataParams.setInt(multi[2])
             dataParams.setFloat(multi[3])
-            await stmt.binaryBind(dataParams)
+            await stmt.bind(dataParams)
             await stmt.batch()
             await stmt.exec()
         }catch(e) {
@@ -339,13 +339,13 @@ describe('TDWebSocket.Stmt()', () => {
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
         params.setInt([7]);
-        await stmt.setBinaryTags(params) 
+        await stmt.setTags(params) 
         let dataParams = stmt.newStmtParam()
         dataParams.setTimestamp(multi[0])
         dataParams.setFloat(multi[1])
         dataParams.setInt(multi[2])
         dataParams.setFloat(multi[3])
-        await stmt.binaryBind(dataParams)
+        await stmt.bind(dataParams)
         
         await stmt.batch()
         await stmt.exec()
@@ -370,7 +370,7 @@ describe('TDWebSocket.Stmt()', () => {
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
         params.setInt([7]);
-        await stmt.setBinaryTags(params) 
+        await stmt.setTags(params) 
         let multi1 = [
             [1709188881548, 1709188881549],
             [10.2, 10.3],
@@ -382,7 +382,7 @@ describe('TDWebSocket.Stmt()', () => {
         dataParams.setFloat(multi1[1])
         dataParams.setInt(multi1[2])
         dataParams.setFloat(multi1[3])
-        await stmt.binaryBind(dataParams)
+        await stmt.bind(dataParams)
         await stmt.batch()
         await stmt.exec()
         await stmt.close()

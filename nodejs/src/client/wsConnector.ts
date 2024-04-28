@@ -20,7 +20,7 @@ export class WebSocketConnector {
                 this._timeout = timeout
             }
             this._wsConn = new w3cwebsocket(origin.concat(pathname).concat(search));
-            this._wsConn.onerror = function (err: Error) { logger.error(err.message); throw err }
+            this._wsConn.onerror = function (err: Error) { logger.error(err.message); throw err; }
 
             this._wsConn.onclose = this._onclose
 
@@ -31,13 +31,12 @@ export class WebSocketConnector {
         }
     }
 
-    async ready(): Promise<WebSocketConnector> {
-        return new Promise((resolve, reject) => {
-            this._wsConn.onopen = () => {
-                logger.debug("websocket connection opened")
-                resolve(this);
-            }
-        })
+    ready() {  
+        this._wsConn.onopen = () => {
+            logger.debug("websocket connection opened")
+            return
+        }
+        throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `websocket connect fail, url:${this._wsURL}`))
     }
 
     private async _onclose(e: ICloseEvent) {
@@ -76,7 +75,7 @@ export class WebSocketConnector {
             this._wsConn.close();
             
         } else {
-            throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION, "WebSocket connection is undefined.")
+            throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, "WebSocket connection is undefined.")
         }
     }
 
@@ -96,7 +95,7 @@ export class WebSocketConnector {
                 this._wsConn.send(message)
                 resolve()
             } else {
-                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, 
+                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, 
                     `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
             }
         })
@@ -120,7 +119,7 @@ export class WebSocketConnector {
                 logger.debug("[wsClient.sendMessage.msg]===>\n", message)
                 this._wsConn.send(message)
             } else {
-                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, 
+                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, 
                     `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
             }
         })
@@ -137,7 +136,7 @@ export class WebSocketConnector {
                 logger.debug("[wsClient.sendBinaryMsg()]===>" + reqId, action, message.byteLength)
                 this._wsConn.send(message)
             } else {
-                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, 
+                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, 
                     `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
             }
         })

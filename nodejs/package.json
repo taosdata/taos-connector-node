@@ -1,6 +1,6 @@
 {
-  "name": "@kevin_men/websocket",
-  "version": "3.0.5",
+  "name": "@tdengine/websocket",
+  "version": "3.0.6",
   "description": "TDengine Connector for nodejs and browser using WebSocket.",
   "source": "index.ts",
   "main": "dist/index.js",

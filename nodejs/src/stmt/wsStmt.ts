@@ -4,6 +4,7 @@ import { WsStmtQueryResponse, StmtMessageInfo, binaryBlockEncode, StmtBindType }
 import { ReqId } from '../common/reqid';
 import { PrecisionLength } from '../common/constant';
 import { StmtBindParams } from './wsParams';
+import logger from '../common/log';
 
 export class WsStmt {
     private _wsClient: WsClient;
@@ -19,8 +20,14 @@ export class WsStmt {
     }
 
     static async newStmt(wsClient: WsClient, precision?:number, reqId?:number): Promise<WsStmt> {
-        let wsStmt = new WsStmt(wsClient, precision)
-        return await wsStmt.init(reqId);
+        try {
+            let wsStmt = new WsStmt(wsClient, precision)
+            return await wsStmt.init(reqId);
+        } catch(e: any) {
+            logger.error(e.code, e.message);
+            throw(e);
+        }
+
     }
 
     async prepare(sql: string): Promise<void> {
@@ -47,7 +54,7 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    async setTags(tags: Array<any>): Promise<void> {
+    async setJsonTags(tags: Array<any>): Promise<void> {
         let queryMsg = {
             action: 'set_tags',
             args: {
@@ -63,7 +70,7 @@ export class WsStmt {
         return new StmtBindParams(this._precision);
     }
 
-    async setBinaryTags(paramsArray:StmtBindParams): Promise<void> {
+    async setTags(paramsArray:StmtBindParams): Promise<void> {
         if (!paramsArray || !this._stmt_id) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBinaryTags paramArray is invalid!")
         }
@@ -77,7 +84,7 @@ export class WsStmt {
         return await this.sendBinaryMsg(reqId, 'set_tags', dataBlock);
     }
 
-    async binaryBind(paramsArray:StmtBindParams): Promise<void> {
+    async bind(paramsArray:StmtBindParams): Promise<void> {
         if (!paramsArray || !this._stmt_id) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "BinaryBind paramArray is invalid!")
         }
@@ -91,7 +98,7 @@ export class WsStmt {
         return await this.sendBinaryMsg(reqId, 'bind', dataBlock);
     }
 
-    async bind(paramArray: Array<Array<any>>): Promise<void> {
+    async jsonBind(paramArray: Array<Array<any>>): Promise<void> {
         let queryMsg = {
             action: 'bind',
             args: {
@@ -194,18 +201,24 @@ export class WsStmt {
     }
 
     private async init(reqId?: number):Promise<WsStmt> {      
-        if (this._wsClient) {       
-            if (this._wsClient.getState() <= 0) {
-                await this._wsClient.connect();
-            }
-            let queryMsg = {
-                action: 'init',
-                args: {
-                    req_id: ReqId.getReqID(reqId),
-                },
-            };
-            await this.execute(queryMsg);
-            return this;      
+        if (this._wsClient) {   
+            try {
+                if (this._wsClient.getState() <= 0) {
+                    await this._wsClient.connect();
+                }
+                let queryMsg = {
+                    action: 'init',
+                    args: {
+                        req_id: ReqId.getReqID(reqId),
+                    },
+                };
+                await this.execute(queryMsg);
+                return this;  
+            } catch (e: any) {
+                logger.error(e.code, e.message);
+                throw(e);
+            }   
+    
         }
         throw(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "stmt connect closed"));        
     }

@@ -1,4 +1,3 @@
-require('qingwa')();
 import { WSConfig } from '../src/common/config';
 import { destroy, sqlConnect } from '../src';
 

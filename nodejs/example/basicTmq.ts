@@ -2,7 +2,6 @@ import { WSConfig } from "../src/common/config";
 import { TMQConstants } from "../src/tmq/constant";
 import { destroy, sqlConnect, tmqConnect } from "../src";
 
-
 const stable = 'meters';
 const db = 'power'
 const topics:string[] = ['pwer_meters_topic']

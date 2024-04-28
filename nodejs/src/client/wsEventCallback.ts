@@ -21,6 +21,7 @@ export enum OnMessageType {
     MESSAGE_TYPE_ARRAYBUFFER = 1,
     MESSAGE_TYPE_BLOB = 2,
     MESSAGE_TYPE_STRING = 3,
+    MESSAGE_TYPE_CONNECTION = 4
 }
 
 const eventMutex = new Mutex();
@@ -74,7 +75,13 @@ export class WsEventCallback {
                         WsEventCallback._msgActionRegister.delete(k)
                         break;
                     } 
-                }else if (messageType == OnMessageType.MESSAGE_TYPE_STRING) {
+                } else if (messageType == OnMessageType.MESSAGE_TYPE_STRING) {
+                    if (k.req_id == msg.req_id && k.action == msg.action) {
+                        action = v
+                        WsEventCallback._msgActionRegister.delete(k)
+                        break;
+                    }
+                } else if (messageType == OnMessageType.MESSAGE_TYPE_CONNECTION) {
                     if (k.req_id == msg.req_id && k.action == msg.action) {
                         action = v
                         WsEventCallback._msgActionRegister.delete(k)

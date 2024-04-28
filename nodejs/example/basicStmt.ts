@@ -11,7 +11,7 @@ let multi = [
     [292, 293, 294],
     [0.32, 0.33, 0.34],
 ];
-let dsn = 'ws://root:taosdata@localhost:6041';
+let dsn = 'ws://root:taosdata@192.168.1.95:6041';
 async function Prepare() {
 
     let conf :WSConfig = new WSConfig(dsn)

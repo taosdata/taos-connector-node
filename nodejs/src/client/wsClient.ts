@@ -43,11 +43,10 @@ export class WsClient {
         
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
         if (this._wsConnector.readyState() > 0) {
-            
             return;
         } 
         try {
-            this._wsConnector.ready();
+            await this._wsConnector.ready();
         
             let result: any = await this._wsConnector.sendMsg(JSON.stringify(connMsg))
             if (result.msg.code  == 0) {
@@ -57,7 +56,7 @@ export class WsClient {
        
         } catch (e: any) {
             logger.error(e.code, e.message);
-            throw(e);
+            throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}`));
         }
      
 
@@ -126,13 +125,19 @@ export class WsClient {
         
     }
 
-    async ready(): Promise<void> {     
-        this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
-        if (this._wsConnector.readyState() <= 0) {
-            this._wsConnector.ready()
-        }
-        logger.debug("ready status ", this._url, this._wsConnector.readyState())  
-        return;              
+    async ready(): Promise<void> {
+        try {
+            this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
+            if (this._wsConnector.readyState() <= 0) {
+                await this._wsConnector.ready()
+            }
+            logger.debug("ready status ", this._url, this._wsConnector.readyState())  
+            return;             
+        } catch (e: any) {
+            logger.error(e.code, e.message);
+            throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}`));
+        }  
+             
     }
 
     async fetch(res: WSQueryResponse): Promise<WSFetchResponse> {
@@ -231,14 +236,20 @@ export class WsClient {
         };
         
         if (this._wsConnector) {
-            if (this._wsConnector.readyState() <= 0) {
-                this._wsConnector.ready();
+            try {
+                if (this._wsConnector.readyState() <= 0) {
+                    await this._wsConnector.ready();
+                }
+                let result:any = await this._wsConnector.sendMsg(JSONBig.stringify(versionMsg)); 
+                if (result.msg.code == 0) {
+                    return new WSVersionResponse(result).version;
+                } 
+                throw(new WebSocketInterfaceError(result.msg.code, result.msg.message));                
+            } catch (e: any) {
+                logger.error(e.code, e.message);
+                throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}`));
             }
-            let result:any = await this._wsConnector.sendMsg(JSONBig.stringify(versionMsg)); 
-            if (result.msg.code == 0) {
-                return new WSVersionResponse(result).version;
-            } 
-            throw(new WebSocketInterfaceError(result.msg.code, result.msg.message));
+
                                
         }
         throw(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect");

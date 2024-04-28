@@ -2,6 +2,7 @@ import { ICloseEvent, w3cwebsocket } from 'websocket';
 import { ErrorCode, TDWebSocketClientError, WebSocketQueryError } from '../common/wsError'
 import { OnMessageType, WsEventCallback } from './wsEventCallback';
 import logger from '../common/log';
+import { ReqId } from '../common/reqid';
 
 export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
@@ -31,12 +32,19 @@ export class WebSocketConnector {
         }
     }
 
-    ready() {  
-        this._wsConn.onopen = () => {
-            logger.debug("websocket connection opened")
-            return
-        }
-        throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `websocket connect fail, url:${this._wsURL}`))
+    async ready() {
+
+        return new Promise((resolve, reject) => {
+            let reqId = ReqId.getReqID();
+            WsEventCallback.instance().registerCallback({ action: "websocket_connection", req_id: BigInt(reqId), 
+                timeout:this._timeout, id: BigInt(reqId)}, resolve, reject);
+
+            this._wsConn.onopen = () => {
+                logger.debug("websocket connection opened")
+                WsEventCallback.instance().handleEventCallback({id: BigInt(reqId), action:"websocket_connection", req_id:BigInt(reqId)}, 
+                OnMessageType.MESSAGE_TYPE_CONNECTION, this);
+            }
+        })
     }
 
     private async _onclose(e: ICloseEvent) {
@@ -130,8 +138,7 @@ export class WebSocketConnector {
             if (this._wsConn && this._wsConn.readyState > 0) {
                 if (register) {
                     WsEventCallback.instance().registerCallback({ action: action, req_id: reqId, 
-                        timeout:this._timeout, id: reqId}, 
-                        resolve, reject);
+                        timeout:this._timeout, id: reqId}, resolve, reject);
                 }
                 logger.debug("[wsClient.sendBinaryMsg()]===>" + reqId, action, message.byteLength)
                 this._wsConn.send(message)

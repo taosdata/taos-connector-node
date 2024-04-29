@@ -1,7 +1,7 @@
 nodejs/examples/run_all.sh
 nodejs/examples/ws.js
 nodejs/.parcel-cache/
-nodejs/dist/
+nodejs/lib/
 nodejs/node_modules/
 nodejs/tsc/
 nodejs/coverage/

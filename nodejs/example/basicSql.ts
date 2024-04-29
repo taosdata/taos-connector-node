@@ -9,6 +9,8 @@ let dsn = 'ws://root:taosdata@localhost:6041';
     try {
         setLogLevel("debug")
         let conf :WSConfig = new WSConfig(dsn)
+        conf.setUser('root')
+        conf.setPwd('taosdata')
         wsSql = await sqlConnect(conf)
 
         let version = await wsSql.version();

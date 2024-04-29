@@ -3,16 +3,16 @@
   "version": "3.1.0",
   "description": "TDengine Connector for nodejs and browser using WebSocket.",
   "source": "index.ts",
-  "main": "dist/index.js",
-  "module": "dist/module/index.mjs",
-  "types": "dist/index.d.ts",
+  "main": "lib/index.js",
+  "module": "lib/module/index.mjs",
+  "types": "lib/index.d.ts",
   "directories": {
     "example": "example",
     "test": "test"
   },
   "scripts": {
     "test": "jest --coverage",
-    "example": "tsc && node dist/example/basicSql.js",
+    "example": "tsc && node lib/example/basicSql.js",
     "build": "tsc",
     "prepublish": "node ./prepare.js"
   },

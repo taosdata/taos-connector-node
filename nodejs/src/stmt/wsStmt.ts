@@ -4,6 +4,7 @@ import { WsStmtQueryResponse, StmtMessageInfo, binaryBlockEncode, StmtBindType }
 import { ReqId } from '../common/reqid';
 import { PrecisionLength } from '../common/constant';
 import { StmtBindParams } from './wsParams';
+import logger from '../common/log';
 
 export class WsStmt {
     private _wsClient: WsClient;
@@ -18,12 +19,18 @@ export class WsStmt {
         }
     }
 
-    static async NewStmt(wsClient: WsClient, precision?:number, reqId?:number): Promise<WsStmt> {
-        let wsStmt = new WsStmt(wsClient, precision)
-        return await wsStmt.init(reqId);
+    static async newStmt(wsClient: WsClient, precision?:number, reqId?:number): Promise<WsStmt> {
+        try {
+            let wsStmt = new WsStmt(wsClient, precision)
+            return await wsStmt.init(reqId);
+        } catch(e: any) {
+            logger.error(e.code, e.message);
+            throw(e);
+        }
+
     }
 
-    async Prepare(sql: string): Promise<void> {
+    async prepare(sql: string): Promise<void> {
         let queryMsg = {
             action: 'prepare',
             args: {
@@ -35,7 +42,7 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    async SetTableName(tableName: string): Promise<void> {
+    async setTableName(tableName: string): Promise<void> {
         let queryMsg = {
             action: 'set_table_name',
             args: {
@@ -47,7 +54,7 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    async SetTags(tags: Array<any>): Promise<void> {
+    async setJsonTags(tags: Array<any>): Promise<void> {
         let queryMsg = {
             action: 'set_tags',
             args: {
@@ -59,39 +66,39 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    NewStmtParam():StmtBindParams {
+    newStmtParam():StmtBindParams {
         return new StmtBindParams(this._precision);
     }
 
-    async SetBinaryTags(paramsArray:StmtBindParams): Promise<void> {
+    async setTags(paramsArray:StmtBindParams): Promise<void> {
         if (!paramsArray || !this._stmt_id) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBinaryTags paramArray is invalid!")
         }
 
-        let columnInfos = paramsArray.GetParams();
+        let columnInfos = paramsArray.getParams();
         if (!columnInfos) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBinaryTags paramArray is invalid!") 
         }
         let reqId = BigInt(ReqId.getReqID())
-        let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_TAG, this._stmt_id, reqId, paramsArray.GetDataRows())
+        let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_TAG, this._stmt_id, reqId, paramsArray.getDataRows())
         return await this.sendBinaryMsg(reqId, 'set_tags', dataBlock);
     }
 
-    async BinaryBind(paramsArray:StmtBindParams): Promise<void> {
+    async bind(paramsArray:StmtBindParams): Promise<void> {
         if (!paramsArray || !this._stmt_id) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "BinaryBind paramArray is invalid!")
         }
 
-        let columnInfos = paramsArray.GetParams();
+        let columnInfos = paramsArray.getParams();
         if (!columnInfos) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "BinaryBind paramArray is invalid!") 
         }
         let reqId = BigInt(ReqId.getReqID())
-        let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_BIND, this._stmt_id, reqId, paramsArray.GetDataRows());
+        let dataBlock = binaryBlockEncode(paramsArray, StmtBindType.STMT_TYPE_BIND, this._stmt_id, reqId, paramsArray.getDataRows());
         return await this.sendBinaryMsg(reqId, 'bind', dataBlock);
     }
 
-    async Bind(paramArray: Array<Array<any>>): Promise<void> {
+    async jsonBind(paramArray: Array<Array<any>>): Promise<void> {
         let queryMsg = {
             action: 'bind',
             args: {
@@ -103,7 +110,7 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    async Batch(): Promise<void> {
+    async batch(): Promise<void> {
         let queryMsg = {
             action: 'add_batch',
             args: {
@@ -117,11 +124,11 @@ export class WsStmt {
     /**
      * return client version.
      */
-    async Version(): Promise<string> {
+    async version(): Promise<string> {
         return await this._wsClient.version();
     }
 
-    async Exec(): Promise<void> {
+    async exec(): Promise<void> {
         let queryMsg = {
             action: 'exec',
             args: {
@@ -132,11 +139,11 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    GetLastAffected() {
+    getLastAffected() {
         return this.lastAffected;
     }
 
-    async Close(): Promise<void> {
+    async close(): Promise<void> {
         let queryMsg = {
             action: 'close',
             args: {
@@ -194,18 +201,24 @@ export class WsStmt {
     }
 
     private async init(reqId?: number):Promise<WsStmt> {      
-        if (this._wsClient) {       
-            if (this._wsClient.getState() <= 0) {
-                await this._wsClient.connect();
-            }
-            let queryMsg = {
-                action: 'init',
-                args: {
-                    req_id: ReqId.getReqID(reqId),
-                },
-            };
-            await this.execute(queryMsg);
-            return this;      
+        if (this._wsClient) {   
+            try {
+                if (this._wsClient.getState() <= 0) {
+                    await this._wsClient.connect();
+                }
+                let queryMsg = {
+                    action: 'init',
+                    args: {
+                        req_id: ReqId.getReqID(reqId),
+                    },
+                };
+                await this.execute(queryMsg);
+                return this;  
+            } catch (e: any) {
+                logger.error(e.code, e.message);
+                throw(e);
+            }   
+    
         }
         throw(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "stmt connect closed"));        
     }

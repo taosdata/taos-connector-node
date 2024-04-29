@@ -2,6 +2,7 @@ import { ICloseEvent, w3cwebsocket } from 'websocket';
 import { ErrorCode, TDWebSocketClientError, WebSocketQueryError } from '../common/wsError'
 import { OnMessageType, WsEventCallback } from './wsEventCallback';
 import logger from '../common/log';
+import { ReqId } from '../common/reqid';
 
 export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
@@ -20,7 +21,7 @@ export class WebSocketConnector {
                 this._timeout = timeout
             }
             this._wsConn = new w3cwebsocket(origin.concat(pathname).concat(search));
-            this._wsConn.onerror = function (err: Error) { logger.error(err.message); throw err }
+            this._wsConn.onerror = function (err: Error) { logger.error(err.message); throw err; }
 
             this._wsConn.onclose = this._onclose
 
@@ -31,11 +32,17 @@ export class WebSocketConnector {
         }
     }
 
-    async Ready(): Promise<WebSocketConnector> {
+    async ready() {
+
         return new Promise((resolve, reject) => {
+            let reqId = ReqId.getReqID();
+            WsEventCallback.instance().registerCallback({ action: "websocket_connection", req_id: BigInt(reqId), 
+                timeout:this._timeout, id: BigInt(reqId)}, resolve, reject);
+
             this._wsConn.onopen = () => {
                 logger.debug("websocket connection opened")
-                resolve(this);
+                WsEventCallback.instance().handleEventCallback({id: BigInt(reqId), action:"websocket_connection", req_id:BigInt(reqId)}, 
+                OnMessageType.MESSAGE_TYPE_CONNECTION, this);
             }
         })
     }
@@ -50,20 +57,20 @@ export class WebSocketConnector {
         logger.debug("wsClient._onMessage()===="+ (Object.prototype.toString.call(data)))
         if (Object.prototype.toString.call(data) === '[object ArrayBuffer]') {
             let id = new DataView(data, 8, 8).getBigUint64(0, true);
-            WsEventCallback.Instance().HandleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
+            WsEventCallback.instance().handleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
                 OnMessageType.MESSAGE_TYPE_ARRAYBUFFER, data);
 
         } else if (Object.prototype.toString.call(data) === '[object Blob]') {
             data.arrayBuffer().then((d: ArrayBuffer) => {
                 let id = new DataView(d, 8, 8).getBigUint64(0, true);
-                WsEventCallback.Instance().HandleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
+                WsEventCallback.instance().handleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
                     OnMessageType.MESSAGE_TYPE_BLOB, d);
             })
 
         } else if (Object.prototype.toString.call(data) === '[object String]') {
             let msg = JSON.parse(data)
             logger.debug("[_onmessage.stringType]==>:" + data);
-            WsEventCallback.Instance().HandleEventCallback({id:BigInt(0), action:msg.action, req_id:msg.req_id}, 
+            WsEventCallback.instance().handleEventCallback({id:BigInt(0), action:msg.action, req_id:msg.req_id}, 
                 OnMessageType.MESSAGE_TYPE_STRING, msg);
         } else {
             throw new TDWebSocketClientError(ErrorCode.ERR_INVALID_MESSAGE_TYPE, 
@@ -76,7 +83,7 @@ export class WebSocketConnector {
             this._wsConn.close();
             
         } else {
-            throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION, "WebSocket connection is undefined.")
+            throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, "WebSocket connection is undefined.")
         }
     }
 
@@ -96,7 +103,7 @@ export class WebSocketConnector {
                 this._wsConn.send(message)
                 resolve()
             } else {
-                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, 
+                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, 
                     `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
             }
         })
@@ -113,14 +120,14 @@ export class WebSocketConnector {
         return new Promise((resolve, reject) => {
             if (this._wsConn && this._wsConn.readyState > 0) {
                 if (register) {
-                    WsEventCallback.Instance().RegisterCallback({ action: msg.action, req_id: msg.args.req_id, 
+                    WsEventCallback.instance().registerCallback({ action: msg.action, req_id: msg.args.req_id, 
                         timeout:this._timeout, id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id) }, 
                         resolve, reject);
                 }
                 logger.debug("[wsClient.sendMessage.msg]===>\n", message)
                 this._wsConn.send(message)
             } else {
-                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, 
+                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, 
                     `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
             }
         })
@@ -130,14 +137,13 @@ export class WebSocketConnector {
         return new Promise((resolve, reject) => {
             if (this._wsConn && this._wsConn.readyState > 0) {
                 if (register) {
-                    WsEventCallback.Instance().RegisterCallback({ action: action, req_id: reqId, 
-                        timeout:this._timeout, id: reqId}, 
-                        resolve, reject);
+                    WsEventCallback.instance().registerCallback({ action: action, req_id: reqId, 
+                        timeout:this._timeout, id: reqId}, resolve, reject);
                 }
                 logger.debug("[wsClient.sendBinaryMsg()]===>" + reqId, action, message.byteLength)
                 this._wsConn.send(message)
             } else {
-                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION, 
+                reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, 
                     `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
             }
         })

@@ -60,34 +60,34 @@ const selectJsonTable = `select * from ${jsonTable}`
 const selectJsonTableCN = `select * from ${jsonTableCN}`
 
 beforeAll(async () => {
-    let ws = await WsSql.Open(conf);
-    await ws.Exec(dropDB)
-    await ws.Exec(createDB);
-    await ws.Exec(useDB);
-    await ws.Exec(createSTable(stable));
-    await ws.Exec(createSTable(stableCN));
-    await ws.Exec(createTable(table));
-    await ws.Exec(createTable(tableCN));
-    await ws.Exec(createSTableJSON(jsonTable));
-    await ws.Exec(createSTableJSON(jsonTableCN));
-    await ws.Close()
+    let ws = await WsSql.open(conf);
+    await ws.exec(dropDB)
+    await ws.exec(createDB);
+    await ws.exec(useDB);
+    await ws.exec(createSTable(stable));
+    await ws.exec(createSTable(stableCN));
+    await ws.exec(createTable(table));
+    await ws.exec(createTable(tableCN));
+    await ws.exec(createSTableJSON(jsonTable));
+    await ws.exec(createSTableJSON(jsonTableCN));
+    await ws.close()
 })
 
 describe('ws.query(stable)', () => {
     jest.setTimeout(20 * 1000)
     test('Insert query stable without CN character', async () => {
-        let ws = await WsSql.Open(conf);
-        await ws.Exec(useDB);
+        let ws = await WsSql.open(conf);
+        await ws.exec(useDB);
         let insert = insertStable(tableValues, stableTags, stable)
-        let insertRes = await ws.Exec(insert)
-        expect(insertRes.GetAffectRows()).toBe(5)
+        let insertRes = await ws.exec(insert)
+        expect(insertRes.getAffectRows()).toBe(5)
 
-        let queryRes = await ws.Exec(selectStable)
+        let queryRes = await ws.exec(selectStable)
         let expectMeta = tableMeta.concat(tagMeta)
         let expectData = expectStableData(tableValues, stableTags)
-        let actualMeta = queryRes.GetMeta()
-        let actualData = queryRes.GetData()
-        await ws.Close()
+        let actualMeta = queryRes.getMeta()
+        let actualData = queryRes.getData()
+        await ws.close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 expect(meta.name).toBe(expectMeta[index].name)
@@ -119,21 +119,21 @@ describe('ws.query(stable)', () => {
     })
 
     test('query stable with CN character', async () => {
-        let ws = await WsSql.Open(conf);
-        await ws.Exec(useDB);
+        let ws = await WsSql.open(conf);
+        await ws.exec(useDB);
         let insertCN = insertStable(tableCNValues, stableCNTags, stableCN)
         // console.log(insertCN)
-        let insertRes = await ws.Exec(insertCN)
+        let insertRes = await ws.exec(insertCN)
         // console.log(insertRes)
-        expect(insertRes.GetAffectRows()).toBe(5)
+        expect(insertRes.getAffectRows()).toBe(5)
 
-        let queryRes = await ws.Exec(selectStableCN)
+        let queryRes = await ws.exec(selectStableCN)
 
         let expectMeta = tableMeta.concat(tagMeta)
         let expectData = expectStableData(tableCNValues, stableCNTags)
-        let actualMeta = queryRes.GetMeta()
-        let actualData = queryRes.GetData()
-        await ws.Close()
+        let actualMeta = queryRes.getMeta()
+        let actualData = queryRes.getData()
+        await ws.close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 expect(meta.name).toBe(expectMeta[index].name)
@@ -164,20 +164,20 @@ describe('ws.query(stable)', () => {
 
 describe('ws.query(table)', () => {
     test('Insert query normal table without CN character', async () => {
-        let ws = await WsSql.Open(conf);
-        await ws.Exec(useDB);
+        let ws = await WsSql.open(conf);
+        await ws.exec(useDB);
         let insert = insertNTable(tableValues, table)
         // console.log(insert)
-        let insertRes = await ws.Exec(insert)
-        expect(insertRes.GetAffectRows()).toBe(5)
+        let insertRes = await ws.exec(insert)
+        expect(insertRes.getAffectRows()).toBe(5)
 
-        let queryRes = await ws.Exec(selectTable)
+        let queryRes = await ws.exec(selectTable)
 
         let expectMeta = tableMeta
         let expectData = tableValues
-        let actualMeta = queryRes.GetMeta()
-        let actualData = queryRes.GetData()
-        await ws.Close()
+        let actualMeta = queryRes.getMeta()
+        let actualData = queryRes.getData()
+        await ws.close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 // console.log(meta,expectMeta[index]);
@@ -201,21 +201,21 @@ describe('ws.query(table)', () => {
     })
 
     test('Insert query normal table with CN character', async () => {
-        let ws = await WsSql.Open(conf);
-        await ws.Exec(useDB);
+        let ws = await WsSql.open(conf);
+        await ws.exec(useDB);
         let insertCN = insertNTable(tableCNValues, tableCN)
         // console.log(insertCN)
-        let insertRes = await ws.Exec(insertCN)
+        let insertRes = await ws.exec(insertCN)
         // console.log(insertRes)
-        expect(insertRes.GetAffectRows()).toBe(5)
+        expect(insertRes.getAffectRows()).toBe(5)
 
-        let queryRes = await ws.Exec(selectTableCN)
+        let queryRes = await ws.exec(selectTableCN)
 
         let expectMeta = tableMeta
         let expectData = tableCNValues
-        let actualMeta = queryRes.GetMeta()
-        let actualData = queryRes.GetData()
-        await ws.Close()
+        let actualMeta = queryRes.getMeta()
+        let actualData = queryRes.getData()
+        await ws.close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 // console.log(meta, expectMeta[index]);
@@ -243,20 +243,20 @@ describe('ws.query(table)', () => {
 
 describe('ws.query(jsonTable)', () => {
     test('Insert and query json data from table without CN', async () => {
-        let ws = await WsSql.Open(conf);
-        await ws.Exec(useDB);
+        let ws = await WsSql.open(conf);
+        await ws.exec(useDB);
         let insert = insertStable(tableValues, jsonTags, jsonTable)
         // console.log(insert)
 
-        let insertRes = await ws.Exec(insert);
-        expect(insertRes.GetAffectRows()).toBe(5)
+        let insertRes = await ws.exec(insert);
+        expect(insertRes.getAffectRows()).toBe(5)
 
-        let queryRes = await ws.Exec(selectJsonTable)
+        let queryRes = await ws.exec(selectJsonTable)
         let expectMeta = tableMeta.concat(jsonMeta)
         let expectData = expectStableData(tableValues, jsonTags)
-        let actualMeta = queryRes.GetMeta()
-        let actualData = queryRes.GetData()
-        await ws.Close()
+        let actualMeta = queryRes.getMeta()
+        let actualData = queryRes.getData()
+        await ws.close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 //   console.log(meta);
@@ -282,20 +282,20 @@ describe('ws.query(jsonTable)', () => {
 
 
     test('Insert and query json data from table with CN', async () => {
-        let ws = await WsSql.Open(conf);
-        await ws.Exec(useDB);
+        let ws = await WsSql.open(conf);
+        await ws.exec(useDB);
         let insert = insertStable(tableCNValues, jsonTagsCN, jsonTableCN)
         // console.log(insert)
 
-        let insertRes = await ws.Exec(insert);
-        expect(insertRes.GetAffectRows()).toBe(5)
+        let insertRes = await ws.exec(insert);
+        expect(insertRes.getAffectRows()).toBe(5)
 
-        let queryRes = await ws.Exec(selectJsonTableCN)
+        let queryRes = await ws.exec(selectJsonTableCN)
         let expectMeta = tableMeta.concat(jsonMeta)
         let expectData = expectStableData(tableCNValues, jsonTagsCN)
-        let actualMeta = queryRes.GetMeta()
-        let actualData = queryRes.GetData()
-        await ws.Close()
+        let actualMeta = queryRes.getMeta()
+        let actualData = queryRes.getData()
+        await ws.close()
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
                 //   console.log(meta);
@@ -321,7 +321,7 @@ describe('ws.query(jsonTable)', () => {
 })
 
 afterAll(async () => {
-    WebSocketConnectionPool.Instance().Destroyed()
+    WebSocketConnectionPool.instance().destroyed()
 })
 
 

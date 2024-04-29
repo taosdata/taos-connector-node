@@ -21,6 +21,7 @@ export enum OnMessageType {
     MESSAGE_TYPE_ARRAYBUFFER = 1,
     MESSAGE_TYPE_BLOB = 2,
     MESSAGE_TYPE_STRING = 3,
+    MESSAGE_TYPE_CONNECTION = 4
 }
 
 const eventMutex = new Mutex();
@@ -30,14 +31,14 @@ export class WsEventCallback {
     private constructor() {
     }
 
-    public static Instance():WsEventCallback {
+    public static instance():WsEventCallback {
         if (!WsEventCallback._instance) {
             WsEventCallback._instance = new WsEventCallback();
         }
         return WsEventCallback._instance;
     }
 
-    async RegisterCallback(id: MessageId, res: (args: unknown) => void, rej: (reason: any) => void) {
+    async registerCallback(id: MessageId, res: (args: unknown) => void, rej: (reason: any) => void) {
         let release = await eventMutex.acquire()
         try {
             WsEventCallback._msgActionRegister.set(id,
@@ -53,13 +54,13 @@ export class WsEventCallback {
         }          
     }
 
-    async HandleEventCallback(msg: MessageId, messageType:OnMessageType, data:any) {
+    async handleEventCallback(msg: MessageId, messageType:OnMessageType, data:any) {
         let action: MessageAction | any = undefined;
 
-        // console.log("HandleEventCallback msg=", msg, messageType)
+        logger.debug("HandleEventCallback msg=", msg, messageType)
         let release = await eventMutex.acquire()
-        // console.log("HandleEventCallback get lock msg=", msg, messageType)
-        // console.log(WsEventCallback._msgActionRegister)
+        logger.debug("HandleEventCallback get lock msg=", msg, messageType)
+        logger.debug(WsEventCallback._msgActionRegister)
         try {
             for (let [k, v] of  WsEventCallback._msgActionRegister) {
                 if (messageType == OnMessageType.MESSAGE_TYPE_ARRAYBUFFER) {
@@ -74,7 +75,13 @@ export class WsEventCallback {
                         WsEventCallback._msgActionRegister.delete(k)
                         break;
                     } 
-                }else if (messageType == OnMessageType.MESSAGE_TYPE_STRING) {
+                } else if (messageType == OnMessageType.MESSAGE_TYPE_STRING) {
+                    if (k.req_id == msg.req_id && k.action == msg.action) {
+                        action = v
+                        WsEventCallback._msgActionRegister.delete(k)
+                        break;
+                    }
+                } else if (messageType == OnMessageType.MESSAGE_TYPE_CONNECTION) {
                     if (k.req_id == msg.req_id && k.action == msg.action) {
                         action = v
                         WsEventCallback._msgActionRegister.delete(k)

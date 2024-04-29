@@ -1,7 +1,7 @@
 import { WSFetchBlockResponse, WSQueryResponse } from "../client/wsResponse";
 import { ColumnsBlockType, TDengineTypeCode, TDengineTypeName } from './constant'
 import { ErrorCode, TaosResultError, WebSocketQueryInterFaceError } from "./wsError";
-import { AppendRune } from "./ut8Helper"
+import { appendRune } from "./ut8Helper"
 import logger from "./log";
 
 export interface TDengineMeta {
@@ -64,47 +64,47 @@ export class TaosResult {
         this._totalTime = queryResponse.totalTime
     }
 
-    public SetRowsAndTime(rows: number, timing?:bigint) {
+    public setRowsAndTime(rows: number, timing?:bigint) {
         if (this._affectRows) {
             this._affectRows += rows;
         }else{
             this._affectRows = rows
         }
         if (timing) {
-            this.SetTiming(timing)
+            this.setTiming(timing)
         }
         
     }
     
-    public GetMeta(): Array<TDengineMeta> | null {
+    public getMeta(): Array<TDengineMeta> | null {
         return this.getTDengineMeta();
     }
 
-    public GetData(): Array<Array<any>> | null {
+    public getData(): Array<Array<any>> | null {
         return this._data;
     }
-    public SetData(value: Array<Array<any>> | null) {
+    public setData(value: Array<Array<any>> | null) {
         this._data = value;
     }
-    public GetAffectRows(): number | null | undefined {
+    public getAffectRows(): number | null | undefined {
         return this._affectRows;
     }
 
-    public GetTaosMeta(): Array<ResponseMeta> | null {
+    public getTaosMeta(): Array<ResponseMeta> | null {
         return this._meta;
     }
 
-    public GetPrecision():number | null | undefined {
+    public getPrecision():number | null | undefined {
         return this._precision;
     }
-    public GetTotalTime() {
+    public getTotalTime() {
         return this._totalTime;
     }
-    public  AddTotalTime(totalTime:number) {
+    public addTotalTime(totalTime:number) {
         this._totalTime += totalTime;
     }
 
-    public SetTiming(timing?: bigint) {
+    public setTiming(timing?: bigint) {
         if (!this._timing) {
             this._timing = BigInt(0) 
         }
@@ -133,16 +133,16 @@ export class TaosResult {
 }
 
 export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResult: TaosResult): TaosResult {
-    let metaList = taosResult.GetTaosMeta()
-    let dataList = taosResult.GetData()
+    let metaList = taosResult.getTaosMeta()
+    let dataList = taosResult.getData()
     if (metaList && dataList) {
-        taosResult.SetTiming(blocks.timing) 
+        taosResult.setTiming(blocks.timing) 
         const INT_32_SIZE = 4;
 
         // Offset num of bytes from rawBlockBuffer.
         let bufferOffset = (4 * 5) + 8 + (4 + 1) * metaList.length
         let colLengthBlockSize = INT_32_SIZE * metaList.length
-        // console.log("===colLengthBlockSize:" + colLengthBlockSize)
+        logger.debug("===colLengthBlockSize:" + colLengthBlockSize)
 
         let bitMapSize = (rows + (1 << 3) - 1) >> 3
 
@@ -411,7 +411,7 @@ export function readNchar(dataBuffer: ArrayBuffer, colDataHead: number, length: 
     let data = "";
     let buff: ArrayBuffer = dataBuffer.slice(colDataHead, colDataHead + length);
     for (let i = 0; i < length / 4; i++) {
-        data += AppendRune(new DataView(buff, i * 4, 4).getUint32(0, true))
+        data += appendRune(new DataView(buff, i * 4, 4).getUint32(0, true))
 
     }
     return data;
@@ -434,18 +434,18 @@ function isNull(bitMapArr:ArrayBuffer, n:number) {
 }
 
 
-export function CharOffset(n:number):number {
+export function getCharOffset(n:number):number {
 	return n >> 3
 }
 
-export function BMSetNull(c:number, n:number):number {
-	return c + (1 << (7 - BitPos(n)))
+export function setBitmapNull(c:number, n:number):number {
+	return c + (1 << (7 - bitPos(n)))
 }
 
-function BitPos(n:number):number {
+function bitPos(n:number):number {
 	return n & ((1 << 3) - 1)
 }
 
-export function BitmapLen(n: number): number {
+export function bitmapLen(n: number): number {
 	return ((n) + ((1 << 3) - 1)) >> 3
 }

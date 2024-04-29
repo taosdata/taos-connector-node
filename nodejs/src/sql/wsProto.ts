@@ -21,8 +21,8 @@ export enum Precision {
     NANO_SECONDS = 'ns',
 }
 
-export const enum SchemalessProto {
-	InfluxDBLineProtocol       = 1,
-	OpenTSDBTelnetLineProtocol = 2,
-	OpenTSDBJsonFormatProtocol = 3
+export enum SchemalessProto {
+    InfluxDBLineProtocol       = 1,
+    OpenTSDBTelnetLineProtocol = 2,
+    OpenTSDBJsonFormatProtocol = 3
 }

@@ -36,11 +36,11 @@ export const enum StmtBindType {
 
 export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindType, stmtId:number, reqId:bigint, row:number): ArrayBuffer {
     //Computing the length of data
-    let columns = bindParams.GetParams().length;
+    let columns = bindParams.getParams().length;
     let length = TDengineTypeLength['BIGINT'] * 4;
     length += TDengineTypeLength['INT'] * 5;
     length += columns * 5 + columns * 4;
-    length += bindParams.GetDataTotalLen();
+    length += bindParams.getDataTotalLen();
 
     let arrayBuffer = new ArrayBuffer(length);
     let arrayView = new DataView(arrayBuffer)
@@ -69,7 +69,7 @@ export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindT
     //data range offset
     let dataOffset = offset + columns * 5 + columns * 4;
     let headOffset = 0;
-    let columnsData = bindParams.GetParams()
+    let columnsData = bindParams.getParams()
     for (let i = 0; i< columnsData.length; i++) {
         //set column data type
         typeView.setUint8(headOffset, columnsData[i].type)
@@ -80,12 +80,10 @@ export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindT
         if (columnsData[i].data) {
             //get encode column data
             const sourceView = new Uint8Array(columnsData[i].data);
-            //console.log("begin:", dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());
             const destView = new Uint8Array(arrayBuffer, dataOffset, columnsData[i].data.byteLength);
             //splicing data
             destView.set(sourceView);
             dataOffset += columnsData[i].data.byteLength;
-            // console.log("end:",dataOffset, columnsData[i].data.byteLength, bindParams.GetDataTotalLen());
         }
         headOffset += 5
     }

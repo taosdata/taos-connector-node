@@ -40,19 +40,26 @@ export class WsClient {
                 db: _db,
             },
         };
-         
-        this._wsConnector = await WebSocketConnectionPool.Instance().getConnection(this._url, this._timeout);
+        
+        this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
         if (this._wsConnector.readyState() > 0) {
             return;
         } 
-        await this._wsConnector.Ready(); 
-        let result:any = await this._wsConnector.sendMsg(JSON.stringify(connMsg))
-        if (result.msg.code  == 0) {
-            return;
-        }
-
-        throw(new WebSocketQueryError(result.msg.code, result.msg.message));
+        try {
+            await this._wsConnector.ready();
         
+            let result: any = await this._wsConnector.sendMsg(JSON.stringify(connMsg))
+            if (result.msg.code  == 0) {
+                return;
+            }
+            throw(new WebSocketQueryError(result.msg.code, result.msg.message));            
+       
+        } catch (e: any) {
+            logger.error(e.code, e.message);
+            throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}`));
+        }
+     
+
     }
 
     async execNoResp(queryMsg: string): Promise<void> {
@@ -67,7 +74,7 @@ export class WsClient {
     // need to construct Response.
     async exec(queryMsg: string, bSqlQuery:boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
-            // console.log('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
+            logger.debug('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(queryMsg).then((e: any) => {
                     if (e.msg.code == 0) {
@@ -118,13 +125,19 @@ export class WsClient {
         
     }
 
-    async Ready(): Promise<void> {     
-        this._wsConnector = await WebSocketConnectionPool.Instance().getConnection(this._url, this._timeout);
-        if (this._wsConnector.readyState() <= 0) {
-            await this._wsConnector.Ready()
-        }
-        logger.debug("ready status ", this._url, this._wsConnector.readyState())  
-        return;              
+    async ready(): Promise<void> {
+        try {
+            this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
+            if (this._wsConnector.readyState() <= 0) {
+                await this._wsConnector.ready()
+            }
+            logger.debug("ready status ", this._url, this._wsConnector.readyState())  
+            return;             
+        } catch (e: any) {
+            logger.error(e.code, e.message);
+            throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}`));
+        }  
+             
     }
 
     async fetch(res: WSQueryResponse): Promise<WSFetchResponse> {
@@ -164,11 +177,11 @@ export class WsClient {
 
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(fetchBlockMsg);
-            // console.log("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
+            logger.debug("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(jsonStr).then((e: any) => {
                     let resp:MessageResp = e
-                    taosResult.AddTotalTime(resp.totalTime)
+                    taosResult.addTotalTime(resp.totalTime)
                     // if retrieve JSON then reject with message
                     // else is binary , so parse raw block to TaosResult
                     parseBlock(fetchResponse.rows, new WSFetchBlockResponse(resp.msg), taosResult)
@@ -182,7 +195,7 @@ export class WsClient {
 
     async sendMsg(msg:string): Promise<any> {
         return new Promise((resolve, reject) => {
-            // console.log("[wsQueryInterface.sendMsg]===>" + msg)
+            logger.debug("[wsQueryInterface.sendMsg]===>" + msg)
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(msg).then((e: any) => {
                     resolve(e);
@@ -203,7 +216,7 @@ export class WsClient {
         };
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(freeResultMsg);
-            // console.log("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
+            logger.debug("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendMsg(jsonStr, false)
                 .then((e: any) => {resolve(e);})
@@ -223,14 +236,20 @@ export class WsClient {
         };
         
         if (this._wsConnector) {
-            if (this._wsConnector.readyState() <= 0) {
-                await this._wsConnector.Ready();
+            try {
+                if (this._wsConnector.readyState() <= 0) {
+                    await this._wsConnector.ready();
+                }
+                let result:any = await this._wsConnector.sendMsg(JSONBig.stringify(versionMsg)); 
+                if (result.msg.code == 0) {
+                    return new WSVersionResponse(result).version;
+                } 
+                throw(new WebSocketInterfaceError(result.msg.code, result.msg.message));                
+            } catch (e: any) {
+                logger.error(e.code, e.message);
+                throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}`));
             }
-            let result:any = await this._wsConnector.sendMsg(JSONBig.stringify(versionMsg)); 
-            if (result.msg.code == 0) {
-                return new WSVersionResponse(result).version;
-            } 
-            throw(new WebSocketInterfaceError(result.msg.code, result.msg.message));
+
                                
         }
         throw(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect");
@@ -238,7 +257,7 @@ export class WsClient {
 
     async close():Promise<void> {
         if (this._wsConnector) {
-            await WebSocketConnectionPool.Instance().releaseConnection(this._wsConnector)
+            await WebSocketConnectionPool.instance().releaseConnection(this._wsConnector)
             this._wsConnector = undefined
             // this._wsConnector.close();
         }

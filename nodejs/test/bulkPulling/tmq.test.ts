@@ -39,20 +39,20 @@ beforeAll(async () => {
         [BigInt(1656677800000), -4, -5, -6, BigInt(-7), 4, 5, 6, BigInt(7), parseFloat((3.1415 * 5).toFixed(5)), parseFloat((3.14159265 * 5).toFixed(15)), 'varchar_列_伍', 'nchar_列_戊', true,  'NULL', 'POINT (7.0 9.0)', '0x7661726335'],
     ]
    
-    let ws = await WsSql.Open(conf);
-    await ws.Exec(dropTopic);
+    let ws = await WsSql.open(conf);
+    await ws.exec(dropTopic);
     // await ws.Exec(dropTopic2);
-    await ws.Exec(dropDB);
-    await ws.Exec(createDB);
-    await ws.Exec(useDB);
-    await ws.Exec(createSTable(stable));
-    await ws.Exec(createTopic);
+    await ws.exec(dropDB);
+    await ws.exec(createDB);
+    await ws.exec(useDB);
+    await ws.exec(createSTable(stable));
+    await ws.exec(createTopic);
     // await ws.Exec(createTopic2);
     let insert = insertStable(tableValues, stableTags, stable)
-    let insertRes = await ws.Exec(insert)
+    let insertRes = await ws.exec(insert)
     insert = insertStable(tableCNValues, stableTags, stable)
-    insertRes = await ws.Exec(insert)
-    await ws.Close()
+    insertRes = await ws.exec(insert)
+    await ws.close()
 })
 
 
@@ -72,8 +72,8 @@ describe('TDWebSocket.Tmq()', () => {
     console.log(configMap);
     
     test('normal connect', async() => {
-        let consumer = await WsConsumer.NewConsumer(configMap);
-        consumer.Close();
+        let consumer = await WsConsumer.newConsumer(configMap);
+        consumer.close();
     });
 
     test('connect error', async() => {
@@ -90,33 +90,33 @@ describe('TDWebSocket.Tmq()', () => {
             [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
         ]);
         try {
-            consumer = await WsConsumer.NewConsumer(errConfigMap);
-            await consumer.Subscribe(topics);
+            consumer = await WsConsumer.newConsumer(errConfigMap);
+            await consumer.subscribe(topics);
         }catch(e :any){
             console.log(e)
             expect(e.code).toBe(65535)
         }finally{
             if(consumer) {
-               await consumer.Close()
+               await consumer.close()
             }
         }
     })
 
     test('normal Subscribe', async() => {
-        let consumer = await WsConsumer.NewConsumer(configMap);
-        await consumer.Subscribe(topics);
+        let consumer = await WsConsumer.newConsumer(configMap);
+        await consumer.subscribe(topics);
 
-        let assignment = await consumer.Assignment()
+        let assignment = await consumer.assignment()
         console.log(assignment)
         let counts:number[]=[0, 0]
         let useTime:number[] = [];
         for (let i = 0; i < 5; i++) { 
             let startTime = new Date().getTime();
-            let res = await consumer.Poll(500);
+            let res = await consumer.poll(500);
             let currTime = new Date().getTime();
             useTime.push(Math.abs(currTime - startTime));
             for (let [key, value] of res) {
-                let data = value.GetData()
+                let data = value.getData()
                 if (data) {
                     counts[0] += data.length;
                 }
@@ -128,15 +128,15 @@ describe('TDWebSocket.Tmq()', () => {
             // await Sleep(100)
         }
 
-        await consumer.SeekToBeginning(assignment)
+        await consumer.seekToBeginning(assignment)
 
         for (let i = 0; i < 5; i++) { 
             let startTime = new Date().getTime();
-            let res = await consumer.Poll(500);
+            let res = await consumer.poll(500);
             let currTime = new Date().getTime();
             useTime.push(Math.abs(currTime - startTime));
             for (let [key, value] of res) {
-                let data = value.GetData()
+                let data = value.getData()
                 if (data) {
                     counts[1] += data.length;
                 }
@@ -146,48 +146,48 @@ describe('TDWebSocket.Tmq()', () => {
             }
             // await Sleep(100)
         }
-        assignment = await consumer.Commit();
+        assignment = await consumer.commit();
         console.log(assignment)
-        assignment = await consumer.Committed(assignment)
+        assignment = await consumer.committed(assignment)
         console.log(assignment)
-        await consumer.Unsubscribe()
-        await consumer.Close();
+        await consumer.unsubscribe()
+        await consumer.close();
         console.log("------------->", useTime)
         console.log("------------->", counts)
         expect(counts).toEqual([10, 10])
     });
 
     test('Topic not exist', async() => {
-        let consumer = await WsConsumer.NewConsumer(configMap);
+        let consumer = await WsConsumer.newConsumer(configMap);
         try {
-             await consumer.Subscribe(["aaa"]);
+             await consumer.subscribe(["aaa"]);
         }catch(e:any) {
             expect(e.message).toMatch("Topic not exist");
         }
-        await consumer.Close();
+        await consumer.close();
     });
 
     test('normal seek', async() => {
-        let consumer = await WsConsumer.NewConsumer(configMap);
-        await consumer.Subscribe(topics);
-        let assignment = await consumer.Assignment()
+        let consumer = await WsConsumer.newConsumer(configMap);
+        await consumer.subscribe(topics);
+        let assignment = await consumer.assignment()
         console.log("------START--------",assignment)
 
-        await consumer.SeekToEnd(assignment)
-        await consumer.SeekToBeginning(assignment)
-        await consumer.SeekToEnd(assignment)
-        assignment = await consumer.Assignment()
+        await consumer.seekToEnd(assignment)
+        await consumer.seekToBeginning(assignment)
+        await consumer.seekToEnd(assignment)
+        assignment = await consumer.assignment()
         console.log("------END--------",assignment)
         for (let i = 0; i< assignment.length; i++) {
             expect(assignment[i].offset).toEqual(assignment[i].end)
         }
         
-        await consumer.Unsubscribe()
-        await consumer.Close();
+        await consumer.unsubscribe()
+        await consumer.close();
     });
 
 })
 
 afterAll(async () => {
-    WebSocketConnectionPool.Instance().Destroyed()
+    WebSocketConnectionPool.instance().destroyed()
 })

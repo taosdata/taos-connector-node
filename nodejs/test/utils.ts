@@ -1,3 +1,4 @@
+import logger from "../src/common/log";
 import { TDengineMeta } from "../src/common/taosResult";
 
 
@@ -281,7 +282,6 @@ export function hexToBytes(hex: string): ArrayBuffer {
       let item  = parseInt(hex.slice(i, i+2), 16);
       a[count] = item
     }
-    console.log(hex, "===>", a.buffer)
     return a.buffer
 }
 
@@ -305,14 +305,13 @@ export function createStmtData(varbinary:string = "ab",
 }
 
 export function compareUint8Arrays(arr1: Uint8Array, arr2: Uint8Array): boolean {  
-    console.log(arr1,"!==", arr2)
     if (arr1.length !== arr2.length) {  
-        console.log(arr1.length,"!==", arr2.length) 
+        logger.debug(`${arr1.length} !== ${arr2.length}`) 
         return false; 
     }  
     for (let i = 0; i < arr1.length; i++) {  
         if (arr1[i] !== arr2[i]) { 
-            console.log(arr1[i],"!==", arr2[i]) 
+            logger.debug(`${arr1[i]} !== ${arr2[i]}`) 
             return false;   
         }  
     }  

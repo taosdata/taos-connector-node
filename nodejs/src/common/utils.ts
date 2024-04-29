@@ -1,15 +1,15 @@
 import { WSConfig } from "./config";
 
-export function GetUrl(wsConfig:WSConfig):URL {
-    let url = new URL(wsConfig.GetUrl())
-    if (wsConfig.GetUser()) {
-        url.username = wsConfig.GetUser() || '' 
+export function getUrl(wsConfig:WSConfig):URL {
+    let url = new URL(wsConfig.getUrl())
+    if (wsConfig.getUser()) {
+        url.username = wsConfig.getUser() || '' 
     }
-    if (wsConfig.GetPwd()) {
-        url.password = wsConfig.GetPwd() || ''
+    if (wsConfig.getPwd()) {
+        url.password = wsConfig.getPwd() || ''
     }
 
-    let token = wsConfig.GetToken()
+    let token = wsConfig.getToken()
     if (token) {
         url.searchParams.set("token", token)
     }
@@ -17,12 +17,12 @@ export function GetUrl(wsConfig:WSConfig):URL {
     return url
 }
 
-export function Sleep(ms: number): Promise<void> {
+export function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
   
 
-export function IsEmpty(value: any): boolean {  
+export function isEmpty(value: any): boolean {  
     if (value === null || value === undefined) return true;  
     // if (typeof value === 'string' && value.trim() === '') return true;  
     if (Array.isArray(value) && value.length === 0) return true;  

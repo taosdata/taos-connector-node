@@ -34,29 +34,29 @@ async function connect() {
     let dsn = 'ws://root:taosdata@localhost:6041';
     let wsSql = null;
     let conf :WSConfig = new WSConfig(dsn)
-    conf.SetDb('power')
-    wsSql = await WsSql.Open(conf)
-    expect(wsSql.State()).toBeGreaterThan(0)
-    console.log(await wsSql.Version()) 
-    wsSql.Close();
+    conf.setDb('power')
+    wsSql = await WsSql.open(conf)
+    expect(wsSql.state()).toBeGreaterThan(0)
+    console.log(await wsSql.version()) 
+    wsSql.close();
 }
 
 async function stmtConnect() {
     let dsn = 'ws://root:taosdata@localhost:6041';
     let wsConf = new WSConfig(dsn);
-    wsConf.SetDb('power')
+    wsConf.setDb('power')
     // let connector = WsStmtConnect.NewConnector(wsConf) 
     // let stmt = await connector.Init()
-    let connector = await WsSql.Open(wsConf) 
-    let stmt = await connector.StmtInit()
+    let connector = await WsSql.open(wsConf) 
+    let stmt = await connector.stmtInit()
     let id = stmt.getStmtId()
     if (id) {
         stmtIds.push(id)
     }
     expect(stmt).toBeTruthy()      
-    await stmt.Prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
-    await stmt.SetTableName('d1001');
-    await stmt.SetTags(tags)
+    await stmt.prepare('INSERT INTO ? USING power.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
+    await stmt.setTableName('d1001');
+    await stmt.setJsonTags(tags)
     let lastTs = 0
     const allp:any[] = []
     for (let i = 0; i < 10; i++) {
@@ -64,43 +64,43 @@ async function stmtConnect() {
             multi[0][j] = multi[0][0] + j;
             lastTs = multi[0][j]
         }
-        allp.push(stmt.Bind(multi))
+        allp.push(stmt.jsonBind(multi))
         multi[0][0] = lastTs + 1
 
     }
     await Promise.all(allp)
-    await stmt.Batch()
-    await stmt.Exec()
-    expect(stmt.GetLastAffected()).toEqual(30)
-    stmt.Close()
-    connector.Close();
+    await stmt.batch()
+    await stmt.exec()
+    expect(stmt.getLastAffected()).toEqual(30)
+    stmt.close()
+    connector.close();
 }
 
 async function tmqConnect() {
     let consumer = null    
     try {
-        consumer = await WsConsumer.NewConsumer(configMap);
-        await consumer.Subscribe(topics);
+        consumer = await WsConsumer.newConsumer(configMap);
+        await consumer.subscribe(topics);
         
-        let res = await consumer.Poll(500); 
+        let res = await consumer.poll(500); 
         for (let [key, value] of res) {
             console.log(key, value);
         }
 
-        await consumer.Commit();
+        await consumer.commit();
         
         
-        let assignment = await consumer.Assignment()
+        let assignment = await consumer.assignment()
         console.log(assignment)
         if (arguments && arguments.length > 0)
-            await consumer.SeekToBeginning(assignment)
+            await consumer.seekToBeginning(assignment)
         
-        await consumer.Unsubscribe()
+        await consumer.unsubscribe()
     } catch (e) {
         console.error(e);
     } finally {
         if (consumer) {
-           consumer.Close();
+           consumer.close();
         }
     }
 }
@@ -108,9 +108,9 @@ async function tmqConnect() {
 beforeAll(async () => {
     let dsn = 'ws://root:taosdata@localhost:6041';
     let conf :WSConfig = new WSConfig(dsn)
-    let ws = await WsSql.Open(conf);
-    await ws.Exec(createTopic, ReqId.getReqID());
-    await ws.Close()
+    let ws = await WsSql.open(conf);
+    await ws.exec(createTopic, ReqId.getReqID());
+    await ws.close()
 })
 
 describe('TDWebSocket.WsSql()', () => {
@@ -131,11 +131,11 @@ describe('TDWebSocket.WsSql()', () => {
             allp.push(tmqConnect())
         }
         await Promise.all(allp)
-        WebSocketConnectionPool.Instance().Destroyed()
+        WebSocketConnectionPool.instance().destroyed()
         console.log(stmtIds)
     });
 })
 
 afterAll(async () => {
-    WebSocketConnectionPool.Instance().Destroyed()
+    WebSocketConnectionPool.instance().destroyed()
 })

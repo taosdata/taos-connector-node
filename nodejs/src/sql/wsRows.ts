@@ -16,21 +16,21 @@ export class WSRows {
         this._isClose = false
     }
 
-    async Next(): Promise<boolean> {
+    async next(): Promise<boolean> {
         if (this._wsQueryResponse.is_update || this._isClose) {
             logger.debug("WSRows::Next::End=>", this._taosResult, this._isClose)
             return false;
         }
         
-        let data = this._taosResult.GetData();
+        let data = this._taosResult.getData();
         if (this._taosResult && data != null) {
-            if (data && Array.isArray(this._taosResult.GetData()) && data.length > 0) {
+            if (data && Array.isArray(this._taosResult.getData()) && data.length > 0) {
                 return true;
             }
         }
 
         this._taosResult = await this.getBlockData();
-        if (this._taosResult.GetData()) {
+        if (this._taosResult.getData()) {
             return true;
         }
         return false;
@@ -41,29 +41,29 @@ export class WSRows {
             let wsFetchResponse = await this._wsClient.fetch(this._wsQueryResponse);
             logger.debug("[wsQuery.execute.wsFetchResponse]==>\n", wsFetchResponse)
             if (wsFetchResponse.completed) {
-                this.Close();
-                this._taosResult.SetData(null);
+                this.close();
+                this._taosResult.setData(null);
             } else {
-                this._taosResult.SetRowsAndTime(wsFetchResponse.rows, wsFetchResponse.timing);
+                this._taosResult.setRowsAndTime(wsFetchResponse.rows, wsFetchResponse.timing);
                 return await this._wsClient.fetchBlock(wsFetchResponse, this._taosResult);
             }
             return this._taosResult;
         }catch(err:any){
-            this.Close();
+            this.close();
             throw new TaosResultError(err.code, err.message);
         } 
     }
   
-    GetMeta():Array<TDengineMeta> | null {
-        return this._taosResult.GetMeta();
+    getMeta():Array<TDengineMeta> | null {
+        return this._taosResult.getMeta();
     }
 
-    GetData(): Array<any> | undefined {
+    getData(): Array<any> | undefined {
         if (this._wsQueryResponse.is_update) {
             return undefined; 
         }
 
-        let data = this._taosResult.GetData();
+        let data = this._taosResult.getData();
         if (this._taosResult && data != null) {
             if (Array.isArray(data) && data.length > 0) {
                 return data.pop();
@@ -72,7 +72,7 @@ export class WSRows {
         return undefined;
     }
 
-    async Close():Promise<void> {
+    async close():Promise<void> {
         if (this._isClose) {
             return
         }

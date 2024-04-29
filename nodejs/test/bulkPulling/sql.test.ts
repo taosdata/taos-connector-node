@@ -5,13 +5,13 @@ import { WsSql } from "../../src/sql/wsSql";
 beforeAll(async () => {
     let dns = 'ws://localhost:6041'
     let conf :WSConfig = new WSConfig(dns)
-    conf.SetUser('root')
-    conf.SetPwd('taosdata')
-    let wsSql = await WsSql.Open(conf)
-    await wsSql.Exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
-    await wsSql.Exec('use power')
-    await wsSql.Exec('CREATE STABLE if not exists power.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
-    await wsSql.Close()
+    conf.setUser('root')
+    conf.setPwd('taosdata')
+    let wsSql = await WsSql.open(conf)
+    await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
+    await wsSql.exec('use power')
+    await wsSql.exec('CREATE STABLE if not exists power.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
+    await wsSql.close()
 })
 
 describe('TDWebSocket.WsSql()', () => {
@@ -20,10 +20,10 @@ describe('TDWebSocket.WsSql()', () => {
         let dsn = 'ws://root:taosdata@localhost:6041';
         let wsSql = null;
         let conf :WSConfig = new WSConfig(dsn)
-        conf.SetDb('power')
-        wsSql = await WsSql.Open(conf)
-        expect(wsSql.State()).toBeGreaterThan(0)
-        await wsSql.Close();
+        conf.setDb('power')
+        wsSql = await WsSql.open(conf)
+        expect(wsSql.state()).toBeGreaterThan(0)
+        await wsSql.close();
     });
 
     test('connect db with error', async() => {
@@ -32,23 +32,23 @@ describe('TDWebSocket.WsSql()', () => {
         try {
             let dsn = 'ws://root:taosdata@localhost:6041';
             let conf :WSConfig = new WSConfig(dsn)
-            conf.SetDb('jest')
-            wsSql = await WsSql.Open(conf)
+            conf.setDb('jest')
+            wsSql = await WsSql.open(conf)
         }catch(e){
             let err:any = e
             expect(err.message).toMatch('Database not exist')
         }finally{
             if(wsSql) {
-                await wsSql.Close()
+                await wsSql.close()
             }
         }
     })
     test('get taosc version', async() => {  
         let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
-        let wsSql = await WsSql.Open(conf)
-        let version = await wsSql.Version()
-        await wsSql.Close()
+        let wsSql = await WsSql.open(conf)
+        let version = await wsSql.version()
+        await wsSql.close()
         console.log(version);
         expect(version).toBeTruthy()
     })
@@ -56,9 +56,9 @@ describe('TDWebSocket.WsSql()', () => {
     test('show databases', async()=>{
         let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
-        let wsSql = await WsSql.Open(conf)
-        let taosResult = await wsSql.Exec('show databases')
-        await wsSql.Close()
+        let wsSql = await WsSql.open(conf)
+        let taosResult = await wsSql.exec('show databases')
+        await wsSql.close()
         console.log(taosResult);
         expect(taosResult).toBeTruthy()
     })
@@ -66,9 +66,9 @@ describe('TDWebSocket.WsSql()', () => {
     test('create databases', async()=>{
         let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
-        let wsSql = await WsSql.Open(conf)
-        let taosResult = await wsSql.Exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;')
-        await wsSql.Close()
+        let wsSql = await WsSql.open(conf)
+        let taosResult = await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;')
+        await wsSql.close()
         console.log(taosResult);
         expect(taosResult).toBeTruthy()
     })
@@ -76,13 +76,13 @@ describe('TDWebSocket.WsSql()', () => {
     test('create stable', async()=>{
         let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
-        let wsSql = await WsSql.Open(conf)
-        let taosResult = await wsSql.Exec('use power')
+        let wsSql = await WsSql.open(conf)
+        let taosResult = await wsSql.exec('use power')
         console.log(taosResult);
         expect(taosResult).toBeTruthy()
 
-        taosResult = await wsSql.Exec('CREATE STABLE if not exists meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
-        await wsSql.Close()
+        taosResult = await wsSql.exec('CREATE STABLE if not exists meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
+        await wsSql.close()
         console.log(taosResult);
         expect(taosResult).toBeTruthy()
     })
@@ -90,45 +90,45 @@ describe('TDWebSocket.WsSql()', () => {
     test('insert recoder', async()=>{
         let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
-        let wsSql = await WsSql.Open(conf)
-        let taosResult = await wsSql.Exec('use power')
+        let wsSql = await WsSql.open(conf)
+        let taosResult = await wsSql.exec('use power')
         console.log(taosResult);
         expect(taosResult).toBeTruthy()
 
-        taosResult = await wsSql.Exec('describe meters')
+        taosResult = await wsSql.exec('describe meters')
         console.log(taosResult);
     
-        taosResult = await wsSql.Exec('INSERT INTO d1001 USING meters (location, groupid) TAGS ("California.SanFrancisco", 3) VALUES (NOW, 10.2, 219, 0.32)')
+        taosResult = await wsSql.exec('INSERT INTO d1001 USING meters (location, groupid) TAGS ("California.SanFrancisco", 3) VALUES (NOW, 10.2, 219, 0.32)')
         console.log(taosResult);
-        expect(taosResult.GetAffectRows()).toBeGreaterThanOrEqual(1)
-        await wsSql.Close()
+        expect(taosResult.getAffectRows()).toBeGreaterThanOrEqual(1)
+        await wsSql.close()
     
     })
 
     test('query sql', async()=>{
         let dsn = 'ws://root:taosdata@localhost:6041';
         let conf :WSConfig = new WSConfig(dsn)
-        let wsSql = await WsSql.Open(conf)
-        let taosResult = await wsSql.Exec('use power')
+        let wsSql = await WsSql.open(conf)
+        let taosResult = await wsSql.exec('use power')
         console.log(taosResult);
         expect(taosResult).toBeTruthy() 
         for (let i = 0; i < 10; i++) {
-            let wsRows = await wsSql.Query('select * from meters limit 3');
+            let wsRows = await wsSql.query('select * from meters limit 3');
             expect(wsRows).toBeTruthy()
-            let meta = wsRows.GetMeta()
+            let meta = wsRows.getMeta()
             expect(meta).toBeTruthy()
             console.log("wsRow:meta:=>", meta);
-            while (await wsRows.Next()) {
-                let result = await wsRows.GetData();
+            while (await wsRows.next()) {
+                let result = await wsRows.getData();
                 expect(result).toBeTruthy()
             }
-            await wsRows.Close()
+            await wsRows.close()
         }
 
-        await wsSql.Close()
+        await wsSql.close()
     })
 })
 
 afterAll(async () => {
-    WebSocketConnectionPool.Instance().Destroyed()
+    WebSocketConnectionPool.instance().destroyed()
 })

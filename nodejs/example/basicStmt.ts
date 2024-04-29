@@ -1,6 +1,5 @@
-require('qingwa')();
 import { WSConfig } from '../src/common/config';
-import { connectorDestroy, sqlConnect } from '../src';
+import { destroy, sqlConnect } from '../src';
 
 let db = 'power'
 let stable = 'meters'
@@ -16,9 +15,9 @@ async function Prepare() {
 
     let conf :WSConfig = new WSConfig(dsn)
     let wsSql = await sqlConnect(conf)
-    await wsSql.Exec(`create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`)
-    await wsSql.Exec(`CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`);
-    wsSql.Close()
+    await wsSql.exec(`create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`)
+    await wsSql.exec(`CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`);
+    wsSql.close()
 }
 
 (async () => {
@@ -27,34 +26,34 @@ async function Prepare() {
     try {
         await Prepare();
         let wsConf = new WSConfig(dsn);
-        wsConf.SetDb(db)
+        wsConf.setDb(db)
         connector = await sqlConnect(wsConf);
-        stmt = await connector.StmtInit()
-        await stmt.Prepare(`INSERT INTO ? USING ${db}.${stable} (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)`);
-        await stmt.SetTableName('d1001');
+        stmt = await connector.stmtInit()
+        await stmt.prepare(`INSERT INTO ? USING ${db}.${stable} (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)`);
+        await stmt.setTableName('d1001');
 
-        let tagParams = stmt.NewStmtParam()
-        tagParams.SetVarcharColumn([tags[0]])
-        tagParams.SetIntColumn([tags[1]])
-        await stmt.SetBinaryTags(tagParams);
+        let tagParams = stmt.newStmtParam()
+        tagParams.setVarchar([tags[0]])
+        tagParams.setInt([tags[1]])
+        await stmt.setTags(tagParams);
 
-        let bindParams = stmt.NewStmtParam()
-        bindParams.SetTimestampColumn(multi[0]);
-        bindParams.SetFloatColumn(multi[1])
-        bindParams.SetIntColumn(multi[2])
-        bindParams.SetFloatColumn(multi[3])
-        await stmt.BinaryBind(bindParams);
-        await stmt.Batch();
-        await stmt.Exec();
+        let bindParams = stmt.newStmtParam()
+        bindParams.setTimestamp(multi[0]);
+        bindParams.setFloat(multi[1])
+        bindParams.setInt(multi[2])
+        bindParams.setFloat(multi[3])
+        await stmt.bind(bindParams);
+        await stmt.batch();
+        await stmt.exec();
     } catch (e) {
         console.error(e);
     }finally {
         if (stmt) {
-            await stmt.Close();
+            await stmt.close();
         }
         if (connector) {
-            await connector.Close();
+            await connector.close();
         }
-        connectorDestroy()
+        destroy()
     }
 })();

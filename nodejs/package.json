@@ -34,7 +34,7 @@
     "url": "https://github.com/taosdata/taos-connector-node/issues"
   },
   "files": [
-    "dist"
+    "lib"
   ],
   "homepage": "https://github.com/taosdata/taos-connector-node#readme",
   "dependencies": {

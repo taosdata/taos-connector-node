@@ -15,8 +15,8 @@ let createTopic = `create topic if not exists ${topics[0]} as select * from ${db
 let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
 // let dropTopic2 = `DROP TOPIC IF EXISTS ${topic2};`
 
-let dsn = 'ws://root:taosdata@192.168.1.95:6041';
-let tmqDsn = 'ws://192.168.1.95:6041'
+let dsn = 'ws://root:taosdata@localhost:6041';
+let tmqDsn = 'ws://localhost:6041'
 
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dsn)

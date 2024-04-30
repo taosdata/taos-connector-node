@@ -5,7 +5,7 @@ import { WsSql } from "../../src/sql/wsSql";
 import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 
-let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+let dsn = 'ws://root:taosdata@localhost:6041';
 let tags = ['California.SanFrancisco', 3];
 let multi = [
 [1709183268567, 1709183268568, 1709183268569],

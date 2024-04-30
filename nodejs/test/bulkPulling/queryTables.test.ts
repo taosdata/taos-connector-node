@@ -4,7 +4,7 @@ import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { compareUint8Arrays, createSTable, createSTableJSON, createTable, expectStableData, hexToBytes, insertNTable, insertStable, jsonMeta, tableMeta, tagMeta } from "../utils";
 // const DSN = 'ws://root:taosdata@127.0.0.1:6041'
-let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+let dsn = 'ws://root:taosdata@localhost:6041';
 let conf :WSConfig = new WSConfig(dsn)
 const resultMap:Map<string, any> = new Map();
 resultMap.set("POINT (4.0 8.0)", hexToBytes("010100000000000000000010400000000000002040"));

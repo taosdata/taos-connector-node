@@ -2,8 +2,8 @@ import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 
+let dns = 'ws://192.168.1.95:6041'
 beforeAll(async () => {
-    let dns = 'ws://localhost:6041'
     let conf :WSConfig = new WSConfig(dns)
     conf.setUser('root')
     conf.setPwd('taosdata')
@@ -17,9 +17,10 @@ beforeAll(async () => {
 describe('TDWebSocket.WsSql()', () => {
     jest.setTimeout(20 * 1000)
     test('normal connect', async() => {
-        let dsn = 'ws://root:taosdata@localhost:6041';
         let wsSql = null;
-        let conf :WSConfig = new WSConfig(dsn)
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('root')
+        conf.setPwd('taosdata')
         conf.setDb('power')
         wsSql = await WsSql.open(conf)
         expect(wsSql.state()).toBeGreaterThan(0)
@@ -30,8 +31,9 @@ describe('TDWebSocket.WsSql()', () => {
         expect.assertions(1)
         let wsSql = null;
         try {
-            let dsn = 'ws://root:taosdata@localhost:6041';
-            let conf :WSConfig = new WSConfig(dsn)
+            let conf :WSConfig = new WSConfig(dns)
+            conf.setUser('root')
+            conf.setPwd('taosdata')
             conf.setDb('jest')
             wsSql = await WsSql.open(conf)
         }catch(e){
@@ -44,8 +46,9 @@ describe('TDWebSocket.WsSql()', () => {
         }
     })
     test('get taosc version', async() => {  
-        let dsn = 'ws://root:taosdata@localhost:6041';
-        let conf :WSConfig = new WSConfig(dsn)
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('root')
+        conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
         let version = await wsSql.version()
         await wsSql.close()
@@ -54,8 +57,9 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('show databases', async()=>{
-        let dsn = 'ws://root:taosdata@localhost:6041';
-        let conf :WSConfig = new WSConfig(dsn)
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('root')
+        conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
         let taosResult = await wsSql.exec('show databases')
         await wsSql.close()
@@ -64,8 +68,9 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('create databases', async()=>{
-        let dsn = 'ws://root:taosdata@localhost:6041';
-        let conf :WSConfig = new WSConfig(dsn)
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('root')
+        conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
         let taosResult = await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;')
         await wsSql.close()
@@ -74,8 +79,9 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('create stable', async()=>{
-        let dsn = 'ws://root:taosdata@localhost:6041';
-        let conf :WSConfig = new WSConfig(dsn)
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('root')
+        conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
         let taosResult = await wsSql.exec('use power')
         console.log(taosResult);
@@ -88,8 +94,9 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('insert recoder', async()=>{
-        let dsn = 'ws://root:taosdata@localhost:6041';
-        let conf :WSConfig = new WSConfig(dsn)
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('root')
+        conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
         let taosResult = await wsSql.exec('use power')
         console.log(taosResult);
@@ -106,8 +113,9 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('query sql', async()=>{
-        let dsn = 'ws://root:taosdata@localhost:6041';
-        let conf :WSConfig = new WSConfig(dsn)
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('root')
+        conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
         let taosResult = await wsSql.exec('use power')
         console.log(taosResult);

@@ -2,7 +2,7 @@ import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { Precision, SchemalessProto } from "../../src/sql/wsProto";
 import { WsSql } from "../../src/sql/wsSql";
-let dns = 'ws://localhost:6041'  
+let dns = 'ws://192.168.1.95:6041'  
 
 
 

@@ -14,8 +14,11 @@ const topics:string[] = ['topic_ws_bean']
 let createTopic = `create topic if not exists ${topics[0]} as select * from ${db}.${stable}`
 let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
 // let dropTopic2 = `DROP TOPIC IF EXISTS ${topic2};`
+
+let dsn = 'ws://root:taosdata@192.168.1.95:6041';
+let tmqDsn = 'ws://192.168.1.95:6041'
+
 beforeAll(async () => {
-    let dsn = 'ws://root:taosdata@localhost:6041';
     let conf :WSConfig = new WSConfig(dsn)
     const createDB = `create database if not exists ${db} keep 3650`
     const dropDB = `drop database if exists ${db}`
@@ -64,7 +67,7 @@ describe('TDWebSocket.Tmq()', () => {
         [TMQConstants.CONNECT_PASS, "taosdata"],
         [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
         [TMQConstants.CLIENT_ID, 'test_tmq_client'],
-        [TMQConstants.WS_URL, 'ws://localhost:6041'],
+        [TMQConstants.WS_URL, tmqDsn],
         [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
         [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
     ]);
@@ -85,7 +88,7 @@ describe('TDWebSocket.Tmq()', () => {
             [TMQConstants.CONNECT_PASS, "test"],
             [TMQConstants.AUTO_OFFSET_RESET, "earliest1"],
             [TMQConstants.CLIENT_ID, 'test_tmq_client'],
-            [TMQConstants.WS_URL, 'ws://localhost:6041'],
+            [TMQConstants.WS_URL, tmqDsn],
             [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
             [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
         ]);

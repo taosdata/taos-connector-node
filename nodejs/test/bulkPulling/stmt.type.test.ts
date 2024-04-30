@@ -82,9 +82,8 @@ const selectTableCN = `select * from ${tableCN}`
 const selectJsonTable = `select * from ${jsonTable}`
 const selectJsonTableCN = `select * from ${jsonTableCN}`
 
-
+let dsn = 'ws://root:taosdata@localhost:6041';
 beforeAll(async () => {
-    let dsn = 'ws://root:taosdata@localhost:6041';
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.open(conf);
     await ws.exec(dropDB);
@@ -98,7 +97,6 @@ beforeAll(async () => {
 describe('TDWebSocket.Stmt()', () => {
     jest.setTimeout(20 * 1000)
     test('normal BindParam', async() => {
-        let dsn = 'ws://root:taosdata@localhost:6041';
         let wsConf = new WSConfig(dsn);
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
@@ -155,7 +153,6 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('normal CN BindParam', async() => {
-        let dsn = 'ws://root:taosdata@localhost:6041';
         let wsConf = new WSConfig(dsn);
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
@@ -212,7 +209,6 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('normal json tag BindParam', async() => {
-        let dsn = 'ws://root:taosdata@localhost:6041';
         let wsConf = new WSConfig(dsn);
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
@@ -256,7 +252,6 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('normal json cn tag BindParam', async() => {
-        let dsn = 'ws://root:taosdata@localhost:6041';
         let wsConf = new WSConfig(dsn);
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 

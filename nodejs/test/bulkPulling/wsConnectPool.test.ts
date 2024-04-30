@@ -5,6 +5,7 @@ import { WsSql } from "../../src/sql/wsSql";
 import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 
+let dsn = 'ws://root:taosdata@localhost:6041';
 let tags = ['California.SanFrancisco', 3];
 let multi = [
 [1709183268567, 1709183268568, 1709183268569],
@@ -106,7 +107,7 @@ async function tmqConnect() {
 }
 
 beforeAll(async () => {
-    let dsn = 'ws://root:taosdata@localhost:6041';
+    
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.open(conf);
     await ws.exec(createTopic, ReqId.getReqID());

@@ -294,6 +294,12 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.bind(dataParams)
         await stmt.batch()
 
+        await stmt.setTableName('d1002');
+        params = stmt.newStmtParam()
+        params.setVarchar(['SanFrancisco']);
+        params.setInt([5]);
+        await stmt.setTags(params) 
+        
         dataParams = stmt.newStmtParam()
         dataParams.setTimestamp(multi2[0])
         dataParams.setFloat(multi2[1])

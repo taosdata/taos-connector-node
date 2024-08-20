@@ -135,6 +135,19 @@ describe('TDWebSocket.WsSql()', () => {
 
         await wsSql.close()
     })
+
+    test('query sql no getdata', async()=>{
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('root')
+        conf.setPwd('taosdata')
+        let wsSql = await WsSql.open(conf)
+        let taosResult = await wsSql.exec('use power')
+        console.log(taosResult);
+        expect(taosResult).toBeTruthy() 
+        let wsRows = await wsSql.query('select * from meters');
+        await wsRows.close()
+        await wsSql.close()
+    })
 })
 
 afterAll(async () => {

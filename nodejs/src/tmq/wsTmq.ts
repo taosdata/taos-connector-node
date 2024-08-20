@@ -68,7 +68,7 @@ export class WsConsumer {
         return await this._wsClient.exec(JSON.stringify(queryMsg));
     }
 
-    async poll(timeoutMs: number, reqId?:number):Promise<Map<string, TaosResult>>{      
+    async poll(timeoutMs: number, reqId?:number):Promise<Map<string, TaosResult>> {      
         if (this._wsConfig.auto_commit) {
             if (this._commitTime) {
                 let currTime = new Date().getTime();
@@ -115,7 +115,7 @@ export class WsConsumer {
         await this._wsClient.exec(JSON.stringify(queryMsg));
     }
 
-    async committed(partitions:Array<TopicPartition>, reqId?:number):Promise<Array<TopicPartition>>{
+    async committed(partitions:Array<TopicPartition>, reqId?:number):Promise<Array<TopicPartition>> {
         if (!partitions || partitions.length == 0 ) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, 'WsTmq Positions params is error!');
         }

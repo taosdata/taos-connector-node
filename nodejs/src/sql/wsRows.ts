@@ -77,7 +77,7 @@ export class WSRows {
             return
         }
         this._isClose = true
-        await this._wsClient.freeResult(this._wsQueryResponse)
+        this._wsClient.freeResult(this._wsQueryResponse)
     }
 
 }

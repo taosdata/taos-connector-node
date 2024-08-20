@@ -12,7 +12,7 @@ function getRandomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-let dsn = 'ws://root:taosdata@192.168.1.98:6041';
+let dsn = 'ws://root:taosdata@localhost:6041';
 async function Prepare() {
 
     let conf :WSConfig = new WSConfig(dsn)

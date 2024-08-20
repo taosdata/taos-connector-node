@@ -3,14 +3,16 @@ import { destroy, sqlConnect } from '../src';
 
 let db = 'power'
 let stable = 'meters'
-let tags = ['California.SanFrancisco', 3];
-let multi = [
-    [1706786044994, 1706786044995, 1706786044996],
-    [10.2, 10.3, 10.4],
-    [292, 293, 294],
-    [0.32, 0.33, 0.34],
-];
-let dsn = 'ws://root:taosdata@localhost:6041';
+let numOfSubTable = 10;
+let numOfRow = 10;
+
+function getRandomInt(min: number, max: number): number {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+let dsn = 'ws://root:taosdata@192.168.1.98:6041';
 async function Prepare() {
 
     let conf :WSConfig = new WSConfig(dsn)
@@ -30,21 +32,36 @@ async function Prepare() {
         connector = await sqlConnect(wsConf);
         stmt = await connector.stmtInit()
         await stmt.prepare(`INSERT INTO ? USING ${db}.${stable} (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)`);
-        await stmt.setTableName('d1001');
+        
+        for (let i = 0; i < numOfSubTable; i++) {
+            await stmt.setTableName(`d_bind_${i}`);
+            let tagParams = stmt.newStmtParam();
+            tagParams.setVarchar([`location_${i}`]);
+            tagParams.setInt([i]);
+            await stmt.setTags(tagParams);
+            let timestampParams:number[] = [];
+            let currentParams:number[] = [];
+            let voltageParams:number[] = [];
+            let phaseParams:number[] = [];
+            const currentMillis = new Date().getTime();
+            for (let j = 0; j < numOfRow; j++) {
+                timestampParams.push(currentMillis + j);
+                currentParams.push(Math.random() * 30);
+                voltageParams.push(getRandomInt(100, 300));
+                phaseParams.push(Math.random())
+            }
 
-        let tagParams = stmt.newStmtParam()
-        tagParams.setVarchar([tags[0]])
-        tagParams.setInt([tags[1]])
-        await stmt.setTags(tagParams);
+            let bindParams = stmt.newStmtParam();
+            bindParams.setTimestamp(timestampParams);
+            bindParams.setFloat(currentParams);
+            bindParams.setInt(voltageParams);
+            bindParams.setFloat(phaseParams); 
+            await stmt.bind(bindParams);
+            await stmt.batch();
+            await stmt.exec(); 
+            console.log(`d_bind_${i} insert ` + stmt.getLastAffected() + " rows.");         
 
-        let bindParams = stmt.newStmtParam()
-        bindParams.setTimestamp(multi[0]);
-        bindParams.setFloat(multi[1])
-        bindParams.setInt(multi[2])
-        bindParams.setFloat(multi[3])
-        await stmt.bind(bindParams);
-        await stmt.batch();
-        await stmt.exec();
+        }
     } catch (e) {
         console.error(e);
     }finally {

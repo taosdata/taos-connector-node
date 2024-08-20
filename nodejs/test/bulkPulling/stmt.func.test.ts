@@ -2,7 +2,7 @@ import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 
-let dns = 'ws://localhost:6041'
+let dns = 'ws://192.168.1.95:6041'
 
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns)
@@ -294,6 +294,12 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.bind(dataParams)
         await stmt.batch()
 
+        await stmt.setTableName('d1002');
+        params = stmt.newStmtParam()
+        params.setVarchar(['SanFrancisco']);
+        params.setInt([5]);
+        await stmt.setTags(params) 
+        
         dataParams = stmt.newStmtParam()
         dataParams.setTimestamp(multi2[0])
         dataParams.setFloat(multi2[1])

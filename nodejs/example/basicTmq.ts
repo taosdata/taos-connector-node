@@ -16,7 +16,7 @@ let configMap = new Map([
     [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
     [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
 ]);
-let dsn = 'ws://root:taosdata@localhost:6041';
+let dsn = 'ws://root:taosdata@192.168.1.98:6041';
 async function Prepare() {
     let conf :WSConfig = new WSConfig(dsn)
     const createDB = `create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`

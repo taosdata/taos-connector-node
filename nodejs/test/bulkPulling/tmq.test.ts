@@ -118,13 +118,15 @@ describe('TDWebSocket.Tmq()', () => {
             let res = await consumer.poll(500);
             let currTime = new Date().getTime();
             useTime.push(Math.abs(currTime - startTime));
-            for (let [key, value] of res) {
-                let data = value.getData()
-                if (data) {
-                    counts[0] += data.length;
-                }
+            console.log(res.getTopic(), res.getMeta());
+            let data = res.getData();
+            if (data) {
+                for (let record of data ) {
+                    console.log(record)
+                }                
             }
-            if (res.size == 0) {
+
+            if (data == null || data.length == 0) {
                 break;
             }
 
@@ -138,13 +140,15 @@ describe('TDWebSocket.Tmq()', () => {
             let res = await consumer.poll(500);
             let currTime = new Date().getTime();
             useTime.push(Math.abs(currTime - startTime));
-            for (let [key, value] of res) {
-                let data = value.getData()
-                if (data) {
-                    counts[1] += data.length;
-                }
+            console.log(res.getTopic(), res.getMeta());
+            let data = res.getData();
+            if (data) {
+                for (let record of data ) {
+                    console.log(record)
+                }                
             }
-            if (res.size == 0) {
+
+            if (data == null || data.length == 0) {
                 break;
             }
             // await Sleep(100)

@@ -1,19 +1,20 @@
 import { WSRows } from './wsRows'
-import { TaosResult } from '../common/taosResult'
+import { parseBlock, TaosResult } from '../common/taosResult'
 import { WsClient } from '../client/wsClient'
 import { ErrorCode, TDWebSocketClientError, TaosResultError, WebSocketInterfaceError } from '../common/wsError'
 import { WSConfig } from '../common/config'
-import { getUrl } from '../common/utils'
-import { WSQueryResponse } from '../client/wsResponse'
+import { getBinarySql, getUrl } from '../common/utils'
+import { WSFetchBlockResponse, WSQueryResponse } from '../client/wsResponse'
 import { Precision, SchemalessMessageInfo, SchemalessProto } from './wsProto'
 import { WsStmt } from '../stmt/wsStmt'
 import { ReqId } from '../common/reqid'
-import { PrecisionLength } from '../common/constant'
+import { BinaryQueryMessage, FetchRawBlockMessage, PrecisionLength } from '../common/constant'
 import logger from '../common/log'
+import { log } from 'console'
  
 export class WsSql{
     private wsConfig:WSConfig;
-    private _wsClient: WsClient;   
+    private _wsClient: WsClient;    
     constructor(wsConfig:WSConfig) {
         let url = getUrl(wsConfig);
         this._wsClient = new WsClient(url, wsConfig.getTimeOut());
@@ -103,29 +104,44 @@ export class WsSql{
         throw(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "stmt connect closed")); 
     }
 
-    async exec(sql: string, reqId?: number, action:string = 'query'): Promise<TaosResult> {
+    async exec(sql: string, reqId?: number, action:string = 'binary_query'): Promise<TaosResult> {
         try {
-            let wsQueryResponse:WSQueryResponse = await this._wsClient.exec(this.getSql(sql, reqId, action));
+            let bigintReqId = BigInt(ReqId.getReqID(reqId));
+            let wsQueryResponse:WSQueryResponse = await this._wsClient.sendBinaryMsg(bigintReqId, 
+                action, getBinarySql(BinaryQueryMessage, bigintReqId, BigInt(0), sql));
             let taosResult = new TaosResult(wsQueryResponse);
             if (wsQueryResponse.is_update) {
                 return taosResult;
-            } else {
-                try{
-                    while (true) {
-                        let wsFetchResponse = await this._wsClient.fetch(wsQueryResponse)
-                        if (wsFetchResponse.completed) {
-                            break;
-                        } else {
-                            taosResult.setRowsAndTime(wsFetchResponse.rows, wsFetchResponse.timing);
-                            taosResult = await this._wsClient.fetchBlock(wsFetchResponse, taosResult);
+            } else  {               
+                if (wsQueryResponse.id) {
+                    try{
+                        while (true) {
+                            let bigintReqId = BigInt(ReqId.getReqID(reqId));
+                            let resp = await this._wsClient.sendBinaryMsg(bigintReqId, 
+                                action, getBinarySql(FetchRawBlockMessage, bigintReqId, BigInt(wsQueryResponse.id)), false, true);
+                            
+                            taosResult.addTotalTime(resp.totalTime)
+                            let wsResponse = new WSFetchBlockResponse(resp.msg);
+                            if (wsResponse.code != 0) {
+                                logger.error("Executing SQL statement returns error: ", wsResponse.code, wsResponse.message);
+                                throw new TaosResultError(wsResponse.code, wsResponse.message);
+                            }
+                            console.log(wsResponse.finished)
+                            if (wsResponse.finished == 1) {
+                                break;
+                            }
+                            parseBlock(wsResponse, taosResult);
                         }
-                    }
-                    return taosResult;                    
-                } catch(err: any){
-                    throw new TaosResultError(err.code, err.message);
-                } finally {
-                    this._wsClient.freeResult(wsQueryResponse)
+
+                        return taosResult;                    
+                    } catch(err: any){
+                        throw new TaosResultError(err.code, err.message);
+                    } finally {
+                        this._wsClient.freeResult(wsQueryResponse)
+                    }                        
                 }
+                throw new TaosResultError(ErrorCode.ERR_INVALID_FETCH_MESSAGE_DATA, "The result data of the query is incorrect");
+                
             }
         } catch(err: any) {
             throw new TaosResultError(err.code, err.message);
@@ -147,7 +163,9 @@ export class WsSql{
 
     async query(sql: string, reqId?:number): Promise<WSRows> {
         try {
-            let wsQueryResponse:WSQueryResponse = await this._wsClient.exec(this.getSql(sql, reqId));
+            let bigintReqId = BigInt(ReqId.getReqID(reqId));
+            let wsQueryResponse:WSQueryResponse = await this._wsClient.sendBinaryMsg(bigintReqId, 
+                'binary_query', getBinarySql(BinaryQueryMessage, bigintReqId, BigInt(0), sql));
             return new WSRows(this._wsClient, wsQueryResponse);
         } catch (err: any) {
             throw new TaosResultError(err.code, err.message);
@@ -166,4 +184,5 @@ export class WsSql{
         }
         return JSON.stringify(queryMsg)
     }
+
 }

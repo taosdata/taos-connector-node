@@ -1,10 +1,10 @@
 import { WSConfig } from "../src/common/config";
 import { TMQConstants } from "../src/tmq/constant";
-import { destroy, sqlConnect, tmqConnect } from "../src";
+import { destroy, setLogLevel, sqlConnect, tmqConnect } from "../src";
 
 const stable = 'meters';
-const db = 'power'
-const topics:string[] = ['pwer_meters_topic']
+const db = 'power18'
+const topics:string[] = ['topic_ws_map']
 let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
 let configMap = new Map([
     [TMQConstants.GROUP_ID, "gId"],
@@ -12,11 +12,11 @@ let configMap = new Map([
     [TMQConstants.CONNECT_PASS, "taosdata"],
     [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
     [TMQConstants.CLIENT_ID, 'test_tmq_client'],
-    [TMQConstants.WS_URL, 'ws://localhost:6041'],
+    [TMQConstants.WS_URL, 'ws://192.168.1.98:6041'],
     [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
     [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
 ]);
-let dsn = 'ws://root:taosdata@localhost:6041';
+let dsn = 'ws://root:taosdata@192.168.1.98:6041';
 async function Prepare() {
     let conf :WSConfig = new WSConfig(dsn)
     const createDB = `create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`
@@ -39,17 +39,20 @@ async function Prepare() {
 (async () => {
     let consumer = null
     try {
+        setLogLevel("debug")
         await Prepare()
         consumer = await tmqConnect(configMap);
         await consumer.subscribe(topics);
         for (let i = 0; i < 5; i++) {
             let res = await consumer.poll(500);
-            for (let [key, value] of res) {
-                console.log(key, value);
+            console.log(res.getTopic(), res.getMeta());
+            let data = res.getData();
+            if (data) {
+                for (let record of data ) {
+                    console.log(record)
+                }                
             }
-            if (res.size == 0) {
-                break;
-            }
+
             await consumer.commit();
         }
 

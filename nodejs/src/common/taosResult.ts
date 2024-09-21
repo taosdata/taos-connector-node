@@ -22,18 +22,21 @@ export interface MessageResp {
 }
 
 export class TaosResult {
+    private _topic?: string
     private _meta: Array<ResponseMeta> | null;
     private _data: Array<Array<any>> | null;
 
     private _precision: number | null | undefined;
     protected _affectRows: number | null | undefined;
     private _totalTime = 0;
+   
     /** unit nano seconds */
     private _timing: bigint | null | undefined;
     constructor(queryResponse?: WSQueryResponse) {
+        
         if (queryResponse == null) {
-            this._meta = null
-            this._data = null
+            this._meta = []
+            this._data = []
             this._timing = BigInt(0)
             return
         }
@@ -75,9 +78,23 @@ export class TaosResult {
         }
         
     }
-    
+    public getTopic(): string {
+        if (this._topic) {
+            return this._topic;
+        }
+        return "";
+    }
+    public setTopic(topic: string = "") {
+        this._topic = topic;
+    }
     public getMeta(): Array<TDengineMeta> | null {
         return this.getTDengineMeta();
+    }
+
+    public setMeta(metaData: ResponseMeta){
+        if (this._meta) {
+            this._meta.push(metaData);
+        }
     }
 
     public getData(): Array<Array<any>> | null {
@@ -132,13 +149,17 @@ export class TaosResult {
     }
 }
 
-export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResult: TaosResult): TaosResult {
+export function parseBlock(blocks: WSFetchBlockResponse, taosResult: TaosResult): TaosResult {
     let metaList = taosResult.getTaosMeta()
     let dataList = taosResult.getData()
-    if (metaList && dataList) {
+    if (metaList && dataList && blocks && blocks.data) {
+        let rows = new DataView(blocks.data, 8, 4).getUint32(0, true);
+        if (rows == 0) {
+            return taosResult;
+        } 
+
         taosResult.setTiming(blocks.timing) 
         const INT_32_SIZE = 4;
-
         // Offset num of bytes from rawBlockBuffer.
         let bufferOffset = (4 * 5) + 8 + (4 + 1) * metaList.length
         let colLengthBlockSize = INT_32_SIZE * metaList.length
@@ -160,7 +181,7 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
             // traverse row after row. 
             for (let j = 0; j < metaList.length; j++) {
 
-                let isVarType = _isVarType(metaList[j])
+                let isVarType = _isVarType(metaList[j].type)
                 if (isVarType == ColumnsBlockType.SOLID) {
 
                     colDataHead = colBlockHead + bitMapSize + metaList[j].length * i
@@ -207,8 +228,8 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
     }
 }
 
-export function _isVarType(meta: ResponseMeta): Number {
-    switch (meta.type) {
+export function _isVarType(metaType: number): Number {
+    switch (metaType) {
         case TDengineTypeCode['NCHAR']: {
             return ColumnsBlockType['NCHAR']
         }
@@ -233,14 +254,14 @@ export function _isVarType(meta: ResponseMeta): Number {
     }
 }
 export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number, 
-    rows:number, meta: ResponseMeta, bitMapArr: ArrayBuffer): any[] {
+    rows:number, metaType: number, bitMapArr: ArrayBuffer): any[] {
 
     let dataBuffer = new DataView(buffer)
     let result:any[] = []
-    switch (meta.type) {
+    switch (metaType) {
         case TDengineTypeCode['BOOL']:
         case TDengineTypeCode['TINYINT']:
-            case TDengineTypeCode['TINYINT UNSIGNED']:{
+        case TDengineTypeCode['TINYINT UNSIGNED']:{
             for (let i = 0; i < rows; i++, colBlockHead++) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -343,7 +364,7 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             break;
         }
         default: {
-            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unspported type ${meta.type} for column ${meta.name}`)
+            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unspported type ${metaType}`)
         }
     }
     return result;
@@ -417,6 +438,11 @@ export function readNchar(dataBuffer: ArrayBuffer, colDataHead: number, length: 
     return data;
 }
 
+export function getString(dataBuffer: ArrayBuffer, colDataHead: number, length: number): string {
+    let buff = dataBuffer.slice(colDataHead, colDataHead + length - 1)
+    let decoder = new TextDecoder('utf-8');
+    return decoder.decode(new Uint8Array(buff));
+}
 
 function iteratorBuff(arr: ArrayBuffer) {
     let buf = Buffer.from(arr);

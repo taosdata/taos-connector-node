@@ -5,7 +5,7 @@ import { TaosResult } from '../common/taosResult';
 import { ErrorCode, TaosResultError, WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
 import { AssignmentResp, CommittedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockInfo, WsPollResponse, WsTmqQueryResponse} from './tmqResponse';
 import { ReqId } from '../common/reqid';
-import logger from '../common/log';
+import logger from "../common/log";
 import { WSFetchBlockResponse } from '../client/wsResponse';
 
 export class WsConsumer {
@@ -253,7 +253,7 @@ export class WsConsumer {
         return new WsTmqQueryResponse(result);
     }
 
-    private async fetchBlockData(pollResp: WsPollResponse, taosResult: TaosTmqResult):Promise<void> {
+    private async fetchBlockData(pollResp: WsPollResponse, taosResult: TaosTmqResult):Promise<boolean> {
         let fetchMsg = {
             action: 'fetch_raw_data',
             args: {
@@ -265,17 +265,14 @@ export class WsConsumer {
         logger.debug('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
         let result = await this._wsClient.sendMsg(jsonStr)
         let wsResponse = new WSFetchBlockResponse(result.msg)
-        
-        if (wsResponse && wsResponse.data) {
-            console.log(wsResponse)
+        if (wsResponse && wsResponse.data && wsResponse.blockLen > 0) {
             let wsTmqResponse = new WSTmqFetchBlockInfo(wsResponse.data, taosResult);
-            console.log(wsTmqResponse);
+            logger.debug('[WSTmqFetchBlockInfo.fetchBlockData]===>' + wsTmqResponse);
+            if (wsTmqResponse.rows > 0) {
+                return true;
+            }
         }
-        
-        
-        throw new WebSocketQueryError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `SSSSSSSSSSSSSSS`);
-        // parseTmqBlock(fetchResponse.rows, new WSTmqFetchBlockResponse(result), taosResult)    
-        // return taosResult;
+        return false;
     }
 
     private async pollData(timeoutMs: number, reqId?:number): Promise<TaosResult> {
@@ -294,24 +291,11 @@ export class WsConsumer {
             return taosResults;
         }  
         let taosResult = new TaosTmqResult(pollResp)
-        await this.fetchBlockData(pollResp, taosResult)
-        // while (true) {
-        //     let fetchResp = await this.fetch(pollResp)
-        //     if (fetchResp.completed || fetchResp.rows == 0) {
-        //         break;
-        //     }
-        //     let taosResult = taosResults.get(pollResp.topic + pollResp.vgroup_id)
-        //     if (taosResult == null) {
-        //         taosResult = new TaosTmqResult(fetchResp, pollResp)
-        //         taosResults.set(pollResp.topic + pollResp.vgroup_id, taosResult)
-        //     } else {
-        //         taosResult.setRowsAndTime(fetchResp.rows);
-        //     }
-            
-            
-        // }
-        
-        return taosResults;    
+        let finish = false;
+        while (!finish) {
+            finish = await this.fetchBlockData(pollResp, taosResult)
+        }
+        return taosResult;    
     }
 
     private async sendAssignmentReq(topic:string):Promise<Array<TopicPartition>> {         

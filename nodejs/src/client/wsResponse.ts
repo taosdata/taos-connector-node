@@ -92,16 +92,17 @@ export class WSFetchBlockResponse {
     timing: bigint
     reqId: bigint
     code: number
+    blockLen: number
     message: string | undefined
     resultId: bigint | undefined
     finished: number | undefined
-    blockLen: number | undefined
     metaType: number | undefined
     constructor(msg: ArrayBuffer) {
         this.action = new DataView(msg, 8, 8).getBigUint64(0, true)
         this.timing = new DataView(msg, 18, 8).getBigUint64(0, true)
         this.reqId = new DataView(msg, 26, 8).getBigUint64(0, true)
         this.code = new DataView(msg, 34, 4).getUint32(0, true)
+        this.blockLen = 0;
         if (this.code != 0) {
             let len = new DataView(msg, 38, 4).getUint32(0, true)
             this.message = readVarchar(msg, 42, len);
@@ -120,8 +121,11 @@ export class WSFetchBlockResponse {
             offset += 1;
         }
 
-        this.blockLen = new DataView(msg, offset, 4).getUint32(0, true)     
-        this.data = msg.slice(offset + 4);
+        this.blockLen = new DataView(msg, offset, 4).getUint32(0, true) 
+        if (this.blockLen > 0) {
+            this.data = msg.slice(offset + 4);
+        }    
+        
     }
 }
 

@@ -7,13 +7,13 @@ const db = 'power18'
 const topics:string[] = ['topic_ws_map']
 let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
 let configMap = new Map([
-    [TMQConstants.GROUP_ID, "gId"],
+    [TMQConstants.GROUP_ID, "gId_7"],
     [TMQConstants.CONNECT_USER, "root"],
     [TMQConstants.CONNECT_PASS, "taosdata"],
     [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
     [TMQConstants.CLIENT_ID, 'test_tmq_client'],
     [TMQConstants.WS_URL, 'ws://192.168.1.98:6041'],
-    [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
+    [TMQConstants.ENABLE_AUTO_COMMIT, 'false'],
     [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
 ]);
 let dsn = 'ws://root:taosdata@192.168.1.98:6041';
@@ -53,7 +53,7 @@ async function Prepare() {
                 }                
             }
 
-            await consumer.commit();
+            // await consumer.commit();
         }
 
         let assignment = await consumer.assignment()

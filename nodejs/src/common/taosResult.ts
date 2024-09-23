@@ -67,6 +67,10 @@ export class TaosResult {
         this._totalTime = queryResponse.totalTime
     }
 
+    public setPrecision(precision: number) {
+        this._precision = precision;
+    }
+
     public setRowsAndTime(rows: number, timing?:bigint) {
         if (this._affectRows) {
             this._affectRows += rows;

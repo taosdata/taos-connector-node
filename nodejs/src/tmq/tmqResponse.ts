@@ -1,11 +1,10 @@
-import { off } from "process";
-import { WSFetchBlockResponse, WSQueryResponse } from "../client/wsResponse";
+import { WSQueryResponse } from "../client/wsResponse";
 import { ColumnsBlockType, TDengineTypeLength } from "../common/constant";
 import { MessageResp, TaosResult, _isVarType, getString, readBinary, readNchar, readSolidDataToArray, readVarchar } from "../common/taosResult";
 import { WebSocketInterfaceError, ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import { TMQBlockInfo, TMQRawDataSchema } from "./constant";
 import { zigzagDecode } from "../common/utils";
-import { parseBlock } from "@tdengine/websocket";
+import logger from "../common/log";
 
 export class WsPollResponse {
     code: number;
@@ -70,15 +69,13 @@ export class TaosTmqResult extends TaosResult {
 }
 
 export class WSTmqFetchBlockInfo {
-    // totalTime: number;
-    // blockData: ArrayBuffer;
-    blockNum?: number;
     withTableName?: boolean;
     withSchema?: boolean;
     blockInfos?: Array<TMQBlockInfo>;
     schema: Array<TMQRawDataSchema>;
     tableName?: string;
     taosResult: TaosResult;
+    rows: number;
     constructor(blockData: ArrayBuffer, taosResult: TaosResult) {
         // this.totalTime = resp.totalTime
         // this.blockData = resp.msg
@@ -86,23 +83,20 @@ export class WSTmqFetchBlockInfo {
         this.schema = [];
         let dataView = new DataView(blockData);
         blockData = this.skipHead(dataView);
-        this.parseBlockInfos(blockData);
+        this.rows = this.parseBlockInfos(blockData);
     }
-
+    public getRows(): number{
+        return this.rows;
+    }
     private skipHead(dataView: DataView) {
         let v = dataView.getUint8(0);
-        console.log("------>", v, dataView.buffer);
         if (v >= 100) {
            let skip = dataView.getUint32(1, true);
-           console.log("------>", skip);
-           console.log("------>", v, dataView.buffer.slice(skip + 5));
            return dataView.buffer.slice(skip + 5)
         } 
         let skip1 = this.getTypeSkip(v);
-        console.log("------>", skip1);
         v = dataView.getUint8(1 + skip1);
         let skip2 = this.getTypeSkip(v);
-        console.log("------>", skip2);
         return dataView.buffer.slice(skip1 + 2 + skip2)
     }
 
@@ -118,29 +112,26 @@ export class WSTmqFetchBlockInfo {
         }       
     }
 
-    private parseBlockInfos(blockData: ArrayBuffer) {
+    private parseBlockInfos(blockData: ArrayBuffer): number {
         let dataView = new DataView(blockData)
-        this.blockNum = dataView.getUint32(0, true);
+        let blockNum = dataView.getUint32(0, true);
+        if (blockNum == 0) {
+            return 0;
+        }
         this.withTableName = dataView.getUint8(4) == 1? true : false;
         this.withSchema = dataView.getUint8(5) == 1? true : false;
-        console.log("------>", this.blockNum, this.withTableName, this.withSchema)
-        this.blockInfos = [];
+        logger.debug("parseBlockInfos blockNum="+ blockNum + ", withTableName=" + this.withTableName  + ", withSchema=" +  this.withSchema)
         let dataBuffer = dataView.buffer.slice(6)
-        for (let i = 0; i < this.blockNum; i++) {
-            let blockInfo = new TMQBlockInfo();
+        let rows = 0; 
+        for (let i = 0; i < blockNum; i++) {
             let variableInfo = this.parseVariableByteInteger(dataBuffer);
-            console.log("---1-->", variableInfo)
             dataView = new DataView(variableInfo[1].slice(17));
-            blockInfo.precision = dataView.getUint8(0);
-            
+            this.taosResult.setPrecision(dataView.getUint8(0));
             let offset = variableInfo[0] - 17;
             dataBuffer = this.parseSchemaInfo(dataView.buffer.slice(offset));
-            console.log(this.schema)
-            
-            this.parseTmqBlock(dataView.buffer.slice(1));
-            // dataBuffer = variableInfo[1].slice(variableInfo[0]);
-        
+            rows += this.parseTmqBlock(dataView.buffer.slice(1));
         }
+        return rows;
 
     }
 
@@ -201,13 +192,16 @@ export class WSTmqFetchBlockInfo {
         return [value, dataView.buffer.slice(count+1)]
     }
 
-    private parseTmqBlock(dataBuffer: ArrayBuffer) {
+    private parseTmqBlock(dataBuffer: ArrayBuffer): number {
         let dataView = new DataView(dataBuffer)
         let rows = dataView.getInt32(8, true);
-        console.log("rows------->", rows)
-        let taosdata = this.taosResult.getData()
+        if (rows == 0) {
+            return rows;    
+        }
+
+        let taosData = this.taosResult.getData()
         let metaData = this.taosResult.getMeta()
-        if (metaData && rows && taosdata) {
+        if (metaData && rows && taosData) {
             let dataList:any[][] = new Array(rows);
             //get bitmap length
             let bitMapOffset:number = getBitmapLen(rows);
@@ -273,11 +267,12 @@ export class WSTmqFetchBlockInfo {
                     dataList[row].push(data[row])
                 }
             }
-            console.log("data-->", dataList);
-            taosdata.push(...dataList);
+            taosData.push(...dataList);
             
         }
+        return rows; 
     }
+    
 }
 
 export class AssignmentResp{

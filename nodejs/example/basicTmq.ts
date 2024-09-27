@@ -4,14 +4,14 @@ import { destroy, setLogLevel, sqlConnect, tmqConnect } from "../src";
 
 const stable = 'meters';
 const db = 'power18'
-const topics:string[] = ['topic_ws_map']
+const topics:string[] = ['topic_ws_map11111']
 let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
 let configMap = new Map([
-    [TMQConstants.GROUP_ID, "gId_7"],
+    [TMQConstants.GROUP_ID, "gId_11"],
     [TMQConstants.CONNECT_USER, "root"],
     [TMQConstants.CONNECT_PASS, "taosdata"],
     [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
-    [TMQConstants.CLIENT_ID, 'test_tmq_client'],
+    [TMQConstants.CLIENT_ID, 'test_tmq_client11'],
     [TMQConstants.WS_URL, 'ws://192.168.1.98:6041'],
     [TMQConstants.ENABLE_AUTO_COMMIT, 'false'],
     [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
@@ -29,10 +29,10 @@ async function Prepare() {
     await ws.exec(useDB);
     await ws.exec(createStable);
     await ws.exec(createTopic);
-    for (let i = 0; i < 10; i++) {
-        await ws.exec(`INSERT INTO d1001 USING ${stable} (location, groupId) TAGS ("California.SanFrancisco", 3) VALUES (NOW, ${10+i}, ${200+i}, ${0.32 + i})`)
+    for (let i = 0; i < 1000; i++) {
+        await ws.exec(`INSERT INTO d1001 USING ${stable} (location, groupId) TAGS ("California.SanFrancisco", 3) VALUES (NOW + ${i}a, ${10+i}, ${200+i}, ${0.32 + i})`)
     }
-    ws.close()
+    await ws.close()
     
 }
 
@@ -44,25 +44,24 @@ async function Prepare() {
         consumer = await tmqConnect(configMap);
         await consumer.subscribe(topics);
         for (let i = 0; i < 5; i++) {
-            let res = await consumer.poll(500);
-            console.log(res.getTopic(), res.getMeta());
-            let data = res.getData();
-            if (data) {
-                for (let record of data ) {
-                    console.log(record)
+            let res = await consumer.poll(5);
+            for (let [key, value] of res) {
+                console.log(key, value.getMeta());
+                let data = value.getData();
+                if (data) {
+                    console.log(data.length)             
                 }                
             }
-
             // await consumer.commit();
         }
 
-        let assignment = await consumer.assignment()
-        console.log(assignment)
-        await consumer.seekToBeginning(assignment)
-        assignment = await consumer.assignment()
-        for(let i in assignment) {
-            console.log("seek after:", assignment[i])
-        }
+        // let assignment = await consumer.assignment()
+        // console.log(assignment)
+        // await consumer.seekToBeginning(assignment)
+        // assignment = await consumer.assignment()
+        // for(let i in assignment) {
+        //     console.log("seek after:", assignment[i])
+        // }
         await consumer.unsubscribe()
     } catch (e) {
         console.error(e);

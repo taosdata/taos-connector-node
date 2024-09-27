@@ -69,7 +69,7 @@ export class WsConsumer {
         return await this._wsClient.exec(JSON.stringify(queryMsg));
     }
 
-    async poll(timeoutMs: number, reqId?:number):Promise<TaosResult> {      
+    async poll(timeoutMs: number, reqId?:number):Promise<Map<string, TaosResult>> {      
         if (this._wsConfig.auto_commit) {
             if (this._commitTime) {
                 let currTime = new Date().getTime();
@@ -84,8 +84,6 @@ export class WsConsumer {
         }
         return await this.pollData(timeoutMs,reqId)
     }
-
-
 
     async subscription(reqId?:number):Promise<Array<string>> {
         let queryMsg = {
@@ -267,7 +265,7 @@ export class WsConsumer {
         let wsResponse = new WSFetchBlockResponse(result.msg)
         if (wsResponse && wsResponse.data && wsResponse.blockLen > 0) {
             let wsTmqResponse = new WSTmqFetchBlockInfo(wsResponse.data, taosResult);
-            logger.debug('[WSTmqFetchBlockInfo.fetchBlockData]===>' + wsTmqResponse);
+            logger.debug('[WSTmqFetchBlockInfo.fetchBlockData]===>' + wsTmqResponse.taosResult);
             if (wsTmqResponse.rows > 0) {
                 return true;
             }
@@ -275,7 +273,7 @@ export class WsConsumer {
         return false;
     }
 
-    private async pollData(timeoutMs: number, reqId?:number): Promise<TaosResult> {
+    private async pollData(timeoutMs: number, reqId?:number): Promise<Map<string, TaosResult>> {
         let queryMsg = {
             action: TMQMessageType.Poll,
             args: {
@@ -284,18 +282,22 @@ export class WsConsumer {
             },
         };
         
-        var taosResults: TaosResult = new TaosResult();
+        
         let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
         let pollResp = new WsPollResponse(resp)
+        let taosResult = new TaosTmqResult(pollResp)
+        var taosResults: Map<string, TaosResult> = new Map();
+        taosResults.set(pollResp.topic, taosResult);
         if (!pollResp.have_message || pollResp.message_type != TMQMessageType.ResDataType) {
             return taosResults;
         }  
-        let taosResult = new TaosTmqResult(pollResp)
+        
         let finish = false;
         while (!finish) {
             finish = await this.fetchBlockData(pollResp, taosResult)
         }
-        return taosResult;    
+
+        return taosResults;    
     }
 
     private async sendAssignmentReq(topic:string):Promise<Array<TopicPartition>> {         

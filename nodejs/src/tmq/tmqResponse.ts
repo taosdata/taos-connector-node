@@ -1,7 +1,10 @@
 import { WSQueryResponse } from "../client/wsResponse";
 import { ColumnsBlockType, TDengineTypeLength } from "../common/constant";
-import { MessageResp, TaosResult, _isVarType, readBinary, readNchar, readSolidDataToArray, readVarchar } from "../common/taosResult";
-import { WebSocketInterfaceError, ErrorCode } from "../common/wsError";
+import { MessageResp, TaosResult, _isVarType, getString, readBinary, readNchar, readSolidDataToArray, readVarchar } from "../common/taosResult";
+import { WebSocketInterfaceError, ErrorCode, TDWebSocketClientError } from "../common/wsError";
+import { TMQBlockInfo, TMQRawDataSchema } from "./constant";
+import { zigzagDecode } from "../common/utils";
+import logger from "../common/log";
 
 export class WsPollResponse {
     code: number;
@@ -55,29 +58,223 @@ export class WsTmqQueryResponse extends WSQueryResponse{
 }
 
 export class TaosTmqResult extends TaosResult {
-    topic: string;
     database: string;
     vgroup_id:number;
-    table_name:string;
-    constructor(resp: WsTmqQueryResponse, pollResp:WsPollResponse) {
-        super(resp);
-        this.table_name = resp.table_name;
-        // this._affectRows = resp.rows;
-        this.topic = pollResp.topic;
+    constructor(pollResp:WsPollResponse) {
+        super();
+        this.setTopic(pollResp.topic);
         this.database = pollResp.database;
         this.vgroup_id = pollResp.vgroup_id;
-
     }
 }
 
-export class WSTmqFetchBlockResponse {
-    totalTime : number;
-    blockData : ArrayBuffer;
-    constructor(resp:MessageResp) {
-        this.totalTime = resp.totalTime
-        this.blockData = resp.msg
+export class WSTmqFetchBlockInfo {
+    withTableName?: boolean;
+    withSchema?: boolean;
+    blockInfos?: Array<TMQBlockInfo>;
+    schema: Array<TMQRawDataSchema>;
+    tableName?: string;
+    taosResult: TaosResult;
+    rows: number;
+    constructor(blockData: ArrayBuffer, taosResult: TaosResult) {
+        // this.totalTime = resp.totalTime
+        // this.blockData = resp.msg
+        this.taosResult = taosResult;
+        this.schema = [];
+        let dataView = new DataView(blockData);
+        blockData = this.skipHead(dataView);
+        this.rows = this.parseBlockInfos(blockData);
     }
+    public getRows(): number{
+        return this.rows;
+    }
+    private skipHead(dataView: DataView) {
+        let v = dataView.getUint8(0);
+        if (v >= 100) {
+           let skip = dataView.getUint32(1, true);
+           return dataView.buffer.slice(skip + 5)
+        } 
+        let skip1 = this.getTypeSkip(v);
+        v = dataView.getUint8(1 + skip1);
+        let skip2 = this.getTypeSkip(v);
+        return dataView.buffer.slice(skip1 + 2 + skip2)
+    }
+
+    private getTypeSkip(v: number) {
+        switch (v) {
+        case 1:
+            return 8;
+        case 2:
+        case 3:
+            return 16;
+        default:
+            throw(new TDWebSocketClientError(ErrorCode.ERR_INVALID_FETCH_MESSAGE_DATA, `FetchBlockRawResp getTypeSkip error, type: ${v}`));
+        }       
+    }
+
+    private parseBlockInfos(blockData: ArrayBuffer): number {
+        let dataView = new DataView(blockData)
+        let blockNum = dataView.getUint32(0, true);
+        if (blockNum == 0) {
+            return 0;
+        }
+        this.withTableName = dataView.getUint8(4) == 1? true : false;
+        this.withSchema = dataView.getUint8(5) == 1? true : false;
+        logger.debug("parseBlockInfos blockNum="+ blockNum + ", withTableName=" + this.withTableName  + ", withSchema=" +  this.withSchema)
+        let dataBuffer = dataView.buffer.slice(6)
+        let rows = 0; 
+        for (let i = 0; i < blockNum; i++) {
+            let variableInfo = this.parseVariableByteInteger(dataBuffer);
+            dataView = new DataView(variableInfo[1].slice(17));
+            this.taosResult.setPrecision(dataView.getUint8(0));
+            let offset = variableInfo[0] - 17;
+            dataBuffer = this.parseSchemaInfo(dataView.buffer.slice(offset));
+            rows += this.parseTmqBlock(dataView.buffer.slice(1));
+        }
+        return rows;
+
+    }
+
+    private parseSchemaInfo(dataBuffer: ArrayBuffer) {
+        if (this.withSchema) {
+            let variableInfo = this.parseVariableByteInteger(dataBuffer);
+            let cols =  zigzagDecode(variableInfo[0]);
+            variableInfo = this.parseVariableByteInteger(variableInfo[1]);
+            let dataView = new DataView(variableInfo[1])
+            let isSkip = this.schema.length > 0
+            for (let index = 0; index < cols; index++) {
+                let schema = new TMQRawDataSchema();
+                schema.colType = dataView.getInt8(0);
+                schema.flag = dataView.getInt8(1);
+                variableInfo = this.parseVariableByteInteger(dataView.buffer.slice(2));
+                schema.bytes = BigInt(zigzagDecode(variableInfo[0]));
+                variableInfo = this.parseVariableByteInteger(variableInfo[1]);
+                schema.colID = zigzagDecode(variableInfo[0]);
+                variableInfo = this.parseVariableByteInteger(variableInfo[1]);
+                schema.name = getString(variableInfo[1], 0, variableInfo[0]);
+                if (!isSkip) {
+                    this.taosResult.setMeta({
+                        name: schema.name,
+                        type: schema.colType,
+                        length: Number(schema.bytes)
+                    } );
+                    this.schema.push(schema);
+                }
+                dataView = new DataView(variableInfo[1].slice(variableInfo[0]))
+
+            }
+
+            if(this.withTableName) {
+                variableInfo = this.parseVariableByteInteger(dataView.buffer);
+                this.tableName = readVarchar(variableInfo[1], 0, variableInfo[0]); 
+                dataView = new DataView(variableInfo[1].slice(variableInfo[0]))
+            }
+            return dataView.buffer;
+        }
+        return dataBuffer;
+    }
+
+    private parseVariableByteInteger(dataBuffer: ArrayBuffer): [number, ArrayBuffer] {
+        let value = 0;
+        let multiplier = 1;
+        let dataView = new DataView(dataBuffer);
+        let count = 0;
+        while (true) {
+            let encodedByte = dataView.getUint8(count);
+            value += (encodedByte&127) * multiplier;
+            if ((encodedByte & 128) == 0) {
+                break;
+            }
+            multiplier *= 128;
+            count++;
+        }
+        
+        return [value, dataView.buffer.slice(count+1)]
+    }
+
+    private parseTmqBlock(dataBuffer: ArrayBuffer): number {
+        let dataView = new DataView(dataBuffer)
+        let rows = dataView.getInt32(8, true);
+        if (rows == 0) {
+            return rows;    
+        }
+
+        let taosData = this.taosResult.getData()
+        let metaData = this.taosResult.getMeta()
+        if (metaData && rows && taosData) {
+            let dataList:any[][] = new Array(rows);
+            //get bitmap length
+            let bitMapOffset:number = getBitmapLen(rows);
+            //skip data head
+            let bufferOffset = 28 + 5 * this.schema.length
+            
+            dataBuffer = dataBuffer.slice(bufferOffset);
+            let metaLens:number[]= []
+            for (let i = 0; i< this.schema.length; i++) {
+                //get data len
+                metaLens.push(new DataView(dataBuffer, i*4, 4).getInt32(0, true)) 
+            }
+            bufferOffset = this.schema.length * 4;
+            
+            for (let i = 0; i < this.schema.length; i++) {
+                let data:any[] = [];
+                //get type code     
+                let isVarType = _isVarType(this.schema[i].colType)
+                //fixed length type 
+                if (isVarType == ColumnsBlockType.SOLID) {
+                    let bitMapArr = dataBuffer.slice(bufferOffset, bufferOffset + bitMapOffset);
+                    bufferOffset += bitMapOffset;
+                    //decode column data, data is array
+                    data = readSolidDataToArray(dataBuffer, bufferOffset, rows, this.schema[i].colType, bitMapArr);
+                } else {  
+                    //Variable length type   
+                    let offset = bufferOffset;
+                    let offsets:number[]= [];
+                    for (let i = 0; i< rows; i++, offset += TDengineTypeLength['INT']) {
+                        //get data length, -1 is null
+                        offsets.push(new DataView(dataBuffer, offset, 4).getInt32(0, true)) 
+                    }
+                    let start = offset
+                    for (let i = 0; i< rows; i++) {
+                        let value:any = ''
+                        if (-1 == offsets[i]) {
+                            value = null
+                        }else{
+                            let header = start + offsets[i];
+                            let dataLength = new DataView(dataBuffer, header, 2).getInt16(0, true) & 0xFFFF;
+                            if (isVarType == ColumnsBlockType.VARCHAR) {
+                                //decode var char
+                                value = readVarchar(dataBuffer, header + 2, dataLength)
+                            } else if(isVarType == ColumnsBlockType.GEOMETRY || isVarType == ColumnsBlockType.VARBINARY) {
+                                //decode binary
+                                value = readBinary(dataBuffer, header + 2, dataLength)
+                            } else {
+                                //decode nchar
+                                value = readNchar(dataBuffer, header + 2, dataLength)
+                            }
+                            
+                        }
+                        data.push(value);
+                    }
+                    bufferOffset += rows * 4
+                }
+                bufferOffset += metaLens[i]
+                //column data to row data
+                for (let row = 0; row < data.length; row++) {
+                    if (dataList[row] == null) {
+                        dataList[row] = []
+                    }
+                    dataList[row].push(data[row])
+                }
+            }
+            taosData.push(...dataList);
+            
+        }
+        return rows; 
+    }
+    
 }
+
 export class AssignmentResp{
     req_id: number;
     code: number;
@@ -168,86 +365,6 @@ export class TopicPartition {
         this.end = msg.end;
         this.topic = ''
     }
-}
-
-export function parseTmqBlock(rows:number, resp: WSTmqFetchBlockResponse, taosResult: TaosResult): TaosResult {
-    let dataList:any[][] = new Array(rows);
-    if (!resp || !taosResult) {
-        return taosResult;
-    }
-
-    let metaList = taosResult.getTaosMeta()
-    let taosdata = taosResult.getData()
-    if (metaList && rows && taosdata) {
-        //get bitmap length
-        let bitMapOffset:number = getBitmapLen(rows);
-        //skip data head
-        let bufferOffset = 24 + 28 + 5 * metaList.length
-        
-        let dataBuffer:ArrayBuffer = resp.blockData.slice(bufferOffset);
-        let metaLens:number[]= []
-        for (let i = 0; i< metaList.length; i++) {
-            //get data len
-            metaLens.push(new DataView(dataBuffer, i*4, 4).getInt32(0, true)) 
-        }
-        bufferOffset = metaList.length * 4;
-        
-        for (let i = 0; i < metaList.length; i++) {
-            let data:any[] = [];
-            //get type code
-            let isVarType = _isVarType(metaList[i])
-            //fixed length type 
-            if (isVarType == ColumnsBlockType.SOLID) {
-                let bitMapArr = dataBuffer.slice(bufferOffset, bufferOffset + bitMapOffset);
-                bufferOffset += bitMapOffset;
-                //decode column data, data is array
-                data = readSolidDataToArray(dataBuffer, bufferOffset, rows, metaList[i], bitMapArr);
-            } else {  
-                //Variable length type   
-                let offset = bufferOffset;
-                let offsets:number[]= [];
-                for (let i = 0; i< rows; i++, offset += TDengineTypeLength['INT']) {
-                    //get data length, -1 is null
-                    offsets.push(new DataView(dataBuffer, offset, 4).getInt32(0, true)) 
-                }
-                let start = offset
-                for (let i = 0; i< rows; i++) {
-                    let value:any = ''
-                    if (-1 == offsets[i]) {
-                        value = null
-                    }else{
-                        let header = start + offsets[i];
-                        let dataLength = new DataView(dataBuffer, header, 2).getInt16(0, true) & 0xFFFF;
-                        if (isVarType == ColumnsBlockType.VARCHAR) {
-                            //decode var char
-                            value = readVarchar(dataBuffer, header + 2, dataLength)
-                        } else if(isVarType == ColumnsBlockType.GEOMETRY || isVarType == ColumnsBlockType.VARBINARY) {
-                            //decode binary
-                            value = readBinary(dataBuffer, header + 2, dataLength)
-                        } else {
-                            //decode nchar
-                            value = readNchar(dataBuffer, header + 2, dataLength)
-                        }
-                        
-                    }
-                    data.push(value);
-                }
-                bufferOffset += rows * 4
-            }
-            bufferOffset += metaLens[i]
-            //column data to row data
-            for (let row = 0; row < data.length; row++) {
-                if (dataList[row] == null) {
-                    dataList[row] = []
-                }
-                dataList[row].push(data[row])
-            }
-        }
-        taosdata.push(...dataList);
-    }
-    
-
-    return taosResult;
 }
 
 function getBitmapLen(n:number) {

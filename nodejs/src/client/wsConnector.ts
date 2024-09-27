@@ -54,9 +54,9 @@ export class WebSocketConnector {
 
     private _onmessage(event: any) {
         let data = event.data;
-        logger.debug("wsClient._onMessage()===="+ (Object.prototype.toString.call(data)))
+        logger.debug("wsClient._onMessage()====" + (Object.prototype.toString.call(data)))
         if (Object.prototype.toString.call(data) === '[object ArrayBuffer]') {
-            let id = new DataView(data, 8, 8).getBigUint64(0, true);
+            let id = new DataView(data, 26, 8).getBigUint64(0, true);
             WsEventCallback.instance().handleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
                 OnMessageType.MESSAGE_TYPE_ARRAYBUFFER, data);
 
@@ -140,7 +140,7 @@ export class WebSocketConnector {
                     WsEventCallback.instance().registerCallback({ action: action, req_id: reqId, 
                         timeout:this._timeout, id: reqId}, resolve, reject);
                 }
-                logger.debug("[wsClient.sendBinaryMsg()]===>" + reqId, action, message.byteLength)
+                logger.debug("[wsClient.sendBinaryMsg()]===>" + reqId + action + message.byteLength)
                 this._wsConn.send(message)
             } else {
                 reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, 

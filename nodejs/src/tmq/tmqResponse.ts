@@ -186,7 +186,7 @@ export class WSTmqFetchBlockInfo {
                     dataView = new DataView(variableInfo[1].slice(variableInfo[0]));
                     this.schemaLen += variableInfo[0];
                 }
-                console.log("this.schemaLen==>", this.schemaLen);
+                
                 return dataView.buffer;
             } else {
                 return dataBuffer.slice(this.schemaLen);

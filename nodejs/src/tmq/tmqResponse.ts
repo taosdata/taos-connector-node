@@ -75,12 +75,14 @@ export class WSTmqFetchBlockInfo {
     schema: Array<TMQRawDataSchema>;
     tableName?: string;
     taosResult: TaosResult;
+    schemaLen: number;
     rows: number;
     constructor(blockData: ArrayBuffer, taosResult: TaosResult) {
         // this.totalTime = resp.totalTime
         // this.blockData = resp.msg
         this.taosResult = taosResult;
         this.schema = [];
+        this.schemaLen = 0;
         let dataView = new DataView(blockData);
         blockData = this.skipHead(dataView);
         this.rows = this.parseBlockInfos(blockData);
@@ -120,61 +122,80 @@ export class WSTmqFetchBlockInfo {
         }
         this.withTableName = dataView.getUint8(4) == 1? true : false;
         this.withSchema = dataView.getUint8(5) == 1? true : false;
-        logger.debug("parseBlockInfos blockNum="+ blockNum + ", withTableName=" + this.withTableName  + ", withSchema=" +  this.withSchema)
+        
         let dataBuffer = dataView.buffer.slice(6)
         let rows = 0; 
+        // const parseStartTime = new Date().getTime();
         for (let i = 0; i < blockNum; i++) {
             let variableInfo = this.parseVariableByteInteger(dataBuffer);
+            
             dataView = new DataView(variableInfo[1].slice(17));
             this.taosResult.setPrecision(dataView.getUint8(0));
             let offset = variableInfo[0] - 17;
-            dataBuffer = this.parseSchemaInfo(dataView.buffer.slice(offset));
+            dataBuffer = this.parseSchemaInfo(dataView.buffer.slice(offset));            
             rows += this.parseTmqBlock(dataView.buffer.slice(1));
+ 
         }
+        // const parseEndTime = new Date().getTime();
+        // console.log("------------->", parseEndTime- parseStartTime, rows);
+        logger.info("parseBlockInfos blockNum="+ blockNum + ", withTableName=" + this.withTableName  + ", withSchema=" +  this.withSchema + ", rows=" + rows)
         return rows;
 
     }
 
     private parseSchemaInfo(dataBuffer: ArrayBuffer) {
         if (this.withSchema) {
-            let variableInfo = this.parseVariableByteInteger(dataBuffer);
-            let cols =  zigzagDecode(variableInfo[0]);
-            variableInfo = this.parseVariableByteInteger(variableInfo[1]);
-            let dataView = new DataView(variableInfo[1])
             let isSkip = this.schema.length > 0
-            for (let index = 0; index < cols; index++) {
-                let schema = new TMQRawDataSchema();
-                schema.colType = dataView.getInt8(0);
-                schema.flag = dataView.getInt8(1);
-                variableInfo = this.parseVariableByteInteger(dataView.buffer.slice(2));
-                schema.bytes = BigInt(zigzagDecode(variableInfo[0]));
+            if (!isSkip) { 
+                let variableInfo = this.parseVariableByteInteger(dataBuffer);
+                this.schemaLen = variableInfo[2];
+                let cols =  zigzagDecode(variableInfo[0]);
                 variableInfo = this.parseVariableByteInteger(variableInfo[1]);
-                schema.colID = zigzagDecode(variableInfo[0]);
-                variableInfo = this.parseVariableByteInteger(variableInfo[1]);
-                schema.name = getString(variableInfo[1], 0, variableInfo[0]);
-                if (!isSkip) {
-                    this.taosResult.setMeta({
-                        name: schema.name,
-                        type: schema.colType,
-                        length: Number(schema.bytes)
-                    } );
-                    this.schema.push(schema);
+                this.schemaLen += variableInfo[2];
+                let dataView = new DataView(variableInfo[1])
+                for (let index = 0; index < cols; index++) {
+                    let schema = new TMQRawDataSchema();
+                    schema.colType = dataView.getInt8(0);
+                    schema.flag = dataView.getInt8(1);
+                    variableInfo = this.parseVariableByteInteger(dataView.buffer.slice(2));
+                    this.schemaLen += 2 + variableInfo[2];
+                    schema.bytes = BigInt(zigzagDecode(variableInfo[0]));
+                    variableInfo = this.parseVariableByteInteger(variableInfo[1]);
+                    this.schemaLen += variableInfo[2];
+                    schema.colID = zigzagDecode(variableInfo[0]);
+                    variableInfo = this.parseVariableByteInteger(variableInfo[1]);
+                    this.schemaLen += variableInfo[2];
+                    schema.name = getString(variableInfo[1], 0, variableInfo[0]);
+                    
+                    if (!isSkip) {
+                        this.taosResult.setMeta({
+                            name: schema.name,
+                            type: schema.colType,
+                            length: Number(schema.bytes)
+                        } );
+                        this.schema.push(schema);
+                    }
+                    dataView = new DataView(variableInfo[1].slice(variableInfo[0]))
+                    this.schemaLen += variableInfo[0];
                 }
-                dataView = new DataView(variableInfo[1].slice(variableInfo[0]))
 
+                if(this.withTableName) {
+                    variableInfo = this.parseVariableByteInteger(dataView.buffer);
+                    this.schemaLen += variableInfo[2];
+                    this.tableName = readVarchar(variableInfo[1], 0, variableInfo[0]); 
+                    dataView = new DataView(variableInfo[1].slice(variableInfo[0]));
+                    this.schemaLen += variableInfo[0];
+                }
+                console.log("this.schemaLen==>", this.schemaLen);
+                return dataView.buffer;
+            } else {
+                return dataBuffer.slice(this.schemaLen);
             }
-
-            if(this.withTableName) {
-                variableInfo = this.parseVariableByteInteger(dataView.buffer);
-                this.tableName = readVarchar(variableInfo[1], 0, variableInfo[0]); 
-                dataView = new DataView(variableInfo[1].slice(variableInfo[0]))
-            }
-            return dataView.buffer;
         }
         return dataBuffer;
     }
 
-    private parseVariableByteInteger(dataBuffer: ArrayBuffer): [number, ArrayBuffer] {
+    private parseVariableByteInteger(dataBuffer: ArrayBuffer): [number, ArrayBuffer, number] {
         let value = 0;
         let multiplier = 1;
         let dataView = new DataView(dataBuffer);
@@ -189,7 +210,7 @@ export class WSTmqFetchBlockInfo {
             count++;
         }
         
-        return [value, dataView.buffer.slice(count+1)]
+        return [value, dataView.buffer.slice(count+1), count+1]
     }
 
     private parseTmqBlock(dataBuffer: ArrayBuffer): number {

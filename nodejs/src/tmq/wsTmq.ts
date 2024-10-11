@@ -261,15 +261,21 @@ export class WsConsumer {
         };   
         let jsonStr = JSON.stringify(fetchMsg);
         logger.debug('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
+        // const startTime = new Date().getTime();
         let result = await this._wsClient.sendMsg(jsonStr)
         let wsResponse = new WSFetchBlockResponse(result.msg)
         if (wsResponse && wsResponse.data && wsResponse.blockLen > 0) {
+            // const parseStartTime = new Date().getTime();
             let wsTmqResponse = new WSTmqFetchBlockInfo(wsResponse.data, taosResult);
             logger.debug('[WSTmqFetchBlockInfo.fetchBlockData]===>' + wsTmqResponse.taosResult);
             if (wsTmqResponse.rows > 0) {
+                // const endTime = new Date().getTime();
+                // console.log(endTime - parseStartTime, endTime - startTime);
                 return true;
             }
         }
+        
+
         return false;
     }
 
@@ -293,6 +299,7 @@ export class WsConsumer {
         }  
         
         let finish = false;
+
         while (!finish) {
             finish = await this.fetchBlockData(pollResp, taosResult)
         }

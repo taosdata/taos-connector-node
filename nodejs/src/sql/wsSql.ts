@@ -126,7 +126,7 @@ export class WsSql{
                                 logger.error("Executing SQL statement returns error: ", wsResponse.code, wsResponse.message);
                                 throw new TaosResultError(wsResponse.code, wsResponse.message);
                             }
-                            console.log(wsResponse.finished)
+                            
                             if (wsResponse.finished == 1) {
                                 break;
                             }

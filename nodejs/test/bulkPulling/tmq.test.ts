@@ -15,8 +15,8 @@ let createTopic = `create topic if not exists ${topics[0]} as select * from ${db
 let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
 // let dropTopic2 = `DROP TOPIC IF EXISTS ${topic2};`
 
-let dsn = 'ws://root:taosdata@localhost:6041';
-let tmqDsn = 'ws://localhost:6041'
+let dsn = 'ws://root:taosdata@192.168.1.98:6041';
+let tmqDsn = 'ws://192.168.1.98:6041'
 
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dsn)
@@ -111,7 +111,7 @@ describe('TDWebSocket.Tmq()', () => {
 
         let assignment = await consumer.assignment()
         console.log(assignment)
-        let counts:number[]=[0, 0]
+        let counts:number = 0;
         let useTime:number[] = [];
         for (let i = 0; i < 5; i++) { 
             let startTime = new Date().getTime();
@@ -148,9 +148,7 @@ describe('TDWebSocket.Tmq()', () => {
                     break;
                 }
                
-                for (let record of data ) {
-                    console.log(record)
-                }              
+                counts += data.length
                  
             }
             // await Sleep(100)
@@ -163,7 +161,7 @@ describe('TDWebSocket.Tmq()', () => {
         await consumer.close();
         console.log("------------->", useTime)
         console.log("------------->", counts)
-        expect(counts).toEqual([10, 10])
+        expect(counts).toEqual(10)
     });
 
     test('Topic not exist', async() => {

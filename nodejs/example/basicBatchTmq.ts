@@ -8,8 +8,8 @@ const stable = 'meters';
 const url = 'ws://localhost:6041';
 const topic = 'topic_meters'
 const topics = [topic];
-const groupId = "group-28";
-const clientId = "client-28";
+const groupId = "group-1";
+const clientId = "client-1";
 
 async function createConsumer() {
     let configMap = new Map([

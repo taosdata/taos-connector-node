@@ -3,8 +3,8 @@ import { TMQConstants } from "../src/tmq/constant";
 import { destroy, setLogLevel, sqlConnect, tmqConnect } from "../src";
 
 const stable = 'meters';
-const db = 'power18'
-const topics:string[] = ['topic_ws_map11111']
+const db = 'power'
+const topics:string[] = ['topic_ws_map']
 let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
 let configMap = new Map([
     [TMQConstants.GROUP_ID, "gId_11"],
@@ -44,7 +44,7 @@ async function Prepare() {
         consumer = await tmqConnect(configMap);
         await consumer.subscribe(topics);
         for (let i = 0; i < 5; i++) {
-            let res = await consumer.poll(5);
+            let res = await consumer.poll(100);
             for (let [key, value] of res) {
                 console.log(key, value.getMeta());
                 let data = value.getData();

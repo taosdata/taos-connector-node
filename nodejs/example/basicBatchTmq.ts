@@ -5,7 +5,7 @@ import { WsConsumer } from "../src/tmq/wsTmq";
 
 const db = 'power';
 const stable = 'meters';
-const url = 'ws://192.168.1.98:6041';
+const url = 'ws://localhost:6041';
 const topic = 'topic_meters'
 const topics = [topic];
 const groupId = "group-28";
@@ -35,7 +35,7 @@ async function createConsumer() {
 // ANCHOR_END: create_consumer 
 
 async function prepare() {
-    let conf = new WSConfig('ws://192.168.1.98:6041');
+    let conf = new WSConfig('ws://localhost:6041');
     conf.setUser('root');
     conf.setPwd('taosdata');
     conf.setDb(db);
@@ -52,7 +52,7 @@ async function prepare() {
 }
 
 async function insert() {
-    let conf = new WSConfig('ws://192.168.1.98:6041');
+    let conf = new WSConfig('ws://localhost:6041');
     conf.setUser('root');
     conf.setPwd('taosdata');
     conf.setDb(db);

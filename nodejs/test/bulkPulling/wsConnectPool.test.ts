@@ -85,7 +85,16 @@ async function tmqConnect() {
         
         let res = await consumer.poll(500); 
         for (let [key, value] of res) {
-            console.log(key, value);
+            console.log(key, value.getMeta());
+            let data = value.getData();
+            if (data == null || data.length == 0) {
+                break;
+            }
+           
+            for (let record of data ) {
+                console.log(record)
+            }              
+             
         }
 
         await consumer.commit();

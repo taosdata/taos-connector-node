@@ -2,10 +2,11 @@ import { TmqConfig } from './config';
 import { TMQConstants, TMQMessageType } from './constant';
 import { WsClient } from '../client/wsClient';
 import { TaosResult } from '../common/taosResult';
-import { ErrorCode, TaosResultError, WebSocketInterfaceError } from '../common/wsError';
-import { AssignmentResp, CommittedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockResponse, WsPollResponse, WsTmqQueryResponse, parseTmqBlock} from './tmqResponse';
+import { ErrorCode, TaosResultError, WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
+import { AssignmentResp, CommittedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockInfo, WsPollResponse, WsTmqQueryResponse} from './tmqResponse';
 import { ReqId } from '../common/reqid';
-import logger from '../common/log';
+import logger from "../common/log";
+import { WSFetchBlockResponse } from '../client/wsResponse';
 
 export class WsConsumer {
     private _wsClient: WsClient;
@@ -83,8 +84,6 @@ export class WsConsumer {
         }
         return await this.pollData(timeoutMs,reqId)
     }
-
-
 
     async subscription(reqId?:number):Promise<Array<string>> {
         let queryMsg = {
@@ -252,19 +251,32 @@ export class WsConsumer {
         return new WsTmqQueryResponse(result);
     }
 
-    private async fetchBlockData(fetchResponse: WsTmqQueryResponse, taosResult: TaosResult):Promise<TaosResult> {
+    private async fetchBlockData(pollResp: WsPollResponse, taosResult: TaosTmqResult):Promise<boolean> {
         let fetchMsg = {
-            action: 'fetch_block',
+            action: 'fetch_raw_data',
             args: {
-                req_id: fetchResponse.req_id,
-                message_id: fetchResponse.message_id,
+                req_id: ReqId.getReqID(),
+                message_id: pollResp.message_id,
             },
         };   
         let jsonStr = JSON.stringify(fetchMsg);
         logger.debug('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
+        // const startTime = new Date().getTime();
         let result = await this._wsClient.sendMsg(jsonStr)
-        parseTmqBlock(fetchResponse.rows, new WSTmqFetchBlockResponse(result), taosResult)    
-        return taosResult;
+        let wsResponse = new WSFetchBlockResponse(result.msg)
+        if (wsResponse && wsResponse.data && wsResponse.blockLen > 0) {
+            // const parseStartTime = new Date().getTime();
+            let wsTmqResponse = new WSTmqFetchBlockInfo(wsResponse.data, taosResult);
+            logger.debug('[WSTmqFetchBlockInfo.fetchBlockData]===>' + wsTmqResponse.taosResult);
+            if (wsTmqResponse.rows > 0) {
+                // const endTime = new Date().getTime();
+                // console.log(endTime - parseStartTime, endTime - startTime);
+                return true;
+            }
+        }
+        
+        
+        return false;
     }
 
     private async pollData(timeoutMs: number, reqId?:number): Promise<Map<string, TaosResult>> {
@@ -276,28 +288,22 @@ export class WsConsumer {
             },
         };
         
-        var taosResults: Map<string, TaosResult> = new Map();
+        
         let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
         let pollResp = new WsPollResponse(resp)
+        let taosResult = new TaosTmqResult(pollResp)
+        var taosResults: Map<string, TaosResult> = new Map();
+        taosResults.set(pollResp.topic, taosResult);
         if (!pollResp.have_message || pollResp.message_type != TMQMessageType.ResDataType) {
             return taosResults;
-        }        
-        while (true) {
-            let fetchResp = await this.fetch(pollResp)
-            if (fetchResp.completed || fetchResp.rows == 0) {
-                break;
-            }
-            let taosResult = taosResults.get(pollResp.topic + pollResp.vgroup_id)
-            if (taosResult == null) {
-                taosResult = new TaosTmqResult(fetchResp, pollResp)
-                taosResults.set(pollResp.topic + pollResp.vgroup_id, taosResult)
-            } else {
-                taosResult.setRowsAndTime(fetchResp.rows);
-            }
-            await this.fetchBlockData(fetchResp, taosResult)
-            
-        }
+        }  
         
+        let finish = false;
+
+        while (!finish) {
+            finish = await this.fetchBlockData(pollResp, taosResult)
+        }
+          
         return taosResults;    
     }
 

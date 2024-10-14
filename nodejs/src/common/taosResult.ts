@@ -22,18 +22,21 @@ export interface MessageResp {
 }
 
 export class TaosResult {
+    private _topic?: string
     private _meta: Array<ResponseMeta> | null;
     private _data: Array<Array<any>> | null;
 
     private _precision: number | null | undefined;
     protected _affectRows: number | null | undefined;
     private _totalTime = 0;
+   
     /** unit nano seconds */
     private _timing: bigint | null | undefined;
     constructor(queryResponse?: WSQueryResponse) {
+        
         if (queryResponse == null) {
-            this._meta = null
-            this._data = null
+            this._meta = []
+            this._data = []
             this._timing = BigInt(0)
             return
         }
@@ -64,6 +67,10 @@ export class TaosResult {
         this._totalTime = queryResponse.totalTime
     }
 
+    public setPrecision(precision: number) {
+        this._precision = precision;
+    }
+
     public setRowsAndTime(rows: number, timing?:bigint) {
         if (this._affectRows) {
             this._affectRows += rows;
@@ -75,9 +82,23 @@ export class TaosResult {
         }
         
     }
-    
+    public getTopic(): string {
+        if (this._topic) {
+            return this._topic;
+        }
+        return "";
+    }
+    public setTopic(topic: string = "") {
+        this._topic = topic;
+    }
     public getMeta(): Array<TDengineMeta> | null {
         return this.getTDengineMeta();
+    }
+
+    public setMeta(metaData: ResponseMeta){
+        if (this._meta) {
+            this._meta.push(metaData);
+        }
     }
 
     public getData(): Array<Array<any>> | null {
@@ -132,13 +153,18 @@ export class TaosResult {
     }
 }
 
-export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResult: TaosResult): TaosResult {
+export function parseBlock(blocks: WSFetchBlockResponse, taosResult: TaosResult): TaosResult {
     let metaList = taosResult.getTaosMeta()
     let dataList = taosResult.getData()
-    if (metaList && dataList) {
+    let textDecoder = new TextDecoder()
+    if (metaList && dataList && blocks && blocks.data) {
+        let rows = blocks.data.getUint32(8, true);
+        if (rows == 0) {
+            return taosResult;
+        } 
+
         taosResult.setTiming(blocks.timing) 
         const INT_32_SIZE = 4;
-
         // Offset num of bytes from rawBlockBuffer.
         let bufferOffset = (4 * 5) + 8 + (4 + 1) * metaList.length
         let colLengthBlockSize = INT_32_SIZE * metaList.length
@@ -147,8 +173,9 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
         let bitMapSize = (rows + (1 << 3) - 1) >> 3
 
         // whole raw block ArrayBuffer
-        let dataBuffer = blocks.data.slice(bufferOffset);
-
+        // let dataBuffer = blocks.data.slice(bufferOffset);
+        let headOffset = blocks.data.byteOffset + bufferOffset;
+        let dataView = new DataView(blocks.data.buffer, headOffset);
         // record the head of column in block
         let colBlockHead = 0;
         for (let i = 0; i < rows; i++) {
@@ -160,41 +187,42 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
             // traverse row after row. 
             for (let j = 0; j < metaList.length; j++) {
 
-                let isVarType = _isVarType(metaList[j])
+                let isVarType = _isVarType(metaList[j].type)
                 if (isVarType == ColumnsBlockType.SOLID) {
 
                     colDataHead = colBlockHead + bitMapSize + metaList[j].length * i
 
                     let byteArrayIndex = i >> 3;
                     let bitwiseOffset = 7 - (i & 7)
-                    let bitMapArr = dataBuffer.slice(colBlockHead, colBlockHead + bitMapSize)
-                    let bitFlag = ((new DataView(bitMapArr).getUint8(byteArrayIndex)) & (1 << bitwiseOffset)) >> bitwiseOffset
+                    // let bitMapArr = dataBuffer.slice(colBlockHead, colBlockHead + bitMapSize)
+                    let bitMapArr = new DataView(dataView.buffer, dataView.byteOffset + colBlockHead, bitMapSize);
+                    let bitFlag = (bitMapArr.getUint8(byteArrayIndex) & (1 << bitwiseOffset)) >> bitwiseOffset
 
                     if (bitFlag == 1) {
                         row.push("NULL")
                     } else {
-                        row.push(readSolidData(dataBuffer, colDataHead, metaList[j]))
+                        row.push(readSolidData(dataView, colDataHead, metaList[j]))
                     }
                     
-                    colBlockHead = colBlockHead + bitMapSize + (new DataView(dataBuffer, INT_32_SIZE * j, INT_32_SIZE).getInt32(0, true))
+                    colBlockHead = colBlockHead + bitMapSize + dataView.getInt32(INT_32_SIZE * j, true)
 
                 } else {
                     // if null check
-                    let varOffset = new DataView(dataBuffer, colBlockHead + (INT_32_SIZE * i), INT_32_SIZE).getInt32(0, true)
+                    let varOffset = dataView.getInt32(colBlockHead + (INT_32_SIZE * i), true)
                     if (varOffset == -1) {
                         row.push("NULL")
-                        colBlockHead = colBlockHead + INT_32_SIZE * rows + (new DataView(dataBuffer, j * INT_32_SIZE, INT_32_SIZE).getInt32(0, true))
+                        colBlockHead = colBlockHead + INT_32_SIZE * rows + dataView.getInt32(j * INT_32_SIZE, true);
                     } else {
                         colDataHead = colBlockHead + INT_32_SIZE * rows + varOffset
-                        let dataLength = (new DataView(dataBuffer, colDataHead, 2).getInt16(0, true))
+                        let dataLength = dataView.getInt16(colDataHead, true);
                         if (isVarType == ColumnsBlockType.VARCHAR) {
-                            row.push(readVarchar(dataBuffer, colDataHead + 2, dataLength))
+                            row.push(readVarchar(dataView.buffer, dataView.byteOffset + colDataHead + 2, dataLength, textDecoder))
                         } else if(isVarType == ColumnsBlockType.GEOMETRY || isVarType == ColumnsBlockType.VARBINARY) {
-                            row.push(readBinary(dataBuffer, colDataHead + 2, dataLength))
+                            row.push(readBinary(dataView.buffer, dataView.byteOffset + colDataHead  + 2, dataLength))
                         } else {
-                            row.push(readNchar(dataBuffer, colDataHead + 2, dataLength))
+                            row.push(readNchar(dataView.buffer, dataView.byteOffset+ colDataHead + 2, dataLength))
                         }
-                        colBlockHead = colBlockHead + INT_32_SIZE * rows + (new DataView(dataBuffer, j * INT_32_SIZE, INT_32_SIZE).getInt32(0, true))
+                        colBlockHead = colBlockHead + INT_32_SIZE * rows + dataView.getInt32(j * INT_32_SIZE, true);
                     }
                 }
             }
@@ -207,40 +235,39 @@ export function parseBlock(rows: number, blocks: WSFetchBlockResponse, taosResul
     }
 }
 
-export function _isVarType(meta: ResponseMeta): Number {
-    switch (meta.type) {
-        case TDengineTypeCode['NCHAR']: {
+export function _isVarType(metaType: number): Number {
+    switch (metaType) {
+        case TDengineTypeCode.NCHAR: {
             return ColumnsBlockType['NCHAR']
         }
-        case TDengineTypeCode['VARCHAR']: {
+        case TDengineTypeCode.VARCHAR: {
             return ColumnsBlockType['VARCHAR']
         }
-        case TDengineTypeCode['BINARY']: {
+        case TDengineTypeCode.BINARY: {
             return ColumnsBlockType['VARCHAR']
         }
-        case TDengineTypeCode['JSON']: {
+        case TDengineTypeCode.JSON: {
             return ColumnsBlockType['VARCHAR']
         }
-        case TDengineTypeCode['GEOMETRY']: {
+        case TDengineTypeCode.GEOMETRY: {
             return ColumnsBlockType['GEOMETRY']
         }
-        case TDengineTypeCode['VARBINARY']: {
-            return ColumnsBlockType['VARBINARY']
+        case TDengineTypeCode.VARBINARY: {
+            return ColumnsBlockType.VARBINARY
         }
         default: {
             return ColumnsBlockType['SOLID']
         }
     }
 }
-export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number, 
-    rows:number, meta: ResponseMeta, bitMapArr: ArrayBuffer): any[] {
+export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number, 
+    rows:number, metaType: number, bitMapArr: Uint8Array): any[] {
 
-    let dataBuffer = new DataView(buffer)
     let result:any[] = []
-    switch (meta.type) {
-        case TDengineTypeCode['BOOL']:
-        case TDengineTypeCode['TINYINT']:
-            case TDengineTypeCode['TINYINT UNSIGNED']:{
+    switch (metaType) {
+        case TDengineTypeCode.BOOL:
+        case TDengineTypeCode.TINYINT:
+        case TDengineTypeCode.TINYINT_UNSIGNED:{
             for (let i = 0; i < rows; i++, colBlockHead++) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -251,7 +278,7 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['SMALLINT']: {
+        case TDengineTypeCode.SMALLINT: {
             for (let i = 0; i < rows; i++, colBlockHead+=2) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -261,7 +288,7 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['INT']: {
+        case TDengineTypeCode.INT: {
             for (let i = 0; i < rows; i++, colBlockHead+=4) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -271,7 +298,7 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['BIGINT']: {
+        case TDengineTypeCode.BIGINT: {
             for (let i = 0; i < rows; i++, colBlockHead+=8) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -281,7 +308,7 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['SMALLINT UNSIGNED']: {
+        case TDengineTypeCode.SMALLINT_UNSIGNED: {
             for (let i = 0; i < rows; i++, colBlockHead+=2) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -291,7 +318,7 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['INT UNSIGNED']: {
+        case TDengineTypeCode.INT_UNSIGNED: {
             for (let i = 0; i < rows; i++, colBlockHead+=4) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -301,7 +328,7 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['BIGINT UNSIGNED']: {
+        case TDengineTypeCode.BIGINT_UNSIGNED: {
             for (let i = 0; i < rows; i++, colBlockHead+=8) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -311,7 +338,7 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['FLOAT']: {
+        case TDengineTypeCode.FLOAT: {
             for (let i = 0; i < rows; i++, colBlockHead+=4) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -321,7 +348,7 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             }
             break;    
         }
-        case TDengineTypeCode['DOUBLE']: {
+        case TDengineTypeCode.DOUBLE: {
 
             for (let i = 0; i < rows; i++, colBlockHead += 8) {
                 if (isNull(bitMapArr, i)) {
@@ -332,7 +359,7 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             }
             break;            
         }
-        case TDengineTypeCode['TIMESTAMP']: {
+        case TDengineTypeCode.TIMESTAMP: {
             for (let i = 0; i < rows; i++, colBlockHead += 8) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -343,50 +370,50 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
             break;
         }
         default: {
-            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unspported type ${meta.type} for column ${meta.name}`)
+            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unspported type ${metaType}`)
         }
     }
     return result;
    
 }
-export function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: ResponseMeta): Number | Boolean | BigInt {
+export function readSolidData(dataBuffer: DataView, colDataHead: number, meta: ResponseMeta): Number | Boolean | BigInt {
 
     switch (meta.type) {
-        case TDengineTypeCode['BOOL']: {
-            return (Boolean)(new DataView(dataBuffer, colDataHead, 1).getInt8(0))
+        case TDengineTypeCode.BOOL: {
+            return (Boolean)(dataBuffer.getInt8(colDataHead));
         }
-        case TDengineTypeCode['TINYINT']: {
-            return (new DataView(dataBuffer, colDataHead, 1).getInt8(0))
+        case TDengineTypeCode.TINYINT: {
+            return dataBuffer.getInt8(colDataHead);
         }
-        case TDengineTypeCode['SMALLINT']: {
-            return (new DataView(dataBuffer, colDataHead, 2).getInt16(0, true))
+        case TDengineTypeCode.SMALLINT: {
+            return dataBuffer.getInt16(colDataHead, true);
         }
-        case TDengineTypeCode['INT']: {
-            return (new DataView(dataBuffer, colDataHead, 4).getInt32(0, true))
+        case TDengineTypeCode.INT: {
+            return dataBuffer.getInt32(colDataHead, true);
         }
-        case TDengineTypeCode['BIGINT']: {
-            return (new DataView(dataBuffer, colDataHead, 8).getBigInt64(0, true))
+        case TDengineTypeCode.BIGINT: {
+            return dataBuffer.getBigInt64(colDataHead, true);
         }
-        case TDengineTypeCode['TINYINT UNSIGNED']: {
-            return (new DataView(dataBuffer, colDataHead, 1).getUint8(0))
+        case TDengineTypeCode.TINYINT_UNSIGNED: {
+            return dataBuffer.getUint8(colDataHead);
         }
-        case TDengineTypeCode['SMALLINT UNSIGNED']: {
-            return (new DataView(dataBuffer, colDataHead, 2).getUint16(0, true))
+        case TDengineTypeCode.SMALLINT_UNSIGNED: {
+            return dataBuffer.getUint16(colDataHead, true);
         }
-        case TDengineTypeCode['INT UNSIGNED']: {
-            return (new DataView(dataBuffer, colDataHead, 4).getUint32(0, true))
+        case TDengineTypeCode.INT_UNSIGNED: {
+            return dataBuffer.getUint32(colDataHead, true);
         }
-        case TDengineTypeCode['BIGINT UNSIGNED']: {
-            return (new DataView(dataBuffer, colDataHead, 8).getBigUint64(0, true))
+        case TDengineTypeCode.BIGINT_UNSIGNED: {
+            return dataBuffer.getBigUint64(colDataHead, true);
         }
-        case TDengineTypeCode['FLOAT']: {
-            return (parseFloat(new DataView(dataBuffer, colDataHead, 4).getFloat32(0, true).toFixed(5)) )
+        case TDengineTypeCode.FLOAT: {
+            return parseFloat(dataBuffer.getFloat32(colDataHead, true).toFixed(5));
         }
-        case TDengineTypeCode['DOUBLE']: {
-            return (parseFloat(new DataView(dataBuffer, colDataHead, 8).getFloat64(0, true).toFixed(15)))
+        case TDengineTypeCode.DOUBLE: {
+            return parseFloat(dataBuffer.getFloat64(colDataHead, true).toFixed(15));
         }
-        case TDengineTypeCode['TIMESTAMP']: {
-            return (new DataView(dataBuffer, colDataHead, 8).getBigInt64(0, true))
+        case TDengineTypeCode.TIMESTAMP: {
+            return dataBuffer.getBigInt64(colDataHead, true);
             // could change 
         }
         default: {
@@ -400,23 +427,28 @@ export function readBinary(dataBuffer: ArrayBuffer, colDataHead: number, length:
     return buff
 }
 
-export function readVarchar(dataBuffer: ArrayBuffer, colDataHead: number, length: number): string {
-    let data = "";
-    let buff = dataBuffer.slice(colDataHead, colDataHead + length)
-    data += new TextDecoder().decode(buff)
-    return data;
+export function readVarchar(dataBuffer: ArrayBuffer, colDataHead: number, length: number, textDecoder: TextDecoder): string {
+    // let buff = dataBuffer.slice(colDataHead, colDataHead + length)
+    let dataView = new DataView(dataBuffer, colDataHead, length);
+    return textDecoder.decode(dataView);
 }
 
 export function readNchar(dataBuffer: ArrayBuffer, colDataHead: number, length: number): string {
-    let data = "";
-    let buff: ArrayBuffer = dataBuffer.slice(colDataHead, colDataHead + length);
+    let data: string[] = [];
+    // let buff: ArrayBuffer = dataBuffer.slice(colDataHead, colDataHead + length);
+    let dataView = new DataView(dataBuffer, colDataHead, length);
     for (let i = 0; i < length / 4; i++) {
-        data += appendRune(new DataView(buff, i * 4, 4).getUint32(0, true))
+        data.push(appendRune(dataView.getUint32(i * 4, true)));
 
     }
-    return data;
+    return data.join('');
 }
 
+export function getString(dataBuffer: DataView, colDataHead: number, length: number, textDecoder: TextDecoder): string {
+    // let buff = dataBuffer.slice(colDataHead, colDataHead + length - 1)
+    let dataView = new Uint8Array(dataBuffer.buffer, dataBuffer.byteOffset + colDataHead, length - 1);
+    return textDecoder.decode(dataView);
+}
 
 function iteratorBuff(arr: ArrayBuffer) {
     let buf = Buffer.from(arr);

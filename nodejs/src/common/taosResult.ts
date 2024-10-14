@@ -175,7 +175,6 @@ export function parseBlock(blocks: WSFetchBlockResponse, taosResult: TaosResult)
         // let dataBuffer = blocks.data.slice(bufferOffset);
         let headOffset = blocks.data.byteOffset + bufferOffset;
         let dataView = new DataView(blocks.data.buffer, headOffset);
-        console.log("---", headOffset, blocks.data.byteOffset, bufferOffset);
         // record the head of column in block
         let colBlockHead = 0;
         for (let i = 0; i < rows; i++) {

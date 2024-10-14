@@ -1,7 +1,7 @@
 import { WSConfig } from '../src/common/config';
 import { sqlConnect, destroy, setLogLevel } from '../src'
 
-let dsn = 'ws://root:taosdata@localhost:6041';
+let dsn = 'ws://root:taosdata@192.168.1.98:6041';
 (async () => {
     let wsSql = null;
     let wsRows = null;
@@ -33,16 +33,18 @@ let dsn = 'ws://root:taosdata@localhost:6041';
 
         taosResult = await wsSql.exec('INSERT INTO d1001 USING meters TAGS ("California.SanFrancisco", 3) VALUES (NOW, 10.2, 219, 0.32)', reqId++)
         console.log(taosResult);
+        for (let i = 0; i< 100; i++) {
+            wsRows = await wsSql.query('select * from meters', reqId++);
+            let meta = wsRows.getMeta()
+            console.log("wsRow:meta:=>", meta);
 
-        wsRows = await wsSql.query('select * from meters', reqId++);
-        let meta = wsRows.getMeta()
-        console.log("wsRow:meta:=>", meta);
-
-        while (await wsRows.next()) {
-            let result = wsRows.getData();
-            console.log('queryRes.Scan().then=>', result);
+            while (await wsRows.next()) {
+                let result = wsRows.getData();
+                console.log('queryRes.Scan().then=>', result);
+            }
+            wsRows.close()            
         }
-        wsRows.close()
+
 
     } catch (err: any) {
         console.error(err.code, err.message);

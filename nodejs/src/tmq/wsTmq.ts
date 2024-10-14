@@ -275,7 +275,7 @@ export class WsConsumer {
             }
         }
         
-
+        
         return false;
     }
 
@@ -303,7 +303,7 @@ export class WsConsumer {
         while (!finish) {
             finish = await this.fetchBlockData(pollResp, taosResult)
         }
-
+          
         return taosResults;    
     }
 

@@ -5,11 +5,11 @@ import { WsConsumer } from "../src/tmq/wsTmq";
 
 const db = 'power';
 const stable = 'meters';
-const url = 'ws://localhost:6041';
+const url = 'ws://192.168.1.98:6041';
 const topic = 'topic_meters'
 const topics = [topic];
-const groupId = "group-1";
-const clientId = "client-1";
+const groupId = "group-50";
+const clientId = "client-50";
 
 async function createConsumer() {
     let configMap = new Map([
@@ -19,7 +19,7 @@ async function createConsumer() {
         [TMQConstants.CONNECT_PASS, "taosdata"],
         [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
         [TMQConstants.WS_URL, url],
-        [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
+        [TMQConstants.ENABLE_AUTO_COMMIT, 'false'],
         [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
     ]);
     try {
@@ -102,6 +102,7 @@ async function subscribe(consumer: WsConsumer) {
 
 async function consumer() {
     // ANCHOR: unsubscribe
+    setLogLevel("debug");
     let consumer = null;
     try {
         // await prepare();

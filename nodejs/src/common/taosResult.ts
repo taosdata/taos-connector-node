@@ -157,7 +157,7 @@ export function parseBlock(blocks: WSFetchBlockResponse, taosResult: TaosResult)
     let metaList = taosResult.getTaosMeta()
     let dataList = taosResult.getData()
     if (metaList && dataList && blocks && blocks.data) {
-        let rows = new DataView(blocks.data, 8, 4).getUint32(0, true);
+        let rows = blocks.data.getUint32(8, true);
         if (rows == 0) {
             return taosResult;
         } 
@@ -172,8 +172,10 @@ export function parseBlock(blocks: WSFetchBlockResponse, taosResult: TaosResult)
         let bitMapSize = (rows + (1 << 3) - 1) >> 3
 
         // whole raw block ArrayBuffer
-        let dataBuffer = blocks.data.slice(bufferOffset);
-
+        // let dataBuffer = blocks.data.slice(bufferOffset);
+        let headOffset = blocks.data.byteOffset + bufferOffset;
+        let dataView = new DataView(blocks.data.buffer, headOffset);
+        console.log("---", headOffset, blocks.data.byteOffset, bufferOffset);
         // record the head of column in block
         let colBlockHead = 0;
         for (let i = 0; i < rows; i++) {
@@ -192,34 +194,35 @@ export function parseBlock(blocks: WSFetchBlockResponse, taosResult: TaosResult)
 
                     let byteArrayIndex = i >> 3;
                     let bitwiseOffset = 7 - (i & 7)
-                    let bitMapArr = dataBuffer.slice(colBlockHead, colBlockHead + bitMapSize)
-                    let bitFlag = ((new DataView(bitMapArr).getUint8(byteArrayIndex)) & (1 << bitwiseOffset)) >> bitwiseOffset
+                    // let bitMapArr = dataBuffer.slice(colBlockHead, colBlockHead + bitMapSize)
+                    let bitMapArr = new DataView(dataView.buffer, dataView.byteOffset + colBlockHead, bitMapSize);
+                    let bitFlag = (bitMapArr.getUint8(byteArrayIndex) & (1 << bitwiseOffset)) >> bitwiseOffset
 
                     if (bitFlag == 1) {
                         row.push("NULL")
                     } else {
-                        row.push(readSolidData(dataBuffer, colDataHead, metaList[j]))
+                        row.push(readSolidData(dataView, colDataHead, metaList[j]))
                     }
                     
-                    colBlockHead = colBlockHead + bitMapSize + (new DataView(dataBuffer, INT_32_SIZE * j, INT_32_SIZE).getInt32(0, true))
+                    colBlockHead = colBlockHead + bitMapSize + dataView.getInt32(INT_32_SIZE * j, true)
 
                 } else {
                     // if null check
-                    let varOffset = new DataView(dataBuffer, colBlockHead + (INT_32_SIZE * i), INT_32_SIZE).getInt32(0, true)
+                    let varOffset = dataView.getInt32(colBlockHead + (INT_32_SIZE * i), true)
                     if (varOffset == -1) {
                         row.push("NULL")
-                        colBlockHead = colBlockHead + INT_32_SIZE * rows + (new DataView(dataBuffer, j * INT_32_SIZE, INT_32_SIZE).getInt32(0, true))
+                        colBlockHead = colBlockHead + INT_32_SIZE * rows + dataView.getInt32(j * INT_32_SIZE, true);
                     } else {
                         colDataHead = colBlockHead + INT_32_SIZE * rows + varOffset
-                        let dataLength = (new DataView(dataBuffer, colDataHead, 2).getInt16(0, true))
+                        let dataLength = dataView.getInt16(colDataHead, true);
                         if (isVarType == ColumnsBlockType.VARCHAR) {
-                            row.push(readVarchar(dataBuffer, colDataHead + 2, dataLength))
+                            row.push(readVarchar(dataView.buffer, dataView.byteOffset + colDataHead + 2, dataLength))
                         } else if(isVarType == ColumnsBlockType.GEOMETRY || isVarType == ColumnsBlockType.VARBINARY) {
-                            row.push(readBinary(dataBuffer, colDataHead + 2, dataLength))
+                            row.push(readBinary(dataView.buffer, dataView.byteOffset + colDataHead  + 2, dataLength))
                         } else {
-                            row.push(readNchar(dataBuffer, colDataHead + 2, dataLength))
+                            row.push(readNchar(dataView.buffer, dataView.byteOffset+ colDataHead + 2, dataLength))
                         }
-                        colBlockHead = colBlockHead + INT_32_SIZE * rows + (new DataView(dataBuffer, j * INT_32_SIZE, INT_32_SIZE).getInt32(0, true))
+                        colBlockHead = colBlockHead + INT_32_SIZE * rows + dataView.getInt32(j * INT_32_SIZE, true);
                     }
                 }
             }
@@ -257,10 +260,9 @@ export function _isVarType(metaType: number): Number {
         }
     }
 }
-export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number, 
-    rows:number, metaType: number, bitMapArr: ArrayBuffer): any[] {
+export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number, 
+    rows:number, metaType: number, bitMapArr: Uint8Array): any[] {
 
-    let dataBuffer = new DataView(buffer)
     let result:any[] = []
     switch (metaType) {
         case TDengineTypeCode['BOOL']:
@@ -374,44 +376,44 @@ export function readSolidDataToArray(buffer: ArrayBuffer, colBlockHead:number,
     return result;
    
 }
-export function readSolidData(dataBuffer: ArrayBuffer, colDataHead: number, meta: ResponseMeta): Number | Boolean | BigInt {
+export function readSolidData(dataBuffer: DataView, colDataHead: number, meta: ResponseMeta): Number | Boolean | BigInt {
 
     switch (meta.type) {
         case TDengineTypeCode['BOOL']: {
-            return (Boolean)(new DataView(dataBuffer, colDataHead, 1).getInt8(0))
+            return (Boolean)(dataBuffer.getInt8(colDataHead));
         }
         case TDengineTypeCode['TINYINT']: {
-            return (new DataView(dataBuffer, colDataHead, 1).getInt8(0))
+            return dataBuffer.getInt8(colDataHead);
         }
         case TDengineTypeCode['SMALLINT']: {
-            return (new DataView(dataBuffer, colDataHead, 2).getInt16(0, true))
+            return dataBuffer.getInt16(colDataHead, true);
         }
         case TDengineTypeCode['INT']: {
-            return (new DataView(dataBuffer, colDataHead, 4).getInt32(0, true))
+            return dataBuffer.getInt32(colDataHead, true);
         }
         case TDengineTypeCode['BIGINT']: {
-            return (new DataView(dataBuffer, colDataHead, 8).getBigInt64(0, true))
+            return dataBuffer.getBigInt64(colDataHead, true);
         }
         case TDengineTypeCode['TINYINT UNSIGNED']: {
-            return (new DataView(dataBuffer, colDataHead, 1).getUint8(0))
+            return dataBuffer.getUint8(colDataHead);
         }
         case TDengineTypeCode['SMALLINT UNSIGNED']: {
-            return (new DataView(dataBuffer, colDataHead, 2).getUint16(0, true))
+            return dataBuffer.getUint16(colDataHead, true);
         }
         case TDengineTypeCode['INT UNSIGNED']: {
-            return (new DataView(dataBuffer, colDataHead, 4).getUint32(0, true))
+            return dataBuffer.getUint32(colDataHead, true);
         }
         case TDengineTypeCode['BIGINT UNSIGNED']: {
-            return (new DataView(dataBuffer, colDataHead, 8).getBigUint64(0, true))
+            return dataBuffer.getBigUint64(colDataHead, true);
         }
         case TDengineTypeCode['FLOAT']: {
-            return (parseFloat(new DataView(dataBuffer, colDataHead, 4).getFloat32(0, true).toFixed(5)) )
+            return parseFloat(dataBuffer.getFloat32(colDataHead, true).toFixed(5));
         }
         case TDengineTypeCode['DOUBLE']: {
-            return (parseFloat(new DataView(dataBuffer, colDataHead, 8).getFloat64(0, true).toFixed(15)))
+            return parseFloat(dataBuffer.getFloat64(colDataHead, true).toFixed(15));
         }
         case TDengineTypeCode['TIMESTAMP']: {
-            return (new DataView(dataBuffer, colDataHead, 8).getBigInt64(0, true))
+            return dataBuffer.getBigInt64(colDataHead, true);
             // could change 
         }
         default: {
@@ -427,25 +429,28 @@ export function readBinary(dataBuffer: ArrayBuffer, colDataHead: number, length:
 
 export function readVarchar(dataBuffer: ArrayBuffer, colDataHead: number, length: number): string {
     let data = "";
-    let buff = dataBuffer.slice(colDataHead, colDataHead + length)
-    data += new TextDecoder().decode(buff)
+    // let buff = dataBuffer.slice(colDataHead, colDataHead + length)
+    let dataView = new DataView(dataBuffer, colDataHead, length);
+    data += new TextDecoder().decode(dataView)
     return data;
 }
 
 export function readNchar(dataBuffer: ArrayBuffer, colDataHead: number, length: number): string {
     let data = "";
-    let buff: ArrayBuffer = dataBuffer.slice(colDataHead, colDataHead + length);
+    // let buff: ArrayBuffer = dataBuffer.slice(colDataHead, colDataHead + length);
+    let dataView = new DataView(dataBuffer, colDataHead, length);
     for (let i = 0; i < length / 4; i++) {
-        data += appendRune(new DataView(buff, i * 4, 4).getUint32(0, true))
+        data += appendRune(dataView.getUint32(i * 4, true))
 
     }
     return data;
 }
 
-export function getString(dataBuffer: ArrayBuffer, colDataHead: number, length: number): string {
-    let buff = dataBuffer.slice(colDataHead, colDataHead + length - 1)
+export function getString(dataBuffer: DataView, colDataHead: number, length: number): string {
+    // let buff = dataBuffer.slice(colDataHead, colDataHead + length - 1)
+    let dataView = new Uint8Array(dataBuffer.buffer, dataBuffer.byteOffset + colDataHead, length - 1);
     let decoder = new TextDecoder('utf-8');
-    return decoder.decode(new Uint8Array(buff));
+    return decoder.decode(dataView);
 }
 
 function iteratorBuff(arr: ArrayBuffer) {

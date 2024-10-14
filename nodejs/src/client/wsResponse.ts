@@ -87,7 +87,7 @@ export class WSFetchResponse {
 }
 
 export class WSFetchBlockResponse {
-    data: ArrayBuffer | undefined
+    data: DataView | undefined
     action: bigint
     timing: bigint
     reqId: bigint
@@ -98,32 +98,33 @@ export class WSFetchBlockResponse {
     finished: number | undefined
     metaType: number | undefined
     constructor(msg: ArrayBuffer) {
-        this.action = new DataView(msg, 8, 8).getBigUint64(0, true)
-        this.timing = new DataView(msg, 18, 8).getBigUint64(0, true)
-        this.reqId = new DataView(msg, 26, 8).getBigUint64(0, true)
-        this.code = new DataView(msg, 34, 4).getUint32(0, true)
+        let dataView = new DataView(msg);
+        this.action = dataView.getBigUint64(8, true)
+        this.timing = dataView.getBigUint64(18, true)
+        this.reqId = dataView.getBigUint64(26, true)
+        this.code = dataView.getUint32(34, true)
         this.blockLen = 0;
         if (this.code != 0) {
-            let len = new DataView(msg, 38, 4).getUint32(0, true)
+            let len = dataView.getUint32(38, true)
             this.message = readVarchar(msg, 42, len);
             return;
         }
-        this.resultId = new DataView(msg, 42, 8).getBigUint64(0, true)
+        this.resultId = dataView.getBigUint64(42, true)
         let offset  = 50;
         if (this.action == BigInt(8)) {
-            this.metaType = new DataView(msg, 50, 2).getUint16(0, true)
+            this.metaType = dataView.getUint16(50, true)
             offset += 2;
         }else {
-            this.finished = new DataView(msg, 50, 1).getUint8(0)
+            this.finished = dataView.getUint8(50)
             if (this.finished == 1) {
                 return;
             }            
             offset += 1;
         }
 
-        this.blockLen = new DataView(msg, offset, 4).getUint32(0, true) 
+        this.blockLen = dataView.getUint32(offset, true) 
         if (this.blockLen > 0) {
-            this.data = msg.slice(offset + 4);
+            this.data = new DataView(msg, offset + 4);
         }    
         
     }

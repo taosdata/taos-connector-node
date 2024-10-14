@@ -5,7 +5,7 @@ import { WsConsumer } from "../src/tmq/wsTmq";
 
 const db = 'power';
 const stable = 'meters';
-const url = 'ws://192.168.1.98:6041';
+const url = 'ws://localhost:6041';
 const topic = 'topic_meters'
 const topics = [topic];
 const groupId = "group-50";

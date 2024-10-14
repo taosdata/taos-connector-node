@@ -126,7 +126,7 @@ export class WSTmqFetchBlockInfo {
         let dataBuffer = new DataView(dataView.buffer, dataView.byteOffset + 6);
         let rows = 0; 
         // const parseStartTime = new Date().getTime();
-        console.log("parseBlockInfos blockNum="+ blockNum)
+        // console.log("parseBlockInfos blockNum="+ blockNum)
         for (let i = 0; i < blockNum; i++) {
             let variableInfo = this.parseVariableByteInteger(dataBuffer);
             this.taosResult.setPrecision(variableInfo[1].getUint8(17));

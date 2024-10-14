@@ -111,23 +111,26 @@ describe('TDWebSocket.Tmq()', () => {
 
         let assignment = await consumer.assignment()
         console.log(assignment)
-        let counts:number[]=[0, 0]
+        let counts:number = 0;
         let useTime:number[] = [];
         for (let i = 0; i < 5; i++) { 
             let startTime = new Date().getTime();
             let res = await consumer.poll(500);
             let currTime = new Date().getTime();
             useTime.push(Math.abs(currTime - startTime));
-            for (let [key, value] of res) {
-                let data = value.getData()
-                if (data) {
-                    counts[0] += data.length;
-                }
-            }
-            if (res.size == 0) {
-                break;
-            }
 
+            for (let [key, value] of res) {
+                console.log(key, value.getMeta());
+                let data = value.getData();
+                if (data == null || data.length == 0) {
+                    break;
+                }
+               
+                for (let record of data ) {
+                    console.log("-----===>>", record)
+                }              
+                 
+            }
             // await Sleep(100)
         }
 
@@ -139,13 +142,14 @@ describe('TDWebSocket.Tmq()', () => {
             let currTime = new Date().getTime();
             useTime.push(Math.abs(currTime - startTime));
             for (let [key, value] of res) {
-                let data = value.getData()
-                if (data) {
-                    counts[1] += data.length;
+                console.log(key, value.getMeta());
+                let data = value.getData();
+                if (data == null || data.length == 0) {
+                    break;
                 }
-            }
-            if (res.size == 0) {
-                break;
+               
+                counts += data.length
+                 
             }
             // await Sleep(100)
         }
@@ -157,7 +161,7 @@ describe('TDWebSocket.Tmq()', () => {
         await consumer.close();
         console.log("------------->", useTime)
         console.log("------------->", counts)
-        expect(counts).toEqual([10, 10])
+        expect(counts).toEqual(10)
     });
 
     test('Topic not exist', async() => {

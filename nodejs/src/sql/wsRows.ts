@@ -1,14 +1,18 @@
-import { TDengineMeta, TaosResult } from '../common/taosResult';
+import { TDengineMeta, TaosResult, parseBlock } from '../common/taosResult';
 import { TaosResultError } from '../common/wsError';
-import { WSQueryResponse } from '../client/wsResponse';
+import { WSFetchBlockResponse, WSQueryResponse } from '../client/wsResponse';
 import { WsClient } from '../client/wsClient';
 import logger from '../common/log';
+import { ReqId } from '../common/reqid';
+import { getBinarySql } from '../common/utils';
+import { BinaryQueryMessage, FetchRawBlockMessage } from '../common/constant';
 
 export class WSRows {
     private _wsClient: WsClient;
     private readonly _wsQueryResponse: WSQueryResponse;
     private _taosResult: TaosResult;
     private _isClose : boolean;
+        
     constructor(wsInterface: WsClient, resp: WSQueryResponse) {
         this._wsClient = wsInterface;
         this._wsQueryResponse = resp;
@@ -38,14 +42,24 @@ export class WSRows {
 
     private async getBlockData():Promise<TaosResult> {
         try {
-            let wsFetchResponse = await this._wsClient.fetch(this._wsQueryResponse);
-            logger.debug("[wsQuery.execute.wsFetchResponse]==>\n", wsFetchResponse)
-            if (wsFetchResponse.completed) {
-                this.close();
-                this._taosResult.setData(null);
-            } else {
-                this._taosResult.setRowsAndTime(wsFetchResponse.rows, wsFetchResponse.timing);
-                return await this._wsClient.fetchBlock(wsFetchResponse, this._taosResult);
+            if (this._wsQueryResponse.id) {
+                let bigintReqId = BigInt(ReqId.getReqID());
+                let resp = await this._wsClient.sendBinaryMsg(bigintReqId, 
+                    "binary_query", getBinarySql(FetchRawBlockMessage, bigintReqId, BigInt(this._wsQueryResponse.id)), false, true);
+                
+                this._taosResult.addTotalTime(resp.totalTime)
+                let wsResponse = new WSFetchBlockResponse(resp.msg);
+                if (wsResponse.code != 0) {
+                    logger.error("Executing SQL statement returns error: ", wsResponse.code, wsResponse.message);
+                    throw new TaosResultError(wsResponse.code, wsResponse.message);
+                }
+                
+                if (wsResponse.finished == 1) {
+                    this.close();
+                    this._taosResult.setData(null);
+                } else {
+                    parseBlock(wsResponse, this._taosResult);
+                }
             }
             return this._taosResult;
         }catch(err:any){

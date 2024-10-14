@@ -6,6 +6,9 @@ export interface StringIndexable {
     [index: string]: number
 }
 
+export const BinaryQueryMessage: bigint = BigInt(6);
+export const FetchRawBlockMessage: bigint = BigInt(7);
+
 export const TDengineTypeName: IndexableString = {
     0: 'NULL',
     1: 'BOOL',
@@ -36,26 +39,26 @@ export const ColumnsBlockType: StringIndexable = {
 }
 
 
-export const TDengineTypeCode: StringIndexable = {
-    'NULL': 0,
-    'BOOL': 1,
-    'TINYINT': 2,
-    'SMALLINT': 3,
-    'INT': 4,
-    'BIGINT': 5,
-    'FLOAT': 6,
-    'DOUBLE': 7,
-    'BINARY': 8,
-    'VARCHAR': 8,
-    'TIMESTAMP': 9,
-    'NCHAR': 10,
-    'TINYINT UNSIGNED': 11,
-    'SMALLINT UNSIGNED': 12,
-    'INT UNSIGNED': 13,
-    'BIGINT UNSIGNED': 14,
-    'JSON': 15,
-    'VARBINARY': 16,
-    'GEOMETRY': 20,
+export enum TDengineTypeCode {
+    NULL = 0,
+    BOOL = 1,
+    TINYINT = 2,
+    SMALLINT = 3,
+    INT = 4,
+    BIGINT = 5,
+    FLOAT = 6,
+    DOUBLE = 7,
+    BINARY = 8,
+    VARCHAR = 8,
+    TIMESTAMP = 9,
+    NCHAR = 10,
+    TINYINT_UNSIGNED = 11,
+    SMALLINT_UNSIGNED = 12,
+    INT_UNSIGNED = 13,
+    BIGINT_UNSIGNED = 14,
+    JSON = 15,
+    VARBINARY = 16,
+    GEOMETRY = 20,
 }
 
 export const TDenginePrecision: IndexableString = {

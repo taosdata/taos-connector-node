@@ -4,16 +4,15 @@ import { Precision, SchemalessProto } from "../../src/sql/wsProto";
 import { WsSql } from "../../src/sql/wsSql";
 let dns = 'ws://localhost:6041'  
 
-
-
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns)
     conf.setUser('root')
     conf.setPwd('taosdata')
 
     let wsSql = await WsSql.open(conf)
-    await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
-    await wsSql.exec('CREATE STABLE if not exists power.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
+    await wsSql.exec('drop database if exists power_schemaless;')
+    await wsSql.exec('create database if not exists power_schemaless KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
+    await wsSql.exec('CREATE STABLE if not exists power_schemaless.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
     await wsSql.close()
 })
 
@@ -28,7 +27,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
         let conf :WSConfig = new WSConfig(dns)
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power')
+        conf.setDb('power_schemaless')
         let wsSchemaless = await WsSql.open(conf)
         expect(wsSchemaless.state()).toBeGreaterThan(0)
         await wsSchemaless.close();
@@ -57,7 +56,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
         let conf :WSConfig = new WSConfig(dns)
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power')
+        conf.setDb('power_schemaless')
         let wsSchemaless = await WsSql.open(conf)
         expect(wsSchemaless.state()).toBeGreaterThan(0)
         await wsSchemaless.schemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NANO_SECONDS, 0);
@@ -71,7 +70,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
         let conf :WSConfig = new WSConfig(dns)
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power')
+        conf.setDb('power_schemaless')
         let wsSchemaless = await WsSql.open(conf)
         expect(wsSchemaless.state()).toBeGreaterThan(0)
         await wsSchemaless.schemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NOT_CONFIGURED, 0);
@@ -87,7 +86,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
         let conf :WSConfig = new WSConfig(dns)
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power')
+        conf.setDb('power_schemaless')
         let wsSchemaless = await WsSql.open(conf)
         expect(wsSchemaless.state()).toBeGreaterThan(0)
         try {

@@ -45,33 +45,33 @@ export class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBooleanColumn params is invalid!");
         }
-        let arrayBuffer = this.encodeDigitColumns(params, "boolean", TDengineTypeLength['BOOL'], TDengineTypeCode['BOOL'])
+        let arrayBuffer = this.encodeDigitColumns(params, "boolean", TDengineTypeLength['BOOL'], TDengineTypeCode.BOOL)
         
-        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode['BOOL'], TDengineTypeLength['BOOL'])) ;
+        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode.BOOL, TDengineTypeLength['BOOL'])) ;
     }
 
     setTinyInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetTinyIntColumn params is invalid!");
         }
-        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['TINYINT'], TDengineTypeCode['TINYINT'])
-        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode['TINYINT'], TDengineTypeLength['TINYINT']));
+        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['TINYINT'], TDengineTypeCode.TINYINT)
+        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode.TINYINT, TDengineTypeLength['TINYINT']));
     }
 
     setUTinyInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetUTinyIntColumn params is invalid!");
         }      
-        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['TINYINT UNSIGNED'], TDengineTypeCode['TINYINT UNSIGNED'])
-        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode['TINYINT UNSIGNED'], TDengineTypeLength['TINYINT UNSIGNED']));
+        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['TINYINT UNSIGNED'], TDengineTypeCode.TINYINT_UNSIGNED)
+        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode.TINYINT_UNSIGNED, TDengineTypeLength['TINYINT UNSIGNED']));
     }
 
     setSmallInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetSmallIntColumn params is invalid!");
         }      
-        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['SMALLINT'], TDengineTypeCode['SMALLINT'])
-        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode['SMALLINT'], TDengineTypeLength['SMALLINT']));
+        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['SMALLINT'], TDengineTypeCode.SMALLINT)
+        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode.SMALLINT, TDengineTypeLength['SMALLINT']));
 
     }
 
@@ -79,81 +79,81 @@ export class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetSmallIntColumn params is invalid!");
         }      
-        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['SMALLINT UNSIGNED'], TDengineTypeCode['SMALLINT UNSIGNED'])
-        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode['SMALLINT UNSIGNED'], TDengineTypeLength['SMALLINT UNSIGNED']));
+        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['SMALLINT UNSIGNED'], TDengineTypeCode.SMALLINT_UNSIGNED)
+        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode.SMALLINT_UNSIGNED, TDengineTypeLength['SMALLINT UNSIGNED']));
     }
 
     setInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetIntColumn params is invalid!");
         }      
-        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['INT'], TDengineTypeCode['INT'])
-        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode['INT'], TDengineTypeLength['INT']));
+        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['INT'], TDengineTypeCode.INT)
+        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode.INT, TDengineTypeLength['INT']));
     }
 
     setUInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetUIntColumn params is invalid!");
         }      
-        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['INT UNSIGNED'], TDengineTypeCode['INT UNSIGNED'])
-        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode['INT UNSIGNED'], TDengineTypeLength['INT UNSIGNED']));
+        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['INT UNSIGNED'], TDengineTypeCode.INT_UNSIGNED)
+        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode.INT_UNSIGNED, TDengineTypeLength['INT UNSIGNED']));
     }
 
     setBigint(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBigIntColumn params is invalid!");
         }      
-        let arrayBuffer = this.encodeDigitColumns(params, "bigint", TDengineTypeLength['BIGINT'], TDengineTypeCode['BIGINT'])
-        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode['INT'], TDengineTypeLength['BIGINT']));
+        let arrayBuffer = this.encodeDigitColumns(params, "bigint", TDengineTypeLength['BIGINT'], TDengineTypeCode.BIGINT)
+        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode.INT, TDengineTypeLength['BIGINT']));
     }
 
     setUBigint(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetUBigIntColumn params is invalid!");
         }      
-        let arrayBuffer = this.encodeDigitColumns(params, "bigint", TDengineTypeLength['BIGINT UNSIGNED'], TDengineTypeCode['BIGINT UNSIGNED'])
-        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode['BIGINT UNSIGNED'], TDengineTypeLength['BIGINT UNSIGNED'])); 
+        let arrayBuffer = this.encodeDigitColumns(params, "bigint", TDengineTypeLength['BIGINT UNSIGNED'], TDengineTypeCode.BIGINT_UNSIGNED)
+        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode.BIGINT_UNSIGNED, TDengineTypeLength['BIGINT UNSIGNED'])); 
     }
 
     setFloat(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetFloatColumn params is invalid!");
         }      
-        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['FLOAT'], TDengineTypeCode['FLOAT'])
-        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode['FLOAT'], TDengineTypeLength['FLOAT'])); 
+        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['FLOAT'], TDengineTypeCode.FLOAT)
+        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode.FLOAT, TDengineTypeLength['FLOAT'])); 
     }
 
     setDouble(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetDoubleColumn params is invalid!");
         }      
-        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['DOUBLE'], TDengineTypeCode['DOUBLE'])
-        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode['DOUBLE'], TDengineTypeLength['DOUBLE'])); 
+        let arrayBuffer = this.encodeDigitColumns(params, "number", TDengineTypeLength['DOUBLE'], TDengineTypeCode.DOUBLE)
+        this._params.push(new ColumnInfo(arrayBuffer, TDengineTypeCode.DOUBLE, TDengineTypeLength['DOUBLE'])); 
     }
 
     setVarchar(params :any[]) {
         let data = this.encodeVarLengthColumn(params)
-        this._params.push(new ColumnInfo(data, TDengineTypeCode['VARCHAR'], 0));
+        this._params.push(new ColumnInfo(data, TDengineTypeCode.VARCHAR, 0));
     }
 
     setBinary(params :any[]) {
-        this._params.push(new ColumnInfo(this.encodeVarLengthColumn(params), TDengineTypeCode['BINARY'], 0));
+        this._params.push(new ColumnInfo(this.encodeVarLengthColumn(params), TDengineTypeCode.BINARY, 0));
     }
 
     setNchar(params :any[]) {
-        this._params.push(new ColumnInfo(this.encodeNcharColumn(params), TDengineTypeCode['NCHAR'], 0));
+        this._params.push(new ColumnInfo(this.encodeNcharColumn(params), TDengineTypeCode.NCHAR, 0));
     }
 
     setJson(params :any[]) {
-        this._params.push(new ColumnInfo(this.encodeVarLengthColumn(params), TDengineTypeCode['JSON'], 0));
+        this._params.push(new ColumnInfo(this.encodeVarLengthColumn(params), TDengineTypeCode.JSON, 0));
     }
 
     setVarBinary(params :any[]) {
-        this._params.push(new ColumnInfo(this.encodeVarLengthColumn(params), TDengineTypeCode['VARBINARY'], 0));
+        this._params.push(new ColumnInfo(this.encodeVarLengthColumn(params), TDengineTypeCode.VARBINARY, 0));
     }
 
     setGeometry(params :any[]) {
-        this._params.push(new ColumnInfo(this.encodeVarLengthColumn(params), TDengineTypeCode['GEOMETRY'], 0));
+        this._params.push(new ColumnInfo(this.encodeVarLengthColumn(params), TDengineTypeCode.GEOMETRY, 0));
     }
 
     setTimestamp(params :any[]) {
@@ -224,7 +224,7 @@ export class StmtBindParams {
         }
 
         this._dataTotalLen += arrayBuffer.byteLength; 
-        this._params.push(new ColumnInfo([TDengineTypeLength['TIMESTAMP'] * params.length, arrayBuffer], TDengineTypeCode['TIMESTAMP'], TDengineTypeLength['TIMESTAMP']));  
+        this._params.push(new ColumnInfo([TDengineTypeLength['TIMESTAMP'] * params.length, arrayBuffer], TDengineTypeCode.TIMESTAMP, TDengineTypeLength['TIMESTAMP']));  
     }
 
 
@@ -245,7 +245,7 @@ export class StmtBindParams {
             if (!isEmpty(params[i])) {
                 if (typeof params[i] == dataType) {
                     switch (columnType) {
-                        case TDengineTypeCode['BOOL']: {
+                        case TDengineTypeCode.BOOL: {
                             if (params[i]) {
                                 dataBuffer.setInt8(i, 1);
                             } else {
@@ -253,48 +253,48 @@ export class StmtBindParams {
                             }
                             break;
                         }
-                        case TDengineTypeCode['TINYINT']: {
+                        case TDengineTypeCode.TINYINT: {
                             dataBuffer.setInt8(i, params[i]);
                             break;
                         }
-                        case TDengineTypeCode['TINYINT UNSIGNED']: {
+                        case TDengineTypeCode.TINYINT_UNSIGNED: {
                             dataBuffer.setUint8(i, params[i]);
                             break;
                         }
-                        case TDengineTypeCode['SMALLINT']: {
+                        case TDengineTypeCode.SMALLINT: {
                             dataBuffer.setInt16(i * 2, params[i], true);
                             break;
                         }
-                        case TDengineTypeCode['SMALLINT UNSIGNED']: {
+                        case TDengineTypeCode.SMALLINT_UNSIGNED: {
                             dataBuffer.setUint16(i * 2, params[i], true);
                             break;
                         }
 
-                        case TDengineTypeCode['INT']: {
+                        case TDengineTypeCode.INT: {
                             dataBuffer.setInt32(i * 4, params[i], true);
                             break;
                         }
 
-                        case TDengineTypeCode['INT UNSIGNED']: {
+                        case TDengineTypeCode.INT_UNSIGNED: {
                             dataBuffer.setUint32(i * 4, params[i], true);
                             break;
                         }
 
-                        case TDengineTypeCode['BIGINT']: {
+                        case TDengineTypeCode.BIGINT: {
                             dataBuffer.setBigInt64(i * 8, params[i], true);
                             break;
                         }
 
-                        case TDengineTypeCode['BIGINT UNSIGNED']: {
+                        case TDengineTypeCode.BIGINT_UNSIGNED: {
                             dataBuffer.setBigUint64(i * 8, params[i], true);
                             break;
                         }
 
-                        case TDengineTypeCode['FLOAT']: {
+                        case TDengineTypeCode.FLOAT: {
                             dataBuffer.setFloat32(i * 4, params[i], true);
                             break;
                         }
-                        case TDengineTypeCode['DOUBLE']: {
+                        case TDengineTypeCode.DOUBLE: {
                             dataBuffer.setFloat64(i * 8, params[i], true);
                             break;
                         }

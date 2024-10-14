@@ -1,10 +1,10 @@
 {
   "name": "@tdengine/websocket",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "TDengine Connector for nodejs and browser using WebSocket.",
   "source": "index.ts",
   "main": "lib/index.js",
-  "module": "lib/module/index.mjs",
+  "module": "lib/index.js",
   "types": "lib/index.d.ts",
   "directories": {
     "example": "example",

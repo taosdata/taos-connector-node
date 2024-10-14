@@ -105,7 +105,7 @@ describe('TDWebSocket.WsSql()', () => {
         taosResult = await wsSql.exec('describe meters')
         console.log(taosResult);
     
-        taosResult = await wsSql.exec('INSERT INTO d1001 USING meters (location, groupid) TAGS ("California.SanFrancisco", 3) VALUES (NOW, 10.2, 219, 0.32)')
+        taosResult = await wsSql.exec('INSERT INTO d1001 USING meters (location, groupid) TAGS ("California", 3) VALUES (NOW, 10.2, 219, 0.32)')
         console.log(taosResult);
         expect(taosResult.getAffectRows()).toBeGreaterThanOrEqual(1)
         await wsSql.close()

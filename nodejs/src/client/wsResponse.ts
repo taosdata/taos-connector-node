@@ -2,7 +2,7 @@
  * define ws Response type|class, for query?
  */
 
-import { MessageResp } from "../common/taosResult";
+import { MessageResp, readVarchar } from "../common/taosResult";
 
 export class WSVersionResponse {
     version: string;
@@ -87,14 +87,48 @@ export class WSFetchResponse {
 }
 
 export class WSFetchBlockResponse {
-
-    id: bigint
-    data: ArrayBuffer
+    data: DataView | undefined
+    action: bigint
     timing: bigint
+    reqId: bigint
+    code: number
+    blockLen: number
+    message: string | undefined
+    resultId: bigint | undefined
+    finished: number | undefined
+    metaType: number | undefined
+    textDecoder: TextDecoder
     constructor(msg: ArrayBuffer) {
-        this.timing = new DataView(msg, 0, 8).getBigUint64(0, true)
-        this.id = new DataView(msg, 8, 8).getBigUint64(0, true)
-        this.data = msg.slice(16)
+        let dataView = new DataView(msg);
+        this.action = dataView.getBigUint64(8, true)
+        this.timing = dataView.getBigUint64(18, true)
+        this.reqId = dataView.getBigUint64(26, true)
+        this.code = dataView.getUint32(34, true)
+        this.textDecoder = new TextDecoder() 
+        this.blockLen = 0;
+        if (this.code != 0) {
+            let len = dataView.getUint32(38, true)
+            this.message = readVarchar(msg, 42, len, this.textDecoder);
+            return;
+        }
+        this.resultId = dataView.getBigUint64(42, true)
+        let offset  = 50;
+        if (this.action == BigInt(8)) {
+            this.metaType = dataView.getUint16(50, true)
+            offset += 2;
+        }else {
+            this.finished = dataView.getUint8(50)
+            if (this.finished == 1) {
+                return;
+            }            
+            offset += 1;
+        }
+
+        this.blockLen = dataView.getUint32(offset, true) 
+        if (this.blockLen > 0) {
+            this.data = new DataView(msg, offset + 4);
+        }    
+        
     }
 }
 

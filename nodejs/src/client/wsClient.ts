@@ -95,15 +95,19 @@ export class WsClient {
 
 
     // need to construct Response.
-    async sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, bSqlQuery:boolean = true): Promise<any> {
+    async sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, bSqlQuery:boolean = true, bResultBinary: boolean = false): Promise<any> {
         return new Promise((resolve, reject) => {
             if (this._wsConnector && this._wsConnector.readyState() > 0) {
                 this._wsConnector.sendBinaryMsg(reqId, action, message).then((e: any) => {
+                    if (bResultBinary) {
+                        resolve(e);
+                    }
+                    
                     if (e.msg.code == 0) {
                         if (bSqlQuery) {
                             resolve(new WSQueryResponse(e));
                         }else{
-                            resolve(e)
+                            resolve(e);
                         }
                     } else {
                         reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
@@ -184,7 +188,7 @@ export class WsClient {
                     taosResult.addTotalTime(resp.totalTime)
                     // if retrieve JSON then reject with message
                     // else is binary , so parse raw block to TaosResult
-                    parseBlock(fetchResponse.rows, new WSFetchBlockResponse(resp.msg), taosResult)
+                    parseBlock(new WSFetchBlockResponse(resp.msg), taosResult)
                     resolve(taosResult);
                 }).catch((e) => reject(e));
             } else {

@@ -237,23 +237,23 @@ export function parseBlock(blocks: WSFetchBlockResponse, taosResult: TaosResult)
 
 export function _isVarType(metaType: number): Number {
     switch (metaType) {
-        case TDengineTypeCode['NCHAR']: {
+        case TDengineTypeCode.NCHAR: {
             return ColumnsBlockType['NCHAR']
         }
-        case TDengineTypeCode['VARCHAR']: {
+        case TDengineTypeCode.VARCHAR: {
             return ColumnsBlockType['VARCHAR']
         }
-        case TDengineTypeCode['BINARY']: {
+        case TDengineTypeCode.BINARY: {
             return ColumnsBlockType['VARCHAR']
         }
-        case TDengineTypeCode['JSON']: {
+        case TDengineTypeCode.JSON: {
             return ColumnsBlockType['VARCHAR']
         }
-        case TDengineTypeCode['GEOMETRY']: {
+        case TDengineTypeCode.GEOMETRY: {
             return ColumnsBlockType['GEOMETRY']
         }
-        case TDengineTypeCode['VARBINARY']: {
-            return ColumnsBlockType['VARBINARY']
+        case TDengineTypeCode.VARBINARY: {
+            return ColumnsBlockType.VARBINARY
         }
         default: {
             return ColumnsBlockType['SOLID']
@@ -265,9 +265,9 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
 
     let result:any[] = []
     switch (metaType) {
-        case TDengineTypeCode['BOOL']:
-        case TDengineTypeCode['TINYINT']:
-        case TDengineTypeCode['TINYINT UNSIGNED']:{
+        case TDengineTypeCode.BOOL:
+        case TDengineTypeCode.TINYINT:
+        case TDengineTypeCode.TINYINT_UNSIGNED:{
             for (let i = 0; i < rows; i++, colBlockHead++) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -278,7 +278,7 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['SMALLINT']: {
+        case TDengineTypeCode.SMALLINT: {
             for (let i = 0; i < rows; i++, colBlockHead+=2) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -288,7 +288,7 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['INT']: {
+        case TDengineTypeCode.INT: {
             for (let i = 0; i < rows; i++, colBlockHead+=4) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -298,7 +298,7 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['BIGINT']: {
+        case TDengineTypeCode.BIGINT: {
             for (let i = 0; i < rows; i++, colBlockHead+=8) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -308,7 +308,7 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['SMALLINT UNSIGNED']: {
+        case TDengineTypeCode.SMALLINT_UNSIGNED: {
             for (let i = 0; i < rows; i++, colBlockHead+=2) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -318,7 +318,7 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['INT UNSIGNED']: {
+        case TDengineTypeCode.INT_UNSIGNED: {
             for (let i = 0; i < rows; i++, colBlockHead+=4) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -328,7 +328,7 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['BIGINT UNSIGNED']: {
+        case TDengineTypeCode.BIGINT_UNSIGNED: {
             for (let i = 0; i < rows; i++, colBlockHead+=8) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -338,7 +338,7 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             }
             break;
         }
-        case TDengineTypeCode['FLOAT']: {
+        case TDengineTypeCode.FLOAT: {
             for (let i = 0; i < rows; i++, colBlockHead+=4) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -348,7 +348,7 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             }
             break;    
         }
-        case TDengineTypeCode['DOUBLE']: {
+        case TDengineTypeCode.DOUBLE: {
 
             for (let i = 0; i < rows; i++, colBlockHead += 8) {
                 if (isNull(bitMapArr, i)) {
@@ -359,7 +359,7 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             }
             break;            
         }
-        case TDengineTypeCode['TIMESTAMP']: {
+        case TDengineTypeCode.TIMESTAMP: {
             for (let i = 0; i < rows; i++, colBlockHead += 8) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
@@ -379,40 +379,40 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
 export function readSolidData(dataBuffer: DataView, colDataHead: number, meta: ResponseMeta): Number | Boolean | BigInt {
 
     switch (meta.type) {
-        case TDengineTypeCode['BOOL']: {
+        case TDengineTypeCode.BOOL: {
             return (Boolean)(dataBuffer.getInt8(colDataHead));
         }
-        case TDengineTypeCode['TINYINT']: {
+        case TDengineTypeCode.TINYINT: {
             return dataBuffer.getInt8(colDataHead);
         }
-        case TDengineTypeCode['SMALLINT']: {
+        case TDengineTypeCode.SMALLINT: {
             return dataBuffer.getInt16(colDataHead, true);
         }
-        case TDengineTypeCode['INT']: {
+        case TDengineTypeCode.INT: {
             return dataBuffer.getInt32(colDataHead, true);
         }
-        case TDengineTypeCode['BIGINT']: {
+        case TDengineTypeCode.BIGINT: {
             return dataBuffer.getBigInt64(colDataHead, true);
         }
-        case TDengineTypeCode['TINYINT UNSIGNED']: {
+        case TDengineTypeCode.TINYINT_UNSIGNED: {
             return dataBuffer.getUint8(colDataHead);
         }
-        case TDengineTypeCode['SMALLINT UNSIGNED']: {
+        case TDengineTypeCode.SMALLINT_UNSIGNED: {
             return dataBuffer.getUint16(colDataHead, true);
         }
-        case TDengineTypeCode['INT UNSIGNED']: {
+        case TDengineTypeCode.INT_UNSIGNED: {
             return dataBuffer.getUint32(colDataHead, true);
         }
-        case TDengineTypeCode['BIGINT UNSIGNED']: {
+        case TDengineTypeCode.BIGINT_UNSIGNED: {
             return dataBuffer.getBigUint64(colDataHead, true);
         }
-        case TDengineTypeCode['FLOAT']: {
+        case TDengineTypeCode.FLOAT: {
             return parseFloat(dataBuffer.getFloat32(colDataHead, true).toFixed(5));
         }
-        case TDengineTypeCode['DOUBLE']: {
+        case TDengineTypeCode.DOUBLE: {
             return parseFloat(dataBuffer.getFloat64(colDataHead, true).toFixed(15));
         }
-        case TDengineTypeCode['TIMESTAMP']: {
+        case TDengineTypeCode.TIMESTAMP: {
             return dataBuffer.getBigInt64(colDataHead, true);
             // could change 
         }

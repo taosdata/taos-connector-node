@@ -18,8 +18,7 @@ export class WsPollResponse {
     message_id: number;
     id: bigint;
     message_type:number;
-    totalTime:number;
-      
+    totalTime:number;    
     constructor(resp:MessageResp) {
         this.totalTime = resp.totalTime
         this.code = resp.msg.code;
@@ -77,7 +76,7 @@ export class WSTmqFetchBlockInfo {
     taosResult: TaosResult;
     schemaLen: number;
     rows: number;
-    textDecoder: TextDecoder;  
+    textDecoder: TextDecoder;
     constructor(dataView: DataView, taosResult: TaosResult) {
         // this.totalTime = resp.totalTime
         // this.blockData = resp.msg
@@ -127,7 +126,7 @@ export class WSTmqFetchBlockInfo {
         let dataBuffer = new DataView(dataView.buffer, dataView.byteOffset + 6);
         let rows = 0; 
         // const parseStartTime = new Date().getTime();
-        // console.log("parseBlockInfos blockNum="+ blockNum)
+        console.log("parseBlockInfos blockNum="+ blockNum)
         for (let i = 0; i < blockNum; i++) {
             let variableInfo = this.parseVariableByteInteger(dataBuffer);
             this.taosResult.setPrecision(variableInfo[1].getUint8(17));
@@ -266,6 +265,7 @@ export class WSTmqFetchBlockInfo {
                             let dataLength = dataView.getInt16(header, true) & 0xFFFF;
                             if (isVarType == ColumnsBlockType.VARCHAR) {
                                 //decode var char
+                                
                                 value = readVarchar(dataView.buffer, dataView.byteOffset + header + 2, dataLength, this.textDecoder)
                             } else if(isVarType == ColumnsBlockType.GEOMETRY || isVarType == ColumnsBlockType.VARBINARY) {
                                 //decode binary

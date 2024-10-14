@@ -5,7 +5,6 @@ import { WebSocketInterfaceError, ErrorCode, TDWebSocketClientError } from "../c
 import { TMQBlockInfo, TMQRawDataSchema } from "./constant";
 import { zigzagDecode } from "../common/utils";
 import logger from "../common/log";
-import { off } from "process";
 
 export class WsPollResponse {
     code: number;
@@ -20,7 +19,7 @@ export class WsPollResponse {
     id: bigint;
     message_type:number;
     totalTime:number;
-        
+      
     constructor(resp:MessageResp) {
         this.totalTime = resp.totalTime
         this.code = resp.msg.code;
@@ -78,9 +77,11 @@ export class WSTmqFetchBlockInfo {
     taosResult: TaosResult;
     schemaLen: number;
     rows: number;
+    textDecoder: TextDecoder;  
     constructor(dataView: DataView, taosResult: TaosResult) {
         // this.totalTime = resp.totalTime
         // this.blockData = resp.msg
+        this.textDecoder = new TextDecoder();
         this.taosResult = taosResult;
         this.schema = [];
         this.schemaLen = 0;
@@ -165,7 +166,7 @@ export class WSTmqFetchBlockInfo {
                     schema.colID = zigzagDecode(variableInfo[0]);
                     variableInfo = this.parseVariableByteInteger(variableInfo[1]);
                     this.schemaLen += variableInfo[2];
-                    schema.name = getString(variableInfo[1], 0, variableInfo[0]);
+                    schema.name = getString(variableInfo[1], 0, variableInfo[0], this.textDecoder);
                     
                     if (!isSkip) {
                         this.taosResult.setMeta({
@@ -182,7 +183,7 @@ export class WSTmqFetchBlockInfo {
                 if(this.withTableName) {
                     variableInfo = this.parseVariableByteInteger(dataView);
                     this.schemaLen += variableInfo[2];
-                    this.tableName = readVarchar(variableInfo[1].buffer, variableInfo[1].byteOffset, variableInfo[0]); 
+                    this.tableName = readVarchar(variableInfo[1].buffer, variableInfo[1].byteOffset, variableInfo[0], this.textDecoder); 
                     dataView = new DataView(variableInfo[1].buffer, variableInfo[1].byteOffset + variableInfo[0]);
                     this.schemaLen += variableInfo[0];
                 }
@@ -265,7 +266,7 @@ export class WSTmqFetchBlockInfo {
                             let dataLength = dataView.getInt16(header, true) & 0xFFFF;
                             if (isVarType == ColumnsBlockType.VARCHAR) {
                                 //decode var char
-                                value = readVarchar(dataView.buffer, dataView.byteOffset + header + 2, dataLength)
+                                value = readVarchar(dataView.buffer, dataView.byteOffset + header + 2, dataLength, this.textDecoder)
                             } else if(isVarType == ColumnsBlockType.GEOMETRY || isVarType == ColumnsBlockType.VARBINARY) {
                                 //decode binary
                                 value = readBinary(dataView.buffer, dataView.byteOffset + header + 2, dataLength)

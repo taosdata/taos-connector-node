@@ -97,16 +97,18 @@ export class WSFetchBlockResponse {
     resultId: bigint | undefined
     finished: number | undefined
     metaType: number | undefined
+    textDecoder: TextDecoder
     constructor(msg: ArrayBuffer) {
         let dataView = new DataView(msg);
         this.action = dataView.getBigUint64(8, true)
         this.timing = dataView.getBigUint64(18, true)
         this.reqId = dataView.getBigUint64(26, true)
         this.code = dataView.getUint32(34, true)
+        this.textDecoder = new TextDecoder() 
         this.blockLen = 0;
         if (this.code != 0) {
             let len = dataView.getUint32(38, true)
-            this.message = readVarchar(msg, 42, len);
+            this.message = readVarchar(msg, 42, len, this.textDecoder);
             return;
         }
         this.resultId = dataView.getBigUint64(42, true)

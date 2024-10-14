@@ -156,6 +156,7 @@ export class TaosResult {
 export function parseBlock(blocks: WSFetchBlockResponse, taosResult: TaosResult): TaosResult {
     let metaList = taosResult.getTaosMeta()
     let dataList = taosResult.getData()
+    let textDecoder = new TextDecoder()
     if (metaList && dataList && blocks && blocks.data) {
         let rows = blocks.data.getUint32(8, true);
         if (rows == 0) {
@@ -215,7 +216,7 @@ export function parseBlock(blocks: WSFetchBlockResponse, taosResult: TaosResult)
                         colDataHead = colBlockHead + INT_32_SIZE * rows + varOffset
                         let dataLength = dataView.getInt16(colDataHead, true);
                         if (isVarType == ColumnsBlockType.VARCHAR) {
-                            row.push(readVarchar(dataView.buffer, dataView.byteOffset + colDataHead + 2, dataLength))
+                            row.push(readVarchar(dataView.buffer, dataView.byteOffset + colDataHead + 2, dataLength, textDecoder))
                         } else if(isVarType == ColumnsBlockType.GEOMETRY || isVarType == ColumnsBlockType.VARBINARY) {
                             row.push(readBinary(dataView.buffer, dataView.byteOffset + colDataHead  + 2, dataLength))
                         } else {
@@ -426,30 +427,27 @@ export function readBinary(dataBuffer: ArrayBuffer, colDataHead: number, length:
     return buff
 }
 
-export function readVarchar(dataBuffer: ArrayBuffer, colDataHead: number, length: number): string {
-    let data = "";
+export function readVarchar(dataBuffer: ArrayBuffer, colDataHead: number, length: number, textDecoder: TextDecoder): string {
     // let buff = dataBuffer.slice(colDataHead, colDataHead + length)
     let dataView = new DataView(dataBuffer, colDataHead, length);
-    data += new TextDecoder().decode(dataView)
-    return data;
+    return textDecoder.decode(dataView);
 }
 
 export function readNchar(dataBuffer: ArrayBuffer, colDataHead: number, length: number): string {
-    let data = "";
+    let data: string[] = [];
     // let buff: ArrayBuffer = dataBuffer.slice(colDataHead, colDataHead + length);
     let dataView = new DataView(dataBuffer, colDataHead, length);
     for (let i = 0; i < length / 4; i++) {
-        data += appendRune(dataView.getUint32(i * 4, true))
+        data.push(appendRune(dataView.getUint32(i * 4, true)));
 
     }
-    return data;
+    return data.join('');
 }
 
-export function getString(dataBuffer: DataView, colDataHead: number, length: number): string {
+export function getString(dataBuffer: DataView, colDataHead: number, length: number, textDecoder: TextDecoder): string {
     // let buff = dataBuffer.slice(colDataHead, colDataHead + length - 1)
     let dataView = new Uint8Array(dataBuffer.buffer, dataBuffer.byteOffset + colDataHead, length - 1);
-    let decoder = new TextDecoder('utf-8');
-    return decoder.decode(dataView);
+    return textDecoder.decode(dataView);
 }
 
 function iteratorBuff(arr: ArrayBuffer) {

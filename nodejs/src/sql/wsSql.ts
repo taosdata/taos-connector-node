@@ -10,7 +10,6 @@ import { WsStmt } from '../stmt/wsStmt'
 import { ReqId } from '../common/reqid'
 import { BinaryQueryMessage, FetchRawBlockMessage, PrecisionLength } from '../common/constant'
 import logger from '../common/log'
-import { log } from 'console'
  
 export class WsSql{
     private wsConfig:WSConfig;

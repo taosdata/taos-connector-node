@@ -136,8 +136,8 @@ export class WsConsumer {
             },
         };
         
-            let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
-            return new CommittedResp(resp).setTopicPartitions(offsets);   
+        let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
+        return new CommittedResp(resp).setTopicPartitions(offsets);   
     }
 
     async commitOffsets(partitions:Array<TopicPartition>):Promise<Array<TopicPartition>> {
@@ -237,20 +237,6 @@ export class WsConsumer {
         await this._wsClient.close();
     }
 
-    private async fetch(pollResp: WsPollResponse):Promise<WsTmqQueryResponse> {
-        let fetchMsg = {
-            action: 'fetch',
-            args: {
-                req_id: ReqId.getReqID(),
-                message_id:pollResp.message_id,
-            },
-        };
-        let jsonStr = JSON.stringify(fetchMsg);
-        logger.debug('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);    
-        let result = await this._wsClient.exec(jsonStr, false);
-        return new WsTmqQueryResponse(result);
-    }
-
     private async fetchBlockData(pollResp: WsPollResponse, taosResult: TaosTmqResult):Promise<boolean> {
         let fetchMsg = {
             action: 'fetch_raw_data',
@@ -261,16 +247,12 @@ export class WsConsumer {
         };   
         let jsonStr = JSON.stringify(fetchMsg);
         logger.debug('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
-        // const startTime = new Date().getTime();
         let result = await this._wsClient.sendMsg(jsonStr)
         let wsResponse = new WSFetchBlockResponse(result.msg)
         if (wsResponse && wsResponse.data && wsResponse.blockLen > 0) {
-            // const parseStartTime = new Date().getTime();
             let wsTmqResponse = new WSTmqFetchBlockInfo(wsResponse.data, taosResult);
             logger.debug('[WSTmqFetchBlockInfo.fetchBlockData]===>' + wsTmqResponse.taosResult);
             if (wsTmqResponse.rows > 0) {
-                // const endTime = new Date().getTime();
-                // console.log(endTime - parseStartTime, endTime - startTime);
                 return true;
             }
         }

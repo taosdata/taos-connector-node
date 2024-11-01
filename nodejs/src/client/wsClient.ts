@@ -1,13 +1,10 @@
 import JSONBig from 'json-bigint';
 import { WebSocketConnector } from './wsConnector';
 import { WebSocketConnectionPool } from './wsConnectorPool'
-import { parseBlock, MessageResp, TaosResult } from '../common/taosResult';
 import { ErrorCode, TDWebSocketClientError, WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
 import {
     WSVersionResponse,
-    WSFetchBlockResponse,
     WSQueryResponse,
-    WSFetchResponse,
 } from './wsResponse';
 import { ReqId } from '../common/reqid';
 import logger from '../common/log';
@@ -142,59 +139,6 @@ export class WsClient {
             throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}`));
         }  
              
-    }
-
-    async fetch(res: WSQueryResponse): Promise<WSFetchResponse> {
-        let fetchMsg = {
-            action: 'fetch',
-            args: {
-                req_id: ReqId.getReqID(),
-                id: res.id,
-            },
-        };
-        return new Promise((resolve, reject) => {
-            let jsonStr = JSONBig.stringify(fetchMsg);
-            logger.debug('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
-            if (this._wsConnector && this._wsConnector.readyState() > 0) {
-                this._wsConnector.sendMsg(jsonStr).then((e: any) => {
-                    if (e.msg.code == 0) {
-                        resolve(new WSFetchResponse(e));
-                    } else {
-                        reject(new WebSocketInterfaceError(e.msg.code, e.msg.message));
-                    }
-                }).catch((e) => {reject(e);});
-            } else {
-                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect"));
-            }
-            
-        });
-    }
-
-    async fetchBlock(fetchResponse: WSFetchResponse, taosResult: TaosResult): Promise<TaosResult> {
-        let fetchBlockMsg = {
-            action: 'fetch_block',
-            args: {
-                req_id: ReqId.getReqID(),
-                id: fetchResponse.id,
-            },
-        };
-
-        return new Promise((resolve, reject) => {
-            let jsonStr = JSONBig.stringify(fetchBlockMsg);
-            logger.debug("[wsQueryInterface.fetchBlock.fetchBlockMsg]===>" + jsonStr)
-            if (this._wsConnector && this._wsConnector.readyState() > 0) {
-                this._wsConnector.sendMsg(jsonStr).then((e: any) => {
-                    let resp:MessageResp = e
-                    taosResult.addTotalTime(resp.totalTime)
-                    // if retrieve JSON then reject with message
-                    // else is binary , so parse raw block to TaosResult
-                    parseBlock(new WSFetchBlockResponse(resp.msg), taosResult)
-                    resolve(taosResult);
-                }).catch((e) => reject(e));
-            } else {
-                reject(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect"));
-            }
-        });
     }
 
     async sendMsg(msg:string): Promise<any> {

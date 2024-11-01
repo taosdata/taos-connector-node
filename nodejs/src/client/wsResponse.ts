@@ -61,31 +61,6 @@ export class WSQueryResponse {
     }
 }
 
-export class WSFetchResponse {
-    code: number;
-    message: string;
-    action: string;
-    req_id: number;
-    timing: bigint;
-    id: bigint;
-    completed: boolean;
-    length: Array<number>;
-    rows: number;
-    totalTime: number;
-    constructor(resp:MessageResp) {
-        this.totalTime = resp.totalTime
-        this.code = resp.msg.code;
-        this.message = resp.msg.message;
-        this.action = resp.msg.action;
-        this.req_id = resp.msg.req_id;
-        this.timing = BigInt(resp.msg.timing);
-        this.id = BigInt(resp.msg.id);
-        this.completed = resp.msg.completed;
-        this.length = resp.msg.length;
-        this.rows = resp.msg.rows;
-    }
-}
-
 export class WSFetchBlockResponse {
     data: DataView | undefined
     action: bigint

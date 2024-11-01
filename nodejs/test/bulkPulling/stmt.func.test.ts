@@ -15,7 +15,7 @@ beforeAll(async () => {
 })
 describe('TDWebSocket.Stmt()', () => {
     jest.setTimeout(20 * 1000)
-    let tags = ['California.SanFrancisco', 3];
+    let tags = ['California', 3];
     let multi = [
     // [1709183268567],
     // [10.2],

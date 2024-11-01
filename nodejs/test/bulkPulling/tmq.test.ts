@@ -153,9 +153,16 @@ describe('TDWebSocket.Tmq()', () => {
             }
             // await Sleep(100)
         }
+        let topicArray = await consumer.subscription();
+        expect(topics.length).toEqual(topicArray.length);
+        for (let index = 0; index < topicArray.length; index++) {
+            expect(topics[index]).toEqual(topicArray[index]);
+        }
+        
         assignment = await consumer.commit();
         console.log(assignment)
         assignment = await consumer.committed(assignment)
+        assignment = await consumer.commitOffsets(assignment)
         console.log(assignment)
         await consumer.unsubscribe()
         await consumer.close();

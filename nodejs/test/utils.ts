@@ -285,24 +285,24 @@ export function hexToBytes(hex: string): ArrayBuffer {
     return a.buffer
 }
 
-export function createStmtData(varbinary:string = "ab", 
-    geoHex:string = "0101000020E6100000000000000000F03F0000000000000040"):Array<Array<any>> {
-    let multi:any[][] = [
-        [1709183268567, 1709183268568, 1709183268569],
-        [10.2, 10.3, 10.4],
-        [292, 293, 294],
-        [0.32, 0.33, 0.34],
-        ];
-    let res = hexToBytes(geoHex)
-    let geom = Array.from(new Uint8Array(res))
-    multi.push([geom, geom, geom])
+// export function createStmtData(varbinary:string = "ab", 
+//     geoHex:string = "0101000020E6100000000000000000F03F0000000000000040"):Array<Array<any>> {
+//     let multi:any[][] = [
+//         [1709183268567, 1709183268568, 1709183268569],
+//         [10.2, 10.3, 10.4],
+//         [292, 293, 294],
+//         [0.32, 0.33, 0.34],
+//         ];
+//     let res = hexToBytes(geoHex)
+//     let geom = Array.from(new Uint8Array(res))
+//     multi.push([geom, geom, geom])
 
     
-    res = new TextEncoder().encode(varbinary)
-    let binary = Array.from(new Uint8Array(res))
-    multi.push([binary, binary, binary])
-    return multi
-}
+//     res = new TextEncoder().encode(varbinary)
+//     let binary = Array.from(new Uint8Array(res))
+//     multi.push([binary, binary, binary])
+//     return multi
+// }
 
 export function compareUint8Arrays(arr1: Uint8Array, arr2: Uint8Array): boolean {  
     if (arr1.length !== arr2.length) {  

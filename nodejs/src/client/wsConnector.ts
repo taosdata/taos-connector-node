@@ -20,7 +20,7 @@ export class WebSocketConnector {
             if (timeout) {
                 this._timeout = timeout
             }
-            this._wsConn = new w3cwebsocket(origin.concat(pathname).concat(search));
+            this._wsConn = new w3cwebsocket(origin.concat(pathname).concat(search), undefined, undefined, undefined, undefined, {maxReceivedFrameSize:0x60000000, maxReceivedMessageSize:0x60000000});
             this._wsConn.onerror = function (err: Error) { logger.error(err.message); throw err; }
 
             this._wsConn.onclose = this._onclose

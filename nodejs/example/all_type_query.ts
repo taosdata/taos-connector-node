@@ -5,6 +5,7 @@ let dsn = 'ws://127.0.0.1:6041';
 async function json_tag_example() {
     let wsSql = null;
     try {
+        
         let conf = new WSConfig(dsn);
         conf.setUser('root');
         conf.setPwd('taosdata');

@@ -68,12 +68,13 @@ jobs:
         npm run example
         npm run test
         pwd
-        find ../ -name cobertura-coverage.xml
+        find ../ -name lcov.info
         
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
         fail_ci_if_error: false
-        files: coverage/coverage-final.json
+        files: coverage/lcov.info
+        verbose: true
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

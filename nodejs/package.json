@@ -1,7 +1,7 @@
 {
   "name": "@tdengine/websocket",
   "version": "3.1.2",
-  "description": "TDengine Connector for nodejs and browser using WebSocket.",
+  "description": "TDengine Connector for nodejs and browser using WebSocket. TDengine versions 3.3.2.0 and above are recommended to use this connector.",
   "source": "index.ts",
   "main": "lib/index.js",
   "module": "lib/index.js",
@@ -11,11 +11,12 @@
     "test": "test"
   },
   "scripts": {
-    "test": "jest --coverage",
+    "test": "jest --coverage --coverageDirectory=../coverage",
     "example": "tsc && node lib/example/basicSql.js",
     "build": "tsc",
     "prepublish": "node ./prepare.js"
   },
+
   "repository": {
     "type": "git",
     "url": "git+https://github.com/taosdata/taos-connector-node.git"
@@ -48,7 +49,7 @@
     "typescript": "^5.3.3",
     "uuid": "^9.0.1",
     "websocket": "^1.0.34",
-    "winston": "^3.13.0",
+    "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {

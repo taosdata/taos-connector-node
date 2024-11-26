@@ -92,7 +92,7 @@ describe('TDWebSocket.WsSchemaless()', () => {
         try {
             await wsSchemaless.schemalessInsert([influxdbData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.NANO_SECONDS, 0);
         }catch (e:any) {
-            expect(e.message).toMatch('invalid timestamp')
+            expect(e.message).toMatch('parse timestamp failed')
         }
 
         await wsSchemaless.close();

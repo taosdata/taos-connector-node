@@ -1,11 +1,12 @@
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
-import moment from 'moment-timezone'; 
 
-const customFormat = winston.format.printf(({ timestamp, level, message, ...meta }) => {  
-    const formattedTime = moment(timestamp).tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss.SSS'); // 使用上海时区  
-    return `${formattedTime} ${level}: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''}`;  
-  });
+const customFormat = winston.format.printf(({ level, message, label, timestamp }) => {  
+    if (message && typeof message === 'object' && typeof (message as any).toJSON === 'function') {
+        message = (message as any).toJSON();
+    } 
+    return `${timestamp} [${label}] ${level}: ${message}`;  
+});
 
 const transport = new DailyRotateFile({
     filename: './logs/app-%DATE%.log', // Here is the file name template
@@ -16,7 +17,8 @@ const transport = new DailyRotateFile({
     handleExceptions: true, // Whether to handle exceptions
     json: false, // Whether to output logs in JSON format
     format: winston.format.combine(
-        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        winston.format.label({ label: 'node.js websocket' }),
+        winston.format.timestamp(),
         customFormat
     ),
     level: 'info', // set log level
@@ -26,14 +28,6 @@ const logger = winston.createLogger({
     transports: [transport],
     exitOnError: false, // Do not exit the process when an error occurs
 });
-
-// 设置 BigInt 类型的序列化处理
-transport.format = winston.format((info) => {
-    if (info && info.message && typeof info.message === 'object' && typeof info.message.toJSON === 'function') {   
-        info.message = info.message.toJSON();
-    }
-    return info;
-  })();
 
 export function setLevel(level:string) {
     transport.level = level

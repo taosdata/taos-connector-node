@@ -4,7 +4,7 @@ nodejs/.parcel-cache/
 nodejs/lib/
 nodejs/node_modules/
 nodejs/tsc/
-nodejs/coverage/
+coverage/
 nodejs/logs/
 .DS_Store
 nodejs/*.log

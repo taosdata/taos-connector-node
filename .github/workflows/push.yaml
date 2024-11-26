@@ -68,7 +68,7 @@ jobs:
         npm run example
         npm run test
         ls -al
-        echo ${{ env.TEST_ENV_VAR }}
+        echo ${{ env.CODECOV_TOKEN }}
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4

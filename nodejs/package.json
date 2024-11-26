@@ -16,6 +16,15 @@
     "build": "tsc",
     "prepublish": "node ./prepare.js"
   },
+
+  "jest": {
+    "collectCoverage": true,
+    "coverageReporters": [
+      "text",
+      "cobertura"
+    ]
+  },
+
   "repository": {
     "type": "git",
     "url": "git+https://github.com/taosdata/taos-connector-node.git"

@@ -67,8 +67,6 @@ jobs:
         npm list
         npm run example
         npm run test
-        pwd
-        find ../ -name lcov.info
         
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

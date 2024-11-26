@@ -11,7 +11,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "jest --coverage",
+    "test": "jest --coverage --coverageDirectory=../coverage",
     "example": "tsc && node lib/example/basicSql.js",
     "build": "tsc",
     "prepublish": "node ./prepare.js"

@@ -66,3 +66,9 @@ jobs:
         npm install
         npm run example
         npm run test
+    
+    - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false

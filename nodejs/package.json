@@ -48,7 +48,7 @@
     "typescript": "^5.3.3",
     "uuid": "^9.0.1",
     "websocket": "^1.0.34",
-    "winston": "^3.17.0",
+    "winston": "3.13.0",
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {

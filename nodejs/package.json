@@ -11,18 +11,10 @@
     "test": "test"
   },
   "scripts": {
-    "test": "jest",
+    "test": "jest --coverage",
     "example": "tsc && node lib/example/basicSql.js",
     "build": "tsc",
     "prepublish": "node ./prepare.js"
-  },
-
-  "jest": {
-    "collectCoverage": true,
-    "coverageReporters": [
-      "text",
-      "cobertura"
-    ]
   },
 
   "repository": {

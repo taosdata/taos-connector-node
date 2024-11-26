@@ -69,7 +69,6 @@ jobs:
         npm run test
     
     - name: Upload coverage to Codecov
-      working-directory: nodejs
       uses: codecov/codecov-action@v3
       with:
         fail_ci_if_error: false

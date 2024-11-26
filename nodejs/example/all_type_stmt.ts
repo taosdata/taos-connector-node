@@ -102,7 +102,6 @@ async function all_type_example() {
         tagParams.setVarBinary([vbData]);
         await stmt.setTags(tagParams);
 
-
         let bindParams = stmt.newStmtParam();
         const currentMillis = new Date().getTime();
         bindParams.setTimestamp([currentMillis]);
@@ -139,8 +138,6 @@ async function all_type_example() {
     }
 
 }
-
-
 
 async function test() {
     setLevel("debug")

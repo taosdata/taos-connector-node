@@ -8,15 +8,11 @@ let telnetData = "stb0_0 1626006833 4 host=host0 interface=eth0"
 let jsonData = "{\"metric\": \"meter_current\",\"timestamp\": 1626846400,\"value\": 10.3, \"tags\": {\"groupid\": 2, \"location\": \"California.SanFrancisco\", \"id\": \"d1001\"}}"
 const dropDB = `drop database if exists ${db}`
 
-
 async function Prepare() {
     let conf :WSConfig = new WSConfig(dsn)
     conf.setUser('root')
     conf.setPwd('taosdata')
     let wsSql = await sqlConnect(conf)
-    const topics:string[] = ['pwer_meters_topic']
-    let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
-    await wsSql.exec(dropTopic);
     await wsSql.exec(dropDB);
 
     await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
@@ -31,7 +27,8 @@ async function Prepare() {
         conf.setUser('root')
         conf.setPwd('taosdata')
         conf.setDb('power')
-        wsSchemaless = await sqlConnect(conf)
+        wsSchemaless = await sqlConnect(conf);
+        await Prepare();
         await wsSchemaless.schemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NANO_SECONDS, 0);
         await wsSchemaless.schemalessInsert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.SECONDS, 0);
         await wsSchemaless.schemalessInsert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, Precision.SECONDS, 0);

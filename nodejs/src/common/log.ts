@@ -5,7 +5,7 @@ import moment from 'moment-timezone';
 const customFormat = winston.format.printf(({ timestamp, level, message, ...meta }) => {  
     const formattedTime = moment(timestamp).tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss.SSS'); // 使用上海时区  
     return `${formattedTime} ${level}: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''}`;  
-  });
+});
 
 const transport = new DailyRotateFile({
     filename: './logs/app-%DATE%.log', // Here is the file name template

@@ -68,15 +68,11 @@ jobs:
         npm run example
         npm run test
         ls -al
-        echo ${{ env.CODECOV_TOKEN }}
-    
+        
     - name: Upload coverage to Codecov
-      run: | 
-        ls -al
-        ls -al ../
       uses: codecov/codecov-action@v3
       with:
         fail_ci_if_error: false
-        files: ../coverage/cobertura-coverage.xml
+        files: coverage/cobertura-coverage.xml
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

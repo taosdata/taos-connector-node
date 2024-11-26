@@ -71,6 +71,9 @@ jobs:
         echo ${{ env.CODECOV_TOKEN }}
     
     - name: Upload coverage to Codecov
+      run: | 
+        ls -al
+        ls -al ../
       uses: codecov/codecov-action@v3
       with:
         fail_ci_if_error: false

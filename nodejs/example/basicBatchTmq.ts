@@ -35,7 +35,7 @@ async function createConsumer() {
 // ANCHOR_END: create_consumer 
 
 async function prepare() {
-    let conf = new WSConfig('ws://localhost:6041');
+    let conf = new WSConfig(url);
     conf.setUser('root');
     conf.setPwd('taosdata');
     conf.setDb(db);
@@ -105,13 +105,13 @@ async function consumer() {
     setLogLevel("debug");
     let consumer = null;
     try {
-        // await prepare();
+        await prepare();
         consumer = await createConsumer();
-        // const allPromises = [];
-        // allPromises.push(subscribe(consumer));
-        // allPromises.push(insert());
-        // await Promise.all(allPromises);
-        // await insert();
+        const allPromises = [];
+        allPromises.push(subscribe(consumer));
+        allPromises.push(insert());
+        await Promise.all(allPromises);
+        await insert();
         await subscribe(consumer);
         await consumer.unsubscribe();
         console.log("Consumer unsubscribed successfully.");

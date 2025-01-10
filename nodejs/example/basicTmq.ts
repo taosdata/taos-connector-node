@@ -55,13 +55,13 @@ async function Prepare() {
             // await consumer.commit();
         }
 
-        // let assignment = await consumer.assignment()
-        // console.log(assignment)
-        // await consumer.seekToBeginning(assignment)
-        // assignment = await consumer.assignment()
-        // for(let i in assignment) {
-        //     console.log("seek after:", assignment[i])
-        // }
+        let assignment = await consumer.assignment()
+        console.log(assignment)
+        await consumer.seekToBeginning(assignment)
+        assignment = await consumer.assignment()
+        for(let i in assignment) {
+            console.log("seek after:", assignment[i])
+        }
         await consumer.unsubscribe()
     } catch (e) {
         console.error(e);

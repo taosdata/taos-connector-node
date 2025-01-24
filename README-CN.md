@@ -1,4 +1,6 @@
+<!-- omit in toc -->
 # TDengine Node.js Connector
+<!-- omit in toc -->
 
 | Github Action Tests                                                                  | CodeCov                                                                                                                           |
 |--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
@@ -6,25 +8,25 @@
 
 [English](README.md) | 简体中文
 
+<!-- omit in toc -->
 ## 目录
+<!-- omit in toc -->
 
-- [TDengine Node.js Connector](#tdengine-nodejs-connector)
-  - [目录](#目录)
-  - [1. 简介](#1-简介)
-    - [1.1 Node.js 版本兼容性](#11-nodejs-版本兼容性)
-    - [1.2 支持的平台](#12-支持的平台)
-  - [2. 获取驱动](#2-获取驱动)
-  - [3. 文档](#3-文档)
-  - [4. 前置条件](#4-前置条件)
-  - [5. 构建](#5-构建)
-  - [6. 测试](#6-测试)
-    - [6.1 运行测试](#61-运行测试)
-    - [6.2 添加用例](#62-添加用例)
-    - [6.3 性能测试](#63-性能测试)
-  - [7. 提交 Issue](#7-提交-issue)
-  - [8.提交 PR](#8提交-pr)
-  - [9. 引用](#9-引用)
-  - [10. 许可证](#10-许可证)
+- [1. 简介](#1-简介)
+  - [1.1 Node.js 版本兼容性](#11-nodejs-版本兼容性)
+  - [1.2 支持的平台](#12-支持的平台)
+- [2. 获取驱动](#2-获取驱动)
+- [3. 文档](#3-文档)
+- [4. 前置条件](#4-前置条件)
+- [5. 构建](#5-构建)
+- [6. 测试](#6-测试)
+  - [6.1 运行测试](#61-运行测试)
+  - [6.2 添加用例](#62-添加用例)
+  - [6.3 性能测试](#63-性能测试)
+- [7. 提交 Issue](#7-提交-issue)
+- [8. 提交 PR](#8-提交-pr)
+- [9. 引用](#9-引用)
+- [10. 许可证](#10-许可证)
 
 
 ## 1. 简介
@@ -67,12 +69,14 @@ npm install @tdengine/websocket
 
 ### 6.1 运行测试
 
-在项目的 `nodejs` 目录下，执行 `npm run test` 命令，即可运行 `test/bulkPulling` 目录中的所有测试用例。这些测试用例将连接本地的 `TDengine` 服务器与 `taosAdapter` 进行相关测试。在终端内将实时输出各测试用例的执行结果。待整个测试流程结束，如果所有用例通过，Failures 和 Errors 都是 0, 并且还会给出相应的覆盖率数据。
+在项目的 `nodejs` 目录下，执行 `npm run test` 命令，即可运行 `test/bulkPulling` 目录中的所有测试用例。这些测试用例将连接本地的 `TDengine` 服务器与 `taosAdapter` 进行相关测试。在终端内将实时输出各测试用例的执行结果。待整个测试流程结束，如果所有用例通过，没有 Failures 和 Errors, 并且还会给出相应的覆盖率数据。
 
 ```text
-[INFO] Results:
-[INFO] 
-[WARNING] Tests run: 2353, Failures: 0, Errors: 0, Skipped: 16
+Test Suites: 8 passed, 8 total
+Tests:       1 skipped, 44 passed, 45 total
+Snapshots:   0 total
+Time:        20.373 s
+Ran all test suites.
 ```
 
 ### 6.2 添加用例
@@ -85,7 +89,7 @@ npm install @tdengine/websocket
 
 ## 7. 提交 Issue
 
-我们欢迎提交 [Github Issue](https://github.com/taosdata/taos-connector-node/issues/new?template=Blank+issue)。 提交时请说明下面信息：
+我们欢迎提交 [GitHub Issue](https://github.com/taosdata/taos-connector-node/issues/new?template=Blank+issue)。 提交时请说明下面信息：
 
 - 问题描述，是否必现
 - Nodejs 版本
@@ -93,16 +97,16 @@ npm install @tdengine/websocket
 - 连接参数（不需要用户名密码）
 - TDengine 服务端版本
 
-## 8.提交 PR
+## 8. 提交 PR
 
 我们欢迎开发者一起开发本项目，提交 PR 时请参考下面步骤：
 
-1. Fork 本项目，请参考 ([how to fork a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo))
-2. 从 main 分支创建一个新分支，请使用有意义的分支名称 (`git checkout -b my_branch`)。注意不要直接在 main 分支上修改。
-3. 修改代码，保证所有单元测试通过，并增加新的单元测试验证修改。
-4. 提交修改到远端分支 (`git push origin my_branch`)。
-5. 在 Github 上创建一个 Pull Request ([how to create a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request))。
-6. 提交 PR 后，如果 CI 通过，可以在 [codecov](https://app.codecov.io/gh/taosdata/taos-connector-node/) 页面找到自己分支，看单测覆盖率。
+1. Fork 本项目，请参考 ([how to fork a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo))。
+1. 从 main 分支创建一个新分支，请使用有意义的分支名称 (`git checkout -b my_branch`)。注意不要直接在 main 分支上修改。
+1. 修改代码，保证所有单元测试通过，并增加新的单元测试验证修改。
+1. 提交修改到远端分支 (`git push origin my_branch`)。
+1. 在 GitHub 上创建一个 Pull Request ([how to create a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request))。
+1. 提交 PR 后，如果 CI 通过，可以在 [codecov](https://app.codecov.io/gh/taosdata/taos-connector-node/pulls) 页面找到自己 PR，看单测覆盖率。
 
 ## 9. 引用
 

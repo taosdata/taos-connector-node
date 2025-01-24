@@ -23,6 +23,7 @@ export class WebSocketConnectionPool {
 
     async getConnection(url:URL, timeout: number | undefined | null): Promise<WebSocketConnector> {
         let connectAddr = url.origin.concat(url.pathname).concat(url.search)
+        logger.info("url:" + url)
         let connector:WebSocketConnector | undefined;
         const unlock = await mutex.acquire()
         try {
@@ -36,7 +37,7 @@ export class WebSocketConnectionPool {
             }  
 
             if (connector) {
-                logger.debug("get connection success:", this._connectionCount)
+                logger.debug("get connection success:" + this._connectionCount)
                 return connector;
             }
             if (this._maxConnections != -1 && this._connectionCount > this._maxConnections) {

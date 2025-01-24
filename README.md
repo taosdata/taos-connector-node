@@ -6,18 +6,25 @@
 
 English | [简体中文](README-CN.md)
 
-1. [Introduction](#introduction)
+## Table of Contents
+
+- [TDengine Node.js Connector](#tdengine-nodejs-connector)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
     - [Node.js Version Compatibility](#nodejs-version-compatibility)
     - [Supported Platforms](#supported-platforms)
-1. [Get the Driver](#get-the-driver)
-1. [Documentation](#documentation)
-1. [Prerequisites](#prerequisites)
-1. [Build](#build)
-1. [Testing](#testing)
-1. [Submitting Issues](#submitting-prs)
-1. [Submitting PRs](#submitting-prs)
-1. [References](#references)
-1. [License](#license)
+  - [Get the Driver](#get-the-driver)
+  - [Documentation](#documentation)
+  - [Prerequisites](#prerequisites)
+  - [Build](#build)
+  - [Testing](#testing)
+    - [Test Execution](#test-execution)
+    - [Test Case Addition](#test-case-addition)
+    - [Performance Testing](#performance-testing)
+  - [Submitting Issues](#submitting-issues)
+  - [Submitting PRs](#submitting-prs)
+  - [References](#references)
+  - [License](#license)
 
 ## Introduction
 
@@ -48,8 +55,8 @@ npm install @tdengine/websocket
 ## Prerequisites
 
 - Install the Node.js development environment, using version 14 or above. Download link: [https://nodejs.org/en/download/](https://nodejs.org/en/download/)
-- Install the Node.js connector using npm
-- Install TypeScript 5.3.3 and above using npm
+- Install the Node.js connector using npm.
+- Install TypeScript 5.3.3 and above using npm.
 - TDengine has been deployed locally. For specific steps, please refer to Deploy TDengine, and `taosd` and `taosAdapter` have been started.
 
 ## Build
@@ -58,9 +65,25 @@ Execute `tsc` to build the project in the 'nodejs' directory.
 
 ## Testing
 
-1. Before conducting the test, please ensure that the TDengine server is installed, `taosd` and `taosAdapter` are started, and the database is in a clean and data free state.
-2. Execute 'npm run test' in the 'nodejs' directory of the project to run the test. The test will connect to the local TDengine server and taosAdapter for testing.
-3. The output result PASS indicates that the test passed, FAIL indicates that the test failed, and coverage data will be output after the test is completed.
+### Test Execution
+
+Execute `npm run test` in the project directory to run the tests. The test cases will connect to the local TDengine server and taosAdapter for testing.
+After running the tests, the result similar to the following will be printed eventually. If all test cases pass, both Failures and Errors will be 0.
+
+```text
+[INFO] Results:
+[INFO] 
+[WARNING] Tests run: 2353, Failures: 0, Errors: 0, Skipped: 16
+```
+
+### Test Case Addition
+
+All tests are located in the `nodejs/test/bulkPulling` directory of the project. You can add new test files or add test cases in existing test files.
+The test cases use the jest framework. Generally, a connection is established and a database is created in the `beforeAll` method, and the database is droped and the connection is released in the `afterAll` method.
+
+### Performance Testing
+
+Performance testing is in progress.
 
 ## Submitting Issues
 

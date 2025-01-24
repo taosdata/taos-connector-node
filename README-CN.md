@@ -31,18 +31,18 @@ npm install @tdengine/websocket
 - 开发示例请见[开发指南](https://docs.taosdata.com/develop/)
 - 版本历史、TDengine 对应版本以及 API 说明请见[参考手册](https://docs.taosdata.com/reference/connector/node/)
 
-## 开发指南
-
-### 前置条件
+## 前置条件
 
 - 安装 Node.js 开发环境, 使用14以上版本。下载链接： https://nodejs.org/en/download/
 - 使用 npm 安装 Node.js 连接器
+- 使用 npm 安装 TypeScript 5.3.3 以上版本
+- 本地已经部署 TDengine，具体步骤请参考 部署服务端，且已经启动 `taosd` 与 `taosAdapter。`
 
-### 构建执行
+## 构建
 
-编写示例程序后使用 node xxx.js 即可运行。
+在项目 `nodejs` 目录下执行 `tsc` 构建项目。
 
-### 测试
+## 测试
 
 1. 执行测试前，请确保已安装 `TDengine` 服务端，并且已启动 `taosd` 和 `taosAdapter`，同时保证数据库处于干净无数据的状态。
 2. 在项目 `nodejs` 目录下执行 `npm run test` 运行测试，测试会连接到本地的 `TDengine` 服务器与 `taosAdapter` 进行测试。

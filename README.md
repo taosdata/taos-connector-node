@@ -36,10 +36,12 @@ npm install @tdengine/websocket
 
 - Install the Node.js development environment, using version 14 or above. Download link: [https://nodejs.org/en/download/](https://nodejs.org/en/download/)
 - Install the Node.js connector using npm
+- Install TypeScript 5.3.3 and above using npm
+- TDengine has been deployed locally. For specific steps, please refer to Deploy TDengine, and `taosd` and `taosAdapter` have been started.
 
-## Running
+## Build
 
-After writing the example program, use node xxx.js to run it.
+Execute `tsc` to build the project in the 'nodejs' directory.
 
 ## Testinh
 

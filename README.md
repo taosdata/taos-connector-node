@@ -1,4 +1,4 @@
-#  TDengine Node.js Connector
+# TDengine Node.js Connector
 
 | Github Action Tests                                                                  | CodeCov                                                                                                                           |
 |--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
@@ -10,35 +10,35 @@ English | [简体中文](README-CN.md)
 
 - [TDengine Node.js Connector](#tdengine-nodejs-connector)
   - [Table of Contents](#table-of-contents)
-  - [Introduction](#introduction)
-    - [Node.js Version Compatibility](#nodejs-version-compatibility)
-    - [Supported Platforms](#supported-platforms)
-  - [Get the Driver](#get-the-driver)
-  - [Documentation](#documentation)
-  - [Prerequisites](#prerequisites)
-  - [Build](#build)
-  - [Testing](#testing)
-    - [Test Execution](#test-execution)
-    - [Test Case Addition](#test-case-addition)
-    - [Performance Testing](#performance-testing)
-  - [Submitting Issues](#submitting-issues)
-  - [Submitting PRs](#submitting-prs)
-  - [References](#references)
-  - [License](#license)
+  - [1. Introduction](#1-introduction)
+    - [1.1 Node.js Version Compatibility](#11-nodejs-version-compatibility)
+    - [1.2 Supported Platforms](#12-supported-platforms)
+  - [2. Get the Driver](#2-get-the-driver)
+  - [3. Documentation](#3-documentation)
+  - [4. Prerequisites](#4-prerequisites)
+  - [5. Build](#5-build)
+  - [6. Testing](#6-testing)
+    - [6.1 Test Execution](#61-test-execution)
+    - [6.2 Test Case Addition](#62-test-case-addition)
+    - [6.3 Performance Testing](#63-performance-testing)
+  - [7. Submitting Issues](#7-submitting-issues)
+  - [8. Submitting PRs](#8-submitting-prs)
+  - [9. References](#9-references)
+  - [10. License](#10-license)
 
-## Introduction
+## 1. Introduction
 
 @tdengine/websocket is an efficient connector specially designed by TDengine for Node.js developers. It uses the WebSocket API provided by the taosAdapter component to establish a connection with TDengine, eliminating the dependence on TDengine client drivers and opening up a convenient development path for developers. With this powerful tool, developers can easily build applications for TDengine clusters. Whether it is performing complex SQL write and query tasks, implementing flexible schemaless write operations, or achieving highly real-time subscription functionality, this connector can easily and perfectly meet diverse data interaction needs in all aspects.
 
-### Node.js Version Compatibility
+### 1.1 Node.js Version Compatibility
 
 Supports Node.js 14 and above.
 
-### Supported Platforms
+### 1.2 Supported Platforms
 
 Support all platforms that can run Node.js.
 
-## Get the Driver
+## 2. Get the Driver
 
 Install the Node.js connector using npm
 
@@ -46,26 +46,26 @@ Install the Node.js connector using npm
 npm install @tdengine/websocket
 ```
 
-## Documentation
+## 3. Documentation
 
 - For development examples, see the [Developer Guide](https://docs.tdengine.com/developer-guide/).
 - For version history, TDengine version compatibility, and API documentation, see
   the [Reference Manual](https://docs.tdengine.com/tdengine-reference/client-libraries/node/).
 
-## Prerequisites
+## 4. Prerequisites
 
 - Install the Node.js development environment, using version 14 or above. Download link: [https://nodejs.org/en/download/](https://nodejs.org/en/download/)
 - Install the Node.js connector using npm.
 - Install TypeScript 5.3.3 and above using npm.
 - TDengine has been deployed locally. For specific steps, please refer to Deploy TDengine, and `taosd` and `taosAdapter` have been started.
 
-## Build
+## 5. Build
 
 Execute `tsc` to build the project in the 'nodejs' directory.
 
-## Testing
+## 6. Testing
 
-### Test Execution
+### 6.1 Test Execution
 
 Execute `npm run test` in the project directory to run the tests. The test cases will connect to the local TDengine server and taosAdapter for testing.
 After running the tests, the result similar to the following will be printed eventually. If all test cases pass, both Failures and Errors will be 0.
@@ -76,16 +76,16 @@ After running the tests, the result similar to the following will be printed eve
 [WARNING] Tests run: 2353, Failures: 0, Errors: 0, Skipped: 16
 ```
 
-### Test Case Addition
+### 6.2 Test Case Addition
 
 All tests are located in the `nodejs/test/bulkPulling` directory of the project. You can add new test files or add test cases in existing test files.
 The test cases use the jest framework. Generally, a connection is established and a database is created in the `beforeAll` method, and the database is droped and the connection is released in the `afterAll` method.
 
-### Performance Testing
+### 6.3 Performance Testing
 
 Performance testing is in progress.
 
-## Submitting Issues
+## 7. Submitting Issues
 
 We welcome submitting [Github Issue](https://github.com/taosdata/taos-connector-node/issues/new?template=Blank+issue). Please provide the following information when submitting:
 
@@ -95,7 +95,7 @@ We welcome submitting [Github Issue](https://github.com/taosdata/taos-connector-
 - Connection parameters (no username or password required)
 - TDengine Server Version
 
-## Submitting PRs
+## 8. Submitting PRs
 
 We welcome developers to develop this project together. When submitting a PR, please refer to the following steps:
 
@@ -106,12 +106,11 @@ We welcome developers to develop this project together. When submitting a PR, pl
 5. Create a Pull Request on Github ([how to create a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)).
 After submitting the PR, if the CI is approved, it can be done in [codecov](https://app.codecov.io/gh/taosdata/taos-connector-node/) Find your own branch on the page and check the coverage rate of individual tests.
 
-
-## References
+## 9. References
 
 - [TDengine Official Website](https://tdengine.com/)
 - [TDengine GitHub](https://github.com/taosdata/TDengine)
 
-## License
+## 10. License
 
 [MIT License](./LICENSE)

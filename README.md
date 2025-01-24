@@ -6,7 +6,7 @@
 
 English | [简体中文](README-CN.md)
 
-## 简介
+## Introduction
 
 @tdengine/websocket is an efficient connector specially designed by TDengine for Node.js developers. It uses the WebSocket API provided by the taosAdapter component to establish a connection with TDengine, eliminating the dependence on TDengine client drivers and opening up a convenient development path for developers. With this powerful tool, developers can easily build applications for TDengine clusters. Whether it is performing complex SQL write and query tasks, implementing flexible schemaless write operations, or achieving highly real-time subscription functionality, this connector can easily and perfectly meet diverse data interaction needs in all aspects.
 
@@ -43,7 +43,7 @@ npm install @tdengine/websocket
 
 Execute `tsc` to build the project in the 'nodejs' directory.
 
-## Testinh
+## Testing
 
 1. Before conducting the test, please ensure that the TDengine server is installed, `taosd` and `taosAdapter` are started, and the database is in a clean and data free state.
 2. Execute 'npm run test' in the 'nodejs' directory of the project to run the test. The test will connect to the local TDengine server and taosAdapter for testing.

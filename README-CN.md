@@ -51,15 +51,15 @@ npm install @tdengine/websocket
 
 ## 3. 文档
 
-- 开发示例请见[开发指南](https://docs.taosdata.com/develop/)
-- 版本历史、TDengine 对应版本以及 API 说明请见[参考手册](https://docs.taosdata.com/reference/connector/node/)
+- 开发示例请见 [开发指南](https://docs.taosdata.com/develop/)。
+- 版本历史、TDengine 对应版本以及 API 说明请见 [参考手册](https://docs.taosdata.com/reference/connector/node/)。
 
 ## 4. 前置条件
 
-- 安装 Node.js 开发环境, 使用14以上版本。下载链接： https://nodejs.org/en/download/
-- 使用 npm 安装 Node.js 连接器
-- 使用 npm 安装 TypeScript 5.3.3 以上版本
-- 本地已经部署 TDengine，具体步骤请参考 部署服务端，且已经启动 `taosd` 与 `taosAdapter。`
+- 安装 Node.js 开发环境, 使用14以上版本，[下载 Node.js](https://nodejs.org/en/download/)。
+- 使用 npm 安装 Node.js 连接器。
+- 使用 npm 安装 TypeScript 5.3.3 以上版本。
+- 本地已经部署 TDengine，具体步骤请参考 部署服务端，且已经启动 `taosd` 与 `taosAdapter`。
 
 ## 5. 构建
 
@@ -91,11 +91,11 @@ Ran all test suites.
 
 我们欢迎提交 [GitHub Issue](https://github.com/taosdata/taos-connector-node/issues/new?template=Blank+issue)。 提交时请说明下面信息：
 
-- 问题描述，是否必现
-- Nodejs 版本
-- @tdengine/websocket 版本
-- 连接参数（不需要用户名密码）
-- TDengine 服务端版本
+- 问题描述，是否必现。
+- Nodejs 版本。
+- @tdengine/websocket 版本。
+- 连接参数（不需要用户名密码）。
+- TDengine 服务端版本。
 
 ## 8. 提交 PR
 

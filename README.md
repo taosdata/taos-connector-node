@@ -42,7 +42,7 @@ Support all platforms that can run Node.js.
 
 ## 2. Get the Driver
 
-Install the Node.js connector using npm
+Install the Node.js connector using npm.
 
 ```shell
 npm install @tdengine/websocket
@@ -93,11 +93,11 @@ Performance testing is in progress.
 
 We welcome the submission of [GitHub Issue](https://github.com/taosdata/taos-connector-node/issues/new?template=Blank+issue). When submitting, please provide the following information:
 
-- Problem description, is it necessary to present it
-- Nodejs version
-- @tdengine/websocket version
-- Connection parameters (no username or password required)
-- TDengine Server Version
+- Problem description, is it necessary to present it.
+- Nodejs version.
+- @tdengine/websocket version.
+- Connection parameters (no username or password required).
+- TDengine Server Version.
 
 ## 8. Submitting PRs
 
@@ -112,8 +112,8 @@ We welcome developers to contribute to this project. When submitting PRs, please
 
 ## 9. References
 
-[TDengine Official Website](https://www.tdengine.com/)
-[TDengine GitHub](https://github.com/taosdata/TDengine)
+- [TDengine Official Website](https://www.tdengine.com/)
+- [TDengine GitHub](https://github.com/taosdata/TDengine)
 
 ## 10. License
 

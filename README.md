@@ -6,6 +6,19 @@
 
 English | [简体中文](README-CN.md)
 
+1. [Introduction](#introduction)
+    - [Node.js Version Compatibility](#nodejs-version-compatibility)
+    - [Supported Platforms](#supported-platforms)
+1. [Get the Driver](#get-the-driver)
+1. [Documentation](#documentation)
+1. [Prerequisites](#prerequisites)
+1. [Build](#build)
+1. [Testing](#testing)
+1. [Submitting Issues](#submitting-prs)
+1. [Submitting PRs](#submitting-prs)
+1. [References](#references)
+1. [License](#license)
+
 ## Introduction
 
 @tdengine/websocket is an efficient connector specially designed by TDengine for Node.js developers. It uses the WebSocket API provided by the taosAdapter component to establish a connection with TDengine, eliminating the dependence on TDengine client drivers and opening up a convenient development path for developers. With this powerful tool, developers can easily build applications for TDengine clusters. Whether it is performing complex SQL write and query tasks, implementing flexible schemaless write operations, or achieving highly real-time subscription functionality, this connector can easily and perfectly meet diverse data interaction needs in all aspects.
@@ -49,7 +62,7 @@ Execute `tsc` to build the project in the 'nodejs' directory.
 2. Execute 'npm run test' in the 'nodejs' directory of the project to run the test. The test will connect to the local TDengine server and taosAdapter for testing.
 3. The output result PASS indicates that the test passed, FAIL indicates that the test failed, and coverage data will be output after the test is completed.
 
-## Open Github Issue
+## Submitting Issues
 
 We welcome submitting [Github Issue](https://github.com/taosdata/taos-connector-node/issues/new?template=Blank+issue). Please provide the following information when submitting:
 
@@ -59,7 +72,7 @@ We welcome submitting [Github Issue](https://github.com/taosdata/taos-connector-
 - Connection parameters (no username or password required)
 - TDengine Server Version
 
-## Contributed by Pull Request
+## Submitting PRs
 
 We welcome developers to develop this project together. When submitting a PR, please refer to the following steps:
 
@@ -79,7 +92,3 @@ After submitting the PR, if the CI is approved, it can be done in [codecov](http
 ## License
 
 [MIT License](./LICENSE)
-
-
-
-

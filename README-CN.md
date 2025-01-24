@@ -6,6 +6,19 @@
 
 [English](README.md) | 简体中文
 
+1. [简介](#简介)
+    - [Node.js 版本兼容性](#nodejs-版本兼容性)
+    - [支持的平台](#支持的平台)
+1. [获取驱动](#获取驱动)
+1. [文档](#文档)
+1. [前置条件](#前置条件)
+1. [构建](#构建)
+1. [测试](#测试)
+1. [提交 Issue](#提交-issue)
+1. [提交 PR](#提交-pr)
+1. [引用](#引用)
+1. [许可证](#许可证)
+
 ## 简介
 
 @tdengine/websocket 是 TDengine 官方专为 Node.js 开发人员精心设计的一款高效连接器，它借助 taosAdapter 组件提供的 WebSocket API 与 TDengine 建立连接，摆脱了对 TDengine 客户端驱动的依赖 ，为开发者开辟了一条便捷的开发路径。凭借这一强大工具，开发人员能够轻松构建面向 TDengine 集群的应用程序。不管是执行复杂的 SQL 写入与查询任务，还是实现灵活的无模式写入操作，亦或是达成对实时性要求极高的订阅功能，这款连接器都能轻松胜任、完美实现，全方位满足多样化的数据交互需求。
@@ -45,8 +58,9 @@ npm install @tdengine/websocket
 ## 测试
 
 1. 执行测试前，请确保已安装 `TDengine` 服务端，并且已启动 `taosd` 和 `taosAdapter`，同时保证数据库处于干净无数据的状态。
-2. 在项目 `nodejs` 目录下执行 `npm run test` 运行测试，测试会连接到本地的 `TDengine` 服务器与 `taosAdapter` 进行测试。
-3. 输出结果 PASS 为测试通过，FAIL 为测试失败，测试结束后会输出覆盖率数据。
+2. 在项目的 `nodejs` 目录下，执行 `npm run test` 命令，即可运行 `test/bulkPulling` 目录中的所有测试用例。这些测试用例将连接本地的 `TDengine` 服务器与 `taosAdapter` 进行相关测试。
+3. 在终端内将实时输出各测试用例的执行结果。待整个测试流程结束，还会给出相应的覆盖率数据。
+4. 如需增加新的测试例，只需要在 `nodejs/test/bulkPulling` 目录下创建后缀为 ts 的测试例文件并进行测试例的编写，待编写完成后执行 `npm run test -- test/bulkPulling/xxx.ts` 命令进行测试即可。
 
 ## 提交 Issue
 
@@ -75,7 +89,3 @@ npm install @tdengine/websocket
 ## 许可证
 
 [MIT License](./LICENSE)
-
-
-
-

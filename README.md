@@ -1,22 +1,26 @@
 <!-- omit in toc -->
 # TDengine Node.js Connector
-<!-- omit in toc -->
 
-| Github Action Tests                                                                  | CodeCov                                                                                                                           |
-|--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| ![actions](https://github.com/taosdata/taos-connector-node/actions/workflows/push.yaml/badge.svg) | [![codecov](https://codecov.io/gh/taosdata/taos-connector-node/graph/badge.svg?token=5379a80b-063f-48c2-ab56-09564e7ca777)](https://codecov.io/gh/taosdata/taos-connector-node) |
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-node/push.yaml)](https://github.com/taosdata/taos-connector-node/actions/workflows/push.yaml)
+[![codecov](https://codecov.io/gh/taosdata/taos-connector-node/graph/badge.svg?token=5379a80b-063f-48c2-ab56-09564e7ca777)](https://codecov.io/gh/taosdata/taos-connector-node)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/taosdata/taos-connector-node)
+![GitHub License](https://img.shields.io/github/license/taosdata/taos-connector-node)
+[![NPM Version](https://shields.io/npm/v/@tdengine/websocket)](https://www.npmjs.com/package/@tdengine/websocket)
+<br />
+[![Twitter Follow](https://img.shields.io/twitter/follow/tdenginedb?label=TDengine&style=social)](https://twitter.com/tdenginedb)
+[![YouTube Channel](https://img.shields.io/badge/Subscribe_@tdengine--white?logo=youtube&style=social)](https://www.youtube.com/@tdengine)
+[![Discord Community](https://img.shields.io/badge/Join_Discord--white?logo=discord&style=social)](https://discord.com/invite/VZdSuUg4pS)
+[![LinkedIn](https://img.shields.io/badge/Follow_LinkedIn--white?logo=linkedin&style=social)](https://www.linkedin.com/company/tdengine)
+[![StackOverflow](https://img.shields.io/badge/Ask_StackOverflow--white?logo=stackoverflow&style=social&logoColor=orange)](https://stackoverflow.com/questions/tagged/tdengine)
 
 English | [简体中文](README-CN.md)
 
-<!-- omit in toc -->
 ## Table of Contents
 <!-- omit in toc -->
 
+- [Table of Contents](#table-of-contents)
 - [1. Introduction](#1-introduction)
-  - [1.1 Node.js Version Compatibility](#11-nodejs-version-compatibility)
-  - [1.2 Supported Platforms](#12-supported-platforms)
-- [2. Get the Driver](#2-get-the-driver)
-- [3. Documentation](#3-documentation)
+- [2. Documentation](#2-documentation)
 - [4. Prerequisites](#4-prerequisites)
 - [5. Build](#5-build)
 - [6. Testing](#6-testing)
@@ -32,27 +36,10 @@ English | [简体中文](README-CN.md)
 
 @tdengine/websocket is an efficient connector specially designed by TDengine for Node.js developers. It uses the WebSocket API provided by the taosAdapter component to establish a connection with TDengine, eliminating the dependence on TDengine client drivers and opening up a convenient development path for developers. With this powerful tool, developers can easily build applications for TDengine clusters. Whether it is performing complex SQL write and query tasks, implementing flexible schemaless write operations, or achieving highly real-time subscription functionality, this connector can easily and perfectly meet diverse data interaction needs in all aspects.
 
-### 1.1 Node.js Version Compatibility
-
-Supports Node.js 14 and above.
-
-### 1.2 Supported Platforms
-
-Support all platforms that can run Node.js.
-
-## 2. Get the Driver
-
-Install the Node.js connector using npm.
-
-```shell
-npm install @tdengine/websocket
-```
-
-## 3. Documentation
+## 2. Documentation
 
 - For development examples, see [Developer Guide](https://docs.tdengine.com/developer-guide/), which includes examples of data writing, querying, schemaless writing, parameter binding, and data subscription.
 - For other reference information, see [Reference Manual](https://docs.tdengine.com/tdengine-reference/client-libraries/node/), which includes version history, data types, example programs, API descriptions, and FAQs.
-
 
 ## 4. Prerequisites
 

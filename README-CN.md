@@ -1,7 +1,7 @@
 <!-- omit in toc -->
 # TDengine Node.js Connector
 
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-node/build.yml)](https://github.com/taosdata/taos-connector-node/actions/workflows/push.yaml)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-node/push.yaml)](https://github.com/taosdata/taos-connector-node/actions/workflows/push.yaml)
 [![codecov](https://codecov.io/gh/taosdata/taos-connector-node/graph/badge.svg?token=5379a80b-063f-48c2-ab56-09564e7ca777)](https://codecov.io/gh/taosdata/taos-connector-node)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/taosdata/taos-connector-node)
 ![GitHub License](https://img.shields.io/github/license/taosdata/taos-connector-node)
@@ -51,7 +51,7 @@
 - 安装 Node.js 开发环境, 使用14以上版本，[下载 Node.js](https://nodejs.org/en/download/)。
 - 使用 npm 安装 Node.js 连接器。
 - 使用 npm 安装 TypeScript 5.3.3 以上版本。
-- 本地已经部署 TDengine，具体步骤请参考 部署服务端，且已经启动 `taosd` 与 `taosAdapter`。
+- 本地已经部署 TDengine，具体步骤请参考 [部署服务端](https://docs.taosdata.com/get-started/package/)，且已经启动 `taosd` 与 `taosAdapter`。
 
 ## 4. 构建
 

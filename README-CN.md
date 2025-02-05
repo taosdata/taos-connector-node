@@ -1,17 +1,26 @@
 <!-- omit in toc -->
 # TDengine Node.js Connector
-<!-- omit in toc -->
 
-| Github Action Tests                                                                  | CodeCov                                                                                                                           |
-|--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| ![actions](https://github.com/taosdata/taos-connector-node/actions/workflows/push.yaml/badge.svg) | [![codecov](https://codecov.io/gh/taosdata/taos-connector-node/graph/badge.svg?token=5379a80b-063f-48c2-ab56-09564e7ca777)](https://codecov.io/gh/taosdata/taos-connector-node) |
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-node/build.yml)](https://github.com/taosdata/taos-connector-node/actions/workflows/push.yaml)
+[![codecov](https://codecov.io/gh/taosdata/taos-connector-node/graph/badge.svg?token=5379a80b-063f-48c2-ab56-09564e7ca777)](https://codecov.io/gh/taosdata/taos-connector-node)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/taosdata/taos-connector-node)
+![GitHub License](https://img.shields.io/github/license/taosdata/taos-connector-node)
+[![NPM Version](https://shields.io/npm/v/@tdengine/websocket)](https://www.npmjs.com/package/@tdengine/websocket)
+<br />
+[![Twitter Follow](https://img.shields.io/twitter/follow/tdenginedb?label=TDengine&style=social)](https://twitter.com/tdenginedb)
+[![YouTube Channel](https://img.shields.io/badge/Subscribe_@tdengine--white?logo=youtube&style=social)](https://www.youtube.com/@tdengine)
+[![Discord Community](https://img.shields.io/badge/Join_Discord--white?logo=discord&style=social)](https://discord.com/invite/VZdSuUg4pS)
+[![LinkedIn](https://img.shields.io/badge/Follow_LinkedIn--white?logo=linkedin&style=social)](https://www.linkedin.com/company/tdengine)
+[![StackOverflow](https://img.shields.io/badge/Ask_StackOverflow--white?logo=stackoverflow&style=social&logoColor=orange)](https://stackoverflow.com/questions/tagged/tdengine)
+
 
 [English](README.md) | 简体中文
 
-<!-- omit in toc -->
+
 ## 目录
 <!-- omit in toc -->
 
+- [目录](#目录)
 - [1. 简介](#1-简介)
   - [1.1 Node.js 版本兼容性](#11-nodejs-版本兼容性)
   - [1.2 支持的平台](#12-支持的平台)

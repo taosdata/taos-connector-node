@@ -152,5 +152,14 @@ describe('TDWebSocket.WsSql()', () => {
 })
 
 afterAll(async () => {
+    let conf :WSConfig = new WSConfig(dsn)
+    conf.setUser('root')
+    conf.setPwd('taosdata')
+
+    let wsSql = await WsSql.open(conf)
+    await wsSql.exec(`drop topic if exists ${topics[0]};`)
+    await wsSql.exec(`drop database if exists ${db};`)
+    await wsSql.close()
+
     WebSocketConnectionPool.instance().destroyed()
 })

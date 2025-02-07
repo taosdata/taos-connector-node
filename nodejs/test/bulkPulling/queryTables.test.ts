@@ -70,7 +70,7 @@ beforeAll(async () => {
     await ws.exec(createTable(tableCN));
     await ws.exec(createSTableJSON(jsonTable));
     await ws.exec(createSTableJSON(jsonTableCN));
-    await ws.close()
+    await ws.close();
 })
 
 describe('ws.query(stable)', () => {
@@ -321,6 +321,9 @@ describe('ws.query(jsonTable)', () => {
 })
 
 afterAll(async () => {
+    let ws = await WsSql.open(conf);
+    await ws.exec(dropDB);
+    await ws.close();
     WebSocketConnectionPool.instance().destroyed()
 })
 

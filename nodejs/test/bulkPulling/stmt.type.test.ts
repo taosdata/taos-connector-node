@@ -91,7 +91,7 @@ beforeAll(async () => {
     await ws.exec(useDB);
     await ws.exec(createBaseSTable(stable));
     await ws.exec(createSTableJSON(jsonTable));
-    await ws.close()
+    await ws.close();
 })
 
 describe('TDWebSocket.Stmt()', () => {
@@ -297,5 +297,9 @@ describe('TDWebSocket.Stmt()', () => {
 })
 
 afterAll(async () => {
+    let conf :WSConfig = new WSConfig(dsn)
+    let ws = await WsSql.open(conf);
+    await ws.exec(dropDB);
+    await ws.close();
     WebSocketConnectionPool.instance().destroyed()
 })

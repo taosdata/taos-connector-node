@@ -100,5 +100,12 @@ describe('TDWebSocket.WsSchemaless()', () => {
 })
 
 afterAll(async () => {
+    let conf :WSConfig = new WSConfig(dns)
+    conf.setUser('root')
+    conf.setPwd('taosdata')
+
+    let wsSql = await WsSql.open(conf)
+    await wsSql.exec('drop database if exists power_schemaless;')
+    await wsSql.close()
     WebSocketConnectionPool.instance().destroyed()
 })

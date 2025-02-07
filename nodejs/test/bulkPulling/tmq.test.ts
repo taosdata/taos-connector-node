@@ -203,5 +203,11 @@ describe('TDWebSocket.Tmq()', () => {
 })
 
 afterAll(async () => {
+    const dropDB = `drop database if exists ${db}`
+    let conf :WSConfig = new WSConfig(dsn)
+    let ws = await WsSql.open(conf);
+    await ws.exec(dropTopic);
+    await ws.exec(dropDB);
+    await ws.close()
     WebSocketConnectionPool.instance().destroyed()
 })

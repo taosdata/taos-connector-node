@@ -48,7 +48,7 @@ English | [简体中文](README-CN.md)
 - Install the Node.js development environment, using version 14 or above. Download link: [https://nodejs.org/en/download/](https://nodejs.org/en/download/)
 - Install the Node.js connector dependencies using npm, execute the 'npm install' command in the `nodejs` directory of the project for installation.
 - Install TypeScript 5.3.3 and above using npm.
-- TDengine has been deployed locally. For specific steps, please refer to [Deploy TDengine](https://docs.tdengine.com/get-started/deploy-from-package/), and `taosd` and `taosAdapter` have been started.
+- TDengine has been deployed locally. For specific steps, please refer to [Deploy TDengine](https://docs.tdengine.com/get-started/deploy-from-package/). Please make sure `taosd` and `taosAdapter` have been started.
 
 ## 4. Build
 

@@ -56,7 +56,7 @@ async function stmtConnect() {
         stmtIds.push(id)
     }
     expect(stmt).toBeTruthy()      
-    await stmt.prepare(`INSERT INTO ? USING ${db}.${stable} (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)`);
+    await stmt.prepare(`INSERT INTO ? USING ${stable} (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)`);
     await stmt.setTableName('d1001');
     await stmt.setJsonTags(tags)
     let lastTs = 0

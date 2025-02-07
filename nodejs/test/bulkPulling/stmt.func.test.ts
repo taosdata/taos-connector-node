@@ -70,7 +70,7 @@ describe('TDWebSocket.Stmt()', () => {
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
-        await stmt.prepare('INSERT INTO ? USING power_stmt.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
         let params = stmt.newStmtParam()
         params.setVarchar([tags[0]]);
@@ -89,7 +89,7 @@ describe('TDWebSocket.Stmt()', () => {
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
-        await stmt.prepare('INSERT INTO ? USING power_stmt.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
         let params = stmt.newStmtParam()
         params.setVarchar([tags[0]]);
@@ -112,11 +112,11 @@ describe('TDWebSocket.Stmt()', () => {
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
         try{
-            await stmt.prepare('INSERT ? INTO ? USING powr.meters TAGS (?, ?) VALUES (?, ?, ?, ?)');
+            await stmt.prepare('INSERT ? INTO ? USING meters TAGS (?, ?) VALUES (?, ?, ?, ?)');
             await stmt.setTableName('d1001');
         }catch(e) {
             let err:any = e
-            expect(err.message).toMatch("syntax error near '? into ? using powr.meters tags (?, ?) values (?, ?, ?, ?)' (keyword INTO is expected)")
+            expect(err.message).toMatch("syntax error near '? into ? using meters tags (?, ?) values (?, ?, ?, ?)' (keyword INTO is expected)")
         }
         await stmt.close()
         await connector.close();
@@ -132,11 +132,11 @@ describe('TDWebSocket.Stmt()', () => {
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
         try{
-            await stmt.prepare('INSERT INTO ? USING powr.meters TAGS (?, ?, ?) VALUES (?, ?, ?, ?)');
+            await stmt.prepare('INSERT INTO ? USING meters TAGS (?, ?, ?) VALUES (?, ?, ?, ?)');
             await stmt.setTableName('d1001');
         }catch(e) {
             let err:any = e
-            expect(err.message).toMatch("Database not exist")
+            expect(err.message).toMatch("Tags number not matched")
         }
         await stmt.close()
         await connector.close();
@@ -150,7 +150,7 @@ describe('TDWebSocket.Stmt()', () => {
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
-        await stmt.prepare('INSERT INTO ? USING power_stmt.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
 
         let params = stmt.newStmtParam()
@@ -193,7 +193,7 @@ describe('TDWebSocket.Stmt()', () => {
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
-        await stmt.prepare('INSERT INTO ? USING power_stmt.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
@@ -231,7 +231,7 @@ describe('TDWebSocket.Stmt()', () => {
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
-        await stmt.prepare('INSERT INTO ? USING power_stmt.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
@@ -268,7 +268,7 @@ describe('TDWebSocket.Stmt()', () => {
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
-        await stmt.prepare('INSERT INTO ? USING power_stmt.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
@@ -323,7 +323,7 @@ describe('TDWebSocket.Stmt()', () => {
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
-        await stmt.prepare('INSERT INTO ? USING power_stmt.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
         // await stmt.SetTags(tags)
         try{
@@ -352,7 +352,7 @@ describe('TDWebSocket.Stmt()', () => {
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
-        await stmt.prepare('INSERT INTO ? USING power_stmt.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1002');
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
@@ -384,7 +384,7 @@ describe('TDWebSocket.Stmt()', () => {
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
-        await stmt.prepare('INSERT INTO ? USING power_stmt.meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);

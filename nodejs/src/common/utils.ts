@@ -17,10 +17,6 @@ export function getUrl(wsConfig:WSConfig):URL {
     return url
 }
 
-export function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-  
 
 export function isEmpty(value: any): boolean {  
     if (value === null || value === undefined) return true;  

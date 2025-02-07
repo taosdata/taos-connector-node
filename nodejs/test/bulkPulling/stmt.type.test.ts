@@ -82,7 +82,7 @@ const selectTableCN = `select * from ${tableCN}`
 const selectJsonTable = `select * from ${jsonTable}`
 const selectJsonTableCN = `select * from ${jsonTableCN}`
 
-let dsn = 'ws://root:taosdata@localhost:6041';
+let dsn = 'ws://root:taosdata@192.168.1.98:6041';
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.open(conf);

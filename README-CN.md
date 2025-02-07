@@ -49,8 +49,8 @@
 ## 3. 前置条件
 
 - 安装 Node.js 开发环境, 使用14以上版本，[下载 Node.js](https://nodejs.org/en/download/)。
-- 使用 npm 安装 Node.js 连接器。
 - 使用 npm 安装 TypeScript 5.3.3 以上版本。
+- 使用 npm 安装 Node.js 连接器依赖, 在项目的nodejs目录下执行 `npm install` 命令进行安装。
 - 本地已经部署 TDengine，具体步骤请参考 [部署服务端](https://docs.taosdata.com/get-started/package/)，且已经启动 `taosd` 与 `taosAdapter`。
 
 ## 4. 构建

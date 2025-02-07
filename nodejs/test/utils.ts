@@ -317,3 +317,7 @@ export function compareUint8Arrays(arr1: Uint8Array, arr2: Uint8Array): boolean 
     }  
     return true; 
 } 
+
+export function Sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}

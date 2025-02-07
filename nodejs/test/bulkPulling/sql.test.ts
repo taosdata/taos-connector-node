@@ -1,6 +1,7 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
+import { Sleep } from "../utils";
 
 let dns = 'ws://localhost:6041'
 beforeAll(async () => {
@@ -9,8 +10,9 @@ beforeAll(async () => {
     conf.setPwd('taosdata')
     let wsSql = await WsSql.open(conf)
     await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
+    await Sleep(100)
     await wsSql.exec('use power')
-    await wsSql.exec('CREATE STABLE if not exists power.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
+    await wsSql.exec('CREATE STABLE if not exists meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
     await wsSql.close()
 })
 
@@ -151,5 +153,11 @@ describe('TDWebSocket.WsSql()', () => {
 })
 
 afterAll(async () => {
+    let conf :WSConfig = new WSConfig(dns);
+    conf.setUser('root');
+    conf.setPwd('taosdata');
+    let wsSql = await WsSql.open(conf);
+    await wsSql.exec('drop database power');
+    await wsSql.close();
     WebSocketConnectionPool.instance().destroyed()
 })

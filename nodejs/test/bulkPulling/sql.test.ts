@@ -3,7 +3,7 @@ import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { Sleep } from "../utils";
 
-let dns = 'ws://192.168.1.98:6041'
+let dns = 'ws://localhost:6041'
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns)
     conf.setUser('root')

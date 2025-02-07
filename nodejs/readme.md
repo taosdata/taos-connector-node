@@ -12,16 +12,16 @@ User can connect to the TDengine by passing DSN to WebSocket client. The descrip
 |   protocol |   | username  | password  | host | port |  database  |  params               |
 ```
 
-- **protocol**: Display using websocket protocol to establish connection. eg. `ws://192.168.1.98:6041`
+- **protocol**: Display using websocket protocol to establish connection. eg. `ws://localhost:6041`
 - **username/password**: Database's username and password.
-- **host/port**: Declare host and port. eg. `192.168.1.98:6041`
+- **host/port**: Declare host and port. eg. `localhost:6041`
 - **database**: Optional, use to specify database name.
 - **params**: Other parameters. Like cloud Token.
 
 A complete DSN string example：
 
 ```text
-ws://192.168.1.98:6041/test
+ws://localhost:6041/test
 ```
 
 ## Connection types
@@ -47,7 +47,7 @@ Node.js client library supports Node.js 14 or higher.
 import { WSConfig } from '../src/common/config';
 import { sqlConnect, destroy, setLogLevel } from '../src'
 
-let dsn = 'ws://root:taosdata@192.168.1.98:6041';
+let dsn = 'ws://root:taosdata@localhost:6041';
 (async () => {
     let wsSql = null;
     let wsRows = null;
@@ -113,7 +113,7 @@ let dsn = 'ws://root:taosdata@192.168.1.98:6041';
 import { WSConfig } from '../src/common/config';
 import { Precision, SchemalessProto } from '../src/sql/wsProto';
 import { sqlConnect, destroy, setLogLevel } from '../src';
-let dsn = 'ws://root:taosdata@192.168.1.98:6041';
+let dsn = 'ws://root:taosdata@localhost:6041';
 let db = 'power'
 let influxdbData = "st,t1=3i64,t2=4f64,t3=\"t3\" c1=3i64,c3=L\"passit\",c2=false,c4=4f64 1626006833639000000"
 let telnetData = "stb0_0 1626006833 4 host=host0 interface=eth0"
@@ -174,7 +174,7 @@ let multi = [
     [292, 293, 294],
     [0.32, 0.33, 0.34],
 ];
-let dsn = 'ws://root:taosdata@192.168.1.98:6041';
+let dsn = 'ws://root:taosdata@localhost:6041';
 async function Prepare() {
 
     let conf :WSConfig = new WSConfig(dsn)
@@ -241,11 +241,11 @@ let configMap = new Map([
     [TMQConstants.CONNECT_PASS, "taosdata"],
     [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
     [TMQConstants.CLIENT_ID, 'test_tmq_client'],
-    [TMQConstants.WS_URL, 'ws://192.168.1.98:6041'],
+    [TMQConstants.WS_URL, 'ws://localhost:6041'],
     [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
     [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
 ]);
-let dsn = 'ws://root:taosdata@192.168.1.98:6041';
+let dsn = 'ws://root:taosdata@localhost:6041';
 async function Prepare() {
     let conf :WSConfig = new WSConfig(dsn)
     const createDB = `create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`

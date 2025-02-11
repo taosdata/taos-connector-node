@@ -14,9 +14,9 @@
 [![StackOverflow](https://img.shields.io/badge/Ask_StackOverflow--white?logo=stackoverflow&style=social&logoColor=orange)](https://stackoverflow.com/questions/tagged/tdengine)
 
 English | [简体中文](README-CN.md)
+<!-- omit in toc -->
 
 ## Table of Contents
-<!-- omit in toc -->
 
 - [Table of Contents](#table-of-contents)
 - [1. Introduction](#1-introduction)
@@ -39,9 +39,9 @@ English | [简体中文](README-CN.md)
 
 ## 2. Documentation
 
-- To use Node.js connector, please check [Developer Guide](https://docs.tdengine.com/developer-guide/), which includes how an application can introduce the `@tdengine/websocket`, as well as examples of data writing, querying, schemaless writing, parameter binding, and data subscription.
+- To use Node.js connector, please refer to the [Developer Guide](https://docs.tdengine.com/developer-guide/), which includes instructions on how to integrate `@tdengine/websocket` into an application, along with examples of data writing, querying, schemaless writing, parameter binding, and data subscription.
 - For other reference information, please check [Reference Manual](https://docs.tdengine.com/tdengine-reference/client-libraries/node/), which includes version history, data types, example programs, API descriptions, and FAQs.
-- This quick guide is mainly for developers who like to contribute/build/test the Node.js connector by themselves. To learn about TDengine, you can visit the [official documentation](https://docs.tdengine.com).
+- This quick guide is primarily for developers who wish to contribute, build, and test the Node.js connector on their own. To learn about TDengine, you can visit the [official documentation](https://docs.tdengine.com).
 
 ## 3. Prerequisites
 

@@ -1,302 +1,115 @@
-# WebSocket APIs
+<!-- omit in toc -->
+# TDengine Node.js Connector
 
-## Bulk Pulling
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-node/build.yaml)](https://github.com/taosdata/taos-connector-node/actions/workflows/build.yaml)
+[![codecov](https://codecov.io/gh/taosdata/taos-connector-node/graph/badge.svg?token=5379a80b-063f-48c2-ab56-09564e7ca777)](https://codecov.io/gh/taosdata/taos-connector-node)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/taosdata/taos-connector-node)
+![GitHub License](https://img.shields.io/github/license/taosdata/taos-connector-node)
+[![NPM Version](https://shields.io/npm/v/@tdengine/websocket)](https://www.npmjs.com/package/@tdengine/websocket)
+<br />
+[![Twitter Follow](https://img.shields.io/twitter/follow/tdenginedb?label=TDengine&style=social)](https://twitter.com/tdenginedb)
+[![YouTube Channel](https://img.shields.io/badge/Subscribe_@tdengine--white?logo=youtube&style=social)](https://www.youtube.com/@tdengine)
+[![Discord Community](https://img.shields.io/badge/Join_Discord--white?logo=discord&style=social)](https://discord.com/invite/VZdSuUg4pS)
+[![LinkedIn](https://img.shields.io/badge/Follow_LinkedIn--white?logo=linkedin&style=social)](https://www.linkedin.com/company/tdengine)
+[![StackOverflow](https://img.shields.io/badge/Ask_StackOverflow--white?logo=stackoverflow&style=social&logoColor=orange)](https://stackoverflow.com/questions/tagged/tdengine)
 
-### DSN
+English | [简体中文](README-CN.md)
 
-User can connect to the TDengine by passing DSN to WebSocket client. The description about the DSN like before.
+## Table of Contents
+<!-- omit in toc -->
+
+- [Table of Contents](#table-of-contents)
+- [1. Introduction](#1-introduction)
+- [2. Documentation](#2-documentation)
+- [3. Prerequisites](#3-prerequisites)
+- [4. Build](#4-build)
+- [5. Testing](#5-testing)
+  - [5.1 Test Execution](#51-test-execution)
+  - [5.2 Test Case Addition](#52-test-case-addition)
+  - [5.3 Performance Testing](#53-performance-testing)
+- [6. CI/CD](#6-cicd)
+- [7. Submitting Issues](#7-submitting-issues)
+- [8. Submitting PRs](#8-submitting-prs)
+- [9. References](#9-references)
+- [10. License](#10-license)
+
+## 1. Introduction
+
+@tdengine/websocket is an efficient connector specially designed by TDengine for Node.js developers. It uses the WebSocket API provided by the taosAdapter component to establish a connection with TDengine, eliminating the dependence on TDengine client drivers and opening up a convenient development path for developers. With this powerful tool, developers can easily build applications for TDengine clusters. Whether it is performing complex SQL write and query tasks, implementing flexible schemaless write operations, or achieving highly real-time subscription functionality, this connector can easily and perfectly meet diverse data interaction needs in all aspects.
+
+## 2. Documentation
+
+- To use Node.js connector, please check [Developer Guide](https://docs.tdengine.com/developer-guide/), which includes how an application can introduce the `@tdengine/websocket`, as well as examples of data writing, querying, schemaless writing, parameter binding, and data subscription.
+- For other reference information, please check [Reference Manual](https://docs.tdengine.com/tdengine-reference/client-libraries/node/), which includes version history, data types, example programs, API descriptions, and FAQs.
+- This quick guide is mainly for developers who like to contribute/build/test the Node.js connector by themselves. To learn about TDengine, you can visit the [official documentation](https://docs.tdengine.com).
+
+## 3. Prerequisites
+
+- Install the Node.js development environment, using version 14 or above. Download link: [https://nodejs.org/en/download/](https://nodejs.org/en/download/)
+- Install the Node.js connector dependencies using npm, execute the 'npm install' command in the `nodejs` directory of the project for installation.
+- Install TypeScript 5.3.3 and above using npm.
+- TDengine has been deployed locally. For specific steps, please refer to [Deploy TDengine](https://docs.tdengine.com/get-started/deploy-from-package/). Please make sure `taosd` and `taosAdapter` have been started.
+
+## 4. Build
+
+Execute `tsc` to build the project in the 'nodejs' directory.
+
+## 5. Testing
+
+### 5.1 Test Execution
+
+Execute `npm run test` in the project directory to run the tests. The test cases will connect to the local TDengine server and taosAdapter for testing.
+After running the tests, the result similar to the following will be printed eventually. If all test cases pass, without any failures or errors.
 
 ```text
-[+<protocol>]://[[<username>:<password>@]<host>:<port>][/<database>][?<p1>=<v1>[&<p2>=<v2>]]
-|------------|---|-----------|-----------|------|------|------------|-----------------------|
-|   protocol |   | username  | password  | host | port |  database  |  params               |
+Test Suites: 8 passed, 8 total
+Tests:       1 skipped, 44 passed, 45 total
+Snapshots:   0 total
+Time:        20.373 s
+Ran all test suites.
 ```
 
-- **protocol**: Display using websocket protocol to establish connection. eg. `ws://localhost:6041`
-- **username/password**: Database's username and password.
-- **host/port**: Declare host and port. eg. `localhost:6041`
-- **database**: Optional, use to specify database name.
-- **params**: Other parameters. Like cloud Token.
+### 5.2 Test Case Addition
 
-A complete DSN string example：
+All tests are located in the `nodejs/test/bulkPulling` directory of the project. You can add new test files or add test cases in existing test files.
+The test cases use the jest framework. Generally, a connection is established and a database is created in the `beforeAll` method, and the database is droped and the connection is released in the `afterAll` method.
 
-```text
-ws://localhost:6041/test
-```
+### 5.3 Performance Testing
 
-## Connection types
+Performance testing is in progress.
 
-**Node.js websocket connector** which is implemented through taosAdapter.
+## 6. CI/CD
 
-## Supported platforms
+- [Build Workflow](https://github.com/taosdata/taos-connector-node/actions/workflows/build.yaml)
+- [Code Coverage](https://app.codecov.io/gh/taosdata/taos-connector-node)
 
-Node.js client library supports Node.js 14 or higher.
+## 7. Submitting Issues
 
-## Supported features
+We welcome the submission of [GitHub Issue](https://github.com/taosdata/taos-connector-node/issues/new?template=Blank+issue). When submitting, please provide the following information:
 
-1. Connection Management
-2. General Query
-3. Continuous Query
-4. Parameter Binding
-5. Subscription
-6. Schemaless
+- Problem description, is it necessary to present it.
+- Nodejs version.
+- @tdengine/websocket version.
+- Connection parameters (no username or password required).
+- TDengine Server Version.
 
-### Sql Usage
+## 8. Submitting PRs
 
-``` typescript
-import { WSConfig } from '../src/common/config';
-import { sqlConnect, destroy, setLogLevel } from '../src'
+We welcome developers to contribute to this project. When submitting PRs, please follow these steps:
 
-let dsn = 'ws://root:taosdata@localhost:6041';
-(async () => {
-    let wsSql = null;
-    let wsRows = null;
-    let reqId = 0;
-    try {
-        setLogLevel("debug")
-        let conf :WSConfig = new WSConfig(dsn)
-        conf.setUser('root')
-        conf.setPwd('taosdata')
-        wsSql = await sqlConnect(conf)
+1. Fork this project, refer to ([how to fork a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo)).
+1. Create a new branch from the main branch with a meaningful branch name (`git checkout -b my_branch`). Do not modify the main branch directly.
+1. Modify the code, ensure all unit tests pass, and add new unit tests to verify the changes.
+1. Push the changes to the remote branch (`git push origin my_branch`).
+1. Create a Pull Request on GitHub ([how to create a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)).
+1. After submitting the PR, you can find your PR through the [Pull Request](https://github.com/taosdata/taos-connector-node/pulls). Click on the corresponding link to see if the CI for your PR has passed. If it has passed, it will display "All checks have passed". Regardless of whether the CI passes or not, you can click "Show all checks" -> "Details" to view the detailed test case logs.
+1. After submitting the PR, if CI passes, you can find your PR on the [codecov](https://app.codecov.io/gh/taosdata/taos-connector-node/pulls) page to check the test coverage.
 
-        let version = await wsSql.version();
-        console.log(version);
+## 9. References
 
-        let taosResult = await wsSql.exec('show databases', reqId++)
-        console.log(taosResult);
+- [TDengine Official Website](https://www.tdengine.com/)
+- [TDengine GitHub](https://github.com/taosdata/TDengine)
 
-        taosResult = await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;',reqId++);
-        console.log(taosResult);
+## 10. License
 
-        taosResult = await wsSql.exec('use power',reqId++)
-        console.log(taosResult);
-
-        taosResult = await wsSql.exec('CREATE STABLE if not exists meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);', reqId++);
-        console.log(taosResult);
-
-        taosResult = await wsSql.exec('describe meters', reqId++)
-        console.log(taosResult);
-
-        taosResult = await wsSql.exec('INSERT INTO d1001 USING meters TAGS ("California.SanFrancisco", 3) VALUES (NOW, 10.2, 219, 0.32)', reqId++)
-        console.log(taosResult);
-
-        wsRows = await wsSql.query('select * from meters', reqId++);
-        let meta = wsRows.getMeta()
-        console.log("wsRow:meta:=>", meta);
-
-        while (await wsRows.next()) {
-            let result = wsRows.getData();
-            console.log('queryRes.Scan().then=>', result);
-        }
-        wsRows.close()
-
-    } catch (err: any) {
-        console.error(err.code, err.message);
-
-    } finally {
-        if (wsRows) {
-            await wsRows.close();
-        }
-        if (wsSql) {
-           await wsSql.close();
-        }
-        destroy()
-        console.log("finish!")
-    }
-})();
-
-```
-
-### Schemaless Usage
-
-``` typescript
-import { WSConfig } from '../src/common/config';
-import { Precision, SchemalessProto } from '../src/sql/wsProto';
-import { sqlConnect, destroy, setLogLevel } from '../src';
-let dsn = 'ws://root:taosdata@localhost:6041';
-let db = 'power'
-let influxdbData = "st,t1=3i64,t2=4f64,t3=\"t3\" c1=3i64,c3=L\"passit\",c2=false,c4=4f64 1626006833639000000"
-let telnetData = "stb0_0 1626006833 4 host=host0 interface=eth0"
-let jsonData = "{\"metric\": \"meter_current\",\"timestamp\": 1626846400,\"value\": 10.3, \"tags\": {\"groupid\": 2, \"location\": \"California.SanFrancisco\", \"id\": \"d1001\"}}"
-const dropDB = `drop database if exists ${db}`
-
-async function Prepare() {
-    let conf :WSConfig = new WSConfig(dsn)
-    conf.setUser('root')
-    conf.setPwd('taosdata')
-    let wsSql = await sqlConnect(conf)
-    const topics:string[] = ['pwer_meters_topic']
-    let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
-    await wsSql.exec(dropTopic);
-    await wsSql.exec(dropDB);
-
-    await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
-    await wsSql.exec('CREATE STABLE if not exists power.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
-    wsSql.close();
-}
-
-(async () => {
-    let wsSchemaless = null
-    try {
-        let conf :WSConfig = new WSConfig(dsn)
-        conf.setUser('root')
-        conf.setPwd('taosdata')
-        conf.setDb('power')
-        wsSchemaless = await sqlConnect(conf)
-        await wsSchemaless.schemalessInsert([influxdbData], SchemalessProto.InfluxDBLineProtocol, Precision.NANO_SECONDS, 0);
-        await wsSchemaless.schemalessInsert([telnetData], SchemalessProto.OpenTSDBTelnetLineProtocol, Precision.SECONDS, 0);
-        await wsSchemaless.schemalessInsert([jsonData], SchemalessProto.OpenTSDBJsonFormatProtocol, Precision.SECONDS, 0);
-        wsSchemaless.close();
-    } catch (e) {
-        console.error(e);
-    }finally {
-        if (wsSchemaless) {
-            await wsSchemaless.close();
-        }
-        destroy()
-    }
-})();
-
-```
-
-### Stmt Usage
-
-``` typescript
-import { WSConfig } from '../src/common/config';
-import { destroy, sqlConnect } from '../src';
-
-let db = 'power'
-let stable = 'meters'
-let tags = ['California.SanFrancisco', 3];
-let multi = [
-    [1706786044994, 1706786044995, 1706786044996],
-    [10.2, 10.3, 10.4],
-    [292, 293, 294],
-    [0.32, 0.33, 0.34],
-];
-let dsn = 'ws://root:taosdata@localhost:6041';
-async function Prepare() {
-
-    let conf :WSConfig = new WSConfig(dsn)
-    let wsSql = await sqlConnect(conf)
-    await wsSql.exec(`create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`)
-    await wsSql.exec(`CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`);
-    wsSql.close()
-}
-
-(async () => {
-    let stmt = null;
-    let connector = null;
-    try {
-        await Prepare();
-        let wsConf = new WSConfig(dsn);
-        wsConf.setDb(db)
-        connector = await sqlConnect(wsConf);
-        stmt = await connector.stmtInit()
-        await stmt.prepare(`INSERT INTO ? USING ${db}.${stable} (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)`);
-        await stmt.setTableName('d1001');
-
-        let tagParams = stmt.newStmtParam()
-        tagParams.setVarchar([tags[0]])
-        tagParams.setInt([tags[1]])
-        await stmt.setTags(tagParams);
-
-        let bindParams = stmt.newStmtParam()
-        bindParams.setTimestamp(multi[0]);
-        bindParams.setFloat(multi[1])
-        bindParams.setInt(multi[2])
-        bindParams.setFloat(multi[3])
-        await stmt.bind(bindParams);
-        await stmt.batch();
-        await stmt.exec();
-    } catch (e) {
-        console.error(e);
-    }finally {
-        if (stmt) {
-            await stmt.close();
-        }
-        if (connector) {
-            await connector.close();
-        }
-        destroy()
-    }
-})();
-
-```
-
-### Tmq Usage
-
-```typescript
-import { WSConfig } from "../src/common/config";
-import { TMQConstants } from "../src/tmq/constant";
-import { destroy, sqlConnect, tmqConnect } from "../src";
-
-const stable = 'meters';
-const db = 'power'
-const topics:string[] = ['pwer_meters_topic']
-let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
-let configMap = new Map([
-    [TMQConstants.GROUP_ID, "gId"],
-    [TMQConstants.CONNECT_USER, "root"],
-    [TMQConstants.CONNECT_PASS, "taosdata"],
-    [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
-    [TMQConstants.CLIENT_ID, 'test_tmq_client'],
-    [TMQConstants.WS_URL, 'ws://localhost:6041'],
-    [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
-    [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
-]);
-let dsn = 'ws://root:taosdata@localhost:6041';
-async function Prepare() {
-    let conf :WSConfig = new WSConfig(dsn)
-    const createDB = `create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`
-    const createStable = `CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`
-    let createTopic = `create topic if not exists ${topics[0]} as select * from ${db}.${stable}`
-    const useDB = `use ${db}`
-
-    let ws = await sqlConnect(conf);
-    await ws.exec(createDB);
-    await ws.exec(useDB);
-    await ws.exec(createStable);
-    await ws.exec(createTopic);
-    for (let i = 0; i < 10; i++) {
-        await ws.exec(`INSERT INTO d1001 USING ${stable} (location, groupId) TAGS ("California.SanFrancisco", 3) VALUES (NOW, ${10+i}, ${200+i}, ${0.32 + i})`)
-    }
-    ws.close()
-    
-}
-
-(async () => {
-    let consumer = null
-    try {
-        await Prepare()
-        consumer = await tmqConnect(configMap);
-        await consumer.subscribe(topics);
-        for (let i = 0; i < 5; i++) {
-            let res = await consumer.poll(500);
-            for (let [key, value] of res) {
-                console.log(key, value);
-            }
-            if (res.size == 0) {
-                break;
-            }
-            await consumer.commit();
-        }
-
-        let assignment = await consumer.assignment()
-        console.log(assignment)
-        await consumer.seekToBeginning(assignment)
-        assignment = await consumer.assignment()
-        for(let i in assignment) {
-            console.log("seek after:", assignment[i])
-        }
-        await consumer.unsubscribe()
-    } catch (e) {
-        console.error(e);
-    } finally {
-        if (consumer) {
-           await consumer.close();
-        }
-        destroy()
-    }
-})();
-```
+[MIT License](./LICENSE)

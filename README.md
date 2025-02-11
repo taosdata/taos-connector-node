@@ -15,10 +15,8 @@
 
 English | [简体中文](README-CN.md)
 <!-- omit in toc -->
-
 ## Table of Contents
-
-- [Table of Contents](#table-of-contents)
+<!-- omit in toc -->
 - [1. Introduction](#1-introduction)
 - [2. Documentation](#2-documentation)
 - [3. Prerequisites](#3-prerequisites)

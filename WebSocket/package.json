@@ -12,7 +12,7 @@
   },
   "scripts": {
     "test": "jest --coverage",
-    "example": "tsc && node tsc/example/basicUsage.js",
+    "example": "tsc && node tsc/example/basicUsageAsync.js",
     "build": "parcel build --no-source-maps",
     "watch": "parcel watch",
     "prepare": "parcel build"
@@ -38,6 +38,7 @@
   "homepage": "https://github.com/taosdata/taos-connector-node#readme",
   "dependencies": {
     "json-bigint": "^1.0.0",
+    "moment-timezone": "^0.5.47",
     "websocket": "^1.0.34"
   },
   "devDependencies": {

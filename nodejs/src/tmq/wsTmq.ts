@@ -16,6 +16,10 @@ export class WsConsumer {
     private constructor(wsConfig:Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig)
         logger.debug(this._wsConfig)
+        if (wsConfig.size == 0 || !this._wsConfig.url) {
+            throw new WebSocketInterfaceError(ErrorCode.ERR_INVALID_URL, 
+                'invalid url, password or username needed.');
+        }
         this._wsClient = new WsClient(this._wsConfig.url, this._wsConfig.timeout);
     }
 
@@ -48,11 +52,12 @@ export class WsConsumer {
                 user      :this._wsConfig.user,
                 password  :this._wsConfig.password,
                 group_id  :this._wsConfig.group_id,
-                client_id  :this._wsConfig.client_id,
+                client_id :this._wsConfig.client_id,
                 topics    :topics,
                 offset_rest:this._wsConfig.offset_rest,
                 auto_commit:this._wsConfig.auto_commit,
-                auto_commit_interval_ms: this._wsConfig.auto_commit_interval_ms
+                auto_commit_interval_ms: this._wsConfig.auto_commit_interval_ms,
+                config: this._wsConfig.otherConfigs
             },
         };
         this._topics = topics

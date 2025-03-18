@@ -31,7 +31,7 @@ describe('TDWebSocket.WsSql()', () => {
         await wsSql.close();
     });
 
-    test('special characters connect', async() => {
+    test('special characters connect1', async() => {
         let wsSql = null;
         let conf :WSConfig = new WSConfig(dns)
         conf.setUser('user1')
@@ -43,7 +43,7 @@ describe('TDWebSocket.WsSql()', () => {
         expect(version).not.toBeUndefined();
         await wsSql.close();
     });
-    test('special characters connect', async() => {
+    test('special characters connect2', async() => {
         let wsSql = null;
         let conf :WSConfig = new WSConfig(dns)
         conf.setUser('user2')
@@ -186,6 +186,7 @@ afterAll(async () => {
     let wsSql = await WsSql.open(conf);
     await wsSql.exec('drop database power');
     await wsSql.exec('DROP USER user1;')
+    await wsSql.exec('DROP USER user2;')
     await wsSql.close();
     WebSocketConnectionPool.instance().destroyed()
 })

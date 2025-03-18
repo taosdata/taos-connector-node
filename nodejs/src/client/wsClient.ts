@@ -8,6 +8,7 @@ import {
 } from './wsResponse';
 import { ReqId } from '../common/reqid';
 import logger from '../common/log';
+import { safeDecodeURIComponent } from '../common/utils';
 
 
 export class WsClient {
@@ -32,8 +33,8 @@ export class WsClient {
             action: 'conn',
             args: {
                 req_id: ReqId.getReqID(),
-                user: this._url.username,
-                password: this._url.password,
+                user: safeDecodeURIComponent(this._url.username),
+                password: safeDecodeURIComponent(this._url.password),
                 db: _db,
             },
         };

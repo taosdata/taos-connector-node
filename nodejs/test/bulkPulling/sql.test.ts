@@ -9,6 +9,7 @@ beforeAll(async () => {
     conf.setUser('root')
     conf.setPwd('taosdata')
     let wsSql = await WsSql.open(conf)
+    await wsSql.exec("CREATE USER user1 PASS 'Ab1!@#$%^&*()-_+=[]{}'");
     await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
     await Sleep(100)
     await wsSql.exec('use power')
@@ -28,6 +29,20 @@ describe('TDWebSocket.WsSql()', () => {
         expect(wsSql.state()).toBeGreaterThan(0)
         await wsSql.close();
     });
+
+    test('special characters connect', async() => {
+        let wsSql = null;
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('user1')
+        conf.setPwd('Ab1!@#$%^&*()-_+=[]{}')
+        wsSql = await WsSql.open(conf)
+        expect(wsSql.state()).toBeGreaterThan(0)
+        let version = await wsSql.version();
+        expect(version).not.toBeNull();
+        expect(version).not.toBeUndefined();
+        await wsSql.close();
+    });
+
 
     test('connect db with error', async() => {
         expect.assertions(1)
@@ -158,6 +173,7 @@ afterAll(async () => {
     conf.setPwd('taosdata');
     let wsSql = await WsSql.open(conf);
     await wsSql.exec('drop database power');
+    await wsSql.exec('DROP USER user1;')
     await wsSql.close();
     WebSocketConnectionPool.instance().destroyed()
 })

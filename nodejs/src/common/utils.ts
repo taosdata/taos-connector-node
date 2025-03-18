@@ -1,4 +1,5 @@
 import { WSConfig } from "./config";
+import { ErrorCode, TDWebSocketClientError } from "./wsError";
 
 export function getUrl(wsConfig:WSConfig):URL {
     let url = new URL(wsConfig.getUrl())
@@ -59,4 +60,14 @@ export function getBinarySql(action:bigint, reqId:bigint, resultId:bigint, sql?:
 
 export function zigzagDecode(n: number): number {
 	return (n >> 1) ^ (-(n & 1))
+}
+
+export function safeDecodeURIComponent(str: string) {
+    // Replace invalid "%" not followed by two hex characters with "%25"
+    const cleaned = str.replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
+    try {
+        return decodeURIComponent(cleaned);
+    } catch (e) {
+        throw(new TDWebSocketClientError(ErrorCode.ERR_INVALID_URL, `Decoding ${str} error: ${e}`))
+    }
 }

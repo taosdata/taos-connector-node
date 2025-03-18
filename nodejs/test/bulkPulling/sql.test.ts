@@ -34,7 +34,7 @@ describe('TDWebSocket.WsSql()', () => {
         let wsSql = null;
         let conf :WSConfig = new WSConfig(dns)
         conf.setUser('user1')
-        conf.setPwd('Ab1!@#$%^&*()-_+=[]{}')
+        conf.setPwd('Ab1!@#$%')
         wsSql = await WsSql.open(conf)
         expect(wsSql.state()).toBeGreaterThan(0)
         let version = await wsSql.version();
@@ -42,7 +42,18 @@ describe('TDWebSocket.WsSql()', () => {
         expect(version).not.toBeUndefined();
         await wsSql.close();
     });
-
+    test('special characters connect', async() => {
+        let wsSql = null;
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('user1')
+        conf.setPwd('%^&*()-_+=[]{}')
+        wsSql = await WsSql.open(conf)
+        expect(wsSql.state()).toBeGreaterThan(0)
+        let version = await wsSql.version();
+        expect(version).not.toBeNull();
+        expect(version).not.toBeUndefined();
+        await wsSql.close();
+    });
 
     test('connect db with error', async() => {
         expect.assertions(1)

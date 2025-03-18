@@ -5,7 +5,7 @@ import { Sleep } from "../utils";
 
 let dns = 'ws://localhost:6041'
 let password1 = 'Ab1!@#$%,.:?<>;~'
-let password2 = 'Bc2%^&*()-_+=[]{}'
+let password2 = 'Bc%^&*()-_+=[]{}'
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns)
     conf.setUser('root')

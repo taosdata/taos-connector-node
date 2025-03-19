@@ -4,11 +4,15 @@ import { WsSql } from "../../src/sql/wsSql";
 import { Sleep } from "../utils";
 
 let dns = 'ws://localhost:6041'
+let password1 = 'Ab1!@#$%,.:?<>;~'
+let password2 = 'Bc%^&*()-_+=[]{}'
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns)
     conf.setUser('root')
     conf.setPwd('taosdata')
     let wsSql = await WsSql.open(conf)
+    await wsSql.exec(`CREATE USER user1 PASS '${password1}'`);
+    await wsSql.exec(`CREATE USER user2 PASS '${password2}'`);
     await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
     await Sleep(100)
     await wsSql.exec('use power')
@@ -26,6 +30,31 @@ describe('TDWebSocket.WsSql()', () => {
         conf.setDb('power')
         wsSql = await WsSql.open(conf)
         expect(wsSql.state()).toBeGreaterThan(0)
+        await wsSql.close();
+    });
+
+    test('special characters connect1', async() => {
+        let wsSql = null;
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('user1')
+        conf.setPwd(password1)
+        wsSql = await WsSql.open(conf)
+        expect(wsSql.state()).toBeGreaterThan(0)
+        let version = await wsSql.version();
+        expect(version).not.toBeNull();
+        expect(version).not.toBeUndefined();
+        await wsSql.close();
+    });
+    test('special characters connect2', async() => {
+        let wsSql = null;
+        let conf :WSConfig = new WSConfig(dns)
+        conf.setUser('user2')
+        conf.setPwd(password2)
+        wsSql = await WsSql.open(conf)
+        expect(wsSql.state()).toBeGreaterThan(0)
+        let version = await wsSql.version();
+        expect(version).not.toBeNull();
+        expect(version).not.toBeUndefined();
         await wsSql.close();
     });
 
@@ -158,6 +187,8 @@ afterAll(async () => {
     conf.setPwd('taosdata');
     let wsSql = await WsSql.open(conf);
     await wsSql.exec('drop database power');
+    await wsSql.exec('DROP USER user1;')
+    await wsSql.exec('DROP USER user2;')
     await wsSql.close();
     WebSocketConnectionPool.instance().destroyed()
 })

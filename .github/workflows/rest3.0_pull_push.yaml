@@ -11,11 +11,11 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
-        node-version: [12.x,16.x]   
+        node-version: [16.x]   
     steps:
 
     - name: Build Tools
@@ -33,13 +33,13 @@ jobs:
           ref: '3.0'
           submodules: 'recursive'
 
-    - name: Build TDengine
+    - name: Build TDengine 3.0
       run: |
           cd TDengine
           mkdir debug
           cd debug
           cmake .. -DBUILD_JDBC=false -DBUILD_TOOLS=false -DBUILD_HTTP=false
-          make -j
+          make -j8
           sudo make install
           
     - name: start taosd
@@ -50,6 +50,7 @@ jobs:
       run: |
         nohup sudo taosadapter &
 
+    - name: checkout nodejs 3.0
     - uses: actions/checkout@v3
       with:
           path : "node-taos"
@@ -59,9 +60,18 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: test typescript-rest
-      working-directory: node-taos/typescript-rest
+    - name: test WebSocket
+      working-directory: node-taos/WebSocket
       run: |
         ls -al
         npm install
         npm run example
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        fail_ci_if_error: false
+        files: coverage/lcov.info
+        verbose: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

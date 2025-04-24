@@ -1,6 +1,6 @@
 # Triggered by pull request or push to develop branch
 # Test TypeScript rest connector.
-name: websocket 3.0 on push&pull
+name: rest 3.0 on push&pull
 
 on:
   push:

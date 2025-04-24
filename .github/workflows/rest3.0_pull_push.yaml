@@ -38,8 +38,8 @@ jobs:
           cd TDengine
           mkdir debug
           cd debug
-          cmake .. -DBUILD_JDBC=false -DBUILD_TOOLS=false -DBUILD_HTTP=false
-          make -j
+          cmake .. -DBUILD_HTTP=false -DBUILD_JDBC=false -DBUILD_TOOLS=false -DBUILD_TEST=off -DBUILD_DEPENDENCY_TESTS=false
+          make -j8
           sudo make install
           
     - name: start taosd

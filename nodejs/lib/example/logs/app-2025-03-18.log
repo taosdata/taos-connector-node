@@ -1,0 +1,742 @@
+2025-03-18T09:49:01.876Z [node.js websocket] info: url:ws://root:taosdata@localhost:6041/ws
+2025-03-18T09:49:01.891Z [node.js websocket] error: undefined
+2025-03-18T09:49:01.891Z [node.js websocket] info: websocket connection closed
+2025-03-18T09:49:01.892Z [node.js websocket] error: uncaughtException: (no error message)
+  No stack trace
+2025-03-18T09:49:06.889Z [node.js websocket] error: 105
+2025-03-18T09:49:06.890Z [node.js websocket] error: 104
+2025-03-18T09:49:06.890Z [node.js websocket] error: undefined
+2025-03-18T09:49:06.896Z [node.js websocket] info: destroyed connect:1
+2025-03-18T09:49:06.897Z [node.js websocket] info: begin destroy connect
+2025-03-18T09:49:42.551Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.98:6041/ws
+2025-03-18T09:49:42.595Z [node.js websocket] error: undefined
+2025-03-18T09:49:42.595Z [node.js websocket] info: websocket connection closed
+2025-03-18T09:49:42.596Z [node.js websocket] error: uncaughtException: (no error message)
+  No stack trace
+2025-03-18T09:49:47.560Z [node.js websocket] error: 105
+2025-03-18T09:49:47.561Z [node.js websocket] error: 104
+2025-03-18T09:49:47.562Z [node.js websocket] error: undefined
+2025-03-18T09:49:47.566Z [node.js websocket] info: destroyed connect:1
+2025-03-18T09:49:47.568Z [node.js websocket] info: begin destroy connect
+2025-03-18T09:52:27.186Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T09:52:27.251Z [node.js websocket] debug: websocket connection opened
+2025-03-18T09:52:27.251Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.252Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.252Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.252Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":2197548659113984,"user":"root","password":"taosdata"}}
+2025-03-18T09:52:27.252Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T09:52:27.270Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T09:52:27.270Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"conn","req_id":2197548659113984,"timing":4279733}
+2025-03-18T09:52:27.270Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.270Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.270Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.271Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"version","args":{"req_id":2197548659113986}}
+2025-03-18T09:52:27.271Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T09:52:27.283Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T09:52:27.283Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"version","req_id":2197548659113986,"timing":15403,"version":"3.3.4.0"}
+2025-03-18T09:52:27.283Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.283Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.283Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.284Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>2197548659113987binary_query44
+2025-03-18T09:52:27.306Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T09:52:27.307Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":2197548659113987,"timing":1643977,"id":1,"is_update":false,"affected_rows":0,"fields_count":1,"fields_names":["name"],"fields_types":[8],"fields_lengths":[64],"precision":0}
+2025-03-18T09:52:27.307Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.307Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.307Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.307Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>2197548659113988binary_query26
+2025-03-18T09:52:27.338Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T09:52:27.338Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.338Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.338Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.339Z [node.js websocket] debug: ===colLengthBlockSize:4
+2025-03-18T09:52:27.339Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>2197548659113989binary_query26
+2025-03-18T09:52:27.376Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T09:52:27.376Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.376Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.376Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.376Z [node.js websocket] debug: [wsQueryInterface.freeResult.freeResultMsg]===>{"action":"free_result","args":{"req_id":2197548659113990,"id":1}}
+2025-03-18T09:52:27.376Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"free_result","args":{"req_id":2197548659113990,"id":1}}
+2025-03-18T09:52:27.376Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T09:52:27.378Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>1binary_query110
+2025-03-18T09:52:27.416Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T09:52:27.416Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":1,"timing":4859633,"id":0,"is_update":true,"affected_rows":0,"fields_count":0,"fields_names":null,"fields_types":null,"fields_lengths":null,"precision":0}
+2025-03-18T09:52:27.416Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.416Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.416Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.416Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>2binary_query39
+2025-03-18T09:52:27.431Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T09:52:27.431Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":2,"timing":2025654,"id":0,"is_update":true,"affected_rows":0,"fields_count":0,"fields_names":null,"fields_types":null,"fields_lengths":null,"precision":0}
+2025-03-18T09:52:27.431Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.431Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.431Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.431Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>3binary_query161
+2025-03-18T09:52:27.438Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T09:52:27.438Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":3,"timing":2143994,"id":0,"is_update":true,"affected_rows":0,"fields_count":0,"fields_names":null,"fields_types":null,"fields_lengths":null,"precision":0}
+2025-03-18T09:52:27.438Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.439Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.439Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.439Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4binary_query45
+2025-03-18T09:52:27.448Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T09:52:27.448Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":4,"timing":4273043,"id":2,"is_update":false,"affected_rows":0,"fields_count":7,"fields_names":["field","type","length","note","encode","compress","level"],"fields_types":[8,8,4,8,8,8,8],"fields_lengths":[64,20,4,16,12,12,12],"precision":0}
+2025-03-18T09:52:27.448Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.448Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.448Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.448Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4binary_query26
+2025-03-18T09:52:27.474Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T09:52:27.474Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.474Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.474Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.474Z [node.js websocket] debug: ===colLengthBlockSize:28
+2025-03-18T09:52:27.475Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4binary_query26
+2025-03-18T09:52:27.484Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T09:52:27.484Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.484Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.484Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.484Z [node.js websocket] debug: [wsQueryInterface.freeResult.freeResultMsg]===>{"action":"free_result","args":{"req_id":2197548659179527,"id":2}}
+2025-03-18T09:52:27.484Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"free_result","args":{"req_id":2197548659179527,"id":2}}
+2025-03-18T09:52:27.484Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T09:52:27.486Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>5binary_query126
+2025-03-18T09:52:27.492Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T09:52:27.492Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":534,"message":"syntax error near 'California.SanFrancisco' (invalid int data)","action":"binary_query","req_id":5,"timing":627873}
+2025-03-18T09:52:27.492Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:52:27.492Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:52:27.492Z [node.js websocket] debug: [object Map]
+2025-03-18T09:52:27.493Z [node.js websocket] info: destroyed connect:1
+2025-03-18T09:52:27.516Z [node.js websocket] info: websocket connection closed
+2025-03-18T09:52:32.489Z [node.js websocket] info: begin destroy connect
+2025-03-18T09:59:42.391Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T09:59:42.419Z [node.js websocket] debug: websocket connection opened
+2025-03-18T09:59:42.420Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:59:42.420Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:59:42.420Z [node.js websocket] debug: [object Map]
+2025-03-18T09:59:42.420Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":3590630002917376,"user":"user1","password":"Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D"}}
+2025-03-18T09:59:42.420Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T09:59:42.426Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T09:59:42.426Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":520,"message":"Invalid password","action":"conn","req_id":3590630002917376,"timing":323469}
+2025-03-18T09:59:42.426Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T09:59:42.427Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T09:59:42.427Z [node.js websocket] debug: [object Map]
+2025-03-18T09:59:42.427Z [node.js websocket] error: 520
+2025-03-18T09:59:42.427Z [node.js websocket] error: 104
+2025-03-18T09:59:42.427Z [node.js websocket] error: undefined
+2025-03-18T09:59:42.429Z [node.js websocket] info: destroyed connect:1
+2025-03-18T10:00:21.150Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T10:02:47.331Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T10:02:47.355Z [node.js websocket] debug: websocket connection opened
+2025-03-18T10:02:47.356Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:02:47.356Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:02:47.356Z [node.js websocket] debug: [object Map]
+2025-03-18T10:02:47.357Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":2965007934029824,"user":"user1","password":"Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D"}}
+2025-03-18T10:02:47.357Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T10:02:47.362Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:02:47.362Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":520,"message":"Invalid password","action":"conn","req_id":2965007934029824,"timing":304367}
+2025-03-18T10:02:47.362Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:02:47.362Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:02:47.362Z [node.js websocket] debug: [object Map]
+2025-03-18T10:02:47.363Z [node.js websocket] error: 520
+2025-03-18T10:02:47.363Z [node.js websocket] error: 104
+2025-03-18T10:02:47.363Z [node.js websocket] error: undefined
+2025-03-18T10:02:47.363Z [node.js websocket] info: destroyed connect:1
+2025-03-18T10:15:56.206Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T10:15:57.219Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T10:15:57.234Z [node.js websocket] debug: websocket connection opened
+2025-03-18T10:15:57.235Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:15:57.235Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:15:57.235Z [node.js websocket] debug: [object Map]
+2025-03-18T10:15:57.235Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":4464741996560384,"user":"�ǫ","password":"\u0001�x�m�\u0013���>A�>��"}}
+2025-03-18T10:15:57.236Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T10:15:57.243Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:15:57.244Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":520,"message":"Invalid password","action":"conn","req_id":4464741996560384,"timing":294815}
+2025-03-18T10:15:57.244Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:15:57.244Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:15:57.244Z [node.js websocket] debug: [object Map]
+2025-03-18T10:15:57.244Z [node.js websocket] error: 520
+2025-03-18T10:15:57.244Z [node.js websocket] error: 104
+2025-03-18T10:15:57.244Z [node.js websocket] error: undefined
+2025-03-18T10:15:57.245Z [node.js websocket] info: destroyed connect:1
+2025-03-18T10:16:07.680Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T10:16:45.171Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T10:16:45.214Z [node.js websocket] debug: websocket connection opened
+2025-03-18T10:16:45.215Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:16:45.215Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:16:45.215Z [node.js websocket] debug: [object Map]
+2025-03-18T10:16:45.216Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":782477567393792,"user":"�ǫ","password":"\u0001�x�m�\u0013���>A�>��"}}
+2025-03-18T10:16:45.216Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T10:16:45.221Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:16:45.221Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":520,"message":"Invalid password","action":"conn","req_id":782477567393792,"timing":297275}
+2025-03-18T10:16:45.221Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:16:45.221Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:16:45.221Z [node.js websocket] debug: [object Map]
+2025-03-18T10:16:45.222Z [node.js websocket] error: 520
+2025-03-18T10:16:45.222Z [node.js websocket] error: 104
+2025-03-18T10:16:45.222Z [node.js websocket] error: undefined
+2025-03-18T10:16:45.223Z [node.js websocket] info: destroyed connect:1
+2025-03-18T10:18:31.378Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T10:18:32.321Z [node.js websocket] error: undefined
+2025-03-18T10:18:32.322Z [node.js websocket] error: undefined
+2025-03-18T10:18:32.323Z [node.js websocket] info: destroyed connect:0
+2025-03-18T10:18:32.323Z [node.js websocket] info: begin destroy connect
+2025-03-18T10:20:07.052Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T10:20:07.072Z [node.js websocket] debug: websocket connection opened
+2025-03-18T10:20:07.072Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:20:07.073Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:20:07.073Z [node.js websocket] debug: [object Map]
+2025-03-18T10:20:07.073Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":4018340339646464}}
+2025-03-18T10:20:07.073Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T10:20:07.077Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:20:07.078Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":519,"message":"Invalid user name","action":"conn","req_id":4018340339646464,"timing":248208}
+2025-03-18T10:20:07.078Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:20:07.078Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:20:07.078Z [node.js websocket] debug: [object Map]
+2025-03-18T10:20:07.078Z [node.js websocket] error: 519
+2025-03-18T10:20:07.078Z [node.js websocket] error: 104
+2025-03-18T10:20:07.079Z [node.js websocket] error: undefined
+2025-03-18T10:20:07.080Z [node.js websocket] info: destroyed connect:1
+2025-03-18T10:21:15.246Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T10:22:36.001Z [node.js websocket] info: url:ws://root:taosdata@localhost:6041/ws
+2025-03-18T10:22:36.015Z [node.js websocket] error: undefined
+2025-03-18T10:22:36.015Z [node.js websocket] info: websocket connection closed
+2025-03-18T10:22:36.016Z [node.js websocket] error: uncaughtException: (no error message)
+  No stack trace
+2025-03-18T10:22:41.013Z [node.js websocket] error: 105
+2025-03-18T10:22:41.014Z [node.js websocket] error: 104
+2025-03-18T10:22:41.014Z [node.js websocket] error: undefined
+2025-03-18T10:22:41.018Z [node.js websocket] info: destroyed connect:1
+2025-03-18T10:22:41.019Z [node.js websocket] info: begin destroy connect
+2025-03-18T10:23:14.384Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T10:23:14.418Z [node.js websocket] debug: websocket connection opened
+2025-03-18T10:23:14.419Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.419Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.419Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.419Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":3777547341070336,"user":"root","password":"taosdata"}}
+2025-03-18T10:23:14.419Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T10:23:14.435Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:23:14.435Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"conn","req_id":3777547341070336,"timing":4368522}
+2025-03-18T10:23:14.435Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.435Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.435Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.436Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"version","args":{"req_id":3777547341135874}}
+2025-03-18T10:23:14.436Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T10:23:14.442Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:23:14.442Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"version","req_id":3777547341135874,"timing":37870,"version":"3.3.4.0"}
+2025-03-18T10:23:14.442Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.442Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.442Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.443Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>3777547341135875binary_query44
+2025-03-18T10:23:14.449Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:23:14.449Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":3777547341135875,"timing":1465668,"id":1,"is_update":false,"affected_rows":0,"fields_count":1,"fields_names":["name"],"fields_types":[8],"fields_lengths":[64],"precision":0}
+2025-03-18T10:23:14.449Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.449Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.449Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.449Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>3777547341135876binary_query26
+2025-03-18T10:23:14.456Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T10:23:14.456Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.456Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.456Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.456Z [node.js websocket] debug: ===colLengthBlockSize:4
+2025-03-18T10:23:14.456Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>3777547341135877binary_query26
+2025-03-18T10:23:14.465Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T10:23:14.466Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.466Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.466Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.466Z [node.js websocket] debug: [wsQueryInterface.freeResult.freeResultMsg]===>{"action":"free_result","args":{"req_id":3777547341135878,"id":1}}
+2025-03-18T10:23:14.466Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"free_result","args":{"req_id":3777547341135878,"id":1}}
+2025-03-18T10:23:14.466Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T10:23:14.468Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>1binary_query110
+2025-03-18T10:23:14.476Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:23:14.476Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":1,"timing":1181115,"id":0,"is_update":true,"affected_rows":0,"fields_count":0,"fields_names":null,"fields_types":null,"fields_lengths":null,"precision":0}
+2025-03-18T10:23:14.477Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.477Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.477Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.477Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>2binary_query39
+2025-03-18T10:23:14.486Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:23:14.486Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":2,"timing":481968,"id":0,"is_update":true,"affected_rows":0,"fields_count":0,"fields_names":null,"fields_types":null,"fields_lengths":null,"precision":0}
+2025-03-18T10:23:14.486Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.486Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.486Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.486Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>3binary_query161
+2025-03-18T10:23:14.491Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:23:14.491Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":3,"timing":616566,"id":0,"is_update":true,"affected_rows":0,"fields_count":0,"fields_names":null,"fields_types":null,"fields_lengths":null,"precision":0}
+2025-03-18T10:23:14.491Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.491Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.491Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.491Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4binary_query45
+2025-03-18T10:23:14.496Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:23:14.496Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":4,"timing":982648,"id":2,"is_update":false,"affected_rows":0,"fields_count":7,"fields_names":["field","type","length","note","encode","compress","level"],"fields_types":[8,8,4,8,8,8,8],"fields_lengths":[64,20,4,16,12,12,12],"precision":0}
+2025-03-18T10:23:14.496Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.496Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.496Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.496Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4binary_query26
+2025-03-18T10:23:14.504Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T10:23:14.504Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.504Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.504Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.504Z [node.js websocket] debug: ===colLengthBlockSize:28
+2025-03-18T10:23:14.504Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4binary_query26
+2025-03-18T10:23:14.508Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T10:23:14.508Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.509Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.509Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.509Z [node.js websocket] debug: [wsQueryInterface.freeResult.freeResultMsg]===>{"action":"free_result","args":{"req_id":3777547341135879,"id":2}}
+2025-03-18T10:23:14.509Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"free_result","args":{"req_id":3777547341135879,"id":2}}
+2025-03-18T10:23:14.509Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T10:23:14.510Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>5binary_query126
+2025-03-18T10:23:14.513Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T10:23:14.513Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":534,"message":"syntax error near 'California.SanFrancisco' (invalid int data)","action":"binary_query","req_id":5,"timing":141697}
+2025-03-18T10:23:14.513Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T10:23:14.513Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T10:23:14.513Z [node.js websocket] debug: [object Map]
+2025-03-18T10:23:14.514Z [node.js websocket] info: destroyed connect:1
+2025-03-18T10:23:14.528Z [node.js websocket] info: websocket connection closed
+2025-03-18T10:23:16.722Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T10:23:40.711Z [node.js websocket] error: undefined
+2025-03-18T10:23:40.713Z [node.js websocket] error: undefined
+2025-03-18T10:23:40.714Z [node.js websocket] info: destroyed connect:0
+2025-03-18T10:23:40.714Z [node.js websocket] info: begin destroy connect
+2025-03-18T10:25:25.764Z [node.js websocket] error: undefined
+2025-03-18T10:25:25.766Z [node.js websocket] error: undefined
+2025-03-18T10:25:25.767Z [node.js websocket] info: destroyed connect:0
+2025-03-18T10:25:25.768Z [node.js websocket] info: begin destroy connect
+2025-03-18T10:28:27.938Z [node.js websocket] error: undefined
+2025-03-18T10:28:27.940Z [node.js websocket] error: undefined
+2025-03-18T10:28:27.942Z [node.js websocket] info: destroyed connect:0
+2025-03-18T10:28:27.943Z [node.js websocket] info: begin destroy connect
+2025-03-18T10:30:52.936Z [node.js websocket] error: undefined
+2025-03-18T10:30:52.939Z [node.js websocket] error: undefined
+2025-03-18T10:30:52.939Z [node.js websocket] info: destroyed connect:0
+2025-03-18T10:30:52.940Z [node.js websocket] info: begin destroy connect
+2025-03-18T10:31:21.497Z [node.js websocket] error: undefined
+2025-03-18T10:31:21.498Z [node.js websocket] error: undefined
+2025-03-18T10:31:21.499Z [node.js websocket] info: destroyed connect:0
+2025-03-18T10:31:21.499Z [node.js websocket] info: begin destroy connect
+2025-03-18T10:40:50.984Z [node.js websocket] info: url:ws://root:taosdata@localhost:6041/ws
+2025-03-18T10:40:50.999Z [node.js websocket] error: undefined
+2025-03-18T10:40:50.999Z [node.js websocket] info: websocket connection closed
+2025-03-18T10:40:51.000Z [node.js websocket] error: uncaughtException: (no error message)
+  No stack trace
+2025-03-18T10:40:55.998Z [node.js websocket] error: 105
+2025-03-18T10:40:55.998Z [node.js websocket] error: 104
+2025-03-18T10:40:55.999Z [node.js websocket] error: undefined
+2025-03-18T10:40:56.000Z [node.js websocket] info: destroyed connect:1
+2025-03-18T10:40:56.001Z [node.js websocket] info: begin destroy connect
+2025-03-18T10:41:53.139Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@localhost:6041/ws
+2025-03-18T10:41:53.155Z [node.js websocket] error: undefined
+2025-03-18T10:41:53.155Z [node.js websocket] info: websocket connection closed
+2025-03-18T10:41:53.156Z [node.js websocket] error: uncaughtException: (no error message)
+  No stack trace
+2025-03-18T10:41:58.153Z [node.js websocket] error: 105
+2025-03-18T10:41:58.154Z [node.js websocket] error: 104
+2025-03-18T10:41:58.154Z [node.js websocket] error: undefined
+2025-03-18T10:41:58.155Z [node.js websocket] info: destroyed connect:1
+2025-03-18T10:41:58.155Z [node.js websocket] info: begin destroy connect
+2025-03-18T10:57:57.493Z [node.js websocket] error: undefined
+2025-03-18T10:57:57.497Z [node.js websocket] info: destroyed connect:0
+2025-03-18T10:57:57.498Z [node.js websocket] info: begin destroy connect
+2025-03-18T10:59:48.866Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@localhost:6041/ws
+2025-03-18T10:59:48.884Z [node.js websocket] error: undefined
+2025-03-18T10:59:48.884Z [node.js websocket] info: websocket connection closed
+2025-03-18T10:59:48.885Z [node.js websocket] error: uncaughtException: (no error message)
+  No stack trace
+2025-03-18T10:59:53.883Z [node.js websocket] error: 105
+2025-03-18T10:59:53.883Z [node.js websocket] error: 104
+2025-03-18T10:59:53.884Z [node.js websocket] error: undefined
+2025-03-18T10:59:53.884Z [node.js websocket] info: destroyed connect:1
+2025-03-18T10:59:53.885Z [node.js websocket] info: begin destroy connect
+2025-03-18T11:07:46.331Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@localhost:6041/ws
+2025-03-18T11:07:46.347Z [node.js websocket] error: undefined
+2025-03-18T11:07:46.347Z [node.js websocket] info: websocket connection closed
+2025-03-18T11:07:46.348Z [node.js websocket] error: uncaughtException: (no error message)
+  No stack trace
+2025-03-18T11:07:51.346Z [node.js websocket] error: 105
+2025-03-18T11:07:51.347Z [node.js websocket] error: 104
+2025-03-18T11:07:51.348Z [node.js websocket] error: undefined
+2025-03-18T11:07:51.348Z [node.js websocket] info: destroyed connect:1
+2025-03-18T11:07:51.350Z [node.js websocket] info: begin destroy connect
+2025-03-18T11:08:57.021Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@localhost:6041/ws
+2025-03-18T11:08:57.037Z [node.js websocket] error: undefined
+2025-03-18T11:08:57.037Z [node.js websocket] info: websocket connection closed
+2025-03-18T11:08:57.038Z [node.js websocket] error: uncaughtException: (no error message)
+  No stack trace
+2025-03-18T11:09:02.034Z [node.js websocket] error: 105
+2025-03-18T11:09:02.035Z [node.js websocket] error: 104
+2025-03-18T11:09:02.035Z [node.js websocket] error: undefined
+2025-03-18T11:09:02.036Z [node.js websocket] info: destroyed connect:1
+2025-03-18T11:09:02.037Z [node.js websocket] info: begin destroy connect
+2025-03-18T11:14:37.520Z [node.js websocket] error: undefined
+2025-03-18T11:14:37.524Z [node.js websocket] info: destroyed connect:0
+2025-03-18T11:14:37.525Z [node.js websocket] info: begin destroy connect
+2025-03-18T11:15:37.063Z [node.js websocket] error: undefined
+2025-03-18T11:15:37.066Z [node.js websocket] info: destroyed connect:0
+2025-03-18T11:15:37.066Z [node.js websocket] info: begin destroy connect
+2025-03-18T11:32:02.443Z [node.js websocket] info: destroyed connect:0
+2025-03-18T11:32:02.447Z [node.js websocket] info: begin destroy connect
+2025-03-18T11:36:00.928Z [node.js websocket] info: destroyed connect:0
+2025-03-18T11:36:00.931Z [node.js websocket] info: begin destroy connect
+2025-03-18T11:48:45.856Z [node.js websocket] error: undefined
+2025-03-18T11:48:45.860Z [node.js websocket] info: destroyed connect:0
+2025-03-18T11:48:45.860Z [node.js websocket] info: begin destroy connect
+2025-03-18T11:49:50.387Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T11:49:50.410Z [node.js websocket] debug: websocket connection opened
+2025-03-18T11:49:50.411Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:49:50.411Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:49:50.411Z [node.js websocket] debug: [object Map]
+2025-03-18T11:49:50.411Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":3472983950360576,"user":"user1","password":"Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D"}}
+2025-03-18T11:49:50.411Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T11:49:50.416Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:49:50.417Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":520,"message":"Invalid password","action":"conn","req_id":3472983950360576,"timing":322024}
+2025-03-18T11:49:50.417Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:49:50.417Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:49:50.417Z [node.js websocket] debug: [object Map]
+2025-03-18T11:49:50.417Z [node.js websocket] error: 520
+2025-03-18T11:49:50.417Z [node.js websocket] error: 104
+2025-03-18T11:49:50.418Z [node.js websocket] error: undefined
+2025-03-18T11:49:50.418Z [node.js websocket] info: destroyed connect:1
+2025-03-18T11:49:54.292Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T11:51:26.598Z [node.js websocket] error: undefined
+2025-03-18T11:51:26.600Z [node.js websocket] error: undefined
+2025-03-18T11:51:26.602Z [node.js websocket] info: destroyed connect:0
+2025-03-18T11:51:26.603Z [node.js websocket] info: begin destroy connect
+2025-03-18T11:51:54.287Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T11:51:54.308Z [node.js websocket] debug: websocket connection opened
+2025-03-18T11:51:54.308Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:51:54.308Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:51:54.308Z [node.js websocket] debug: [object Map]
+2025-03-18T11:51:54.309Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":1203591982350336,"user":"user1","password":"Ab1!%40%23$%25%5E&*()-_+%3D%5B%5D%7B%7D"}}
+2025-03-18T11:51:54.309Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T11:51:54.313Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:51:54.313Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":520,"message":"Invalid password","action":"conn","req_id":1203591982350336,"timing":336517}
+2025-03-18T11:51:54.314Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:51:54.314Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:51:54.314Z [node.js websocket] debug: [object Map]
+2025-03-18T11:51:54.314Z [node.js websocket] error: 520
+2025-03-18T11:51:54.314Z [node.js websocket] error: 104
+2025-03-18T11:51:54.314Z [node.js websocket] error: undefined
+2025-03-18T11:51:54.315Z [node.js websocket] info: destroyed connect:1
+2025-03-18T11:52:53.023Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T11:52:53.848Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T11:52:53.866Z [node.js websocket] debug: websocket connection opened
+2025-03-18T11:52:53.866Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:52:53.867Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:52:53.867Z [node.js websocket] debug: [object Map]
+2025-03-18T11:52:53.867Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":407545579110400,"user":"user1","password":"Ab1!@#$%^&*()-_+=[]{}"}}
+2025-03-18T11:52:53.867Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T11:52:53.878Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:52:53.878Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"conn","req_id":407545579110400,"timing":3575158}
+2025-03-18T11:52:53.878Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:52:53.878Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:52:53.878Z [node.js websocket] debug: [object Map]
+2025-03-18T11:52:53.879Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"version","args":{"req_id":407545579110402}}
+2025-03-18T11:52:53.879Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T11:52:53.906Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:52:53.907Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"version","req_id":407545579110402,"timing":36100,"version":"3.3.4.0"}
+2025-03-18T11:52:53.907Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:52:53.907Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:52:53.907Z [node.js websocket] debug: [object Map]
+2025-03-18T11:52:53.908Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>407545579110403binary_query44
+2025-03-18T11:52:53.915Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:52:53.915Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":407545579110403,"timing":2657052,"id":1,"is_update":false,"affected_rows":0,"fields_count":1,"fields_names":["name"],"fields_types":[8],"fields_lengths":[64],"precision":0}
+2025-03-18T11:52:53.915Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:52:53.915Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:52:53.915Z [node.js websocket] debug: [object Map]
+2025-03-18T11:52:53.915Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>407545579110404binary_query26
+2025-03-18T11:52:53.919Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T11:52:53.919Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:52:53.919Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:52:53.919Z [node.js websocket] debug: [object Map]
+2025-03-18T11:52:53.920Z [node.js websocket] debug: ===colLengthBlockSize:4
+2025-03-18T11:52:53.920Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>407545579110405binary_query26
+2025-03-18T11:52:53.923Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T11:52:53.923Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:52:53.923Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:52:53.923Z [node.js websocket] debug: [object Map]
+2025-03-18T11:52:53.924Z [node.js websocket] debug: [wsQueryInterface.freeResult.freeResultMsg]===>{"action":"free_result","args":{"req_id":407545579110406,"id":1}}
+2025-03-18T11:52:53.924Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"free_result","args":{"req_id":407545579110406,"id":1}}
+2025-03-18T11:52:53.924Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T11:52:53.925Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>1binary_query110
+2025-03-18T11:52:53.935Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:52:53.935Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":1,"timing":2028363,"id":0,"is_update":true,"affected_rows":0,"fields_count":0,"fields_names":null,"fields_types":null,"fields_lengths":null,"precision":0}
+2025-03-18T11:52:53.935Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:52:53.935Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:52:53.935Z [node.js websocket] debug: [object Map]
+2025-03-18T11:52:53.935Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>2binary_query39
+2025-03-18T11:52:53.939Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:52:53.939Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":771,"message":"Insufficient privilege for operation","action":"binary_query","req_id":2,"timing":436002}
+2025-03-18T11:52:53.939Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:52:53.939Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:52:53.940Z [node.js websocket] debug: [object Map]
+2025-03-18T11:52:53.940Z [node.js websocket] info: destroyed connect:1
+2025-03-18T11:52:53.948Z [node.js websocket] info: websocket connection closed
+2025-03-18T11:52:58.936Z [node.js websocket] info: begin destroy connect
+2025-03-18T11:54:59.899Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T11:54:59.940Z [node.js websocket] debug: websocket connection opened
+2025-03-18T11:54:59.941Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:54:59.941Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:54:59.941Z [node.js websocket] debug: [object Map]
+2025-03-18T11:54:59.941Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":4012844238831616,"user":"user1","password":"Ab1!@#$%^&*()-_+=[]{}"}}
+2025-03-18T11:54:59.942Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T11:54:59.993Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:54:59.993Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"conn","req_id":4012844238831616,"timing":4798586}
+2025-03-18T11:54:59.993Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:54:59.993Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:54:59.993Z [node.js websocket] debug: [object Map]
+2025-03-18T11:54:59.994Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"version","args":{"req_id":4012844238897154}}
+2025-03-18T11:54:59.994Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T11:54:59.998Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:54:59.998Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"version","req_id":4012844238897154,"timing":22306,"version":"3.3.4.0"}
+2025-03-18T11:54:59.998Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:54:59.998Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:54:59.998Z [node.js websocket] debug: [object Map]
+2025-03-18T11:55:00.000Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4012844238897155binary_query44
+2025-03-18T11:55:00.004Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:55:00.004Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":4012844238897155,"timing":1257909,"id":1,"is_update":false,"affected_rows":0,"fields_count":1,"fields_names":["name"],"fields_types":[8],"fields_lengths":[64],"precision":0}
+2025-03-18T11:55:00.004Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:55:00.004Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:55:00.004Z [node.js websocket] debug: [object Map]
+2025-03-18T11:55:00.004Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4012844238897156binary_query26
+2025-03-18T11:55:00.012Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T11:55:00.012Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:55:00.012Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:55:00.012Z [node.js websocket] debug: [object Map]
+2025-03-18T11:55:00.012Z [node.js websocket] debug: ===colLengthBlockSize:4
+2025-03-18T11:55:00.012Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4012844238897157binary_query26
+2025-03-18T11:55:00.015Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T11:55:00.015Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:55:00.015Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:55:00.015Z [node.js websocket] debug: [object Map]
+2025-03-18T11:55:00.016Z [node.js websocket] debug: [wsQueryInterface.freeResult.freeResultMsg]===>{"action":"free_result","args":{"req_id":4012844238897158,"id":1}}
+2025-03-18T11:55:00.016Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"free_result","args":{"req_id":4012844238897158,"id":1}}
+2025-03-18T11:55:00.016Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T11:55:00.018Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>1binary_query111
+2025-03-18T11:55:00.024Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:55:00.024Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":771,"message":"Insufficient privilege for operation","action":"binary_query","req_id":1,"timing":1954275}
+2025-03-18T11:55:00.024Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:55:00.024Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:55:00.024Z [node.js websocket] debug: [object Map]
+2025-03-18T11:55:00.025Z [node.js websocket] info: destroyed connect:1
+2025-03-18T11:55:00.031Z [node.js websocket] info: websocket connection closed
+2025-03-18T11:55:05.019Z [node.js websocket] info: begin destroy connect
+2025-03-18T11:59:52.388Z [node.js websocket] info: url:ws://user2:Ab1!~%EF%BC%81%40%23%EF%BF%A5%E3%80%90%E3%80%91$%%5E&*()-_@192.168.1.95:6041/ws
+2025-03-18T11:59:52.411Z [node.js websocket] debug: websocket connection opened
+2025-03-18T11:59:52.411Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:59:52.412Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:59:52.412Z [node.js websocket] debug: [object Map]
+2025-03-18T11:59:52.412Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":3204703267323904,"user":"user2","password":"Ab1!~！@#￥【】$%^&*()-_"}}
+2025-03-18T11:59:52.412Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T11:59:52.427Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:59:52.427Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"conn","req_id":3204703267323904,"timing":9715406}
+2025-03-18T11:59:52.427Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:59:52.428Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:59:52.428Z [node.js websocket] debug: [object Map]
+2025-03-18T11:59:52.428Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"version","args":{"req_id":3204703267323906}}
+2025-03-18T11:59:52.428Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T11:59:52.432Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:59:52.432Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"version","req_id":3204703267323906,"timing":133185,"version":"3.3.4.0"}
+2025-03-18T11:59:52.432Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:59:52.432Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:59:52.432Z [node.js websocket] debug: [object Map]
+2025-03-18T11:59:52.433Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>3204703267323907binary_query44
+2025-03-18T11:59:52.445Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:59:52.445Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":3204703267323907,"timing":7523683,"id":1,"is_update":false,"affected_rows":0,"fields_count":1,"fields_names":["name"],"fields_types":[8],"fields_lengths":[64],"precision":0}
+2025-03-18T11:59:52.445Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:59:52.445Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:59:52.445Z [node.js websocket] debug: [object Map]
+2025-03-18T11:59:52.445Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>3204703267323908binary_query26
+2025-03-18T11:59:52.450Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T11:59:52.450Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:59:52.450Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:59:52.450Z [node.js websocket] debug: [object Map]
+2025-03-18T11:59:52.450Z [node.js websocket] debug: ===colLengthBlockSize:4
+2025-03-18T11:59:52.451Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>3204703267323909binary_query26
+2025-03-18T11:59:52.454Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T11:59:52.454Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:59:52.454Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:59:52.455Z [node.js websocket] debug: [object Map]
+2025-03-18T11:59:52.455Z [node.js websocket] debug: [wsQueryInterface.freeResult.freeResultMsg]===>{"action":"free_result","args":{"req_id":3204703267323910,"id":1}}
+2025-03-18T11:59:52.455Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"free_result","args":{"req_id":3204703267323910,"id":1}}
+2025-03-18T11:59:52.455Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T11:59:52.456Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>1binary_query111
+2025-03-18T11:59:52.461Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T11:59:52.462Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":771,"message":"Insufficient privilege for operation","action":"binary_query","req_id":1,"timing":1077151}
+2025-03-18T11:59:52.462Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T11:59:52.462Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T11:59:52.462Z [node.js websocket] debug: [object Map]
+2025-03-18T11:59:52.462Z [node.js websocket] info: destroyed connect:1
+2025-03-18T11:59:52.468Z [node.js websocket] info: websocket connection closed
+2025-03-18T11:59:55.631Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T12:47:13.036Z [node.js websocket] info: url:ws://root:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T12:47:13.094Z [node.js websocket] debug: websocket connection opened
+2025-03-18T12:47:13.095Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:47:13.095Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:47:13.095Z [node.js websocket] debug: [object Map]
+2025-03-18T12:47:13.096Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":991387087798272,"user":"root","password":"Ab1!@#$%^&*()-_+=[]{}"}}
+2025-03-18T12:47:13.096Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T12:47:13.107Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:47:13.107Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":855,"message":"Authentication failure","action":"conn","req_id":991387087798272,"timing":5334211}
+2025-03-18T12:47:13.107Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:47:13.108Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:47:13.108Z [node.js websocket] debug: [object Map]
+2025-03-18T12:47:13.108Z [node.js websocket] error: 855
+2025-03-18T12:47:13.108Z [node.js websocket] error: 104
+2025-03-18T12:47:13.108Z [node.js websocket] error: undefined
+2025-03-18T12:47:13.109Z [node.js websocket] info: destroyed connect:1
+2025-03-18T12:47:30.540Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T12:49:34.924Z [node.js websocket] info: url:ws://root:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T12:49:34.947Z [node.js websocket] debug: websocket connection opened
+2025-03-18T12:49:34.947Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:49:34.948Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:49:34.948Z [node.js websocket] debug: [object Map]
+2025-03-18T12:49:34.948Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":979292496199680,"user":"root","password":"Ab1!@#$%^&*()-_+=[]{}"}}
+2025-03-18T12:49:34.948Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T12:49:34.954Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:49:34.954Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":855,"message":"Authentication failure","action":"conn","req_id":979292496199680,"timing":1161882}
+2025-03-18T12:49:34.955Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:49:34.955Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:49:34.955Z [node.js websocket] debug: [object Map]
+2025-03-18T12:49:34.955Z [node.js websocket] error: 855
+2025-03-18T12:49:34.955Z [node.js websocket] error: 104
+2025-03-18T12:49:34.955Z [node.js websocket] error: undefined
+2025-03-18T12:49:34.955Z [node.js websocket] info: destroyed connect:1
+2025-03-18T12:50:15.010Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T12:50:15.953Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T12:50:15.971Z [node.js websocket] debug: websocket connection opened
+2025-03-18T12:50:15.972Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:50:15.972Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:50:15.972Z [node.js websocket] debug: [object Map]
+2025-03-18T12:50:15.972Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":1399305948561408,"user":"user1","password":"Ab1!@#$%^&*()-_+=[]{}"}}
+2025-03-18T12:50:15.972Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T12:50:15.984Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:50:15.984Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"conn","req_id":1399305948561408,"timing":3513379}
+2025-03-18T12:50:15.984Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:50:15.984Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:50:15.984Z [node.js websocket] debug: [object Map]
+2025-03-18T12:50:15.985Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"version","args":{"req_id":1399305948561410}}
+2025-03-18T12:50:15.985Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T12:50:15.994Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:50:15.994Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"version","req_id":1399305948561410,"timing":22332,"version":"3.3.4.0"}
+2025-03-18T12:50:15.995Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:50:15.995Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:50:15.995Z [node.js websocket] debug: [object Map]
+2025-03-18T12:50:15.996Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>1399305948561411binary_query44
+2025-03-18T12:50:16.004Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:50:16.004Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":1399305948561411,"timing":1698316,"id":1,"is_update":false,"affected_rows":0,"fields_count":1,"fields_names":["name"],"fields_types":[8],"fields_lengths":[64],"precision":0}
+2025-03-18T12:50:16.004Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:50:16.004Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:50:16.004Z [node.js websocket] debug: [object Map]
+2025-03-18T12:50:16.005Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>1399305948561412binary_query26
+2025-03-18T12:50:16.010Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T12:50:16.010Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:50:16.010Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:50:16.010Z [node.js websocket] debug: [object Map]
+2025-03-18T12:50:16.010Z [node.js websocket] debug: ===colLengthBlockSize:4
+2025-03-18T12:50:16.010Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>1399305948561413binary_query26
+2025-03-18T12:50:16.014Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T12:50:16.014Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:50:16.014Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:50:16.014Z [node.js websocket] debug: [object Map]
+2025-03-18T12:50:16.014Z [node.js websocket] debug: [wsQueryInterface.freeResult.freeResultMsg]===>{"action":"free_result","args":{"req_id":1399305948561414,"id":1}}
+2025-03-18T12:50:16.014Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"free_result","args":{"req_id":1399305948561414,"id":1}}
+2025-03-18T12:50:16.014Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T12:50:16.015Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>1binary_query110
+2025-03-18T12:50:16.023Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:50:16.023Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":1,"timing":1364365,"id":0,"is_update":true,"affected_rows":0,"fields_count":0,"fields_names":null,"fields_types":null,"fields_lengths":null,"precision":0}
+2025-03-18T12:50:16.023Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:50:16.023Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:50:16.023Z [node.js websocket] debug: [object Map]
+2025-03-18T12:50:16.024Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>2binary_query39
+2025-03-18T12:50:16.028Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:50:16.028Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":771,"message":"Insufficient privilege for operation","action":"binary_query","req_id":2,"timing":522559}
+2025-03-18T12:50:16.028Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:50:16.028Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:50:16.028Z [node.js websocket] debug: [object Map]
+2025-03-18T12:50:16.029Z [node.js websocket] info: destroyed connect:1
+2025-03-18T12:50:16.034Z [node.js websocket] info: websocket connection closed
+2025-03-18T12:50:17.785Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...
+2025-03-18T12:50:45.237Z [node.js websocket] error: undefined
+2025-03-18T12:50:45.240Z [node.js websocket] info: destroyed connect:0
+2025-03-18T12:50:45.242Z [node.js websocket] info: begin destroy connect
+2025-03-18T12:51:58.050Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T12:51:58.075Z [node.js websocket] debug: websocket connection opened
+2025-03-18T12:51:58.076Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:51:58.076Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:51:58.076Z [node.js websocket] debug: [object Map]
+2025-03-18T12:51:58.076Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"conn","args":{"req_id":4427360997539840,"user":"user1","password":"Ab1!@#$%^&*()-_+=[]{}"}}
+2025-03-18T12:51:58.076Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T12:51:58.086Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:51:58.086Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"conn","req_id":4427360997539840,"timing":4556585}
+2025-03-18T12:51:58.087Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:51:58.087Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:51:58.087Z [node.js websocket] debug: [object Map]
+2025-03-18T12:51:58.087Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"version","args":{"req_id":4427360997605378}}
+2025-03-18T12:51:58.087Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T12:51:58.090Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:51:58.090Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"version","req_id":4427360997605378,"timing":18813,"version":"3.3.4.0"}
+2025-03-18T12:51:58.090Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:51:58.090Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:51:58.090Z [node.js websocket] debug: [object Map]
+2025-03-18T12:51:58.092Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4427360997605379binary_query44
+2025-03-18T12:51:58.097Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:51:58.097Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":4427360997605379,"timing":1306891,"id":1,"is_update":false,"affected_rows":0,"fields_count":1,"fields_names":["name"],"fields_types":[8],"fields_lengths":[64],"precision":0}
+2025-03-18T12:51:58.097Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:51:58.097Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:51:58.097Z [node.js websocket] debug: [object Map]
+2025-03-18T12:51:58.097Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4427360997605380binary_query26
+2025-03-18T12:51:58.101Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T12:51:58.101Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:51:58.101Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:51:58.101Z [node.js websocket] debug: [object Map]
+2025-03-18T12:51:58.102Z [node.js websocket] debug: ===colLengthBlockSize:4
+2025-03-18T12:51:58.102Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>4427360997605381binary_query26
+2025-03-18T12:51:58.108Z [node.js websocket] debug: wsClient._onMessage()====[object ArrayBuffer]
+2025-03-18T12:51:58.108Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:51:58.108Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:51:58.108Z [node.js websocket] debug: [object Map]
+2025-03-18T12:51:58.108Z [node.js websocket] debug: [wsQueryInterface.freeResult.freeResultMsg]===>{"action":"free_result","args":{"req_id":4427360997605382,"id":1}}
+2025-03-18T12:51:58.108Z [node.js websocket] debug: [wsClient.sendMessage()]===>{"action":"free_result","args":{"req_id":4427360997605382,"id":1}}
+2025-03-18T12:51:58.108Z [node.js websocket] debug: [wsClient.sendMessage.msg]===>
+
+2025-03-18T12:51:58.110Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>1binary_query110
+2025-03-18T12:51:58.116Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:51:58.116Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":0,"message":"","action":"binary_query","req_id":1,"timing":1655788,"id":0,"is_update":true,"affected_rows":0,"fields_count":0,"fields_names":null,"fields_types":null,"fields_lengths":null,"precision":0}
+2025-03-18T12:51:58.116Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:51:58.116Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:51:58.116Z [node.js websocket] debug: [object Map]
+2025-03-18T12:51:58.116Z [node.js websocket] debug: [wsClient.sendBinaryMsg()]===>2binary_query39
+2025-03-18T12:51:58.123Z [node.js websocket] debug: wsClient._onMessage()====[object String]
+2025-03-18T12:51:58.123Z [node.js websocket] debug: [_onmessage.stringType]==>:{"code":771,"message":"Insufficient privilege for operation","action":"binary_query","req_id":2,"timing":503431}
+2025-03-18T12:51:58.124Z [node.js websocket] debug: HandleEventCallback msg=
+2025-03-18T12:51:58.124Z [node.js websocket] debug: HandleEventCallback get lock msg=
+2025-03-18T12:51:58.124Z [node.js websocket] debug: [object Map]
+2025-03-18T12:51:58.124Z [node.js websocket] info: destroyed connect:1
+2025-03-18T12:51:58.131Z [node.js websocket] info: websocket connection closed
+2025-03-18T12:52:00.270Z [node.js websocket] info: Received SIGINT. Press Control-D to exit, begin destroy connect...

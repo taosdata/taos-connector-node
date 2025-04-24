@@ -1,0 +1,1 @@
+{"version":3,"file":"reqid.d.ts","sourceRoot":"","sources":["../../../src/common/reqid.ts"],"names":[],"mappings":"AA2BA,qBAAa,KAAK;IACd,OAAO,CAAC,MAAM,CAAC,KAAK,CAAK;IACzB,OAAO,CAAC,MAAM,CAAC,IAAI,CAAI;IACvB,OAAO,CAAC,MAAM,CAAC,YAAY,CAA4B;IACvD,OAAO,CAAC,MAAM,CAAC,SAAS,CAAsC;WAahD,QAAQ,CAAC,MAAM,CAAC,EAAC,MAAM,GAAE,MAAM;CAgBhD"}

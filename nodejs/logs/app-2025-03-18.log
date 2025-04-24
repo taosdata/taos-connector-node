@@ -1,0 +1,46 @@
+2025-03-18T13:47:19.497Z [node.js websocket] info: url:ws://root:taosdata@localhost:6041/ws
+2025-03-18T13:47:19.510Z [node.js websocket] error: undefined
+2025-03-18T13:47:19.510Z [node.js websocket] info: websocket connection closed
+2025-03-18T13:47:24.506Z [node.js websocket] error: 105
+2025-03-18T13:47:24.507Z [node.js websocket] error: 104
+2025-03-18T13:47:24.529Z [node.js websocket] info: url:ws://root:taosdata@localhost:6041/ws
+2025-03-18T13:47:24.531Z [node.js websocket] error: undefined
+2025-03-18T13:47:24.531Z [node.js websocket] info: websocket connection closed
+2025-03-18T13:47:29.532Z [node.js websocket] error: 105
+2025-03-18T13:47:29.533Z [node.js websocket] error: 104
+2025-03-18T13:48:11.174Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T13:48:11.211Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T13:49:09.632Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T13:49:10.047Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%@192.168.1.95:6041/ws
+2025-03-18T13:49:10.057Z [node.js websocket] info: url:ws://user2:%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T13:49:10.064Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T13:49:10.948Z [node.js websocket] info: destroyed connect:1
+2025-03-18T13:49:10.961Z [node.js websocket] info: websocket connection closed
+2025-03-18T13:49:29.347Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T13:49:29.396Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T13:50:17.401Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T13:50:17.768Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%@192.168.1.95:6041/ws
+2025-03-18T13:50:17.779Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T13:50:18.678Z [node.js websocket] info: destroyed connect:1
+2025-03-18T13:50:18.690Z [node.js websocket] info: websocket connection closed
+2025-03-18T13:50:27.726Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T13:50:28.142Z [node.js websocket] info: url:ws://user2:%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T13:50:28.152Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T13:50:29.034Z [node.js websocket] info: destroyed connect:1
+2025-03-18T13:50:29.046Z [node.js websocket] info: websocket connection closed
+2025-03-18T14:02:40.769Z [node.js websocket] info: url:ws://root:taosdata@localhost:6041/ws
+2025-03-18T14:02:40.781Z [node.js websocket] error: undefined
+2025-03-18T14:02:40.781Z [node.js websocket] info: websocket connection closed
+2025-03-18T14:02:45.779Z [node.js websocket] error: 105
+2025-03-18T14:02:45.780Z [node.js websocket] error: 104
+2025-03-18T14:02:45.802Z [node.js websocket] info: url:ws://root:taosdata@localhost:6041/ws
+2025-03-18T14:02:45.804Z [node.js websocket] error: undefined
+2025-03-18T14:02:45.804Z [node.js websocket] info: websocket connection closed
+2025-03-18T14:02:50.805Z [node.js websocket] error: 105
+2025-03-18T14:02:50.807Z [node.js websocket] error: 104
+2025-03-18T14:03:09.278Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T14:03:09.695Z [node.js websocket] info: url:ws://user1:Ab1!%40%23$%,.%3A%3F%3C%3E%3B~@192.168.1.95:6041/ws
+2025-03-18T14:03:09.706Z [node.js websocket] info: url:ws://user2:Bc2%%5E&*()-_+%3D%5B%5D%7B%7D@192.168.1.95:6041/ws
+2025-03-18T14:03:09.712Z [node.js websocket] info: url:ws://root:taosdata@192.168.1.95:6041/ws
+2025-03-18T14:03:10.592Z [node.js websocket] info: destroyed connect:1
+2025-03-18T14:03:10.598Z [node.js websocket] info: websocket connection closed

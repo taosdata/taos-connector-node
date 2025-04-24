@@ -1,0 +1,40 @@
+<?xml version="1.0" ?>
+<!DOCTYPE coverage SYSTEM "http://cobertura.sourceforge.net/xml/coverage-04.dtd">
+<coverage lines-valid="11" lines-covered="10" line-rate="0.909" branches-valid="4" branches-covered="2" branch-rate="0.5" timestamp="1732612909008" complexity="0" version="0.1">
+  <sources>
+    <source>/Users/menshibin/go/src/taos-connector-node/nodejs</source>
+  </sources>
+  <packages>
+    <package name="main" line-rate="0.909" branch-rate="0.5">
+      <classes>
+        <class name="log.ts" filename="src/common/log.ts" line-rate="0.909" branch-rate="0.5">
+          <methods>
+            <method name="(anonymous_1)" hits="4" signature="()V">
+              <lines>
+                <line number="4" hits="4"/>
+              </lines>
+            </method>
+            <method name="setLevel" hits="2" signature="()V">
+              <lines>
+                <line number="32" hits="2"/>
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="1" hits="1" branch="false"/>
+            <line number="2" hits="1" branch="false"/>
+            <line number="4" hits="1" branch="false"/>
+            <line number="5" hits="4" branch="true" condition-coverage="50% (2/4)"/>
+            <line number="6" hits="0" branch="false"/>
+            <line number="8" hits="4" branch="false"/>
+            <line number="11" hits="1" branch="false"/>
+            <line number="27" hits="1" branch="false"/>
+            <line number="32" hits="1" branch="false"/>
+            <line number="33" hits="2" branch="false"/>
+            <line number="36" hits="1" branch="false"/>
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>

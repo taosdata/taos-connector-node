@@ -1,4 +1,4 @@
-import { TDengineMeta } from "../dist/types";
+import { TDengineMeta } from "../src/taosResult";
 
 export function insertStable(values: Array<Array<any>>, tags: Array<any>, stable: string, table: string = 'empty'): string {
     let childTable = table == 'empty' ? stable + '_s_01' : table;

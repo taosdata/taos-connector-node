@@ -11,8 +11,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "jest --coverage",
-    "example": "tsc && node tsc/example/basicUsage.js",
+    "test": "jest --coverage --coverageDirectory=../coverage",
+    "example": "tsc && node tsc/example/basicUsageAsync.js",
     "build": "parcel build --no-source-maps",
     "watch": "parcel watch",
     "prepare": "parcel build"

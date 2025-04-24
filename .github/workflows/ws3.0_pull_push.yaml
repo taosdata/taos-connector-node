@@ -15,7 +15,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x,16.x]   
+        node-version: [16.x]   
     steps:
 
     - name: Build Tools
@@ -33,13 +33,13 @@ jobs:
           ref: '3.0'
           submodules: 'recursive'
 
-    - name: Build TDengine
+    - name: Build TDengine 3.0
       run: |
           cd TDengine
           mkdir debug
           cd debug
           cmake .. -DBUILD_JDBC=false -DBUILD_TOOLS=false -DBUILD_HTTP=false
-          make -j
+          make -j8
           sudo make install
           
     - name: start taosd
@@ -49,7 +49,8 @@ jobs:
     - name: start taosadapter
       run: |
         nohup sudo taosadapter &
-
+        
+    - name: checkout nodejs 3.0
     - uses: actions/checkout@v3
       with:
           path : "node-taos"

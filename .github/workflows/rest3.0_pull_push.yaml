@@ -59,9 +59,18 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: test typescript-rest
-      working-directory: node-taos/typescript-rest
+    - name: test WebSocket
+      working-directory: node-taos/WebSocket
       run: |
         ls -al
         npm install
         npm run example
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        fail_ci_if_error: false
+        files: coverage/lcov.info
+        verbose: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

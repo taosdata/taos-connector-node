@@ -51,20 +51,19 @@ jobs:
         nohup sudo taosadapter &
 
     - uses: actions/checkout@v3
-      with:
-          path : "node-taos"
 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: test WebSocket
-      working-directory: node-taos/WebSocket
+    - name: test nodejs websocket
+      working-directory: WebSocket
       run: |
         ls -al
         npm install
         npm run example
+        npm run test
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

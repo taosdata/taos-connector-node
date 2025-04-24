@@ -1,6 +1,6 @@
 # Triggered by pull request or push to develop branch
 # Test TypeScript rest connector.
-name: rest 3.0 on push&pull
+name: websocket 3.0 on push&pull
 
 on:
   push:
@@ -49,7 +49,7 @@ jobs:
     - name: start taosadapter
       run: |
         nohup sudo taosadapter &
-        
+
     - name: checkout nodejs 3.0
     - uses: actions/checkout@v3
       with:

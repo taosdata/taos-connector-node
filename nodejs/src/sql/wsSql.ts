@@ -36,7 +36,7 @@ export class WsSql{
         } catch (e: any) {
             logger.error(`WsSql open is failed, ${e.code}, ${e.message}`);
             if (wsSql) {
-                wsSql.close();
+                await wsSql.close();
             }
             throw(e);
         }

@@ -9,6 +9,7 @@ export class WebSocketConnectionPool {
     private pool: Map<string, WebSocketConnector[]> = new Map();
     private _connectionCount: number;
     private readonly _maxConnections: number;
+    private static _connections = 0;
     private constructor(maxConnections: number = -1) {
         this._maxConnections = maxConnections;
         this._connectionCount = 0;
@@ -23,7 +24,6 @@ export class WebSocketConnectionPool {
 
     async getConnection(url:URL, timeout: number | undefined | null): Promise<WebSocketConnector> {
         let connectAddr = url.origin.concat(url.pathname).concat(url.search)
-        logger.info("url:" + url)
         let connector:WebSocketConnector | undefined;
         const unlock = await mutex.acquire()
         try {
@@ -37,14 +37,15 @@ export class WebSocketConnectionPool {
             }  
 
             if (connector) {
-                logger.debug("get connection success:" + this._connectionCount)
+                this._connectionCount--;
+                logger.debug("get connection success:" + this._connectionCount);
                 return connector;
             }
             if (this._maxConnections != -1 && this._connectionCount > this._maxConnections) {
-                throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT, "websocket connect arrived limited:" + this._connectionCount)
+                throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT, "websocket connect arrived limited:" + this._connectionCount);
             }
             
-            this._connectionCount++
+            logger.info("getConnection, new connection count:" +  ++WebSocketConnectionPool._connections + ", connectAddr:" + connectAddr);
             return new WebSocketConnector(url, timeout);          
         }finally{
             unlock()
@@ -66,26 +67,31 @@ export class WebSocketConnectionPool {
 
                     } else {
                         connectors.push(connector);
-                    }                    
+                    }
+                    this._connectionCount++;
+                    logger.info("releaseConnection, current connection count:" + connectors.length)
                 } else {
                     this._connectionCount--;
                     connector.close()
+                    logger.info("releaseConnection, current connection status fail:" + this._connectionCount)
                 }
             } finally {
                 unlock();
-            }
+            } 
         }
     }
 
     destroyed() {
+        let num = 0;
         if (this.pool) {
             for (let values of this.pool.values()) {
                 for (let i in values ) {
-                    values.pop()?.close();
+                    num++;
+                    values[i].close();
                 }
             }
         }
-        logger.info("destroyed connect:" + this._connectionCount)
+        logger.info("destroyed connect:" +  WebSocketConnectionPool._connections + " current count:" + num);
         this._connectionCount = 0
         this.pool = new Map()
     }

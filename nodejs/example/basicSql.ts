@@ -42,7 +42,7 @@ let dsn = 'ws://root:taosdata@localhost:6041';
                 let result = wsRows.getData();
                 console.log('queryRes.Scan().then=>', result);
             }
-            wsRows.close()            
+            await wsRows.close()            
         }
 
 

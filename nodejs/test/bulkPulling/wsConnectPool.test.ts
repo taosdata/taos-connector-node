@@ -5,6 +5,7 @@ import { WsSql } from "../../src/sql/wsSql";
 import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 import { Sleep } from "../utils";
+import logger, { setLevel } from "../../src/common/log"
 
 let dsn = 'ws://root:taosdata@localhost:6041';
 let tags = ['California.SanFrancisco', 3];
@@ -31,6 +32,7 @@ const db = 'power_connect'
 const topics:string[] = ['pwer_meters_topic']
 let createTopic = `create topic if not exists ${topics[0]} as select * from ${db}.${stable}`
 let stmtIds:number[] = []
+setLevel("debug")
 
 async function connect() {
     let dsn = 'ws://root:taosdata@localhost:6041';
@@ -40,7 +42,7 @@ async function connect() {
     wsSql = await WsSql.open(conf)
     expect(wsSql.state()).toBeGreaterThan(0)
     console.log(await wsSql.version()) 
-    wsSql.close();
+    await wsSql.close();
 }
 
 async function stmtConnect() {
@@ -74,8 +76,8 @@ async function stmtConnect() {
     await stmt.batch()
     await stmt.exec()
     expect(stmt.getLastAffected()).toEqual(30)
-    stmt.close()
-    connector.close();
+    await stmt.close()
+    await connector.close();
 }
 
 async function tmqConnect() {
@@ -111,13 +113,12 @@ async function tmqConnect() {
         console.error(e);
     } finally {
         if (consumer) {
-           consumer.close();
+           await consumer.close();
         }
     }
 }
 
 beforeAll(async () => {
-    
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.open(conf); 
     await ws.exec(`create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`);
@@ -146,7 +147,6 @@ describe('TDWebSocket.WsSql()', () => {
             allp.push(tmqConnect())
         }
         await Promise.all(allp)
-        WebSocketConnectionPool.instance().destroyed()
         console.log(stmtIds)
     });
 })

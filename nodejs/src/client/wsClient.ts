@@ -49,13 +49,13 @@ export class WsClient {
             if (result.msg.code  == 0) {
                 return;
             }
-            this.close();
+            await this.close();
             throw(new WebSocketQueryError(result.msg.code, result.msg.message));            
        
         } catch (e: any) {
-            this.close();
+            await this.close();
             logger.error(`connection creation failed, url: ${this._url}, code:${e.code}, msg:${e.message}`);
-            throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}`));
+            throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}, code:${e.code}, msg:${e.message}`));
         }
      
 
@@ -196,8 +196,8 @@ export class WsClient {
                 } 
                 throw(new WebSocketInterfaceError(result.msg.code, result.msg.message));                
             } catch (e: any) {
-                logger.error(e.code, e.message);
-                throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}`));
+                logger.error(`connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`);
+                throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`));
             }
 
                                

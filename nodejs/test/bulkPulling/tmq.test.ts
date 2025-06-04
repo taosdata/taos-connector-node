@@ -76,7 +76,7 @@ describe('TDWebSocket.Tmq()', () => {
     
     test('normal connect', async() => {
         let consumer = await WsConsumer.newConsumer(configMap);
-        consumer.close();
+        await consumer.close();
     });
 
     test('connect error', async() => {

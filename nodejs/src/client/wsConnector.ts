@@ -33,7 +33,6 @@ export class WebSocketConnector {
     }
 
     async ready() {
-
         return new Promise((resolve, reject) => {
             let reqId = ReqId.getReqID();
             WsEventCallback.instance().registerCallback({ action: "websocket_connection", req_id: BigInt(reqId), 

@@ -2,7 +2,7 @@ import { TmqConfig } from './config';
 import { TMQConstants, TMQMessageType } from './constant';
 import { WsClient } from '../client/wsClient';
 import { TaosResult } from '../common/taosResult';
-import { ErrorCode, TaosResultError, WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
+import { ErrorCode, TaosResultError, TDWebSocketClientError, WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
 import { AssignmentResp, CommittedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockInfo, WsPollResponse, WsTmqQueryResponse} from './tmqResponse';
 import { ReqId } from '../common/reqid';
 import logger from "../common/log";
@@ -17,15 +17,27 @@ export class WsConsumer {
         this._wsConfig = new TmqConfig(wsConfig)
         logger.debug(this._wsConfig)
         this._wsClient = new WsClient(this._wsConfig.url, this._wsConfig.timeout);
+
     }
 
-    private async init():Promise<WsConsumer> {   
-        await this._wsClient.ready();
+    private async init():Promise<WsConsumer> { 
+        let wsSql = null  
         try {
-            await this._wsClient.checkVersion();
+            if (this._wsConfig.sql_url) {
+                wsSql = new WsClient(this._wsConfig.sql_url, this._wsConfig.timeout);
+                await wsSql.connect();
+                await wsSql.checkVersion();
+                await this._wsClient.ready();
+            }else {
+                throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._wsConfig.url}`));
+            }
         }catch (e: any) {
             await this._wsClient.close();
             throw(e);
+        }finally {
+            if (wsSql) {
+                await wsSql.close();
+            }
         }
         return this;          
           

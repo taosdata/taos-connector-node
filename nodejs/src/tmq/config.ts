@@ -12,6 +12,7 @@ export class TmqConfig {
     auto_commit: boolean;
     auto_commit_interval_ms: number;
     timeout:number;
+    sql_url: URL | undefined | null;
   
 
     constructor(wsConfig:Map<string, any>) {
@@ -49,9 +50,12 @@ export class TmqConfig {
             }else{
                 this.password = this.url.password;
             }
+            
+            this.sql_url = new URL(this.url);
+            this.sql_url.pathname = '/ws';
             this.url.pathname = '/rest/tmq'
         }
 
-    }     
-  
+    }
+
 }

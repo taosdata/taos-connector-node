@@ -9,7 +9,6 @@ import {
 import { ReqId } from '../common/reqid';
 import logger from '../common/log';
 import { safeDecodeURIComponent, compareVersions} from '../common/utils';
-import semver from 'semver';
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;

@@ -1,4 +1,3 @@
-import semver from 'semver';
 import { compareVersions } from "../../src/common/utils"
 
 describe('utils test', () => {

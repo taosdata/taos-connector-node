@@ -21,6 +21,12 @@ export class WsConsumer {
 
     private async init():Promise<WsConsumer> {   
         await this._wsClient.ready();
+        try {
+            await this._wsClient.checkVersion();
+        }catch (e: any) {
+            await this._wsClient.close();
+            throw(e);
+        }
         return this;          
           
     }

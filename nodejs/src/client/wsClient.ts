@@ -8,13 +8,14 @@ import {
 } from './wsResponse';
 import { ReqId } from '../common/reqid';
 import logger from '../common/log';
-import { safeDecodeURIComponent } from '../common/utils';
-
+import { safeDecodeURIComponent, compareVersions} from '../common/utils';
+import semver from 'semver';
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
     private _timeout?:number | undefined | null;
     private readonly _url:URL;
+    private static readonly _minVersion = "3.3.2-0";
 
     constructor(url: URL, timeout ?:number | undefined | null) {
         this.checkURL(url);
@@ -45,15 +46,16 @@ export class WsClient {
         } 
         try {
             await this._wsConnector.ready();
-        
             let result: any = await this._wsConnector.sendMsg(JSON.stringify(connMsg))
             if (result.msg.code  == 0) {
                 return;
             }
+            this.close();
             throw(new WebSocketQueryError(result.msg.code, result.msg.message));            
        
         } catch (e: any) {
-            logger.error(e.code, e.message);
+            this.close();
+            logger.error(`connection creation failed, url: ${this._url}, code:${e.code}, msg:${e.message}`);
             throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}`));
         }
      
@@ -222,4 +224,12 @@ export class WsClient {
         }
     }
 
+    async checkVersion() {
+        let version = await this.version();
+        let result = compareVersions(version, WsClient._minVersion);
+        if (result < 0) {
+            logger.error(`TDengine version is too low, current version: ${version}, minimum required version: ${WsClient._minVersion}`);
+            throw(new WebSocketQueryError(ErrorCode.ERR_TDENIGNE_VERSION_IS_TOO_LOW, `Version mismatch. The minimum required TDengine version is ${WsClient._minVersion}`));  
+        }
+    }
 }

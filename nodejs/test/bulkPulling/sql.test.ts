@@ -2,10 +2,12 @@ import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { Sleep } from "../utils";
+import logger, { setLevel } from "../../src/common/log"
 
-let dns = 'ws://localhost:6041'
+let dns = 'ws://192.168.1.98:6041'
 let password1 = 'Ab1!@#$%,.:?<>;~'
 let password2 = 'Bc%^&*()-_+=[]{}'
+setLevel("debug")
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns)
     conf.setUser('root')

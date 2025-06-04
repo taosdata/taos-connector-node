@@ -205,6 +205,7 @@ export class WsStmt {
             try {
                 if (this._wsClient.getState() <= 0) {
                     await this._wsClient.connect();
+                    await this._wsClient.checkVersion();
                 }
                 let queryMsg = {
                     action: 'init',
@@ -215,7 +216,7 @@ export class WsStmt {
                 await this.execute(queryMsg);
                 return this;  
             } catch (e: any) {
-                logger.error(e.code, e.message);
+                logger.error(`stmt init filed, ${e.code}, ${e.message}`);
                 throw(e);
             }   
     

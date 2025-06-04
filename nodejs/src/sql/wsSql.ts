@@ -28,12 +28,16 @@ export class WsSql{
         let database = wsConfig.getDb();
         try {
             await wsSql._wsClient.connect(database);
+            await wsSql._wsClient.checkVersion();
             if(database && database.length > 0) {
                 await wsSql.exec(`use ${database}`);
             }
             return wsSql;
         } catch (e: any) {
-            logger.error(e.code, e.message);
+            logger.error(`WsSql open is failed, ${e.code}, ${e.message}`);
+            if (wsSql) {
+                wsSql.close();
+            }
             throw(e);
         }
 

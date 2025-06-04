@@ -59,7 +59,14 @@ jobs:
       run: |
         nohup sudo taosadapter &
 
-    - uses: actions/checkout@v4
+    - name: Checkout current repo
+      uses: actions/checkout@v4
+      with:
+        path: 'nodejs-connector'
+        clean: true
+        set-safe-directory: true
+
+
 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
@@ -67,7 +74,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
 
     - name: test nodejs websocket
-      working-directory: nodejs
+      working-directory: nodejs-connector/nodejs
       run: |
         ls -al
         npm install

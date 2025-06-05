@@ -148,10 +148,6 @@ export class WebSocketConnector {
         })
     }
 
-    public configTimeout(ms: number) {
-        this._timeout = ms;
-    }
-
     public getWsURL(): URL {
         return this._wsURL;
     }

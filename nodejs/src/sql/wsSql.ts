@@ -175,17 +175,4 @@ export class WsSql{
         }
         
     }
-    private getSql(sql:string, reqId?:number, action:string = 'query'):string{
-        // construct msg
-        let queryMsg = {
-            action: action,
-            args: {
-                req_id: ReqId.getReqID(reqId),
-                sql: sql,
-                id: 0
-            },
-        }
-        return JSON.stringify(queryMsg)
-    }
-
 }

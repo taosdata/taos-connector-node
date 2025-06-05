@@ -14,7 +14,7 @@ export class WsClient {
     private _wsConnector?: WebSocketConnector;
     private _timeout?:number | undefined | null;
     private readonly _url:URL;
-    private static readonly _minVersion = "3.3.2-0";
+    private static readonly _minVersion = "3.3.2.0";
 
     constructor(url: URL, timeout ?:number | undefined | null) {
         this.checkURL(url);

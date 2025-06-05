@@ -255,7 +255,7 @@ describe('TDWebSocket.Stmt()', () => {
         let wsConf = new WSConfig(dsn);
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
-        let stmt = await (await connector).stmtInit()
+        let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare(getInsertBind(tableValues.length + 2, jsonTags.length, db, jsonTable));

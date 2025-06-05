@@ -99,7 +99,7 @@ export class WsSql{
                 }
                 return await WsStmt.newStmt(this._wsClient, precision, reqId);               
             } catch (e: any) {
-                logger.error(e.code, e.message);
+                logger.error(`stmtInit failed, code: ${e.code}, message: ${e.message}`);
                 throw(e);
             }
       

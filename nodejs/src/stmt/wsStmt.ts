@@ -24,7 +24,7 @@ export class WsStmt {
             let wsStmt = new WsStmt(wsClient, precision)
             return await wsStmt.init(reqId);
         } catch(e: any) {
-            logger.error(e.code, e.message);
+            logger.error(`WsStmt init is failed, ${e.code}, ${e.message}`);
             throw(e);
         }
 
@@ -98,18 +98,6 @@ export class WsStmt {
         return await this.sendBinaryMsg(reqId, 'bind', dataBlock);
     }
 
-    async jsonBind(paramArray: Array<Array<any>>): Promise<void> {
-        let queryMsg = {
-            action: 'bind',
-            args: {
-                req_id: ReqId.getReqID(),
-                columns: paramArray,
-                stmt_id: this._stmt_id,
-            },
-        };
-        return await this.execute(queryMsg);
-    }
-
     async batch(): Promise<void> {
         let queryMsg = {
             action: 'add_batch',
@@ -119,13 +107,6 @@ export class WsStmt {
             },
         };
         return await this.execute(queryMsg);
-    }
-
-    /**
-     * return client version.
-     */
-    async version(): Promise<string> {
-        return await this._wsClient.version();
     }
 
     async exec(): Promise<void> {

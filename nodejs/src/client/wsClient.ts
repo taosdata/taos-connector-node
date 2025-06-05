@@ -137,8 +137,8 @@ export class WsClient {
             logger.debug("ready status ", this._url, this._wsConnector.readyState())  
             return;             
         } catch (e: any) {
-            logger.error(e.code, e.message);
-            throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}`));
+            logger.error(`connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`);
+            throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`));
         }  
              
     }

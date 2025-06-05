@@ -69,7 +69,10 @@ describe('TDWebSocket.Tmq()', () => {
         [TMQConstants.CLIENT_ID, 'test_tmq_client'],
         [TMQConstants.WS_URL, tmqDsn],
         [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
-        [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
+        [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000'],
+        ["session.timeout.ms", "10000"],
+        ["max.poll.interval.ms", "30000"],
+        ["msg.with.table.name", "true"]
     ]);
 
     console.log(configMap);
@@ -90,7 +93,10 @@ describe('TDWebSocket.Tmq()', () => {
             [TMQConstants.CLIENT_ID, 'test_tmq_client'],
             [TMQConstants.WS_URL, tmqDsn],
             [TMQConstants.ENABLE_AUTO_COMMIT, 'true'],
-            [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000']
+            [TMQConstants.AUTO_COMMIT_INTERVAL_MS, '1000'],
+            ["session.timeout.ms", "10000"],
+            ["max.poll.interval.ms", "30000"],
+            ["msg.with.table.name", "true"]
         ]);
         try {
             consumer = await WsConsumer.newConsumer(errConfigMap);

@@ -24,7 +24,7 @@ export class WsStmt {
             let wsStmt = new WsStmt(wsClient, precision)
             return await wsStmt.init(reqId);
         } catch(e: any) {
-            logger.error(e.code, e.message);
+            logger.error(`WsStmt init is failed, ${e.code}, ${e.message}`);
             throw(e);
         }
 
@@ -121,13 +121,6 @@ export class WsStmt {
         return await this.execute(queryMsg);
     }
 
-    /**
-     * return client version.
-     */
-    async version(): Promise<string> {
-        return await this._wsClient.version();
-    }
-
     async exec(): Promise<void> {
         let queryMsg = {
             action: 'exec',
@@ -205,6 +198,7 @@ export class WsStmt {
             try {
                 if (this._wsClient.getState() <= 0) {
                     await this._wsClient.connect();
+                    await this._wsClient.checkVersion();
                 }
                 let queryMsg = {
                     action: 'init',
@@ -215,7 +209,7 @@ export class WsStmt {
                 await this.execute(queryMsg);
                 return this;  
             } catch (e: any) {
-                logger.error(e.code, e.message);
+                logger.error(`stmt init filed, ${e.code}, ${e.message}`);
                 throw(e);
             }   
     

@@ -4,14 +4,21 @@ import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
 
 const mutex = new Mutex();
+
+
+
 export class WebSocketConnectionPool {
     private static _instance?:WebSocketConnectionPool;
     private pool: Map<string, WebSocketConnector[]> = new Map();
-    private _connectionCount: number;
     private readonly _maxConnections: number;
+    private static sharedBuffer: SharedArrayBuffer;
+    private static sharedArray: Int32Array;
+
     private constructor(maxConnections: number = -1) {
         this._maxConnections = maxConnections;
-        this._connectionCount = 0;
+        WebSocketConnectionPool.sharedBuffer = new SharedArrayBuffer(4);
+        WebSocketConnectionPool.sharedArray = new Int32Array(WebSocketConnectionPool.sharedBuffer);
+        Atomics.store(WebSocketConnectionPool.sharedArray, 0, 0);
     }
 
     public static instance(maxConnections: number = -1):WebSocketConnectionPool {
@@ -23,7 +30,6 @@ export class WebSocketConnectionPool {
 
     async getConnection(url:URL, timeout: number | undefined | null): Promise<WebSocketConnector> {
         let connectAddr = url.origin.concat(url.pathname).concat(url.search)
-        logger.info("url:" + url)
         let connector:WebSocketConnector | undefined;
         const unlock = await mutex.acquire()
         try {
@@ -37,17 +43,18 @@ export class WebSocketConnectionPool {
             }  
 
             if (connector) {
-                logger.debug("get connection success:" + this._connectionCount)
+                logger.debug("get connection success:" + Atomics.load(WebSocketConnectionPool.sharedArray, 0));
                 return connector;
             }
-            if (this._maxConnections != -1 && this._connectionCount > this._maxConnections) {
-                throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT, "websocket connect arrived limited:" + this._connectionCount)
+
+            if (this._maxConnections != -1 && Atomics.load(WebSocketConnectionPool.sharedArray, 0) > this._maxConnections) {
+                throw new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT, "websocket connect arrived limited:" + Atomics.load(WebSocketConnectionPool.sharedArray, 0));
             }
-            
-            this._connectionCount++
-            return new WebSocketConnector(url, timeout);          
-        }finally{
-            unlock()
+            Atomics.add(WebSocketConnectionPool.sharedArray, 0, 1);
+            logger.info("getConnection, new connection count:" + Atomics.load(WebSocketConnectionPool.sharedArray, 0) + ", connectAddr:" + connectAddr);
+            return new WebSocketConnector(url, timeout);
+        } finally {
+            unlock();
         }
     }
 
@@ -66,27 +73,31 @@ export class WebSocketConnectionPool {
 
                     } else {
                         connectors.push(connector);
-                    }                    
+                    }
+                    logger.info("releaseConnection, current connection count:" + connectors.length)
                 } else {
-                    this._connectionCount--;
+                    Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
                     connector.close()
+                    logger.info("releaseConnection, current connection status fail:" + Atomics.load(WebSocketConnectionPool.sharedArray, 0))
                 }
             } finally {
                 unlock();
-            }
+            } 
         }
     }
 
     destroyed() {
+        let num = 0;
         if (this.pool) {
             for (let values of this.pool.values()) {
                 for (let i in values ) {
-                    values.pop()?.close();
+                    num++;
+                    values[i].close();
                 }
             }
         }
-        logger.info("destroyed connect:" + this._connectionCount)
-        this._connectionCount = 0
+        logger.info("destroyed connect:" +  Atomics.load(WebSocketConnectionPool.sharedArray, 0) + " current count:" + num);
+        Atomics.store(WebSocketConnectionPool.sharedArray, 0, 0);
         this.pool = new Map()
     }
 }

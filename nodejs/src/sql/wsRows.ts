@@ -55,7 +55,7 @@ export class WSRows {
                 }
                 
                 if (wsResponse.finished == 1) {
-                    this.close();
+                    await this.close();
                     this._taosResult.setData(null);
                 } else {
                     parseBlock(wsResponse, this._taosResult);
@@ -63,7 +63,7 @@ export class WSRows {
             }
             return this._taosResult;
         }catch(err:any){
-            this.close();
+            await this.close();
             throw new TaosResultError(err.code, err.message);
         } 
     }

@@ -71,3 +71,75 @@ export function safeDecodeURIComponent(str: string) {
         throw(new TDWebSocketClientError(ErrorCode.ERR_INVALID_URL, `Decoding ${str} error: ${e}`))
     }
 }
+
+/**
+ * compare two semantic version numbers
+ * @param v1 (e.g., "3.3.6.3-alpha")
+ * @param v2 (e.g., "3.3.6.2")
+ * @returns 
+ *   1 -> v1 > v2
+ *   -1 -> v1 < v2
+ *   0 -> v1 === v2
+ */
+export function compareVersions(v1: string, v2: string): number {
+  // analyze the core part of the version number and pre release tags
+  const [main1, pre1] = splitVersion(v1);
+  const [main2, pre2] = splitVersion(v2);
+
+  // compare the main version number section
+  const mainComparison = compareMainVersions(main1, main2);
+  if (mainComparison !== 0) return mainComparison;
+
+  // comparing pre release tags with the same main version
+  return comparePreReleases(pre1, pre2);
+}
+
+/**
+ * Split version number into main version and pre release tags
+ */
+function splitVersion(version: string): [number[], string | null] {
+  // split main version and pre release tags
+  const parts = version.split('-');
+  const main = parts[0];
+  const prerelease = parts.length > 1 ? parts[1] : null;
+
+  // split the main version into a numerical array
+  const mainParts = main.split('.').map(Number);
+  
+  return [mainParts, prerelease];
+}
+
+/**
+ * compare the main version number section
+ */
+function compareMainVersions(v1: number[], v2: number[]): number {
+  const maxLength = Math.max(v1.length, v2.length);
+  
+  for (let i = 0; i < maxLength; i++) {
+    // if partially missing, it is considered as 0
+    const part1 = v1[i] || 0;
+    const part2 = v2[i] || 0;
+
+    if (part1 > part2) return 1;
+    if (part1 < part2) return -1;
+  }
+  
+  return 0; 
+}
+
+/**
+ * compare pre release tags
+ */
+function comparePreReleases(pre1: string | null, pre2: string | null): number {
+  // both have no pre release tags → equal
+  if (pre1 === null && pre2 === null) return 0;
+
+  // versions with pre release tags have lower priority
+  if (pre1 === null) return 1;   // v1 is stable > v2
+  if (pre2 === null) return -1;  // v2 is stable > v1
+
+  // compare pre release tag strings
+  return pre1.localeCompare(pre2);
+}
+
+

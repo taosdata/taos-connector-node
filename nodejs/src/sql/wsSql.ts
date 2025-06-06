@@ -28,12 +28,16 @@ export class WsSql{
         let database = wsConfig.getDb();
         try {
             await wsSql._wsClient.connect(database);
+            await wsSql._wsClient.checkVersion();
             if(database && database.length > 0) {
                 await wsSql.exec(`use ${database}`);
             }
             return wsSql;
         } catch (e: any) {
-            logger.error(e.code, e.message);
+            logger.error(`WsSql open is failed, ${e.code}, ${e.message}`);
+            if (wsSql) {
+                await wsSql.close();
+            }
             throw(e);
         }
 
@@ -95,7 +99,7 @@ export class WsSql{
                 }
                 return await WsStmt.newStmt(this._wsClient, precision, reqId);               
             } catch (e: any) {
-                logger.error(e.code, e.message);
+                logger.error(`stmtInit failed, code: ${e.code}, message: ${e.message}`);
                 throw(e);
             }
       
@@ -171,17 +175,4 @@ export class WsSql{
         }
         
     }
-    private getSql(sql:string, reqId?:number, action:string = 'query'):string{
-        // construct msg
-        let queryMsg = {
-            action: action,
-            args: {
-                req_id: ReqId.getReqID(reqId),
-                sql: sql,
-                id: 0
-            },
-        }
-        return JSON.stringify(queryMsg)
-    }
-
 }

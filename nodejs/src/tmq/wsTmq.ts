@@ -2,7 +2,7 @@ import { TmqConfig } from './config';
 import { TMQConstants, TMQMessageType } from './constant';
 import { WsClient } from '../client/wsClient';
 import { TaosResult } from '../common/taosResult';
-import { ErrorCode, TaosResultError, WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
+import { ErrorCode, TaosResultError, TDWebSocketClientError, WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
 import { AssignmentResp, CommittedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockInfo, WsPollResponse, WsTmqQueryResponse} from './tmqResponse';
 import { ReqId } from '../common/reqid';
 import logger from "../common/log";
@@ -16,11 +16,33 @@ export class WsConsumer {
     private constructor(wsConfig:Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig)
         logger.debug(this._wsConfig)
+        if (wsConfig.size == 0 || !this._wsConfig.url) {
+            throw new WebSocketInterfaceError(ErrorCode.ERR_INVALID_URL, 
+                'invalid url, password or username needed.');
+        }
         this._wsClient = new WsClient(this._wsConfig.url, this._wsConfig.timeout);
+
     }
 
-    private async init():Promise<WsConsumer> {   
-        await this._wsClient.ready();
+    private async init():Promise<WsConsumer> { 
+        let wsSql = null  
+        try {
+            if (this._wsConfig.sql_url) {
+                wsSql = new WsClient(this._wsConfig.sql_url, this._wsConfig.timeout);
+                await wsSql.connect();
+                await wsSql.checkVersion();
+                await this._wsClient.ready();
+            }else {
+                throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._wsConfig.url}`));
+            }
+        }catch (e: any) {
+            await this._wsClient.close();
+            throw(e);
+        }finally {
+            if (wsSql) {
+                await wsSql.close();
+            }
+        }
         return this;          
           
     }
@@ -48,11 +70,12 @@ export class WsConsumer {
                 user      :this._wsConfig.user,
                 password  :this._wsConfig.password,
                 group_id  :this._wsConfig.group_id,
-                client_id  :this._wsConfig.client_id,
+                client_id :this._wsConfig.client_id,
                 topics    :topics,
                 offset_rest:this._wsConfig.offset_rest,
                 auto_commit:this._wsConfig.auto_commit,
-                auto_commit_interval_ms: this._wsConfig.auto_commit_interval_ms
+                auto_commit_interval_ms: this._wsConfig.auto_commit_interval_ms,
+                config: this._wsConfig.otherConfigs
             },
         };
         this._topics = topics

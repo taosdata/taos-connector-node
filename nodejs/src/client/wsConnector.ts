@@ -33,7 +33,6 @@ export class WebSocketConnector {
     }
 
     async ready() {
-
         return new Promise((resolve, reject) => {
             let reqId = ReqId.getReqID();
             WsEventCallback.instance().registerCallback({ action: "websocket_connection", req_id: BigInt(reqId), 
@@ -147,10 +146,6 @@ export class WebSocketConnector {
                     `WebSocket connection is not ready,status :${this._wsConn?.readyState}`))
             }
         })
-    }
-
-    public configTimeout(ms: number) {
-        this._timeout = ms;
     }
 
     public getWsURL(): URL {

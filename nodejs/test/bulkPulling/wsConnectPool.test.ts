@@ -149,6 +149,15 @@ describe('TDWebSocket.WsSql()', () => {
         await Promise.all(allp)
         console.log(stmtIds)
     });
+
+    test('retry connect', async() => {
+        for (let i =0; i < 20; i++) {
+            await tmqConnect()
+            await Sleep(1000);
+        }
+        console.log(stmtIds)
+    });
+
 })
 
 afterAll(async () => {

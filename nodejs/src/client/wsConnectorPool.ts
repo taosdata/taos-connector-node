@@ -34,13 +34,19 @@ export class WebSocketConnectionPool {
         const unlock = await mutex.acquire()
         try {
             if (this.pool.has(connectAddr)) {
-                let connectors = this.pool.get(connectAddr);
-                if (connectors) {
-                    if (connectors.length > 0) {
-                        connector = connectors.pop();
+                const connectors = this.pool.get(connectAddr);
+                while (connectors && connectors.length > 0) {
+                    const candidate = connectors.pop();
+                    if (candidate && candidate.readyState() > 0) { // 1: OPEN
+                        connector = candidate;
+                        break;
+                    } else if (candidate) {
+                        Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
+                        candidate.close();
+                        logger.error(`getConnection, current connection status fail, url: ${connectAddr}`)
                     }
                 }
-            }  
+            }
 
             if (connector) {
                 logger.debug("get connection success:" + Atomics.load(WebSocketConnectionPool.sharedArray, 0));

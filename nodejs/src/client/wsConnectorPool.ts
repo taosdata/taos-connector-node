@@ -37,7 +37,10 @@ export class WebSocketConnectionPool {
                 const connectors = this.pool.get(connectAddr);
                 while (connectors && connectors.length > 0) {
                     const candidate = connectors.pop();
-                    if (candidate && candidate.readyState() > 0) { // 1: OPEN
+                    if (!candidate) {
+                        continue;
+                    }
+                    if (candidate && candidate.readyState() === 1) { // 1: OPEN
                         connector = candidate;
                         break;
                     } else if (candidate) {
@@ -68,7 +71,7 @@ export class WebSocketConnectionPool {
         if (connector) {
             const unlock = await mutex.acquire();
             try {
-                if (connector.readyState() > 0) {
+                if (connector.readyState() === 1) {
                     let url = connector.getWsURL();
                     let connectAddr = url.origin.concat(url.pathname).concat(url.search)   
                     let connectors = this.pool.get(connectAddr);

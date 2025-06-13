@@ -32,7 +32,7 @@ export class WsConsumer {
                 await wsSql.connect();
                 await wsSql.checkVersion();
                 await this._wsClient.ready();
-            }else {
+            } else {
                 throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._wsConfig.url}`));
             }
         }catch (e: any) {

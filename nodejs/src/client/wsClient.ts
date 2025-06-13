@@ -40,7 +40,7 @@ export class WsClient {
         };
         
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
-        if (this._wsConnector.readyState() > 0) {
+        if (this._wsConnector.readyState() === 1) {
             return;
         } 
         try {
@@ -63,7 +63,7 @@ export class WsClient {
 
     async execNoResp(queryMsg: string): Promise<void> {
         logger.debug('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
-        if (this._wsConnector && this._wsConnector.readyState() > 0) {
+        if (this._wsConnector && this._wsConnector.readyState() === 1) {
             await this._wsConnector.sendMsgNoResp(queryMsg)
             return;
         }
@@ -74,7 +74,7 @@ export class WsClient {
     async exec(queryMsg: string, bSqlQuery:boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
             logger.debug('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
-            if (this._wsConnector && this._wsConnector.readyState() > 0) {
+            if (this._wsConnector && this._wsConnector.readyState() === 1) {
                 this._wsConnector.sendMsg(queryMsg).then((e: any) => {
                     if (e.msg.code == 0) {
                         if (bSqlQuery) {
@@ -96,7 +96,7 @@ export class WsClient {
     // need to construct Response.
     async sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, bSqlQuery:boolean = true, bResultBinary: boolean = false): Promise<any> {
         return new Promise((resolve, reject) => {
-            if (this._wsConnector && this._wsConnector.readyState() > 0) {
+            if (this._wsConnector && this._wsConnector.readyState() === 1) {
                 this._wsConnector.sendBinaryMsg(reqId, action, message).then((e: any) => {
                     if (bResultBinary) {
                         resolve(e);
@@ -131,7 +131,7 @@ export class WsClient {
     async ready(): Promise<void> {
         try {
             this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
-            if (this._wsConnector.readyState() <= 0) {
+            if (this._wsConnector.readyState() !== 1) {
                 await this._wsConnector.ready()
             }
             logger.debug("ready status ", this._url, this._wsConnector.readyState())  
@@ -146,7 +146,7 @@ export class WsClient {
     async sendMsg(msg:string): Promise<any> {
         return new Promise((resolve, reject) => {
             logger.debug("[wsQueryInterface.sendMsg]===>" + msg)
-            if (this._wsConnector && this._wsConnector.readyState() > 0) {
+            if (this._wsConnector && this._wsConnector.readyState() === 1) {
                 this._wsConnector.sendMsg(msg).then((e: any) => {
                     resolve(e);
                 }).catch((e) => reject(e));
@@ -167,7 +167,7 @@ export class WsClient {
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(freeResultMsg);
             logger.debug("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
-            if (this._wsConnector && this._wsConnector.readyState() > 0) {
+            if (this._wsConnector && this._wsConnector.readyState() === 1) {
                 this._wsConnector.sendMsg(jsonStr, false)
                 .then((e: any) => {resolve(e);})
                 .catch((e) => reject(e));

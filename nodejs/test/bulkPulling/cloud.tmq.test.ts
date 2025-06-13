@@ -3,11 +3,32 @@ import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import logger, { setLevel } from "../../src/common/log"
+import { WSConfig } from "../../src/common/config";
+import { WsSql } from "../../src/sql/wsSql";
 
 beforeAll(async () => {
- 
+const url = `wss://${process.env.TDENGINE_CLOUD_URL}?token=${process.env.TDENGINE_CLOUD_TOKEN}`;
+let wsSql = null;
+    try {
+        const conf = new WSConfig(url);
+        conf.setUser('root')
+        conf.setPwd('taosdata')
+        wsSql = await WsSql.open(conf)
+        let sql = `INSERT INTO dmeters.d1001 USING dmeters.meters (groupid, location) TAGS(2, 'SanFrancisco')
+            VALUES (NOW + 1a, 10.30000, 219, 0.31000) (NOW + 2a, 12.60000, 218, 0.33000) (NOW + 3a, 12.30000, 221, 0.31000)
+            dmeters.d1002 USING dmeters.meters (groupid, location) TAGS(3, 'SanFrancisco') 
+            VALUES (NOW + 1a, 10.30000, 218, 0.25000)`
+        let res = await wsSql.exec(sql);
+        console.log(res);
+        expect(res.getAffectRows()).toBeGreaterThanOrEqual(3);
+    } catch (err) {
+        throw err;
+    } finally {
+        if (wsSql) {
+        await wsSql.close();
+        }
+    }
 })
-
 
 describe('TDWebSocket.Tmq()', () => {
     jest.setTimeout(20 * 1000)
@@ -15,7 +36,7 @@ describe('TDWebSocket.Tmq()', () => {
     test('normal connect', async() => {
         const url = `wss://${process.env.TDENGINE_CLOUD_URL}?token=${process.env.TDENGINE_CLOUD_TOKEN}`;
         // const TDENGINE_CLOUD_URL = 'wss://gw.cloud.taosdata.com?token=1eb78307be0681ac2fc07c2817ba8a9719641fb9';
-        const topic = 'chenyu';
+        const topic = 'topic_meters';
         const topics = [topic];
         const groupId = 'group1';
         const clientId = 'client1';

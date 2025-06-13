@@ -91,7 +91,7 @@ export class WebSocketConnector {
         }
 
         return new Promise((resolve, reject) => {
-            if (this._wsConn && this._wsConn.readyState > 0) {            
+            if (this._wsConn && this._wsConn.readyState === w3cwebsocket.OPEN) {            
                 this._wsConn.send(message)
                 resolve()
             } else {
@@ -110,7 +110,7 @@ export class WebSocketConnector {
         }
 
         return new Promise((resolve, reject) => {
-            if (this._wsConn && this._wsConn.readyState > 0) {
+            if (this._wsConn && this._wsConn.readyState === w3cwebsocket.OPEN) {
                 if (register) {
                     WsEventCallback.instance().registerCallback({ action: msg.action, req_id: msg.args.req_id, 
                         timeout:this._timeout, id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id) }, 
@@ -127,7 +127,7 @@ export class WebSocketConnector {
 
     async sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, register: Boolean = true) {
         return new Promise((resolve, reject) => {
-            if (this._wsConn && this._wsConn.readyState > 0) {
+            if (this._wsConn && this._wsConn.readyState === w3cwebsocket.OPEN) {
                 if (register) {
                     WsEventCallback.instance().registerCallback({ action: action, req_id: reqId, 
                         timeout:this._timeout, id: reqId}, resolve, reject);

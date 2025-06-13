@@ -2,6 +2,7 @@ import { Mutex } from "async-mutex";
 import { WebSocketConnector } from "./wsConnector";
 import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
+import { w3cwebsocket } from "websocket";
 
 const mutex = new Mutex();
 
@@ -40,7 +41,7 @@ export class WebSocketConnectionPool {
                     if (!candidate) {
                         continue;
                     }
-                    if (candidate && candidate.readyState() === 1) { // 1: OPEN
+                    if (candidate && candidate.readyState() === w3cwebsocket.OPEN) {
                         connector = candidate;
                         break;
                     } else if (candidate) {
@@ -71,7 +72,7 @@ export class WebSocketConnectionPool {
         if (connector) {
             const unlock = await mutex.acquire();
             try {
-                if (connector.readyState() === 1) {
+                if (connector.readyState() === w3cwebsocket.OPEN) {
                     let url = connector.getWsURL();
                     let connectAddr = url.origin.concat(url.pathname).concat(url.search)   
                     let connectors = this.pool.get(connectAddr);

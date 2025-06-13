@@ -26,7 +26,7 @@ describe('TDWebSocket.WsSql()', () => {
     jest.setTimeout(20 * 1000)
     test('normal connect', async() => {
         let wsSql = null;
-        let conf :WSConfig = new WSConfig()
+        let conf :WSConfig = new WSConfig('');
         conf.setUrl(dns);
         conf.setUser('root');
         conf.setPwd('taosdata');

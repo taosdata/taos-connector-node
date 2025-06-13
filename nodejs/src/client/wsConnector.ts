@@ -59,13 +59,6 @@ export class WebSocketConnector {
             WsEventCallback.instance().handleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
                 OnMessageType.MESSAGE_TYPE_ARRAYBUFFER, data);
 
-        } else if (Object.prototype.toString.call(data) === '[object Blob]') {
-            data.arrayBuffer().then((d: ArrayBuffer) => {
-                let id = new DataView(d, 8, 8).getBigUint64(0, true);
-                WsEventCallback.instance().handleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
-                    OnMessageType.MESSAGE_TYPE_BLOB, d);
-            })
-
         } else if (Object.prototype.toString.call(data) === '[object String]') {
             let msg = JSON.parse(data)
             logger.debug("[_onmessage.stringType]==>:" + data);

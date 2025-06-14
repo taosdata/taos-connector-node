@@ -59,13 +59,6 @@ export class WebSocketConnector {
             WsEventCallback.instance().handleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
                 OnMessageType.MESSAGE_TYPE_ARRAYBUFFER, data);
 
-        } else if (Object.prototype.toString.call(data) === '[object Blob]') {
-            data.arrayBuffer().then((d: ArrayBuffer) => {
-                let id = new DataView(d, 8, 8).getBigUint64(0, true);
-                WsEventCallback.instance().handleEventCallback({id:id, action:'', req_id:BigInt(0)}, 
-                    OnMessageType.MESSAGE_TYPE_BLOB, d);
-            })
-
         } else if (Object.prototype.toString.call(data) === '[object String]') {
             let msg = JSON.parse(data)
             logger.debug("[_onmessage.stringType]==>:" + data);
@@ -98,7 +91,7 @@ export class WebSocketConnector {
         }
 
         return new Promise((resolve, reject) => {
-            if (this._wsConn && this._wsConn.readyState > 0) {            
+            if (this._wsConn && this._wsConn.readyState === w3cwebsocket.OPEN) {            
                 this._wsConn.send(message)
                 resolve()
             } else {
@@ -117,7 +110,7 @@ export class WebSocketConnector {
         }
 
         return new Promise((resolve, reject) => {
-            if (this._wsConn && this._wsConn.readyState > 0) {
+            if (this._wsConn && this._wsConn.readyState === w3cwebsocket.OPEN) {
                 if (register) {
                     WsEventCallback.instance().registerCallback({ action: msg.action, req_id: msg.args.req_id, 
                         timeout:this._timeout, id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id) }, 
@@ -134,7 +127,7 @@ export class WebSocketConnector {
 
     async sendBinaryMsg(reqId: bigint, action:string, message: ArrayBuffer, register: Boolean = true) {
         return new Promise((resolve, reject) => {
-            if (this._wsConn && this._wsConn.readyState > 0) {
+            if (this._wsConn && this._wsConn.readyState === w3cwebsocket.OPEN) {
                 if (register) {
                     WsEventCallback.instance().registerCallback({ action: action, req_id: reqId, 
                         timeout:this._timeout, id: reqId}, resolve, reject);

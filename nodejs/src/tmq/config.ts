@@ -10,7 +10,7 @@ export class TmqConfig {
     client_id: string | null = null;
     offset_rest: string | null = null;
     topics?: Array<string>;
-    auto_commit: boolean = false;
+    auto_commit: boolean = true;
     auto_commit_interval_ms: number = 5 * 1000;
     timeout: number = 5000;
     otherConfigs: Map<string, any>;

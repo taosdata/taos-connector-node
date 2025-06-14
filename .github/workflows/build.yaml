@@ -76,6 +76,8 @@ jobs:
     - name: test nodejs websocket
       working-directory: nodejs-connector/nodejs
       run: |
+        export TDENGINE_CLOUD_URL=${{ secrets.TDENGINE_CLOUD_URL }}
+        export TDENGINE_CLOUD_TOKEN=${{ secrets.TDENGINE_CLOUD_TOKEN }}
         ls -al
         npm install
         npm list

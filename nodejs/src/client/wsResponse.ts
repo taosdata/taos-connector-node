@@ -106,27 +106,3 @@ export class WSFetchBlockResponse {
         
     }
 }
-
-interface IWSConnResponse {
-    code: number;
-    message: string;
-    action: string;
-    req_id: number;
-    timing: bigint;
-}
-
-export class WSConnResponse {
-    code: number;
-    message: string;
-    action: string;
-    req_id: number;
-    timing: bigint;
-
-    constructor(msg: IWSConnResponse) {
-        this.code = msg.code;
-        this.message = msg.message;
-        this.action = msg.action;
-        this.req_id = msg.req_id;
-        this.timing = BigInt(msg.timing);
-    }
-}

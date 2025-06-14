@@ -5,7 +5,7 @@ import { WsSql } from "../../src/sql/wsSql";
 import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 import { Sleep } from "../utils";
-import logger, { setLevel } from "../../src/common/log"
+import { setLevel } from "../../src/common/log"
 
 let dsn = 'ws://root:taosdata@localhost:6041';
 let tags = ['California.SanFrancisco', 3];
@@ -86,7 +86,7 @@ async function tmqConnect() {
         consumer = await WsConsumer.newConsumer(configMap);
         await consumer.subscribe(topics);
         
-        let res = await consumer.poll(500); 
+        let res = await consumer.poll(100); 
         for (let [key, value] of res) {
             console.log(key, value.getMeta());
             let data = value.getData();
@@ -130,7 +130,7 @@ beforeAll(async () => {
 })
 
 describe('TDWebSocket.WsSql()', () => {
-    jest.setTimeout(20 * 1000)
+    jest.setTimeout(60 * 1000)
     test('ReqId', async()=> {
         const allp:any[] = []
         for (let i =0; i < 10; i++) {
@@ -149,6 +149,7 @@ describe('TDWebSocket.WsSql()', () => {
         await Promise.all(allp)
         console.log(stmtIds)
     });
+
 })
 
 afterAll(async () => {

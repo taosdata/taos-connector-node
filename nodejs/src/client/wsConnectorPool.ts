@@ -2,6 +2,7 @@ import { Mutex } from "async-mutex";
 import { WebSocketConnector } from "./wsConnector";
 import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
+import { w3cwebsocket } from "websocket";
 
 const mutex = new Mutex();
 
@@ -34,13 +35,22 @@ export class WebSocketConnectionPool {
         const unlock = await mutex.acquire()
         try {
             if (this.pool.has(connectAddr)) {
-                let connectors = this.pool.get(connectAddr);
-                if (connectors) {
-                    if (connectors.length > 0) {
-                        connector = connectors.pop();
+                const connectors = this.pool.get(connectAddr);
+                while (connectors && connectors.length > 0) {
+                    const candidate = connectors.pop();
+                    if (!candidate) {
+                        continue;
+                    }
+                    if (candidate && candidate.readyState() === w3cwebsocket.OPEN) {
+                        connector = candidate;
+                        break;
+                    } else if (candidate) {
+                        Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
+                        candidate.close();
+                        logger.error(`getConnection, current connection status fail, url: ${connectAddr}`)
                     }
                 }
-            }  
+            }
 
             if (connector) {
                 logger.debug("get connection success:" + Atomics.load(WebSocketConnectionPool.sharedArray, 0));
@@ -62,7 +72,7 @@ export class WebSocketConnectionPool {
         if (connector) {
             const unlock = await mutex.acquire();
             try {
-                if (connector.readyState() > 0) {
+                if (connector.readyState() === w3cwebsocket.OPEN) {
                     let url = connector.getWsURL();
                     let connectAddr = url.origin.concat(url.pathname).concat(url.search)   
                     let connectors = this.pool.get(connectAddr);

@@ -169,7 +169,7 @@ export class WsClient {
             let jsonStr = JSONBig.stringify(freeResultMsg);
             logger.debug("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr)
             if (this._wsConnector && this._wsConnector.readyState() === w3cwebsocket.OPEN) {
-                this._wsConnector.sendMsg(jsonStr, false)
+                this._wsConnector.sendMsgNoResp(jsonStr)
                 .then((e: any) => {resolve(e);})
                 .catch((e) => reject(e));
             } else {

@@ -22,7 +22,7 @@ export class WSRows {
 
     async next(): Promise<boolean> {
         if (this._wsQueryResponse.is_update || this._isClose) {
-            logger.debug("WSRows::Next::End=>", this._taosResult, this._isClose)
+            logger.debug(`WSRows::Next::End=> ${this._taosResult}, ${this._isClose}`);
             return false;
         }
         
@@ -50,7 +50,8 @@ export class WSRows {
                 this._taosResult.addTotalTime(resp.totalTime)
                 let wsResponse = new WSFetchBlockResponse(resp.msg);
                 if (wsResponse.code != 0) {
-                    logger.error("Executing SQL statement returns error: ", wsResponse.code, wsResponse.message);
+                    await this.close();
+                    logger.error(`Executing SQL statement returns error: ${wsResponse.code}, ${wsResponse.message}`);
                     throw new TaosResultError(wsResponse.code, wsResponse.message);
                 }
                 
@@ -62,8 +63,12 @@ export class WSRows {
                 }
             }
             return this._taosResult;
-        }catch(err:any){
-            await this.close();
+        } catch (err:any){
+            try {
+                await this.close();
+            } catch (closeErr:any) {
+                logger.error(`GetBlockData encountered an exception while calling the close method, reason: ${closeErr.message}`);
+            }
             throw new TaosResultError(err.code, err.message);
         } 
     }
@@ -91,7 +96,7 @@ export class WSRows {
             return
         }
         this._isClose = true
-        this._wsClient.freeResult(this._wsQueryResponse)
+        await this._wsClient.freeResult(this._wsQueryResponse)
     }
 
 }

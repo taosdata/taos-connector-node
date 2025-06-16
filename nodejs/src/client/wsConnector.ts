@@ -116,7 +116,7 @@ export class WebSocketConnector {
                         timeout:this._timeout, id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id) }, 
                         resolve, reject);
                 }
-                logger.debug("[wsClient.sendMessage.msg]===>\n", message)
+                logger.debug(`[wsClient.sendMessage.msg]===> ${message}`)
                 this._wsConn.send(message)
             } else {
                 reject(new WebSocketQueryError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, 

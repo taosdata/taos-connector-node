@@ -1,10 +1,11 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
+import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
 import { Sleep } from "../utils";
 
 let dns = 'ws://localhost:6041'
-
+setLevel("debug")
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns);
     conf.setUser('root');
@@ -337,7 +338,7 @@ describe('TDWebSocket.Stmt()', () => {
             await stmt.exec()
         }catch(e) {
             let err:any = e
-            expect(err.message).toMatch("Retry needed")
+            expect(err.message).toMatch("Retry needed");
         }
         await stmt.close()
         await connector.close();

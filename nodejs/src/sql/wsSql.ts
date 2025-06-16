@@ -126,7 +126,7 @@ export class WsSql{
                             taosResult.addTotalTime(resp.totalTime)
                             let wsResponse = new WSFetchBlockResponse(resp.msg);
                             if (wsResponse.code != 0) {
-                                logger.error("Executing SQL statement returns error: ", wsResponse.code, wsResponse.message);
+                                logger.error(`Executing SQL statement returns error: ${wsResponse.code}, ${wsResponse.message}`);
                                 throw new TaosResultError(wsResponse.code, wsResponse.message);
                             }
                             
@@ -140,7 +140,7 @@ export class WsSql{
                     } catch(err: any){
                         throw new TaosResultError(err.code, err.message);
                     } finally {
-                        this._wsClient.freeResult(wsQueryResponse)
+                        await this._wsClient.freeResult(wsQueryResponse)
                     }                        
                 }
                 throw new TaosResultError(ErrorCode.ERR_INVALID_FETCH_MESSAGE_DATA, "The result data of the query is incorrect");

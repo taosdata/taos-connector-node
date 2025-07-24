@@ -30,7 +30,7 @@ export class WebSocketConnectionPool {
     }
 
     async getConnection(url:URL, timeout: number | undefined | null): Promise<WebSocketConnector> {
-        let connectAddr = url.origin.concat(url.pathname).concat(url.search)
+        let connectAddr = url.origin.concat(url.pathname)
         let connector:WebSocketConnector | undefined;
         const unlock = await mutex.acquire()
         try {
@@ -74,7 +74,7 @@ export class WebSocketConnectionPool {
             try {
                 if (connector.readyState() === w3cwebsocket.OPEN) {
                     let url = connector.getWsURL();
-                    let connectAddr = url.origin.concat(url.pathname).concat(url.search)   
+                    let connectAddr = url.origin.concat(url.pathname)  
                     let connectors = this.pool.get(connectAddr);
                     if (!connectors) {
                         connectors = new Array();

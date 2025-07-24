@@ -10,6 +10,7 @@ import { ReqId } from '../common/reqid';
 import logger from '../common/log';
 import { safeDecodeURIComponent, compareVersions} from '../common/utils';
 import { w3cwebsocket } from 'websocket';
+import { TSDB_OPTION_CONNECTION } from '../common/constant';
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
@@ -57,6 +58,29 @@ export class WsClient {
         }
      
 
+    }
+
+    async setOptionConnection(option: TSDB_OPTION_CONNECTION, value: string): Promise<void> {
+        logger.debug("[wsClient.setOptionConnection]===>" + option + ", " + value);
+
+        let connMsg = {
+            action: 'options_connection',
+            args: {
+                req_id: ReqId.getReqID(),
+                options: [
+                    {
+                        option: option,
+                        value: value
+                    }
+                ]
+            }
+        };
+        try {
+            await this.exec(JSONBig.stringify(connMsg), false);
+        } catch (e: any) {
+            logger.error("[wsClient.setOptionConnection] failed: " + e.message);
+            throw e;
+        }
     }
 
     async execNoResp(queryMsg: string): Promise<void> {

@@ -24,6 +24,10 @@ export function getUrl(wsConfig:WSConfig):URL {
         wsConfig.setDb(url.pathname.slice(1))
     }
 
+    if (url.searchParams.has("timezone")) {
+        wsConfig.setTimezone(url.searchParams.get("timezone") || '');
+    }
+
     url.pathname = '/ws'
     return url
 }

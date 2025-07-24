@@ -8,7 +8,7 @@ import { WSFetchBlockResponse, WSQueryResponse } from '../client/wsResponse'
 import { Precision, SchemalessMessageInfo, SchemalessProto } from './wsProto'
 import { WsStmt } from '../stmt/wsStmt'
 import { ReqId } from '../common/reqid'
-import { BinaryQueryMessage, FetchRawBlockMessage, PrecisionLength } from '../common/constant'
+import { BinaryQueryMessage, FetchRawBlockMessage, PrecisionLength, TSDB_OPTION_CONNECTION } from '../common/constant'
 import logger from '../common/log'
  
 export class WsSql{
@@ -32,6 +32,11 @@ export class WsSql{
             if(database && database.length > 0) {
                 await wsSql.exec(`use ${database}`);
             }
+            let timezone = wsConfig.getTimezone();     
+            if (timezone && timezone.length > 0) {
+                await wsSql._wsClient.setOptionConnection(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_TIMEZONE, timezone);
+            }
+
             return wsSql;
         } catch (e: any) {
             logger.error(`WsSql open is failed, ${e.code}, ${e.message}`);

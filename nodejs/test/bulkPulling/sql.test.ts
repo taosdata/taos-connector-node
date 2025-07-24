@@ -13,8 +13,8 @@ beforeAll(async () => {
     conf.setUser('root')
     conf.setPwd('taosdata')
     let wsSql = await WsSql.open(conf)
-    // await wsSql.exec(`CREATE USER user1 PASS '${password1}'`);
-    // await wsSql.exec(`CREATE USER user2 PASS '${password2}'`);
+    await wsSql.exec(`CREATE USER user1 PASS '${password1}'`);
+    await wsSql.exec(`CREATE USER user2 PASS '${password2}'`);
     await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
     await Sleep(100)
     await wsSql.exec('use power')
@@ -209,8 +209,8 @@ afterAll(async () => {
     conf.setPwd('taosdata');
     let wsSql = await WsSql.open(conf);
     await wsSql.exec('drop database power');
-    // await wsSql.exec('DROP USER user1;')
-    // await wsSql.exec('DROP USER user2;')
+    await wsSql.exec('DROP USER user1;')
+    await wsSql.exec('DROP USER user2;')
     await wsSql.close();
     WebSocketConnectionPool.instance().destroyed()
 })

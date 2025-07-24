@@ -15,6 +15,7 @@ import { TSDB_OPTION_CONNECTION } from '../common/constant';
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
     private _timeout?:number | undefined | null;
+    private _timezone?:string | undefined | null;
     private readonly _url:URL;
     private static readonly _minVersion = "3.3.2.0";
 
@@ -22,7 +23,11 @@ export class WsClient {
         this.checkURL(url);
         this._url = url;
         this._timeout = timeout;
-    
+        if (this._url.searchParams.has("timezone")) {
+            this._timezone = this._url.searchParams.get("timezone") || undefined;
+            this._url.searchParams.delete("timezone");
+        }
+
     }
 
     async connect(database?: string | undefined | null): Promise<void> {
@@ -34,7 +39,7 @@ export class WsClient {
                 user: safeDecodeURIComponent(this._url.username),
                 password: safeDecodeURIComponent(this._url.password),
                 db: database,
-                ...(timezone && { tz: timezone }),
+                ...(this._timezone && { tz: this._timezone }),
             },
         };
         logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg));

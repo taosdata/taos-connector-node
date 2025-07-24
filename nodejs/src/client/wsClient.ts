@@ -25,21 +25,18 @@ export class WsClient {
     }
 
     async connect(database?: string | undefined | null): Promise<void> {
-        let _db = this._url.pathname.split('/')[3];
-        if (database) {
-            _db = database;
-        }
-        
+        let timezone = this._url.searchParams.get("timezone");
         let connMsg = {
             action: 'conn',
             args: {
                 req_id: ReqId.getReqID(),
                 user: safeDecodeURIComponent(this._url.username),
                 password: safeDecodeURIComponent(this._url.password),
-                db: _db,
+                db: database,
+                ...(timezone && { tz: timezone }),
             },
         };
-        
+        logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg));
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
         if (this._wsConnector.readyState() === w3cwebsocket.OPEN) {
             return;

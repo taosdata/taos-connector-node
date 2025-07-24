@@ -4,7 +4,7 @@ import { WsSql } from "../../src/sql/wsSql";
 import { Sleep } from "../utils";
 import logger, { setLevel } from "../../src/common/log"
 
-let dns = 'ws://localhost:6041'
+let dns = 'ws://192.168.2.156:6041'
 let password1 = 'Ab1!@#$%,.:?<>;~'
 let password2 = 'Bc%^&*()-_+=[]{}'
 setLevel("debug")
@@ -13,8 +13,8 @@ beforeAll(async () => {
     conf.setUser('root')
     conf.setPwd('taosdata')
     let wsSql = await WsSql.open(conf)
-    await wsSql.exec(`CREATE USER user1 PASS '${password1}'`);
-    await wsSql.exec(`CREATE USER user2 PASS '${password2}'`);
+    // await wsSql.exec(`CREATE USER user1 PASS '${password1}'`);
+    // await wsSql.exec(`CREATE USER user2 PASS '${password2}'`);
     await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
     await Sleep(100)
     await wsSql.exec('use power')
@@ -80,6 +80,24 @@ describe('TDWebSocket.WsSql()', () => {
             }
         }
     })
+
+    test('connect url', async() => {
+        let url = 'ws://root:taosdata@192.168.2.156:6041/information_schema?timezone=Asia/Shanghai'
+        let conf :WSConfig = new WSConfig(url)
+        let wsSql = await WsSql.open(conf)
+        let version = await wsSql.version()
+        console.log(version);
+        expect(version).toBeTruthy()
+        let wsRows = await wsSql.query('select timezone()')
+        while (await wsRows.next()) {
+            let result = wsRows.getData()
+            console.log(result);
+            expect(result).toBeTruthy()
+            expect(JSON.stringify(result)).toContain('Asia/Shanghai')
+        }
+        await wsSql.close();
+    })
+
     test('get taosc version', async() => {  
         let conf :WSConfig = new WSConfig(dns)
         conf.setUser('root')
@@ -191,8 +209,8 @@ afterAll(async () => {
     conf.setPwd('taosdata');
     let wsSql = await WsSql.open(conf);
     await wsSql.exec('drop database power');
-    await wsSql.exec('DROP USER user1;')
-    await wsSql.exec('DROP USER user2;')
+    // await wsSql.exec('DROP USER user1;')
+    // await wsSql.exec('DROP USER user2;')
     await wsSql.close();
     WebSocketConnectionPool.instance().destroyed()
 })

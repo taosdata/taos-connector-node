@@ -5,6 +5,7 @@ export class WSConfig {
     private _url: string;
     private _timeout:number| undefined | null;
     private _token:string | undefined | null;
+    private _timezone:string | undefined | null;
 
     constructor(url:string) {
         this._url = url;
@@ -52,8 +53,10 @@ export class WSConfig {
     public getTimeOut(): number | undefined | null {
         return this._timeout
     }
-
-    
+    public setTimezone(timezone: string) {
+        this._timezone = timezone;
+    }
+    public getTimezone(): string | undefined | null {
+        return this._timezone;
+    }
 }
-
-

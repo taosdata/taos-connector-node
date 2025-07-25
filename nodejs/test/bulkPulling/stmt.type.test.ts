@@ -302,7 +302,6 @@ test('test bind exception cases', async() => {
     let stmt = await connector.stmtInit()
     const params = stmt.newStmtParam();
     
-    // 测试空数组异常
     const emptyArrayMethods = [
         { method: 'setBoolean', name: 'SetBooleanColumn' },
         { method: 'setTinyInt', name: 'SetTinyIntColumn' },
@@ -318,7 +317,6 @@ test('test bind exception cases', async() => {
         { method: 'setTimestamp', name: 'SeTimestampColumn' }
     ];
     
-    // 测试空数组和null参数
     emptyArrayMethods.forEach(({ method, name }) => {
         expect(() => {
             (params as any)[method]([]);
@@ -333,7 +331,6 @@ test('test bind exception cases', async() => {
         }).toThrow(`${name} params is invalid!`);
     });
     
-    // 测试数据类型不匹配异常
     expect(() => {
         params.setBoolean(['not boolean']);
     }).toThrow('SetTinyIntColumn params is invalid!');

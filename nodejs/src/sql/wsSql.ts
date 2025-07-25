@@ -37,6 +37,8 @@ export class WsSql{
             let timezone = wsConfig.getTimezone();     
             if (timezone && timezone.length > 0) {
                 await wsSql._wsClient.setOptionConnection(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_TIMEZONE, timezone);
+            } else {
+                await wsSql._wsClient.setOptionConnection(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_TIMEZONE, null);
             }
 
             return wsSql;

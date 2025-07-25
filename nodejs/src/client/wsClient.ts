@@ -65,7 +65,7 @@ export class WsClient {
 
     }
 
-    async setOptionConnection(option: TSDB_OPTION_CONNECTION, value: string): Promise<void> {
+    async setOptionConnection(option: TSDB_OPTION_CONNECTION, value: string | null): Promise<void> {
         logger.debug("[wsClient.setOptionConnection]===>" + option + ", " + value);
 
         let connMsg = {

@@ -226,8 +226,6 @@ export class WsClient {
                 logger.error(`connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`);
                 throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`));
             }
-
-                               
         }
         throw(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect");
     }
@@ -238,7 +236,6 @@ export class WsClient {
             this._wsConnector = undefined
             // this._wsConnector.close();
         }
-       
     }
 
     checkURL(url: URL) {

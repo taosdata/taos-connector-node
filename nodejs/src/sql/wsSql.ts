@@ -31,6 +31,8 @@ export class WsSql{
             await wsSql._wsClient.checkVersion();
             if(database && database.length > 0) {
                 await wsSql.exec(`use ${database}`);
+            } else {
+                await wsSql.exec('use information_schema');
             }
             let timezone = wsConfig.getTimezone();     
             if (timezone && timezone.length > 0) {

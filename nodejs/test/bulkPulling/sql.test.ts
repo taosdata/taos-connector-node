@@ -31,9 +31,17 @@ describe('TDWebSocket.WsSql()', () => {
         conf.setUser('root');
         conf.setPwd('taosdata');
         conf.setDb('power');
+        conf.setTimezone('America/New_York');
         conf.setTimeOut(6000);
         wsSql = await WsSql.open(conf)
         expect(wsSql.state()).toBeGreaterThan(0)
+        let wsRows = await wsSql.query('select timezone()')
+        while (await wsRows.next()) {
+            let result = wsRows.getData()
+            console.log(result);
+            expect(result).toBeTruthy()
+            expect(JSON.stringify(result)).toContain('America/New_York')
+        }
         await wsSql.close();
     });
 

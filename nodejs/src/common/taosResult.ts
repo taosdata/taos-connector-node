@@ -410,7 +410,7 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             break;
         }
         default: {
-            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unspported type ${metaType}`)
+            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unsupported type ${metaType}`)
         }
     }
     return result;

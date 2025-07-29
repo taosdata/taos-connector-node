@@ -130,12 +130,12 @@ test('normal Subscribe', async() => {
 
 
 afterAll(async () => {
-    // let conf :WSConfig = new WSConfig(dns);
-    // conf.setUser('root');
-    // conf.setPwd('taosdata');
-    // let wsSql = await WsSql.open(conf);
-    // await wsSql.exec(dropTopic);
-    // await wsSql.exec('drop database power');
-    // await wsSql.close();
+    let conf :WSConfig = new WSConfig(dns);
+    conf.setUser('root');
+    conf.setPwd('taosdata');
+    let wsSql = await WsSql.open(conf);
+    await wsSql.exec(dropTopic);
+    await wsSql.exec('drop database power');
+    await wsSql.close();
     WebSocketConnectionPool.instance().destroyed()
 })

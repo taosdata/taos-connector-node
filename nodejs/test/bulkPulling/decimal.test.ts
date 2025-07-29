@@ -6,7 +6,7 @@ import logger, { setLevel } from "../../src/common/log"
 import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 
-let dns = 'ws://localhost:6041'
+let dns = 'ws://192.168.2.156:6041'
 let createTopic = `create topic if not exists topic_decimal_test as select * from power.decimal_test`
 let dropTopic = `DROP TOPIC IF EXISTS topic_decimal_test;`
 setLevel("debug")

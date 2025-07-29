@@ -15,9 +15,9 @@ beforeAll(async () => {
     let wsSql = await WsSql.open(conf)
     await wsSql.exec(`CREATE USER user1 PASS '${password1}'`);
     await wsSql.exec(`CREATE USER user2 PASS '${password2}'`);
-    await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
+    await wsSql.exec('create database if not exists sql_test KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
     await Sleep(100)
-    await wsSql.exec('use power')
+    await wsSql.exec('use sql_test')
     await wsSql.exec('CREATE STABLE if not exists meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
     await wsSql.close()
 })
@@ -30,7 +30,7 @@ describe('TDWebSocket.WsSql()', () => {
         conf.setUrl(dns);
         conf.setUser('root');
         conf.setPwd('taosdata');
-        conf.setDb('power');
+        conf.setDb('sql_test');
         conf.setTimezone('America/New_York');
         conf.setTimeOut(6000);
         wsSql = await WsSql.open(conf)
@@ -133,7 +133,7 @@ describe('TDWebSocket.WsSql()', () => {
         conf.setUser('root')
         conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
-        let taosResult = await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;')
+        let taosResult = await wsSql.exec('create database if not exists sql_create KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;')
         await wsSql.close()
         console.log(taosResult);
         expect(taosResult).toBeTruthy()
@@ -144,7 +144,7 @@ describe('TDWebSocket.WsSql()', () => {
         conf.setUser('root')
         conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
-        let taosResult = await wsSql.exec('use power')
+        let taosResult = await wsSql.exec('use sql_test')
         console.log(taosResult);
         expect(taosResult).toBeTruthy()
 
@@ -159,7 +159,7 @@ describe('TDWebSocket.WsSql()', () => {
         conf.setUser('root')
         conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
-        let taosResult = await wsSql.exec('use power')
+        let taosResult = await wsSql.exec('use sql_test')
         console.log(taosResult);
         expect(taosResult).toBeTruthy()
 
@@ -178,7 +178,7 @@ describe('TDWebSocket.WsSql()', () => {
         conf.setUser('root')
         conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
-        let taosResult = await wsSql.exec('use power')
+        let taosResult = await wsSql.exec('use sql_test')
         console.log(taosResult);
         expect(taosResult).toBeTruthy() 
         for (let i = 0; i < 10; i++) {
@@ -202,7 +202,7 @@ describe('TDWebSocket.WsSql()', () => {
         conf.setUser('root')
         conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
-        let taosResult = await wsSql.exec('use power')
+        let taosResult = await wsSql.exec('use sql_test')
         console.log(taosResult);
         expect(taosResult).toBeTruthy() 
         let wsRows = await wsSql.query('select * from meters');
@@ -216,7 +216,7 @@ afterAll(async () => {
     conf.setUser('root');
     conf.setPwd('taosdata');
     let wsSql = await WsSql.open(conf);
-    await wsSql.exec('drop database power');
+    await wsSql.exec('drop database sql_test');
     await wsSql.exec('DROP USER user1;')
     await wsSql.exec('DROP USER user2;')
     await wsSql.close();

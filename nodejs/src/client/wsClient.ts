@@ -31,7 +31,6 @@ export class WsClient {
     }
 
     async connect(database?: string | undefined | null): Promise<void> {
-        let timezone = this._url.searchParams.get("timezone");
         let connMsg = {
             action: 'conn',
             args: {

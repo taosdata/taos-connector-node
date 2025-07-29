@@ -245,7 +245,7 @@ export class WSTmqFetchBlockInfo {
                     let bitMapArr = new Uint8Array(dataView.buffer, dataView.byteOffset + bufferOffset, bitMapOffset)
                     bufferOffset += bitMapOffset;
                     //decode column data, data is array
-                    data = readSolidDataToArray(dataView, bufferOffset, rows, this.schema[i].colType, bitMapArr);
+                    data = readSolidDataToArray(dataView, bufferOffset, rows, this.schema[i].colType, bitMapArr, startOffset, i);
                     
                 } else {  
                     //Variable length type   

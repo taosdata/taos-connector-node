@@ -275,7 +275,7 @@ export function _isVarType(metaType: number): Number {
     }
 }
 export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number, 
-    rows:number, metaType: number, bitMapArr: Uint8Array): any[] {
+    rows:number, metaType: number, bitMapArr: Uint8Array, startOffset: number, colIndex: number): any[] {
 
     let result:any[] = []
     switch (metaType) {
@@ -384,32 +384,31 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             break;
         }
         case TDengineTypeCode.DECIMAL64: {
-            dataBuffer = 
+            let scale = getScaleFromRowBlock(dataBuffer, colIndex, startOffset);
             for (let i = 0; i < rows; i++, colBlockHead += 8) {
                 if (isNull(bitMapArr, i)) {
                     result.push(null);
                 }else{
                     let decimalVal = dataBuffer.getBigInt64(colBlockHead, true)
-                    result.push(decimalToString(decimalVal.toString(), BigInt(metaInfo.scale)));
+                    result.push(decimalToString(decimalVal.toString(), BigInt(scale)));
                 }
             }
             break;
         }
-        // case TDengineTypeCode.DECIMAL: {
-        //     for (let i = 0; i < rows; i++, colBlockHead += 8) {
-        //         if (isNull(bitMapArr, i)) {
-        //             result.push(null);
-        //         }else{
-        //             let decimalVal = dataBuffer.getBigInt64(colBlockHead + 8, true);
-        //             decimalVal = decimalVal << BigInt(64) | dataBuffer.getBigInt64(colBlockHead, true);
-        //             result.push(decimalToString(decimalVal.toString(), BigInt(metaInfo.scale)));
-        //         }
-        //     }
-        //     break;
-        // }
-
-
-
+        case TDengineTypeCode.DECIMAL: {
+            let scale = getScaleFromRowBlock(dataBuffer, colIndex, startOffset);
+            for (let i = 0; i < rows; i++, colBlockHead += 16) {
+                if (isNull(bitMapArr, i)) {
+                    result.push(null);
+                }else{
+                    let decimalHighPart = dataBuffer.getBigInt64(colBlockHead + 8, true);
+                    const  decimalLowPart = dataBuffer.getBigUint64(colBlockHead, true);
+                    const decimalCombined = (decimalHighPart << 64n) | decimalLowPart;
+                    result.push(decimalToString(decimalCombined.toString(), BigInt(scale)));
+                }
+            }
+            break;
+        }
         default: {
             throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unspported type ${metaType}`)
         }
@@ -458,9 +457,11 @@ export function readSolidData(dataBuffer: DataView, colDataHead: number, meta: R
             // could change 
         }
         case TDengineTypeCode.DECIMAL: {
-            let decimalVal = dataBuffer.getBigInt64(colDataHead + 8, true);
-            decimalVal = decimalVal << BigInt(64) | dataBuffer.getBigInt64(colDataHead, true);
-            return decimalToString(decimalVal.toString(), fields_scale);
+            let decimalHighPart = dataBuffer.getBigInt64(colDataHead + 8, true);
+            const  decimalLowPart = dataBuffer.getBigUint64(colDataHead, true);
+            const decimalCombined = (decimalHighPart << 64n) | decimalLowPart;
+            console.log(`bigint ${decimalCombined.toString()}`)
+            return decimalToString(decimalCombined.toString(), fields_scale);
         }
         case TDengineTypeCode.DECIMAL64: {
             let decimalVal = dataBuffer.getBigInt64(colDataHead, true);
@@ -532,12 +533,10 @@ export function bitmapLen(n: number): number {
 	return ((n) + ((1 << 3) - 1)) >> 3
 }
 
-function getScaleFromRowBlock(buffer: DataView, pHeader: number, colIndex: number): number {
-        // for decimal: |___bytes___|__empty__|___prec___|__scale___|
-        let backupPos = buffer.byteOffset + 24;
-        buffer = new DataView(buffer.buffer, pHeader);
-        buffer = new DataView(buffer.buffer, colIndex * 5 + 1);
-        let scale = buffer.getInt8(0);
-        buffer = new DataView(buffer.buffer, backupPos);
-        return scale & 0xFF;
-    }
+function getScaleFromRowBlock(buffer: DataView, colIndex: number, startOffset: number): number {
+    // for decimal: |___bytes___|__empty__|___prec___|__scale___|
+    let backupPos = buffer.byteOffset + startOffset + 28 + colIndex * 5 + 1;
+    let scaleBuffer = new DataView(buffer.buffer, backupPos);
+    let scale = scaleBuffer.getInt32(0, true);
+    return scale & 0xFF;
+}

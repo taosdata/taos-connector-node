@@ -31,7 +31,7 @@ const stable = 'meters';
 const db = 'power_connect'
 const topics:string[] = ['pwer_meters_topic']
 let createTopic = `create topic if not exists ${topics[0]} as select * from ${db}.${stable}`
-let stmtIds:number[] = []
+let stmtIds:bigint[] = []
 setLevel("debug")
 
 async function connect() {

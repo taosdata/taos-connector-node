@@ -117,12 +117,16 @@ export class TMQRawDataSchema  {
 	bytes:  bigint;
 	colID:  number
 	name:  string;
+    precision: number;
+    scale: number;
     constructor() {
         this.bytes = BigInt(0);
         this.colID = -1;
         this.colType = -1;
         this.flag = -1;
         this.name = "";
+        this.scale = 0;
+        this.precision = 0;
 
     }
 }

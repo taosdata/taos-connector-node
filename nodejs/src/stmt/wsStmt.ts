@@ -1,3 +1,4 @@
+import JSONBig from 'json-bigint';
 import { WsClient } from '../client/wsClient';
 import { ErrorCode, TDWebSocketClientError, TaosError, TaosResultError } from '../common/wsError';
 import { WsStmtQueryResponse, StmtMessageInfo, binaryBlockEncode, StmtBindType } from './wsProto';
@@ -8,7 +9,7 @@ import logger from '../common/log';
 
 export class WsStmt {
     private _wsClient: WsClient;
-    private _stmt_id: number | undefined | null;
+    private _stmt_id: bigint | undefined | null;
     private _precision:number = PrecisionLength['ms'];
 
     private lastAffected: number | undefined | null;
@@ -147,7 +148,7 @@ export class WsStmt {
         return await this.execute(queryMsg, false);
     }
 
-    public getStmtId(): number | undefined | null {
+    public getStmtId(): bigint | undefined | null {
         return this._stmt_id;
     } 
     
@@ -156,7 +157,7 @@ export class WsStmt {
             if (this._wsClient.getState() <= 0) {
                 throw new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "websocket connect has closed!");
             }
-            let reqMsg = JSON.stringify(queryMsg);
+            let reqMsg = JSONBig.stringify(queryMsg);
             if (register) {
                 let result = await this._wsClient.exec(reqMsg, false);
                 let resp = new WsStmtQueryResponse(result)

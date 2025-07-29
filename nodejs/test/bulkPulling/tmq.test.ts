@@ -5,6 +5,9 @@ import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { createSTable, insertStable } from "../utils";
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
+import logger, { setLevel } from "../../src/common/log";
+
+setLevel("debug");
 const stable = 'st';
 const db = 'ws_tmq_test'
 const topics:string[] = ['topic_ws_bean']
@@ -15,8 +18,8 @@ let createTopic = `create topic if not exists ${topics[0]} as select * from ${db
 let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`
 // let dropTopic2 = `DROP TOPIC IF EXISTS ${topic2};`
 
-let dsn = 'ws://root:taosdata@localhost:6041';
-let tmqDsn = 'ws://localhost:6041'
+let dsn = 'ws://root:taosdata@192.168.2.156:6041';
+let tmqDsn = 'ws://192.168.2.156:6041'
 
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dsn)

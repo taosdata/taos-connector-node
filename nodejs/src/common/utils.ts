@@ -156,4 +156,24 @@ function comparePreReleases(pre1: string | null, pre2: string | null): number {
   return pre1.localeCompare(pre2);
 }
 
+export function decimalToString(valueStr: string, fields_scale: bigint | null): string {
+    let decimalStr = valueStr;
+    if (fields_scale && fields_scale > 0) {
+        const scale = Number(fields_scale);
+        const isNegative = decimalStr.startsWith('-');
+        const absStr = isNegative ? decimalStr.slice(1) : decimalStr;
+        
+        if (absStr.length <= scale) {
+            // 如果数字长度小于等于精度，前面补0
+            const paddedStr = absStr.padStart(scale + 1, '0');
+            decimalStr = (isNegative ? '-' : '') + '0.' + paddedStr.slice(1);
+        } else {
+            // 在指定位置插入小数点
+            const integerPart = absStr.slice(0, absStr.length - scale);
+            const decimalPart = absStr.slice(absStr.length - scale);
+            decimalStr = (isNegative ? '-' : '') + integerPart + '.' + decimalPart;
+        }
+    }
+    return decimalStr;
+}
 

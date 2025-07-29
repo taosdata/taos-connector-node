@@ -11,7 +11,7 @@ export interface StmtMessageInfo {
 interface StmtParamsInfo {
     req_id: number;
     sql?: string | undefined | null;
-    stmt_id?: number | undefined | null;
+    stmt_id?: bigint | undefined | null;
     name?: string | undefined | null;
     tags?: Array<any> | undefined | null;
     paramArray?: Array<Array<any>> | undefined | null;
@@ -20,10 +20,10 @@ interface StmtParamsInfo {
 
 export class WsStmtQueryResponse extends WSQueryResponse {
     affected:number | undefined | null;
-    stmt_id?: number | undefined | null;
+    stmt_id?: bigint | undefined | null;
     constructor(resp:MessageResp) {
         super(resp);
-        this.stmt_id = resp.msg.stmt_id
+        this.stmt_id = BigInt(resp.msg.stmt_id)
         this.affected = resp.msg.affected
     }
 }
@@ -34,7 +34,7 @@ export const enum StmtBindType {
 }
 
 
-export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindType, stmtId:number, reqId:bigint, row:number): ArrayBuffer {
+export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindType, stmtId:bigint, reqId:bigint, row:number): ArrayBuffer {
     //Computing the length of data
     let columns = bindParams.getParams().length;
     let length = TDengineTypeLength['BIGINT'] * 4;
@@ -46,7 +46,7 @@ export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindT
     let arrayView = new DataView(arrayBuffer)
 
     arrayView.setBigUint64(0, reqId, true);
-    arrayView.setBigUint64(8, BigInt(stmtId), true);
+    arrayView.setBigUint64(8, stmtId, true);
     arrayView.setBigUint64(16, BigInt(bindType), true);
     //version int32
     arrayView.setUint32(24, 1, true);

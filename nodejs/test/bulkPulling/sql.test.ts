@@ -13,8 +13,8 @@ beforeAll(async () => {
     conf.setUser('root')
     conf.setPwd('taosdata')
     let wsSql = await WsSql.open(conf)
-    // await wsSql.exec(`CREATE USER user1 PASS '${password1}'`);
-    // await wsSql.exec(`CREATE USER user2 PASS '${password2}'`);
+    await wsSql.exec(`CREATE USER user1 PASS '${password1}'`);
+    await wsSql.exec(`CREATE USER user2 PASS '${password2}'`);
     await wsSql.exec('create database if not exists power KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
     await Sleep(100)
     await wsSql.exec('use power')
@@ -179,7 +179,6 @@ describe('TDWebSocket.WsSql()', () => {
         conf.setPwd('taosdata')
         let wsSql = await WsSql.open(conf)
         let taosResult = await wsSql.exec('use power')
-        taosResult = await wsSql.exec('INSERT INTO d1001 USING meters (location, groupid) TAGS ("California", 3) VALUES (NOW, 10.2, 219, 0.32)')
         console.log(taosResult);
         expect(taosResult).toBeTruthy() 
         for (let i = 0; i < 10; i++) {
@@ -189,7 +188,7 @@ describe('TDWebSocket.WsSql()', () => {
             expect(meta).toBeTruthy()
             console.log("wsRow:meta:=>", meta);
             while (await wsRows.next()) {
-                let result = wsRows.getData();
+                let result = await wsRows.getData();
                 expect(result).toBeTruthy()
             }
             await wsRows.close()
@@ -218,8 +217,8 @@ afterAll(async () => {
     conf.setPwd('taosdata');
     let wsSql = await WsSql.open(conf);
     await wsSql.exec('drop database power');
-    // await wsSql.exec('DROP USER user1;')
-    // await wsSql.exec('DROP USER user2;')
+    await wsSql.exec('DROP USER user1;')
+    await wsSql.exec('DROP USER user2;')
     await wsSql.close();
     WebSocketConnectionPool.instance().destroyed()
 })

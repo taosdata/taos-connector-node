@@ -460,7 +460,6 @@ export function readSolidData(dataBuffer: DataView, colDataHead: number, meta: R
             let decimalHighPart = dataBuffer.getBigInt64(colDataHead + 8, true);
             const  decimalLowPart = dataBuffer.getBigUint64(colDataHead, true);
             const decimalCombined = (decimalHighPart << 64n) | decimalLowPart;
-            console.log(`bigint ${decimalCombined.toString()}`)
             return decimalToString(decimalCombined.toString(), fields_scale);
         }
         case TDengineTypeCode.DECIMAL64: {

@@ -61,6 +61,13 @@ export enum TDengineTypeCode {
     GEOMETRY = 20,
 }
 
+export enum TSDB_OPTION_CONNECTION {
+  TSDB_OPTION_CONNECTION_CHARSET,        // charset, Same as the scope supported by the system
+  TSDB_OPTION_CONNECTION_TIMEZONE,       // timezone, Same as the scope supported by the system
+  TSDB_OPTION_CONNECTION_USER_IP,        // user ip
+  TSDB_OPTION_CONNECTION_USER_APP,       // user app
+}
+
 export const TDenginePrecision: IndexableString = {
     0: 'MILLISECOND',
     1: "MICROSECOND",

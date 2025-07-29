@@ -14,6 +14,20 @@ export function getUrl(wsConfig:WSConfig):URL {
     if (token) {
         url.searchParams.set("token", token)
     }
+
+    let timezone = wsConfig.getTimezone()
+    if (timezone) {
+        url.searchParams.set("timezone", timezone)
+    }
+
+    if (url.pathname && url.pathname !== '/') {
+        wsConfig.setDb(url.pathname.slice(1))
+    }
+
+    if (url.searchParams.has("timezone")) {
+        wsConfig.setTimezone(url.searchParams.get("timezone") || '');
+    }
+
     url.pathname = '/ws'
     return url
 }

@@ -65,8 +65,7 @@ export class WebSocketConnector {
             WsEventCallback.instance().handleEventCallback({id:BigInt(0), action:msg.action, req_id:msg.req_id}, 
                 OnMessageType.MESSAGE_TYPE_STRING, msg);
         } else {
-            throw new TDWebSocketClientError(ErrorCode.ERR_INVALID_MESSAGE_TYPE, 
-                `invalid message type ${Object.prototype.toString.call(data)}`);
+            throw new TDWebSocketClientError(ErrorCode.ERR_INVALID_MESSAGE_TYPE, `invalid message type ${Object.prototype.toString.call(data)}`);
         }
     }
 

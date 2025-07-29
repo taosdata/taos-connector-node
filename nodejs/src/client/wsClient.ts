@@ -10,10 +10,12 @@ import { ReqId } from '../common/reqid';
 import logger from '../common/log';
 import { safeDecodeURIComponent, compareVersions} from '../common/utils';
 import { w3cwebsocket } from 'websocket';
+import { TSDB_OPTION_CONNECTION } from '../common/constant';
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
     private _timeout?:number | undefined | null;
+    private _timezone?:string | undefined | null;
     private readonly _url:URL;
     private static readonly _minVersion = "3.3.2.0";
 
@@ -21,25 +23,25 @@ export class WsClient {
         this.checkURL(url);
         this._url = url;
         this._timeout = timeout;
-    
+        if (this._url.searchParams.has("timezone")) {
+            this._timezone = this._url.searchParams.get("timezone") || undefined;
+            this._url.searchParams.delete("timezone");
+        }
+
     }
 
     async connect(database?: string | undefined | null): Promise<void> {
-        let _db = this._url.pathname.split('/')[3];
-        if (database) {
-            _db = database;
-        }
-        
         let connMsg = {
             action: 'conn',
             args: {
                 req_id: ReqId.getReqID(),
                 user: safeDecodeURIComponent(this._url.username),
                 password: safeDecodeURIComponent(this._url.password),
-                db: _db,
+                db: database,
+                ...(this._timezone && { tz: this._timezone }),
             },
         };
-        
+        logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg));
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(this._url, this._timeout);
         if (this._wsConnector.readyState() === w3cwebsocket.OPEN) {
             return;
@@ -60,6 +62,29 @@ export class WsClient {
         }
      
 
+    }
+
+    async setOptionConnection(option: TSDB_OPTION_CONNECTION, value: string | null): Promise<void> {
+        logger.debug("[wsClient.setOptionConnection]===>" + option + ", " + value);
+
+        let connMsg = {
+            action: 'options_connection',
+            args: {
+                req_id: ReqId.getReqID(),
+                options: [
+                    {
+                        option: option,
+                        value: value
+                    }
+                ]
+            }
+        };
+        try {
+            await this.exec(JSONBig.stringify(connMsg), false);
+        } catch (e: any) {
+            logger.error("[wsClient.setOptionConnection] failed: " + e.message);
+            throw e;
+        }
     }
 
     async execNoResp(queryMsg: string): Promise<void> {
@@ -200,8 +225,6 @@ export class WsClient {
                 logger.error(`connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`);
                 throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`));
             }
-
-                               
         }
         throw(ErrorCode.ERR_CONNECTION_CLOSED, "invalid websocket connect");
     }
@@ -212,7 +235,6 @@ export class WsClient {
             this._wsConnector = undefined
             // this._wsConnector.close();
         }
-       
     }
 
     checkURL(url: URL) {

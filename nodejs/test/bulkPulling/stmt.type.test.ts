@@ -296,6 +296,56 @@ describe('TDWebSocket.Stmt()', () => {
 
 })
 
+test('test bind exception cases', async() => {
+    let wsConf = new WSConfig(dsn);
+    let connector = await WsSql.open(wsConf) 
+    let stmt = await connector.stmtInit()
+    const params = stmt.newStmtParam();
+    
+    const emptyArrayMethods = [
+        { method: 'setBoolean', name: 'SetBooleanColumn' },
+        { method: 'setTinyInt', name: 'SetTinyIntColumn' },
+        { method: 'setUTinyInt', name: 'SetUTinyIntColumn' },
+        { method: 'setSmallInt', name: 'SetSmallIntColumn' },
+        { method: 'setUSmallInt', name: 'SetSmallIntColumn' },
+        { method: 'setInt', name: 'SetIntColumn' },
+        { method: 'setUInt', name: 'SetUIntColumn' },
+        { method: 'setBigint', name: 'SetBigIntColumn' },
+        { method: 'setUBigint', name: 'SetUBigIntColumn' },
+        { method: 'setFloat', name: 'SetFloatColumn' },
+        { method: 'setDouble', name: 'SetDoubleColumn' },
+        { method: 'setTimestamp', name: 'SeTimestampColumn' }
+    ];
+    
+    emptyArrayMethods.forEach(({ method, name }) => {
+        expect(() => {
+            (params as any)[method]([]);
+        }).toThrow(`${name} params is invalid!`);
+        
+        expect(() => {
+            (params as any)[method](null);
+        }).toThrow(`${name} params is invalid!`);
+        
+        expect(() => {
+            (params as any)[method](undefined);
+        }).toThrow(`${name} params is invalid!`);
+    });
+    
+    expect(() => {
+        params.setBoolean(['not boolean']);
+    }).toThrow('SetTinyIntColumn params is invalid!');
+    
+    expect(() => {
+        params.setTinyInt(['not number']);
+    }).toThrow('SetTinyIntColumn params is invalid!');
+    
+    expect(() => {
+        params.setBigint(['not bigint']);
+    }).toThrow('SetTinyIntColumn params is invalid!');
+    await connector.close();
+});
+
+
 afterAll(async () => {
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.open(conf);

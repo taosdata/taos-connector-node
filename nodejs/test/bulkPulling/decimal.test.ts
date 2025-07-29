@@ -49,12 +49,13 @@ describe('TDWebSocket.WsSql()', () => {
         taosResult = await wsSql.exec('INSERT INTO d1001 USING decimal_test (location, groupid) TAGS ("California", 3) VALUES (NOW, "9876.123456", "1234567890.0987654321", 1) (NOW + 1a, "-0.000654", "-0.0009876543", 2) (NOW + 2a, "-1234.654321", "-123456789012.0987654321", 3)')
 
         console.log(taosResult);
-        // expect(taosResult.getAffectRows()).toBeGreaterThanOrEqual(2)
+        expect(taosResult.getAffectRows()).toBeGreaterThanOrEqual(3)
         let wsRows = await wsSql.query('select * from decimal_test');
         expect(wsRows).toBeTruthy()
         let meta = wsRows.getMeta()
         expect(meta).toBeTruthy()
         console.log("wsRow:meta:=>", meta);
+        let count = 0;
         while (await wsRows.next()) {
             let result = wsRows.getData();
             if (result != null && result.length > 0) {
@@ -64,12 +65,13 @@ describe('TDWebSocket.WsSql()', () => {
                     expect(result[2]).toBe(expected?.dec128);
                     expect(result[3]).toBe(expected?.int1);
                     expect(result[4]).toBe(expected?.location);
-                    expect(result[5]).toBe(expected?.groupId);                    
+                    expect(result[5]).toBe(expected?.groupId);  
+                    count++;                  
                 }                
             }
         }
         await wsSql.close()
-    
+        expect(count).toBe(3)
     })
 })
 
@@ -93,6 +95,7 @@ test('normal Subscribe', async() => {
     let assignment = await consumer.assignment()
     console.log(assignment)
     let useTime:number[] = [];
+    let count = 0;
     for (let i = 0; i < 5; i++) { 
         let startTime = new Date().getTime();
         let res = await consumer.poll(500);
@@ -113,16 +116,16 @@ test('normal Subscribe', async() => {
                     expect(record[2]).toBe(expected?.dec128);
                     expect(record[3]).toBe(expected?.int1);
                     expect(record[4]).toBe(expected?.location);
-                    expect(record[5]).toBe(expected?.groupId);                    
-                } else {
-                    console.warn(`Unexpected record: ${record}`);
+                    expect(record[5]).toBe(expected?.groupId); 
+                    count++;                    
                 }
             }              
                 
         }
     }
     await consumer.unsubscribe()
-    await consumer.close();
+    await consumer.close()
+    expect(count).toBe(3)
 })
 
 

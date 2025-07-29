@@ -86,29 +86,6 @@ export class WsClient {
         }
     }
 
-    async setOptionConnection(option: TSDB_OPTION_CONNECTION, value: string | null): Promise<void> {
-        logger.debug("[wsClient.setOptionConnection]===>" + option + ", " + value);
-
-        let connMsg = {
-            action: 'options_connection',
-            args: {
-                req_id: ReqId.getReqID(),
-                options: [
-                    {
-                        option: option,
-                        value: value
-                    }
-                ]
-            }
-        };
-        try {
-            await this.exec(JSONBig.stringify(connMsg), false);
-        } catch (e: any) {
-            logger.error("[wsClient.setOptionConnection] failed: " + e.message);
-            throw e;
-        }
-    }
-
     async execNoResp(queryMsg: string): Promise<void> {
         logger.debug('[wsQueryInterface.query.queryMsg]===>' + queryMsg);
         if (this._wsConnector && this._wsConnector.readyState() === w3cwebsocket.OPEN) {

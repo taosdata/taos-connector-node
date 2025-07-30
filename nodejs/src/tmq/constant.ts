@@ -102,21 +102,21 @@ export class TMQMessageType {
 }
 
 export class TMQBlockInfo {
-	rawBlock?: ArrayBuffer;
-	precision?: number;
-	schema:  Array<TMQRawDataSchema>;
-	tableName?: string;
+    rawBlock?: ArrayBuffer;
+    precision?: number;
+    schema:  Array<TMQRawDataSchema>;
+    tableName?: string;
     constructor() {
         this.schema = [];
     }
 }
 
 export class TMQRawDataSchema  {
-	colType: number;
-	flag:   number;
-	bytes:  bigint;
-	colID:  number
-	name:  string;
+    colType: number;
+    flag:   number;
+    bytes:  bigint;
+    colID:  number
+    name:  string;
     precision: number;
     scale: number;
     constructor() {

@@ -5,6 +5,9 @@ import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { createSTable, insertStable } from "../utils";
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
+import logger, { setLevel } from "../../src/common/log";
+
+setLevel("debug");
 const stable = 'st';
 const db = 'ws_tmq_test'
 const topics:string[] = ['topic_ws_bean']

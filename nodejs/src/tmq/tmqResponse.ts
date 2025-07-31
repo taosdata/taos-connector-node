@@ -1,5 +1,5 @@
 import { WSQueryResponse } from "../client/wsResponse";
-import { ColumnsBlockType, TDengineTypeLength } from "../common/constant";
+import { ColumnsBlockType, TDengineTypeCode, TDengineTypeLength } from "../common/constant";
 import { MessageResp, TaosResult, _isVarType, getString, readBinary, readNchar, readSolidDataToArray, readVarchar } from "../common/taosResult";
 import { WebSocketInterfaceError, ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import { TMQBlockInfo, TMQRawDataSchema } from "./constant";
@@ -15,7 +15,7 @@ export class WsPollResponse {
     topic: string;
     database: string;
     vgroup_id:number;
-    message_id: number;
+    message_id: bigint;
     id: bigint;
     message_type:number;
     totalTime:number;    
@@ -29,7 +29,7 @@ export class WsPollResponse {
         this.topic = resp.msg.topic;
         this.database = resp.msg.database;
         this.vgroup_id = resp.msg.vgroup_id;
-        this.message_id = resp.msg.message_id;
+        this.message_id = BigInt(resp.msg.message_id);
         this.message_type = resp.msg.message_type;
         if (resp.msg.id) {
             this.id = BigInt(resp.msg.id);
@@ -245,7 +245,7 @@ export class WSTmqFetchBlockInfo {
                     let bitMapArr = new Uint8Array(dataView.buffer, dataView.byteOffset + bufferOffset, bitMapOffset)
                     bufferOffset += bitMapOffset;
                     //decode column data, data is array
-                    data = readSolidDataToArray(dataView, bufferOffset, rows, this.schema[i].colType, bitMapArr);
+                    data = readSolidDataToArray(dataView, bufferOffset, rows, this.schema[i].colType, bitMapArr, startOffset, i);
                     
                 } else {  
                     //Variable length type   
@@ -347,7 +347,7 @@ export class PartitionsResp{
     action: string;
     totalTime: number;
     timing:bigint;
-    positions:number[];
+    positions:bigint[];
     constructor(resp:MessageResp) {
         this.timing = BigInt(resp.msg.timing);
         this.code = resp.msg.code;
@@ -355,7 +355,7 @@ export class PartitionsResp{
         this.req_id = resp.msg.req_id;
         this.action = resp.msg.action;
         this.totalTime = resp.totalTime;
-        this.positions = resp.msg.position;
+        this.positions = resp.msg.position ? resp.msg.position.map((pos: number) => BigInt(pos)) : [];
     }
 
     setTopicPartitions(topicPartitions:TopicPartition[]):TopicPartition[] {
@@ -373,21 +373,21 @@ export class PartitionsResp{
 export class CommittedResp extends PartitionsResp {
     constructor(resp:MessageResp) {
         super(resp);
-        this.positions = resp.msg.committed
+        this.positions = resp.msg.committed ? resp.msg.committed.map((pos: number) => BigInt(pos)) : [];
     }
 }
 
 export class TopicPartition {
     topic       :string;
     vgroup_id   :number;
-    offset      ?:number;
-    begin       ?:number;
-    end         ?:number;
+    offset      ?:bigint;
+    begin       ?:bigint;
+    end         ?:bigint;
     constructor(msg:any) {
         this.vgroup_id = msg.vgroup_id;
-        this.offset = msg.offset;
-        this.begin = msg.begin;
-        this.end = msg.end;
+        this.offset = BigInt(msg.offset);
+        this.begin = BigInt(msg.begin);
+        this.end = BigInt(msg.end);
         this.topic = ''
     }
 }

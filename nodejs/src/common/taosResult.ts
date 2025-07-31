@@ -3,6 +3,8 @@ import { ColumnsBlockType, TDengineTypeCode, TDengineTypeName } from './constant
 import { ErrorCode, TaosResultError, WebSocketQueryInterFaceError } from "./wsError";
 import { appendRune } from "./ut8Helper"
 import logger from "./log";
+import { decimalToString } from "./utils";
+import { TMQRawDataSchema } from "../tmq/constant";
 
 export interface TDengineMeta {
     name: string,
@@ -29,7 +31,9 @@ export class TaosResult {
     private _precision: number | null | undefined;
     protected _affectRows: number | null | undefined;
     private _totalTime = 0;
-   
+    private fields_precisions?: Array<bigint> | null;
+    private fields_scales?: Array<bigint> | null;
+
     /** unit nano seconds */
     private _timing: bigint | null | undefined;
     constructor(queryResponse?: WSQueryResponse) {
@@ -65,6 +69,8 @@ export class TaosResult {
         this._timing = queryResponse.timing
         this._precision = queryResponse.precision
         this._totalTime = queryResponse.totalTime
+        this.fields_precisions = queryResponse.fields_precisions
+        this.fields_scales = queryResponse.fields_scales
     }
 
     public setPrecision(precision: number) {
@@ -134,6 +140,14 @@ export class TaosResult {
             this._timing = this._timing + timing
         }    
     }
+
+    public getFieldsScales(index: number): bigint | null {
+        if (this.fields_scales) {
+            return this.fields_scales[index];
+        }
+        return null;
+    }
+
     /**
      * Mapping the WebSocket response type code to TDengine's type name. 
      */
@@ -201,7 +215,7 @@ export function parseBlock(blocks: WSFetchBlockResponse, taosResult: TaosResult)
                     if (bitFlag == 1) {
                         row.push("NULL")
                     } else {
-                        row.push(readSolidData(dataView, colDataHead, metaList[j]))
+                        row.push(readSolidData(dataView, colDataHead, metaList[j], taosResult.getFieldsScales(j)));
                     }
                     
                     colBlockHead = colBlockHead + bitMapSize + dataView.getInt32(INT_32_SIZE * j, true)
@@ -261,7 +275,7 @@ export function _isVarType(metaType: number): Number {
     }
 }
 export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number, 
-    rows:number, metaType: number, bitMapArr: Uint8Array): any[] {
+    rows:number, metaType: number, bitMapArr: Uint8Array, startOffset: number, colIndex: number): any[] {
 
     let result:any[] = []
     switch (metaType) {
@@ -369,14 +383,40 @@ export function readSolidDataToArray(dataBuffer: DataView, colBlockHead:number,
             }
             break;
         }
+        case TDengineTypeCode.DECIMAL64: {
+            let scale = getScaleFromRowBlock(dataBuffer, colIndex, startOffset);
+            for (let i = 0; i < rows; i++, colBlockHead += 8) {
+                if (isNull(bitMapArr, i)) {
+                    result.push(null);
+                }else{
+                    let decimalVal = dataBuffer.getBigInt64(colBlockHead, true)
+                    result.push(decimalToString(decimalVal.toString(), BigInt(scale)));
+                }
+            }
+            break;
+        }
+        case TDengineTypeCode.DECIMAL: {
+            let scale = getScaleFromRowBlock(dataBuffer, colIndex, startOffset);
+            for (let i = 0; i < rows; i++, colBlockHead += 16) {
+                if (isNull(bitMapArr, i)) {
+                    result.push(null);
+                }else{
+                    let decimalHighPart = dataBuffer.getBigInt64(colBlockHead + 8, true);
+                    const  decimalLowPart = dataBuffer.getBigUint64(colBlockHead, true);
+                    const decimalCombined = (decimalHighPart << 64n) | decimalLowPart;
+                    result.push(decimalToString(decimalCombined.toString(), BigInt(scale)));
+                }
+            }
+            break;
+        }
         default: {
-            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unspported type ${metaType}`)
+            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unsupported type ${metaType}`)
         }
     }
     return result;
    
 }
-export function readSolidData(dataBuffer: DataView, colDataHead: number, meta: ResponseMeta): Number | Boolean | BigInt {
+export function readSolidData(dataBuffer: DataView, colDataHead: number, meta: ResponseMeta, fields_scale: bigint | null): Number | Boolean | BigInt | string {
 
     switch (meta.type) {
         case TDengineTypeCode.BOOL: {
@@ -416,8 +456,18 @@ export function readSolidData(dataBuffer: DataView, colDataHead: number, meta: R
             return dataBuffer.getBigInt64(colDataHead, true);
             // could change 
         }
+        case TDengineTypeCode.DECIMAL: {
+            let decimalHighPart = dataBuffer.getBigInt64(colDataHead + 8, true);
+            const  decimalLowPart = dataBuffer.getBigUint64(colDataHead, true);
+            const decimalCombined = (decimalHighPart << 64n) | decimalLowPart;
+            return decimalToString(decimalCombined.toString(), fields_scale);
+        }
+        case TDengineTypeCode.DECIMAL64: {
+            let decimalVal = dataBuffer.getBigInt64(colDataHead, true);
+            return decimalToString(decimalVal.toString(), fields_scale);
+        }
         default: {
-            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unspported type ${meta.type} for column ${meta.name}`)
+            throw new WebSocketQueryInterFaceError(ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE, `unsupported type ${meta.type} for column ${meta.name}`)
         }
     }
 }
@@ -480,4 +530,12 @@ function bitPos(n:number):number {
 
 export function bitmapLen(n: number): number {
 	return ((n) + ((1 << 3) - 1)) >> 3
+}
+
+function getScaleFromRowBlock(buffer: DataView, colIndex: number, startOffset: number): number {
+    // for decimal: |___bytes___|__empty__|___prec___|__scale___|
+    let backupPos = buffer.byteOffset + startOffset + 28 + colIndex * 5 + 1;
+    let scaleBuffer = new DataView(buffer.buffer, backupPos);
+    let scale = scaleBuffer.getInt32(0, true);
+    return scale & 0xFF;
 }

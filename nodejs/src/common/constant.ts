@@ -58,7 +58,9 @@ export enum TDengineTypeCode {
     BIGINT_UNSIGNED = 14,
     JSON = 15,
     VARBINARY = 16,
+    DECIMAL = 17,
     GEOMETRY = 20,
+    DECIMAL64 = 21,
 }
 
 export enum TSDB_OPTION_CONNECTION {

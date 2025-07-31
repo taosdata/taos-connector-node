@@ -33,6 +33,8 @@ export class WSQueryResponse {
     fields_names?: Array<string> | null;
     fields_types?: Array<number> | null;
     fields_lengths?: Array<number> | null;
+    fields_precisions?: Array<bigint> | null;
+    fields_scales?: Array<bigint> | null;
     precision?: number;
     
     constructor(resp:MessageResp) {
@@ -58,6 +60,8 @@ export class WSQueryResponse {
         this.fields_types = msg.fields_types;
         this.fields_lengths = msg.fields_lengths;
         this.precision = msg.precision;
+        this.fields_precisions = msg.fields_precisions ? msg.fields_precisions.map((p: number) => BigInt(p)) : [];
+        this.fields_scales = msg.fields_scales ? msg.fields_scales.map((s: number) => BigInt(s)) : [];
     }
 }
 

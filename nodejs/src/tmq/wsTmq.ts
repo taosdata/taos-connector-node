@@ -1,8 +1,9 @@
+import JSONBig from 'json-bigint';
 import { TmqConfig } from './config';
 import { TMQConstants, TMQMessageType } from './constant';
 import { WsClient } from '../client/wsClient';
 import { TaosResult } from '../common/taosResult';
-import { ErrorCode, TaosResultError, TDWebSocketClientError, WebSocketInterfaceError, WebSocketQueryError } from '../common/wsError';
+import { ErrorCode, TaosResultError, TDWebSocketClientError, WebSocketInterfaceError } from '../common/wsError';
 import { AssignmentResp, CommittedResp, PartitionsResp, SubscriptionResp, TaosTmqResult, TopicPartition, WSTmqFetchBlockInfo, WsPollResponse, WsTmqQueryResponse} from './tmqResponse';
 import { ReqId } from '../common/reqid';
 import logger from "../common/log";
@@ -13,6 +14,7 @@ export class WsConsumer {
     private _wsConfig:TmqConfig;
     private _topics?:string[];
     private _commitTime?:number;
+    private _lastMessageID?:bigint;
     private constructor(wsConfig:Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig)
         logger.debug(this._wsConfig)
@@ -21,7 +23,7 @@ export class WsConsumer {
                 'invalid url, password or username needed.');
         }
         this._wsClient = new WsClient(this._wsConfig.url, this._wsConfig.timeout);
-
+        this._lastMessageID = BigInt(0);
     }
 
     private async init():Promise<WsConsumer> { 
@@ -158,9 +160,9 @@ export class WsConsumer {
                 topic_vgroup_ids:offsets
             },
         };
-        
-        let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
-        return new CommittedResp(resp).setTopicPartitions(offsets);   
+
+        let resp = await this._wsClient.exec(JSONBig.stringify(queryMsg), false);
+        return new CommittedResp(resp).setTopicPartitions(offsets);
     }
 
     async commitOffsets(partitions:Array<TopicPartition>):Promise<Array<TopicPartition>> {
@@ -192,7 +194,7 @@ export class WsConsumer {
                 offset   :partition.offset,
             },
         };
-        return await this._wsClient.exec(JSON.stringify(queryMsg));
+        return await this._wsClient.exec(JSONBig.stringify(queryMsg));
     }
 
     async positions(partitions:Array<TopicPartition>, reqId?:number):Promise<Array<TopicPartition>> {
@@ -268,7 +270,7 @@ export class WsConsumer {
                 message_id: pollResp.message_id,
             },
         };   
-        let jsonStr = JSON.stringify(fetchMsg);
+        let jsonStr = JSONBig.stringify(fetchMsg);
         logger.debug('[wsQueryInterface.fetch.fetchMsg]===>' + jsonStr);
         let result = await this._wsClient.sendMsg(jsonStr)
         let wsResponse = new WSFetchBlockResponse(result.msg)
@@ -280,7 +282,6 @@ export class WsConsumer {
             }
         }
         
-        
         return false;
     }
 
@@ -289,12 +290,12 @@ export class WsConsumer {
             action: TMQMessageType.Poll,
             args: {
                 req_id    : ReqId.getReqID(reqId),
-                blocking_time  :timeoutMs
+                blocking_time  :timeoutMs,
+                message_id: this._lastMessageID,
             },
         };
-        
-        
-        let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
+
+        let resp = await this._wsClient.exec(JSONBig.stringify(queryMsg), false);
         let pollResp = new WsPollResponse(resp)
         let taosResult = new TaosTmqResult(pollResp)
         var taosResults: Map<string, TaosResult> = new Map();
@@ -302,7 +303,8 @@ export class WsConsumer {
         if (!pollResp.have_message || pollResp.message_type != TMQMessageType.ResDataType) {
             return taosResults;
         }  
-        
+
+        this._lastMessageID = pollResp.message_id;
         let finish = false;
 
         while (!finish) {

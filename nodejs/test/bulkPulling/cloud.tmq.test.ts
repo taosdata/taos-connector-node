@@ -35,7 +35,6 @@ describe('TDWebSocket.Tmq()', () => {
     
     test('normal connect', async() => {
         const url = `wss://${process.env.TDENGINE_CLOUD_URL}?token=${process.env.TDENGINE_CLOUD_TOKEN}`;
-        // const TDENGINE_CLOUD_URL = 'wss://gw.cloud.taosdata.com?token=1eb78307be0681ac2fc07c2817ba8a9719641fb9';
         const topic = 'topic_meters';
         const topics = [topic];
         const groupId = 'group1';

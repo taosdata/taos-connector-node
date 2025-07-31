@@ -61,7 +61,6 @@ export class WsClient {
             throw(new TDWebSocketClientError(ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL, `connection creation failed, url: ${this._url}, code:${e.code}, msg:${e.message}`));
         }
      
-
     }
 
     async setOptionConnection(option: TSDB_OPTION_CONNECTION, value: string | null): Promise<void> {

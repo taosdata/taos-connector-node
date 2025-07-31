@@ -164,7 +164,7 @@ export function decimalToString(valueStr: string, fields_scale: bigint | null): 
         const absStr = isNegative ? decimalStr.slice(1) : decimalStr;
         
         if (absStr.length <= scale) {
-            // 如果数字长度小于等于精度，前面补0
+            // If the length of the number is less than or equal to the precision, add 0 before it.
             const paddedStr = absStr.padStart(scale + 1, '0');
             decimalStr = (isNegative ? '-' : '') + '0.' + paddedStr.slice(1);
         } else {

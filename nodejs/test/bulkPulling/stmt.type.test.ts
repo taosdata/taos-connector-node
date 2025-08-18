@@ -82,7 +82,7 @@ const selectTableCN = `select * from ${tableCN}`
 const selectJsonTable = `select * from ${jsonTable}`
 const selectJsonTableCN = `select * from ${jsonTableCN}`
 
-let dsn = 'ws://root:taosdata@localhost:6041';
+let dsn = 'ws://root:taosdata@192.168.2.156:6041';
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.open(conf);
@@ -100,7 +100,7 @@ describe('TDWebSocket.Stmt()', () => {
         let wsConf = new WSConfig(dsn);
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
-        let stmt = await (await connector).stmtInit()
+        let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare(getInsertBind(tableValues.length + 2, stableTags.length, db, stable));

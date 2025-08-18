@@ -6,10 +6,11 @@ import { WSConfig } from '../common/config'
 import { getBinarySql, getUrl } from '../common/utils'
 import { WSFetchBlockResponse, WSQueryResponse } from '../client/wsResponse'
 import { Precision, SchemalessMessageInfo, SchemalessProto } from './wsProto'
-import { WsStmt } from '../stmt/wsStmt'
+import { WsStmt1 } from '../stmt/wsStmt1'
 import { ReqId } from '../common/reqid'
 import { BinaryQueryMessage, FetchRawBlockMessage, PrecisionLength, TSDB_OPTION_CONNECTION } from '../common/constant'
 import logger from '../common/log'
+import { WsStmt } from '../stmt/wsStmt'
  
 export class WsSql{
     private wsConfig:WSConfig;
@@ -106,7 +107,7 @@ export class WsSql{
                         precision = PrecisionLength[data[0][0]]
                     }
                 }
-                return await WsStmt.newStmt(this._wsClient, precision, reqId);               
+                return await WsStmt1.newStmt(this._wsClient, precision, reqId);               
             } catch (e: any) {
                 logger.error(`stmtInit failed, code: ${e.code}, message: ${e.message}`);
                 throw(e);

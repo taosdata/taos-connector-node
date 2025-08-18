@@ -4,7 +4,7 @@ import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
 import { Sleep } from "../utils";
 
-let dns = 'ws://localhost:6041'
+let dns = 'ws://192.168.2.156:6041'
 setLevel("debug")
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns);
@@ -76,7 +76,7 @@ describe('TDWebSocket.Stmt()', () => {
         let params = stmt.newStmtParam()
         params.setVarchar([tags[0]]);
         params.setInt([tags[1]]);        
-        await stmt.setTags(params)
+        await stmt.setTags(params);
         await stmt.close()
         await connector.close();
     }); 

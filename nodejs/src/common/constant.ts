@@ -70,6 +70,13 @@ export enum TSDB_OPTION_CONNECTION {
   TSDB_OPTION_CONNECTION_USER_APP,       // user app
 }
 
+export enum FieldBindType {
+    TAOS_FIELD_COL = 1,
+    TAOS_FIELD_TAG = 2,
+    TAOS_FIELD_QUERY = 3,
+    TAOS_FIELD_TBNAME = 4,
+}
+
 export const TDenginePrecision: IndexableString = {
     0: 'MILLISECOND',
     1: "MICROSECOND",

@@ -1,8 +1,8 @@
+import exp from "constants";
 import { WSQueryResponse } from "../client/wsResponse";
 import { TDengineTypeLength } from "../common/constant";
 import { MessageResp } from "../common/taosResult";
-import { StmtBindParams } from "./wsParams";
-
+import { StmtBindParams } from "./wsParamsBase";
 export interface StmtMessageInfo {
     action: string;
     args: StmtParamsInfo;
@@ -18,13 +18,26 @@ interface StmtParamsInfo {
 }
 
 
+export interface StmtFieldInfo {
+    name: string | undefined | null;
+    field_type: number | undefined | null;
+    precision: number | undefined | null;
+    scale: number | undefined | null;
+    bytes: number | undefined | null;
+    bind_type: number | undefined | null;
+}
+
 export class WsStmtQueryResponse extends WSQueryResponse {
     affected:number | undefined | null;
     stmt_id?: bigint | undefined | null;
+    is_insert?: boolean | undefined | null;
+    fields?: Array<StmtFieldInfo> | undefined | null;
     constructor(resp:MessageResp) {
         super(resp);
         this.stmt_id = BigInt(resp.msg.stmt_id)
         this.affected = resp.msg.affected
+        this.is_insert = resp.msg.is_insert;
+        this.fields = resp.msg.fields;
     }
 }
 

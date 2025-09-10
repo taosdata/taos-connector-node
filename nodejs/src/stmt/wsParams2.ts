@@ -1,41 +1,83 @@
 import { ColumnsBlockType, PrecisionLength, TDengineTypeCode, TDengineTypeLength } from "../common/constant";
 import { ErrorCode, TaosError } from "../common/wsError";
-import { getCharOffset, setBitmapNull, bitmapLen, _isVarType} from "../common/taosResult"
 import { isEmpty } from "../common/utils";
-import { StmtFieldInfo } from "./wsProto";
 import { ColumnInfo } from "./wsColumnInfo";
 import { IDataEncoder, StmtBindParams } from "./wsParamsBase";
-import { timeStamp } from "console";
-
+import { _isVarType } from "../common/taosResult";
+import { FieldBindParams } from "./FieldBindParams";
+import JSONBig from 'json-bigint';
 
 export class Stmt2BindParams extends StmtBindParams implements IDataEncoder  {
-    constructor(precision?:number) {
-        super(precision);
+    protected paramIndex:number = 0;
+    constructor(paramsCount: number, precision?:number) {
+        super(precision, paramsCount);
     }
 
-    encode(params: any[], dataType: string, typeLen: number, columnType: number): ColumnInfo{
+    addParams(params: any[], dataType: string, typeLen: number, columnType: number): void {
         if (!params || params.length == 0) {
+            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "StmtBindParams params is invalid!");
+        }
+        if (this._fieldParams){
+            if (this._fieldParams[this.paramIndex]) {
+                if (this._fieldParams[this.paramIndex].dataType !== dataType || this._fieldParams[this.paramIndex].columnType !== columnType) {
+                    throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, `StmtBindParams params type is not match! ${this.paramIndex} ${this.paramsCount} ${JSONBig.stringify({ dataType, columnType } )} vs ${JSONBig.stringify({ dataType: this._fieldParams[this.paramIndex].dataType, columnType: this._fieldParams[this.paramIndex].columnType})}`);
+                }
+                this._fieldParams[this.paramIndex].params.push(...params);
+                
+            } else {
+                this._fieldParams[this.paramIndex] = new FieldBindParams(params, dataType, typeLen, columnType);
+            }
+        }
+        this.paramIndex++;
+        if (this.paramIndex >= this.paramsCount) {
+            this.paramIndex = 0;
+        }
+    }
+
+    mergeParams(bindParams: StmtBindParams): void {
+        if (!bindParams || !bindParams._fieldParams || bindParams._fieldParams.length === 0 || !this._fieldParams) {
+            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "StmtBindParams params is invalid!");
+        }
+        this.paramIndex = 0;
+        for (let i = 0; i < bindParams._fieldParams.length; i++) {
+            let fieldParam = bindParams._fieldParams[i];
+            if (fieldParam) {
+                this.addParams(fieldParam.params, fieldParam.dataType, fieldParam.typeLen, fieldParam.columnType);
+            }
+        }
+        console.log(`StmtBindParams merge params, field params size: ${this._fieldParams[0].params.length}`);
+    }
+
+    encode(): void{
+        this.paramIndex = 0;
+        if (!this._fieldParams || this._fieldParams.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "StmtBindParams params is invalid!");
         }
         
         if (this._rows > 0) {
-            if (this._rows !== params.length) {
+            if (this._rows !== this._fieldParams[0].params.length) {
                 throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "wrong row length!")
             }
         }else {
-            this._rows = params.length;
+            this._rows = this._fieldParams[0].params.length;
         }
-
-        let isVarType = _isVarType(columnType)
-        if (isVarType == ColumnsBlockType.SOLID) {
-            if (dataType === "TIMESTAMP") {
-                return this.encodeTimestampColumn(params, typeLen, columnType);
+        for (let i = 0; i < this._fieldParams.length; i++) {
+            let fieldParam = this._fieldParams[i];
+            if (!fieldParam) {
+                continue;
             }
-            return this.encodeDigitColumns(params, dataType, typeLen, columnType);
-        } 
 
-        return this.encodeVarColumns(params, dataType, typeLen, columnType);
-
+            let isVarType = _isVarType(fieldParam.columnType);
+            if (isVarType == ColumnsBlockType.SOLID) {
+                if (fieldParam.dataType === "TIMESTAMP") {
+                    this._params.push(this.encodeTimestampColumn(fieldParam.params, fieldParam.typeLen, fieldParam.columnType));
+                } else {
+                    this._params.push(this.encodeDigitColumns(fieldParam.params, fieldParam.dataType, fieldParam.typeLen, fieldParam.columnType));
+                }
+            } else {
+                this._params.push(this.encodeVarColumns(fieldParam.params, fieldParam.dataType, fieldParam.typeLen, fieldParam.columnType));
+            }
+        }
     }
 
     private encodeVarColumns(params:any[], dataType:string = 'number', typeLen:number, columnType:number):ColumnInfo {
@@ -43,6 +85,7 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder  {
         let dataLengths: number[] = [];
         // TotalLength(4) + Type (4) + Num(4) + IsNull(1) * size + haveLength(1) + BufferLength(4) + 4 * v.length + totalLength
         // 17 + (5 * params.length) + totalLength;
+        let totalLength = 17 + (5 * params.length);
         const bytes: number[] = [];
         for (let i = 0; i <  params.length; i++) {
             if (!isEmpty(params[i])) {
@@ -50,22 +93,34 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder  {
                 if (typeof params[i] == 'string' ) {
                     let encoder = new TextEncoder().encode(params[i]);
                     let length = encoder.length;
+                    totalLength += length;
                     dataLengths.push(length);
                     bytes.push(...encoder);
-                }
+                } else if (params[i] instanceof ArrayBuffer) {
+                    //input arraybuffer, save not need encode
+                    let value:ArrayBuffer = params[i];
+                    totalLength += value.byteLength;
+                    dataLengths.push(value.byteLength);
+                    bytes.push(...new Uint8Array(value));
+                } else {
+                    throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, 
+                        "getColumString params is invalid! param_type:=" + typeof params[i]);
+                }  
             } else {
                 isNull.push(1);
             }
         }
-               
+        this._dataTotalLen += totalLength;
+        const dataBuffer = new Uint8Array(bytes).buffer;
+        return new ColumnInfo([totalLength, dataBuffer], columnType, typeLen, this._rows, isNull, dataLengths, 1);
     }
 
     private encodeDigitColumns(params:any[], dataType:string = 'number', typeLen:number, columnType:number):ColumnInfo {
         let isNull: number[] = [];
+        // TotalLength(4) + Type (4) + Num(4) + IsNull(1) * size + haveLength(1) + BufferLength(4) + size * dataLen    
         let dataLength = 17 + (typeLen + 1) * params.length;
         let arrayBuffer = new ArrayBuffer(typeLen * params.length);
         let dataBuffer = new DataView(arrayBuffer);
-        // TotalLength(4) + Type (4) + Num(4) + IsNull(1) * size + haveLength(1) + BufferLength(4) + size * dataLen    
         for (let i = 0; i < params.length; i++) {
             if (!isEmpty(params[i])) {
                 isNull.push(0);

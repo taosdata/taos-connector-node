@@ -1,14 +1,14 @@
 import { ErrorCode, TaosError } from "../common/wsError";
 import { StmtBindParams } from "./wsParamsBase";
+import JSONBig from 'json-bigint';
 
 export class TableInfo {
     name: string | undefined | null;
     tags: StmtBindParams | undefined | null;
-    params: Array<StmtBindParams>;
+    params?: StmtBindParams;
 
     constructor(name?: string) {
         this.name = name;
-        this.params = [];
     }
 
     public getTableName(): string | undefined | null {
@@ -19,7 +19,7 @@ export class TableInfo {
         return this.tags;
     }
 
-    public getParams(): Array<StmtBindParams> | undefined | null {
+    public getParams(): StmtBindParams | undefined | null {
         return this.params;
     }
 
@@ -37,11 +37,14 @@ export class TableInfo {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "Table tags is invalid!");
         }
     }
-    async setParams(params: StmtBindParams): Promise<void> {
-        if (params) {
-            this.params.push(params);
+    async setParams(bindParams: StmtBindParams): Promise<void> {
+        if (!this.params) {
+            this.params = bindParams;
         } else {
-            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "Table params is invalid!");
+            if (bindParams._fieldParams) {
+                this.params.mergeParams(bindParams);
+                console.log(`setParams params merged, total rows: ${bindParams._fieldParams[0].params.length}`);
+            }
         }
     }
 }

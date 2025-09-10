@@ -1,29 +1,40 @@
 import { TDengineTypeCode, TDengineTypeLength, TDengineTypeName, PrecisionLength } from "../common/constant";
 import { bitmapLen } from "../common/taosResult";
 import { ErrorCode, TaosError } from "../common/wsError";
+import { FieldBindParams } from "./FieldBindParams";
 import { ColumnInfo } from "./wsColumnInfo";
-
+import JSONBig from 'json-bigint';
 
 export interface IDataEncoder {
-    encode(params: any[], dataType: string, typeLen: number, columnType: number): ColumnInfo;
+    encode(): void;
+    addParams(params: any[], dataType: string, typeLen: number, columnType: number): void;
+    mergeParams(bindParams: StmtBindParams): void;
 }
 
 export abstract class StmtBindParams {
     protected readonly precisionLength:number = PrecisionLength['ms']
     protected readonly _params: ColumnInfo[];
+    _fieldParams?: FieldBindParams[];
     protected _dataTotalLen:number = 0;
+    protected paramsCount: number = 0;
     protected _rows = 0;
 
-    constructor(precision?:number) {
+    constructor(precision?:number, paramsCount?: number) {
         if (precision) {
             this.precisionLength = precision
         }
         this._params = [];
+        if (paramsCount) {
+            this.paramsCount = paramsCount;
+            this._fieldParams = new Array(paramsCount);
+        }
     }
 
+    abstract encode(): void;
 
+    abstract addParams(params: any[], dataType: string, typeLen: number, columnType: number): void;
 
-    abstract encode(params: any[], dataType: string, typeLen: number, columnType: number): ColumnInfo;
+    abstract mergeParams(bindParams: StmtBindParams): void;
 
     getDataRows(): number {
         return this._rows;
@@ -42,32 +53,30 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBooleanColumn params is invalid!");
         }
-        let columnInfo = this.encode(params, "boolean", TDengineTypeLength['BOOL'], TDengineTypeCode.BOOL);
-        this._params.push(columnInfo);
+        this.addParams(params, "boolean", TDengineTypeLength['BOOL'], TDengineTypeCode.BOOL);
     }
 
     setTinyInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetTinyIntColumn params is invalid!");
         }
-        let columnInfo = this.encode(params, "number", TDengineTypeLength['TINYINT'], TDengineTypeCode.TINYINT)
-        this._params.push(columnInfo);
+        this.addParams(params, "number", TDengineTypeLength['TINYINT'], TDengineTypeCode.TINYINT)
     }
 
     setUTinyInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetUTinyIntColumn params is invalid!");
         }      
-        let columnInfo = this.encode(params, "number", TDengineTypeLength['TINYINT UNSIGNED'], TDengineTypeCode.TINYINT_UNSIGNED)
-        this._params.push(columnInfo);
+        this.addParams(params, "number", TDengineTypeLength['TINYINT UNSIGNED'], TDengineTypeCode.TINYINT_UNSIGNED)
+        
     }
 
     setSmallInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetSmallIntColumn params is invalid!");
         }      
-        let columnInfo = this.encode(params, "number", TDengineTypeLength['SMALLINT'], TDengineTypeCode.SMALLINT)
-        this._params.push(columnInfo);
+        this.addParams(params, "number", TDengineTypeLength['SMALLINT'], TDengineTypeCode.SMALLINT)
+        
 
     }
 
@@ -75,112 +84,110 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetSmallIntColumn params is invalid!");
         }      
-        let columnInfo = this.encode(params, "number", TDengineTypeLength['SMALLINT UNSIGNED'], TDengineTypeCode.SMALLINT_UNSIGNED)
-        this._params.push(columnInfo);
+        this.addParams(params, "number", TDengineTypeLength['SMALLINT UNSIGNED'], TDengineTypeCode.SMALLINT_UNSIGNED)
+        
     }
 
     setInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetIntColumn params is invalid!");
         }      
-        let columnInfo = this.encode(params, "number", TDengineTypeLength['INT'], TDengineTypeCode.INT)
-        this._params.push(columnInfo);
+        this.addParams(params, "number", TDengineTypeLength['INT'], TDengineTypeCode.INT)
+        
     }
 
     setUInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetUIntColumn params is invalid!");
         }      
-        let columnInfo = this.encode(params, "number", TDengineTypeLength['INT UNSIGNED'], TDengineTypeCode.INT_UNSIGNED)
-        this._params.push(columnInfo);
+        this.addParams(params, "number", TDengineTypeLength['INT UNSIGNED'], TDengineTypeCode.INT_UNSIGNED)
+        
     }
 
     setBigint(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBigIntColumn params is invalid!");
         }      
-        let columnInfo = this.encode(params, "bigint", TDengineTypeLength['BIGINT'], TDengineTypeCode.BIGINT)
-        this._params.push(columnInfo);
+        this.addParams(params, "bigint", TDengineTypeLength['BIGINT'], TDengineTypeCode.BIGINT)
+        
     }
 
     setUBigint(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetUBigIntColumn params is invalid!");
         }      
-        let columnInfo = this.encode(params, "bigint", TDengineTypeLength['BIGINT UNSIGNED'], TDengineTypeCode.BIGINT_UNSIGNED)
-        this._params.push(columnInfo); 
+        this.addParams(params, "bigint", TDengineTypeLength['BIGINT UNSIGNED'], TDengineTypeCode.BIGINT_UNSIGNED)
+         
     }
 
     setFloat(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetFloatColumn params is invalid!");
         }      
-        let columnInfo = this.encode(params, "number", TDengineTypeLength['FLOAT'], TDengineTypeCode.FLOAT)
-        this._params.push(columnInfo); 
+        this.addParams(params, "number", TDengineTypeLength['FLOAT'], TDengineTypeCode.FLOAT)
+         
     }
 
     setDouble(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetDoubleColumn params is invalid!");
         }      
-        let columnInfo = this.encode(params, "number", TDengineTypeLength['DOUBLE'], TDengineTypeCode.DOUBLE)
-        this._params.push(columnInfo); 
+        this.addParams(params, "number", TDengineTypeLength['DOUBLE'], TDengineTypeCode.DOUBLE)
+         
     }
 
     setVarchar(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetVarcharColumn params is invalid!");
         }
-        let columnInfo = this.encode(params, TDengineTypeName[8], 0, TDengineTypeCode.VARCHAR);
-        this._params.push(columnInfo);
+        this.addParams(params, TDengineTypeName[8], 0, TDengineTypeCode.VARCHAR);
+        
     }
 
     setBinary(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBinaryColumn params is invalid!");
         }
-        let columnInfo = this.encode(params, TDengineTypeName[8], 0, TDengineTypeCode.BINARY);
-        this._params.push(columnInfo);
+        this.addParams(params, TDengineTypeName[8], 0, TDengineTypeCode.BINARY);
+        
     }
 
     setNchar(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetNcharColumn params is invalid!");
         }
-        let columnInfo = this.encode(params, TDengineTypeName[10], 0, TDengineTypeCode.NCHAR);
-        this._params.push(columnInfo);
+        this.addParams(params, TDengineTypeName[10], 0, TDengineTypeCode.NCHAR);
     }
 
     setJson(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetJsonColumn params is invalid!");
         }
-        let columnInfo = this.encode(params, TDengineTypeName[15], 0, TDengineTypeCode.JSON);
-        this._params.push(columnInfo);
+        this.addParams(params, TDengineTypeName[15], 0, TDengineTypeCode.JSON);
+        
     }
 
     setVarBinary(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetVarBinaryColumn params is invalid!");
         }
-        let columnInfo = this.encode(params, TDengineTypeName[16], 0, TDengineTypeCode.VARBINARY);
-        this._params.push(columnInfo);
+        this.addParams(params, TDengineTypeName[16], 0, TDengineTypeCode.VARBINARY);
     }
 
     setGeometry(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetGeometryColumn params is invalid!");
         }
-        let columnInfo = this.encode(params, TDengineTypeName[16], 0, TDengineTypeCode.GEOMETRY);
-        this._params.push(columnInfo);
+        this.addParams(params, TDengineTypeName[20], 0, TDengineTypeCode.GEOMETRY);
+        
     }
 
     setTimestamp(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SeTimestampColumn params is invalid!");
         } 
-        let columnInfo = this.encode(params, TDengineTypeName[9], TDengineTypeLength['TIMESTAMP'], TDengineTypeCode.TIMESTAMP);
-        this._params.push(columnInfo);
+        this.addParams(params, TDengineTypeName[9], TDengineTypeLength['TIMESTAMP'], TDengineTypeCode.TIMESTAMP);
+        
     }
 
     protected writeDataToBuffer(dataBuffer: DataView, params: any, dataType: string = 'number', typeLen: number, columnType: number, i:number): void {
@@ -221,7 +228,8 @@ export abstract class StmtBindParams {
                     break;
                 }
 
-                case TDengineTypeCode.BIGINT: {
+                case TDengineTypeCode.BIGINT:
+                case TDengineTypeCode.TIMESTAMP: {
                     dataBuffer.setBigInt64(i * 8, params, true);
                     break;
                 }
@@ -245,7 +253,7 @@ export abstract class StmtBindParams {
             }
 
         } else {
-            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetTinyIntColumn params is invalid! param:=" + params[i])
+            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetTinyIntColumn params is invalid! param:=" + params)
         }
     }
 

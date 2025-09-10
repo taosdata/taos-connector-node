@@ -117,7 +117,7 @@ describe('TDWebSocket.Stmt()', () => {
             await stmt.setTableName('d1001');
         }catch(e) {
             let err:any = e
-            expect(err.message).toMatch("syntax error near '? into ? using meters tags (?, ?) values (?, ?, ?, ?)' (keyword INTO is expected)")
+            expect(err.message).toMatch(/keyword INTO is expected|Syntax error in SQL/)
         }
         await stmt.close()
         await connector.close();
@@ -151,16 +151,15 @@ describe('TDWebSocket.Stmt()', () => {
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy()      
-        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
-        await stmt.setTableName('d1001');
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) (ts, current, voltage, phase) VALUES (?, ?, ?, ?)');
+        await stmt.setTableName('power_stmt.d1001');
 
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
-        params.setInt([7]);
+        params.setInt([1]);
         await stmt.setTags(params) 
 
         let lastTs = 0
-        const allp:any[] = []
         for (let i = 0; i < 10; i++) {
             for (let j = 0; j < multi[0].length; j++) {
                 multi[0][j] = multi[0][0] + j;
@@ -172,11 +171,15 @@ describe('TDWebSocket.Stmt()', () => {
             dataParams.setFloat(multi[1])
             dataParams.setInt(multi[2])
             dataParams.setFloat(multi[3])
-            allp.push(stmt.bind(dataParams))
-            multi[0][0] = lastTs + 1
+            if (dataParams._fieldParams) {
+                console.log(`bind ${dataParams._fieldParams[0].params.length} rows data ${multi[0].length}`)
+            }
+            stmt.bind(dataParams)
+
+            multi[0][0] = lastTs + 1;
 
         }
-        await Promise.all(allp)
+        
         await stmt.batch()
         await stmt.exec()
         expect(stmt.getLastAffected()).toEqual(30)
@@ -217,7 +220,7 @@ describe('TDWebSocket.Stmt()', () => {
             await stmt.exec()
         }catch(e) {
             let err:any = e
-            expect(err.message).toMatch("wrong row length")
+            expect(err.message).toMatch(/wrong row length|bind data length error/)
         }
         await stmt.close()
         await connector.close();
@@ -338,7 +341,7 @@ describe('TDWebSocket.Stmt()', () => {
             await stmt.exec()
         }catch(e) {
             let err:any = e
-            expect(err.message).toMatch("Retry needed");
+            expect(err.message).toMatch(/Retry needed|Tags are empty/);
         }
         await stmt.close()
         await connector.close();

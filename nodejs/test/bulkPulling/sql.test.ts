@@ -4,7 +4,7 @@ import { WsSql } from "../../src/sql/wsSql";
 import { Sleep } from "../utils";
 import logger, { setLevel } from "../../src/common/log"
 
-let dns = 'ws://localhost:6041'
+let dns = 'ws://192.168.2.156:6041'
 let password1 = 'Ab1!@#$%,.:?<>;~'
 let password2 = 'Bc%^&*()-_+=[]{}'
 setLevel("debug")
@@ -90,7 +90,7 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('connect url', async() => {
-        let url = 'ws://root:taosdata@localhost:6041/information_schema?timezone=Asia/Shanghai'
+        let url = 'ws://root:taosdata@192.1682.156:6041/information_schema?timezone=Asia/Shanghai'
         let conf :WSConfig = new WSConfig(url)
         let wsSql = await WsSql.open(conf)
         let version = await wsSql.version()

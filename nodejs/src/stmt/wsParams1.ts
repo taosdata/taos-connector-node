@@ -10,18 +10,26 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
         super(precision);
     }
 
-    encode(params: any[], dataType: string, typeLen: number, columnType: number): ColumnInfo {
+    encode(): void {
+        return;
+    }
+
+    mergeParams(bindParams: StmtBindParams): void {
+        return;
+    }
+
+    addParams(params: any[], dataType: string, typeLen: number, columnType: number): void {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "StmtBindParams params is invalid!");
         }
         if (dataType === "number" || dataType === "bigint" || dataType === "boolean") {
-            return this.encodeDigitColumns(params, dataType, typeLen, columnType);
+            this._params.push(this.encodeDigitColumns(params, dataType, typeLen, columnType));
         } else {
             
             if (columnType === TDengineTypeCode.NCHAR) {
-                return this.encodeNcharColumn(params);
+                this._params.push(this.encodeNcharColumn(params));
             } else {
-                return this.encodeVarLengthColumn(params, columnType);
+                this._params.push(this.encodeVarLengthColumn(params, columnType));
             }
         }
     }

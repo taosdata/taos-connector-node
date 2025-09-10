@@ -1,5 +1,6 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
+import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
 import { createBaseSTable, createBaseSTableJSON, createSTableJSON, getInsertBind } from "../utils";
 
@@ -83,6 +84,7 @@ const selectJsonTable = `select * from ${jsonTable}`
 const selectJsonTableCN = `select * from ${jsonTableCN}`
 
 let dsn = 'ws://root:taosdata@192.168.2.156:6041';
+setLevel("debug")
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.open(conf);
@@ -347,9 +349,9 @@ test('test bind exception cases', async() => {
 
 
 afterAll(async () => {
-    let conf :WSConfig = new WSConfig(dsn)
-    let ws = await WsSql.open(conf);
-    await ws.exec(dropDB);
-    await ws.close();
+    // let conf :WSConfig = new WSConfig(dsn)
+    // let ws = await WsSql.open(conf);
+    // await ws.exec(dropDB);
+    // await ws.close();
     WebSocketConnectionPool.instance().destroyed()
 })

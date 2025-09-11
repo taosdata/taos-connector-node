@@ -1,3 +1,4 @@
+import { WSRows } from "../sql/wsRows";
 import { StmtBindParams } from "./wsParamsBase";
 
 export interface WsStmt {
@@ -8,6 +9,8 @@ export interface WsStmt {
     bind(paramsArray:StmtBindParams): Promise<void>;
     batch(): Promise<void>;
     exec(): Promise<void>;
+    resultSet(): Promise<WSRows>;
     getLastAffected(): number | null | undefined;
     close(): Promise<void>
+
 }

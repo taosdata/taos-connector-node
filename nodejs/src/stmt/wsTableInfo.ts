@@ -43,7 +43,6 @@ export class TableInfo {
         } else {
             if (bindParams._fieldParams) {
                 this.params.mergeParams(bindParams);
-                console.log(`setParams params merged, total rows: ${bindParams._fieldParams[0].params.length}`);
             }
         }
     }

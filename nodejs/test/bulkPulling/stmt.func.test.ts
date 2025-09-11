@@ -143,7 +143,43 @@ describe('TDWebSocket.Stmt()', () => {
         await connector.close();
     });
 
-    test('normal BindParam', async() => {
+    test('Bind supper table', async() => {
+        let conf = new WSConfig(dns);
+        conf.setUser('root')
+        conf.setPwd('taosdata')
+        conf.setDb('power_stmt')
+        let connector = await WsSql.open(conf) 
+        let stmt = await connector.stmtInit()
+        expect(stmt).toBeTruthy()      
+        await stmt.prepare('INSERT INTO meters (ts, tbname, current, voltage, phase, location, groupId) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        let lastTs = 0
+        for (let i = 0; i < 10; i++) {
+            for (let j = 0; j < multi[0].length; j++) {
+                multi[0][j] = multi[0][0] + j;
+                lastTs = multi[0][j]
+            }
+
+            let dataParams = stmt.newStmtParam()
+            dataParams.setTimestamp(multi[0])
+            dataParams.setVarchar([`d1001`, `d1002`, `d1003`])
+            dataParams.setFloat(multi[1])
+            dataParams.setInt(multi[2])
+            dataParams.setFloat(multi[3])
+            dataParams.setVarchar(['SanFrancisco_1', 'SanFrancisco_2', 'SanFrancisco_3']);
+            dataParams.setInt([1, 2, 3]);
+            await stmt.bind(dataParams)
+            multi[0][0] = lastTs + 1;
+
+        }
+        
+        await stmt.batch()
+        await stmt.exec()
+        expect(stmt.getLastAffected()).toEqual(30)
+        await stmt.close()
+        await connector.close();
+    });
+
+    test('Bind a single table', async() => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
@@ -171,10 +207,45 @@ describe('TDWebSocket.Stmt()', () => {
             dataParams.setFloat(multi[1])
             dataParams.setInt(multi[2])
             dataParams.setFloat(multi[3])
-            if (dataParams._fieldParams) {
-                console.log(`bind ${dataParams._fieldParams[0].params.length} rows data ${multi[0].length}`)
+            await stmt.bind(dataParams)
+
+            multi[0][0] = lastTs + 1;
+        }
+        await stmt.batch()
+        await stmt.exec()
+        expect(stmt.getLastAffected()).toEqual(30)
+        await stmt.close()
+        await connector.close();
+    });
+
+    test('Bind multiple tables', async() => {
+        let conf = new WSConfig(dns);
+        conf.setUser('root')
+        conf.setPwd('taosdata')
+        conf.setDb('power_stmt')
+        let connector = await WsSql.open(conf) 
+        let stmt = await connector.stmtInit()
+        expect(stmt).toBeTruthy()      
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) (ts, current, voltage, phase) VALUES (?, ?, ?, ?)');
+        let lastTs = 0
+        for (let i = 0; i < 10; i++) {
+            for (let j = 0; j < multi[0].length; j++) {
+                multi[0][j] = multi[0][0] + j;
+                lastTs = multi[0][j]
             }
-            stmt.bind(dataParams)
+            await stmt.setTableName(`power_stmt.d100${i+1}`);
+
+            let params = stmt.newStmtParam()
+            params.setVarchar([`SanFrancisco${i+1}`]);
+            params.setInt([i+1]);
+            await stmt.setTags(params) 
+
+            let dataParams = stmt.newStmtParam()
+            dataParams.setTimestamp(multi[0])
+            dataParams.setFloat(multi[1])
+            dataParams.setInt(multi[2])
+            dataParams.setFloat(multi[3])
+            await stmt.bind(dataParams)
 
             multi[0][0] = lastTs + 1;
 
@@ -183,6 +254,31 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.batch()
         await stmt.exec()
         expect(stmt.getLastAffected()).toEqual(30)
+        await stmt.close()
+        await connector.close();
+    });
+
+    test('query bind', async() => {
+        let conf = new WSConfig(dns);
+        conf.setUser('root')
+        conf.setPwd('taosdata')
+        conf.setDb('power_stmt')
+        let connector = await WsSql.open(conf) 
+        let stmt = await connector.stmtInit()
+        expect(stmt).toBeTruthy()      
+        await stmt.prepare('select * from meters where ts > ? and ts < ?');
+        let dataParams = stmt.newStmtParam()
+        dataParams.setTimestamp([1709183268565])
+        dataParams.setTimestamp([1709183268569])
+        await stmt.bind(dataParams)
+        await stmt.exec()
+        let wsRows = await stmt.resultSet()
+        while (await wsRows.next()) {
+            let result = await wsRows.getData();
+            console.log(result)
+            expect(result).toBeTruthy()
+        }
+        await wsRows.close()
         await stmt.close()
         await connector.close();
     });
@@ -414,11 +510,11 @@ describe('TDWebSocket.Stmt()', () => {
 })
 
 afterAll(async () => {
-    let conf :WSConfig = new WSConfig(dns);
-    conf.setUser('root');
-    conf.setPwd('taosdata');
-    let wsSql = await WsSql.open(conf);
-    await wsSql.exec('drop database power_stmt');
-    await wsSql.close();
+    // let conf :WSConfig = new WSConfig(dns);
+    // conf.setUser('root');
+    // conf.setPwd('taosdata');
+    // let wsSql = await WsSql.open(conf);
+    // await wsSql.exec('drop database power_stmt');
+    // await wsSql.close();
     WebSocketConnectionPool.instance().destroyed()
 })

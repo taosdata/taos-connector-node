@@ -18,23 +18,42 @@ export abstract class StmtBindParams {
     protected _dataTotalLen:number = 0;
     protected paramsCount: number = 0;
     protected _rows = 0;
+    protected _bindCount = 0;
 
     constructor(precision?:number, paramsCount?: number) {
         if (precision) {
             this.precisionLength = precision
         }
         this._params = [];
-        if (paramsCount) {
+        if (paramsCount && paramsCount > 0) {
             this.paramsCount = paramsCount;
             this._fieldParams = new Array(paramsCount);
+        } else {
+            this.paramsCount = 0;
+            this._fieldParams = [];
         }
     }
 
     abstract encode(): void;
 
     abstract addParams(params: any[], dataType: string, typeLen: number, columnType: number): void;
+    
+    addBindFieldParams(fieldParams: FieldBindParams): void {
+        if (!fieldParams || !fieldParams.params || fieldParams.params.length == 0) {
+            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "StmtBindParams params is invalid!");
+        }
+        if (!this._fieldParams) {
+            this._fieldParams = [];
+        }
+        this.addParams(fieldParams.params, fieldParams.dataType, fieldParams.typeLen, fieldParams.columnType);
+    }
 
     abstract mergeParams(bindParams: StmtBindParams): void;
+
+
+    getBindCount(): number {
+        return this._bindCount;
+    }
 
     getDataRows(): number {
         return this._rows;

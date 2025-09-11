@@ -1,4 +1,4 @@
-import { ColumnsBlockType, PrecisionLength, TDengineTypeCode, TDengineTypeLength } from "../common/constant";
+import { ColumnsBlockType, FieldBindType, PrecisionLength, TDengineTypeCode, TDengineTypeLength } from "../common/constant";
 import { ErrorCode, TaosError } from "../common/wsError";
 import { isEmpty } from "../common/utils";
 import { ColumnInfo } from "./wsColumnInfo";
@@ -6,32 +6,42 @@ import { IDataEncoder, StmtBindParams } from "./wsParamsBase";
 import { _isVarType } from "../common/taosResult";
 import { FieldBindParams } from "./FieldBindParams";
 import JSONBig from 'json-bigint';
+import { StmtFieldInfo } from "./wsProto";
 
 export class Stmt2BindParams extends StmtBindParams implements IDataEncoder  {
+    private _fields: Array<StmtFieldInfo>;
     protected paramIndex:number = 0;
-    constructor(paramsCount: number, precision?:number) {
+    constructor(paramsCount?: number, precision?:number, fields?: Array<StmtFieldInfo>) {
         super(precision, paramsCount);
+        this._fields = fields || [];
     }
 
     addParams(params: any[], dataType: string, typeLen: number, columnType: number): void {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "StmtBindParams params is invalid!");
         }
-        if (this._fieldParams){
-            if (this._fieldParams[this.paramIndex]) {
-                if (this._fieldParams[this.paramIndex].dataType !== dataType || this._fieldParams[this.paramIndex].columnType !== columnType) {
-                    throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, `StmtBindParams params type is not match! ${this.paramIndex} ${this.paramsCount} ${JSONBig.stringify({ dataType, columnType } )} vs ${JSONBig.stringify({ dataType: this._fieldParams[this.paramIndex].dataType, columnType: this._fieldParams[this.paramIndex].columnType})}`);
+        if (this._fieldParams) { 
+            if (this.paramsCount > 0) {
+                if (this._fieldParams[this.paramIndex]) {
+                    if (this._fieldParams[this.paramIndex].dataType !== dataType || this._fieldParams[this.paramIndex].columnType !== columnType) {
+                        throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, `StmtBindParams params type is not match! ${this.paramIndex} ${this.paramsCount} ${JSONBig.stringify({ dataType, columnType } )} vs ${JSONBig.stringify({ dataType: this._fieldParams[this.paramIndex].dataType, columnType: this._fieldParams[this.paramIndex].columnType})}`);
+                    }
+                    this._fieldParams[this.paramIndex].params.push(...params);
+                    
+                } else {
+                    let bindType = this._fields[this.paramIndex].bind_type || 0;
+                    this._fieldParams[this.paramIndex] = new FieldBindParams(params, dataType, typeLen, columnType, bindType);
+                    this._bindCount++
                 }
-                this._fieldParams[this.paramIndex].params.push(...params);
-                
+                this.paramIndex++;
+                if (this.paramIndex >= this.paramsCount) {
+                    this.paramIndex = 0;
+                }            
             } else {
-                this._fieldParams[this.paramIndex] = new FieldBindParams(params, dataType, typeLen, columnType);
+                this._fieldParams.push(new FieldBindParams(params, dataType, typeLen, columnType, FieldBindType.TAOS_FIELD_COL));
             }
         }
-        this.paramIndex++;
-        if (this.paramIndex >= this.paramsCount) {
-            this.paramIndex = 0;
-        }
+
     }
 
     mergeParams(bindParams: StmtBindParams): void {
@@ -45,7 +55,6 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder  {
                 this.addParams(fieldParam.params, fieldParam.dataType, fieldParam.typeLen, fieldParam.columnType);
             }
         }
-        console.log(`StmtBindParams merge params, field params size: ${this._fieldParams[0].params.length}`);
     }
 
     encode(): void{

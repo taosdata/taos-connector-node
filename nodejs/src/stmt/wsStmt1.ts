@@ -8,6 +8,7 @@ import { StmtBindParams } from './wsParamsBase';
 import { WsStmt } from './wsStmt';
 import logger from '../common/log';
 import { Stmt1BindParams } from './wsParams1';
+import { WSRows } from '../sql/wsRows';
 
 export class WsStmt1 implements WsStmt{
     private _wsClient: WsClient;
@@ -133,6 +134,10 @@ export class WsStmt1 implements WsStmt{
             },
         };
         return await this.execute(queryMsg);
+    }
+
+    async resultSet(): Promise<WSRows> {
+        throw new Error("Method not implemented.");
     }
 
     getLastAffected() {

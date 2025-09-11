@@ -13,8 +13,8 @@ import { Stmt2BindParams } from './wsParams2';
 import { TableInfo } from './wsTableInfo';
 import { ColumnInfo } from './wsColumnInfo';
 import { WSRows } from '../sql/wsRows';
-
-
+import { FieldBindParams } from './FieldBindParams';
+import { log } from 'console';
 
 export class WsStmt2 implements WsStmt{
     private _wsClient: WsClient;
@@ -29,7 +29,8 @@ export class WsStmt2 implements WsStmt{
     private _toBeBindTagCount: number;
     private _toBeBindColCount: number;
     private _toBeBindTableNameIndex: number | undefined | null;
-
+    private _toBeBindTagIndexes: number[];
+    private _isInsert: boolean = false;
     private constructor(wsClient: WsClient, precision?:number) {
         this._wsClient = wsClient;
         if (precision) {
@@ -38,6 +39,7 @@ export class WsStmt2 implements WsStmt{
         this._stmtTableInfo = new Map<string, TableInfo>();
         this._currentTableInfo = new TableInfo();
         this._stmtTableInfoList = [];
+        this._toBeBindTagIndexes = [];
         this._toBeBindColCount = 0;
         this._toBeBindTagCount = 0;
     }
@@ -90,21 +92,24 @@ export class WsStmt2 implements WsStmt{
             },
         };
         await this.execute(queryMsg);
-        if (this.fields && this.fields[0].precision) {
-            this._precision = this.fields[0].precision;
+
+        if (this._isInsert && this.fields) {            
+            this._precision = this.fields[0].precision ? this.fields[0].precision : 0;
+            this._toBeBindColCount = 0;
+            this._toBeBindTagCount = 0;
+            this.fields?.forEach((field, index) => {
+                if (field.bind_type == FieldBindType.TAOS_FIELD_TBNAME) {
+                    this._toBeBindTableNameIndex = index;
+                } else if (field.bind_type == FieldBindType.TAOS_FIELD_TAG) {
+                    this._toBeBindTagCount++;
+                } else if (field.bind_type == FieldBindType.TAOS_FIELD_COL) {
+                    this._toBeBindColCount++;
+                }
+            });            
+        } else {
+            this._stmtTableInfoList = [this._currentTableInfo];
         }
 
-        this._toBeBindColCount = 0;
-        this._toBeBindTagCount = 0;
-        this.fields?.forEach((field, index) => {
-         if (field.bind_type == FieldBindType.TAOS_FIELD_TBNAME) {
-            this._toBeBindTableNameIndex = index;
-         } else if (field.bind_type == FieldBindType.TAOS_FIELD_TAG) {
-            this._toBeBindTagCount++;
-         } else if (field.bind_type == FieldBindType.TAOS_FIELD_COL) {
-            this._toBeBindColCount++;
-         }
-        });
 
     }
 
@@ -127,9 +132,6 @@ export class WsStmt2 implements WsStmt{
         if (!paramsArray || !this._stmt_id) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "SetBinaryTags paramArray is invalid!");
         }
-        for (let i = 0; i < paramsArray.getParams().length; i++) {
-            let param = paramsArray.getParams()[i];
-        }
 
         if (!this._currentTableInfo) {
             this._currentTableInfo = new TableInfo();
@@ -141,24 +143,53 @@ export class WsStmt2 implements WsStmt{
     }
 
     newStmtParam(): StmtBindParams {
-        if (!this.fields || this.fields.length === 0) {
-            throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "No columns to bind!");
+        if (this._isInsert) { 
+            if (!this.fields || this.fields.length === 0) {
+                throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "No columns to bind!");
+            }
+            return new Stmt2BindParams(this.fields.length, this._precision, this.fields);
         }
-        console.log(`Creating new Stmt2BindParams with precision: ${this._precision}, field count: ${this.fields.length}`);
-        return new Stmt2BindParams(this.fields.length, this._precision);
+        return new Stmt2BindParams();
     }
 
     async bind(paramsArray: StmtBindParams): Promise<void> {
-        if (!paramsArray || !this._stmt_id) {
+        if (!paramsArray || !this._stmt_id || !paramsArray._fieldParams) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Bind paramArray is invalid!");
         }
-        if (!this._currentTableInfo) {
-            this._currentTableInfo = new TableInfo();
-            this._stmtTableInfoList.push(this._currentTableInfo);
-            console.log(`New table info created for table: ${this._currentTableInfo.getTableName()}`);
-        }
 
-        await this._currentTableInfo.setParams(paramsArray);
+        if (this._isInsert && this.fields && paramsArray.getBindCount() == this.fields.length) {
+            const tableNameIndex = this._toBeBindTableNameIndex;
+            if (tableNameIndex === null || tableNameIndex === undefined) {
+                throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Table name index is null or undefined!");
+            }
+
+            const paramsCount = paramsArray._fieldParams[0].params.length;
+            for (let i = 0; i < paramsCount; i++) {
+                let tableName = paramsArray._fieldParams[tableNameIndex].params[i];
+                await this.setTableName(tableName);
+                for (let j = 0; j < paramsArray._fieldParams.length; j++) {
+                    if (j == tableNameIndex) {
+                        continue;
+                    }
+                    let fieldParam = paramsArray._fieldParams[j];
+                    if (this.fields[j].bind_type == FieldBindType.TAOS_FIELD_TAG) {
+                        if (!this._currentTableInfo.tags) {
+                            this._currentTableInfo.tags = new Stmt2BindParams(this._toBeBindTagCount, this._precision, this.fields);
+                        }
+                        this._currentTableInfo.tags.addBindFieldParams(new FieldBindParams([fieldParam.params[i]], fieldParam.dataType, fieldParam.typeLen, fieldParam.columnType, fieldParam.bindType));
+                    }else if (this.fields[j].bind_type == FieldBindType.TAOS_FIELD_COL) {
+                        if (!this._currentTableInfo.params) {
+                            this._currentTableInfo.params = new Stmt2BindParams(this._toBeBindColCount, this._precision, this.fields);
+                        }
+                        this._currentTableInfo.params.addBindFieldParams(new FieldBindParams([fieldParam.params[i]], fieldParam.dataType, fieldParam.typeLen, fieldParam.columnType, fieldParam.bindType));
+                    }
+                }
+                
+            }
+        } else {
+            await this._currentTableInfo.setParams(paramsArray);
+        }
+        
         return Promise.resolve();
     }
 
@@ -170,8 +201,8 @@ export class WsStmt2 implements WsStmt{
         if (!this._currentTableInfo ) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "table info is empty!");
         }
-
         let params = this._currentTableInfo.getParams();
+
         if (!params) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Bind params is empty!");
         }
@@ -243,6 +274,11 @@ export class WsStmt2 implements WsStmt{
                 if (resp.fields) {
                     this.fields = resp.fields;
                 }
+                if (resp.is_insert) {
+                    this._isInsert = resp.is_insert;
+                } else {
+                    this._toBeBindColCount = resp.fields_count ? resp.fields_count : 0;
+                }
                 return resp;
             }
 
@@ -285,7 +321,6 @@ export class WsStmt2 implements WsStmt{
                 }
             });
         }
-
         let totalTagSize = 0;
         let tagSizeList:Array<number> = [];
         if (this._toBeBindTagCount > 0) {
@@ -299,7 +334,7 @@ export class WsStmt2 implements WsStmt{
                 }
             });
         }
-
+        
         let totalColSize = 0;
         let colSizeList:Array<number> = [];
         if (this._toBeBindColCount > 0) {
@@ -308,6 +343,7 @@ export class WsStmt2 implements WsStmt{
                 if (!params) {
                     throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Bind params is empty!");
                 }
+
                 params.encode();
                 let colSize = params.getDataTotalLen();
                 totalColSize += colSize;
@@ -315,7 +351,6 @@ export class WsStmt2 implements WsStmt{
                 
             });
         }
-
         let totalSize = totalTableNameSize + totalTagSize + totalColSize;
         let toBeBindTableNameCount = (this._toBeBindTableNameIndex != null && this._toBeBindTableNameIndex >= 0) ? 1 : 0;
         totalSize += this._stmtTableInfoList.length * (
@@ -326,17 +361,16 @@ export class WsStmt2 implements WsStmt{
         const bytes: number[] = [];
         // 写入 req_id
         bytes.push(...bigintToBytes(reqId));
-
+        
         // 写入 stmt_id
         if (this._stmt_id) {
             bytes.push(...bigintToBytes(this._stmt_id));
         }
-
         bytes.push(...bigintToBytes(9n));
         bytes.push(...shotToBytes(1));
         bytes.push(...intToBytes(-1));
         bytes.push(...intToBytes(totalSize + 28, false));
-
+   
         bytes.push(...intToBytes(this._stmtTableInfoList.length));
         bytes.push(...intToBytes(this._toBeBindTagCount));
         bytes.push(...intToBytes(this._toBeBindColCount));
@@ -345,7 +379,7 @@ export class WsStmt2 implements WsStmt{
         } else {
             bytes.push(...intToBytes(0));
         }
-
+        
         if (this._toBeBindTagCount) {
             if (toBeBindTableNameCount > 0) {
                 bytes.push(...intToBytes(28 + totalTableNameSize + 2 * this._stmtTableInfoList.length));
@@ -409,7 +443,7 @@ export class WsStmt2 implements WsStmt{
             }
         }
 
-        // TagsDataLength
+        // ColumnDataLength
         if (this._toBeBindColCount > 0) {
             for (let colSize of colSizeList) {
                 bytes.push(...intToBytes(colSize, false));

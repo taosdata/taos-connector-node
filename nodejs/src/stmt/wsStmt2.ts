@@ -79,6 +79,10 @@ export class WsStmt2 implements WsStmt{
         throw(new TDWebSocketClientError(ErrorCode.ERR_CONNECTION_CLOSED, "stmt connect closed"));        
     }
 
+    getStmtId(): bigint | undefined | null {
+        return this._stmt_id;
+    }
+       
     async prepare(sql: string): Promise<void> {
         let queryMsg = {
             action: 'stmt2_prepare',

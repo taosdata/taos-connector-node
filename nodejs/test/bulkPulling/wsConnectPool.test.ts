@@ -48,7 +48,7 @@ async function connect() {
 
 async function stmtConnect() {
     let dsn = 'ws://root:taosdata@localhost:6041';
-    let wsConf = new WSConfig(dsn);
+    let wsConf = new WSConfig(dsn, "100.100.100.100");
     wsConf.setDb(db)
     // let connector = WsStmtConnect.NewConnector(wsConf) 
     // let stmt = await connector.Init()

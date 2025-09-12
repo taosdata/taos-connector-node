@@ -7,7 +7,7 @@ import { createBaseSTable, createBaseSTableJSON, createSTableJSON, getInsertBind
 
 const stable = 'ws_stmt_stb';
 const table = 'stmt_001';
-const db = 'ws_stmt'
+const db = 'ws_stmt2'
 const createDB = `create database if not exists ${db} keep 3650`
 const useDB = `use ${db}`
 const dropDB = `drop database if exists ${db}`

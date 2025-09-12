@@ -12,8 +12,9 @@ beforeAll(async () => {
     conf.setUser('root');
     conf.setPwd('taosdata');
     let wsSql = await WsSql.open(conf);
-    await wsSql.exec('create database if not exists power_stmt KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
-    await wsSql.exec('CREATE STABLE if not exists power_stmt.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
+    await wsSql.exec('drop database if exists power_func_stmt1;');
+    await wsSql.exec('create database if not exists power_func_stmt1 KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
+    await wsSql.exec('CREATE STABLE if not exists power_func_stmt1.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
     await wsSql.close();
 })
 describe('TDWebSocket.Stmt()', () => {
@@ -34,7 +35,7 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
@@ -69,7 +70,7 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
@@ -89,7 +90,7 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
@@ -112,7 +113,7 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
@@ -133,7 +134,7 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
@@ -154,13 +155,13 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
         expect(stmt).toBeInstanceOf(WsStmt1);      
         await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) (ts, current, voltage, phase) VALUES (?, ?, ?, ?)');
-        await stmt.setTableName('power_stmt.d1001');
+        await stmt.setTableName('power_func_stmt1.d1001');
 
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
@@ -194,7 +195,7 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
@@ -233,7 +234,7 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
@@ -271,7 +272,7 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
@@ -327,7 +328,7 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
@@ -357,7 +358,7 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
@@ -379,7 +380,7 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.batch()
         await stmt.exec()
 
-        let result = await connector.exec("select * from power_stmt.meters")
+        let result = await connector.exec("select * from power_func_stmt1.meters")
         console.log(result)
         await stmt.close()
         await connector.close();
@@ -390,7 +391,7 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns, "100.100.100.100");
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt1')
         let connector = await WsSql.open(conf)  
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
@@ -426,7 +427,7 @@ afterAll(async () => {
     conf.setUser('root');
     conf.setPwd('taosdata');
     let wsSql = await WsSql.open(conf);
-    await wsSql.exec('drop database power_stmt');
+    await wsSql.exec('drop database power_func_stmt1');
     await wsSql.close();
     WebSocketConnectionPool.instance().destroyed()
 })

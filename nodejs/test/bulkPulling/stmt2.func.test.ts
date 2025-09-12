@@ -4,7 +4,7 @@ import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
 import { WsStmt2 } from "../../src/stmt/wsStmt2";
 
-let dns = 'ws://192.168.2.156:6041'
+let dns = 'ws://localhost:6041'
 setLevel("debug")
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns);

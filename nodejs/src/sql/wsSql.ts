@@ -3,14 +3,14 @@ import { parseBlock, TaosResult } from '../common/taosResult'
 import { WsClient } from '../client/wsClient'
 import { ErrorCode, TDWebSocketClientError, TaosResultError, WebSocketInterfaceError } from '../common/wsError'
 import { WSConfig } from '../common/config'
-import { getBinarySql, getUrl } from '../common/utils'
+import { compareVersions, getBinarySql, getUrl } from '../common/utils'
 import { WSFetchBlockResponse, WSQueryResponse } from '../client/wsResponse'
 import { Precision, SchemalessMessageInfo, SchemalessProto } from './wsProto'
-import { WsStmt1 } from '../stmt/wsStmt1'
 import { ReqId } from '../common/reqid'
-import { BinaryQueryMessage, FetchRawBlockMessage, PrecisionLength, TSDB_OPTION_CONNECTION } from '../common/constant'
+import { BinaryQueryMessage, FetchRawBlockMessage, MinStmt2Version, PrecisionLength, TSDB_OPTION_CONNECTION } from '../common/constant'
 import logger from '../common/log'
 import { WsStmt } from '../stmt/wsStmt'
+import { WsStmt1 } from '../stmt/wsStmt1'
 import { WsStmt2 } from '../stmt/wsStmt2'
  
 export class WsSql{
@@ -107,6 +107,11 @@ export class WsSql{
                     if (data && data[0] && data[0][0]) {
                         precision = PrecisionLength[data[0][0]]
                     }
+                }
+                let version = await this.version();
+                let result = compareVersions(version, this.wsConfig.getMinStmt2Version());
+                if (result < 0) {
+                    return await WsStmt1.newStmt(this._wsClient, precision, reqId);
                 }
                 return await WsStmt2.newStmt(this._wsClient, precision, reqId);               
             } catch (e: any) {

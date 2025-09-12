@@ -5,7 +5,7 @@ import logger from "../common/log";
 import { ReqId } from "../common/reqid";
 import { ErrorCode, TaosResultError, TDWebSocketClientError } from "../common/wsError";
 import { StmtBindParams } from "./wsParamsBase";
-import { StmtFieldInfo, StmtMessageInfo, WsStmtQueryResponse } from "./wsProto";
+import { stmt2BinaryBlockEncode, StmtFieldInfo, StmtMessageInfo, WsStmtQueryResponse } from "./wsProto";
 import { WsStmt } from "./wsStmt";
 import { _isVarType } from '../common/taosResult';
 import { bigintToBytes, intToBytes, shotToBytes } from '../common/utils';
@@ -29,7 +29,6 @@ export class WsStmt2 implements WsStmt{
     private _toBeBindTagCount: number;
     private _toBeBindColCount: number;
     private _toBeBindTableNameIndex: number | undefined | null;
-    private _toBeBindTagIndexes: number[];
     private _isInsert: boolean = false;
     private constructor(wsClient: WsClient, precision?:number) {
         this._wsClient = wsClient;
@@ -39,7 +38,6 @@ export class WsStmt2 implements WsStmt{
         this._stmtTableInfo = new Map<string, TableInfo>();
         this._currentTableInfo = new TableInfo();
         this._stmtTableInfoList = [];
-        this._toBeBindTagIndexes = [];
         this._toBeBindColCount = 0;
         this._toBeBindTagCount = 0;
     }
@@ -208,7 +206,13 @@ export class WsStmt2 implements WsStmt{
         }
 
         let reqId = BigInt(ReqId.getReqID());
-        let bytes = this.binaryBlockEncode(reqId)
+        let bytes = stmt2BinaryBlockEncode(reqId, 
+            this._stmtTableInfoList, 
+            this._stmtTableInfo, 
+            this._stmt_id,
+            this._toBeBindTableNameIndex,
+            this._toBeBindTagCount, 
+            this._toBeBindColCount)
         await this.sendBinaryMsg(reqId, 'stmt2_bind', new Uint8Array(bytes));
 
         let execMsg = {
@@ -305,178 +309,5 @@ export class WsStmt2 implements WsStmt{
         } 
     }
 
-    private binaryBlockEncode(reqId: bigint):number[] {
-        // cloc totol size
-        let totalTableNameSize  = 0;
-        let tableNameSizeList:Array<number> = [];
-        if (this._toBeBindTableNameIndex != null && this._toBeBindTableNameIndex != undefined) {
-            this._stmtTableInfo.forEach((tableInfo) => {
-                let tableName = tableInfo.getTableName();
-                if (tableName) {
-                    let size = new TextEncoder().encode(tableName).length;
-                    totalTableNameSize += size + 1;
-                    tableNameSizeList.push(size + 1);
-                } else {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Table name is empty");
-                }
-            });
-        }
-        let totalTagSize = 0;
-        let tagSizeList:Array<number> = [];
-        if (this._toBeBindTagCount > 0) {
-            this._stmtTableInfoList.forEach((tableInfo) => {
-                let params = tableInfo.getTags();
-                if (params) {
-                    params.encode();
-                    let tagSize = params.getDataTotalLen();
-                    totalTagSize += tagSize;
-                    tagSizeList.push(tagSize);
-                }
-            });
-        }
-        
-        let totalColSize = 0;
-        let colSizeList:Array<number> = [];
-        if (this._toBeBindColCount > 0) {
-            this._stmtTableInfoList.forEach((tableInfo) => {
-                let params = tableInfo.getParams();
-                if (!params) {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Bind params is empty!");
-                }
-
-                params.encode();
-                let colSize = params.getDataTotalLen();
-                totalColSize += colSize;
-                colSizeList.push(colSize);
-                
-            });
-        }
-        let totalSize = totalTableNameSize + totalTagSize + totalColSize;
-        let toBeBindTableNameCount = (this._toBeBindTableNameIndex != null && this._toBeBindTableNameIndex >= 0) ? 1 : 0;
-        totalSize += this._stmtTableInfoList.length * (
-                toBeBindTableNameCount * 2
-                + (this._toBeBindTagCount > 0 ? 1 : 0) * 4
-                + (this._toBeBindColCount > 0 ? 1 : 0) * 4);
-
-        const bytes: number[] = [];
-        // 写入 req_id
-        bytes.push(...bigintToBytes(reqId));
-        
-        // 写入 stmt_id
-        if (this._stmt_id) {
-            bytes.push(...bigintToBytes(this._stmt_id));
-        }
-        bytes.push(...bigintToBytes(9n));
-        bytes.push(...shotToBytes(1));
-        bytes.push(...intToBytes(-1));
-        bytes.push(...intToBytes(totalSize + 28, false));
-   
-        bytes.push(...intToBytes(this._stmtTableInfoList.length));
-        bytes.push(...intToBytes(this._toBeBindTagCount));
-        bytes.push(...intToBytes(this._toBeBindColCount));
-        if (toBeBindTableNameCount > 0) {
-            bytes.push(...intToBytes(0x1C));
-        } else {
-            bytes.push(...intToBytes(0));
-        }
-        
-        if (this._toBeBindTagCount) {
-            if (toBeBindTableNameCount > 0) {
-                bytes.push(...intToBytes(28 + totalTableNameSize + 2 * this._stmtTableInfoList.length));
-            } else {
-                bytes.push(...intToBytes(28));
-            }
-        } else {
-            bytes.push(...intToBytes(0));
-        }
-            
-        if (this._toBeBindColCount > 0) {
-            let skipSize = 0;
-            if (toBeBindTableNameCount > 0) {
-                skipSize += totalTableNameSize + 2 * this._stmtTableInfoList.length;
-            }
-
-            if (this._toBeBindTagCount > 0) {
-                skipSize += totalTagSize + 4 * this._stmtTableInfoList.length;
-            }
-
-            // colOffset = 28(固定头) + skipSize
-            bytes.push(...intToBytes(28 + skipSize));
-        } else {
-            bytes.push(...intToBytes(0));
-        }
-
-
-        if (toBeBindTableNameCount > 0) {
-            for (let size of tableNameSizeList) {
-                if (size === 0) {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Table name is empty");
-                }
-                bytes.push(...shotToBytes(size));
-            }
-
-            for (let tableInfo of this._stmtTableInfoList) {
-                let tableName = tableInfo.getTableName();
-                if (tableName && tableName.length > 0) {
-                    let encoder = new TextEncoder().encode(tableName);
-                    bytes.push(...encoder);
-                    bytes.push(0); // null terminator
-                } else {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Table name is empty");
-                }
-            }
-        }
-        
-        if (this._toBeBindTagCount > 0) {
-            for (let size of tagSizeList) {
-                bytes.push(...intToBytes(size));
-            }
-            for (let tableInfo of this._stmtTableInfoList) {
-                let tags = tableInfo.getTags();
-                if (tags && tags.getParams().length > 0) {
-                    for (let tagColumnInfo of tags.getParams()) {
-                        this.serializeColumn(tagColumnInfo, bytes);
-                    }
-                } else {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Tags are empty");
-                }
-            }
-        }
-
-        // ColumnDataLength
-        if (this._toBeBindColCount > 0) {
-            for (let colSize of colSizeList) {
-                bytes.push(...intToBytes(colSize, false));
-            }
-            for (let tableInfo of this._stmtTableInfoList) {
-                let params = tableInfo.getParams();
-                if (!params) {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Bind params is empty!");
-                }
-                
-                let colColumnInfos:ColumnInfo[] = params.getParams()
-                colColumnInfos.forEach(colColumnInfo => {
-                    this.serializeColumn(colColumnInfo, bytes);
-                });   
-            }
-        }
-        return bytes
-
-    }
-
-    private serializeColumn(column: ColumnInfo, bytes: number[]) {
-        bytes.push(...intToBytes(column.length, false));
-        bytes.push(...intToBytes(column.type));
-        bytes.push(...intToBytes(column._rows));
-        bytes.push(...column.isNull ? column.isNull : []);
-        bytes.push(column._haveLength);
-        
-       if (column._haveLength == 1 && column._dataLengths) {
-            column._dataLengths.forEach(length => {
-               bytes.push(...intToBytes(length));
-           });
-        }
-        bytes.push(...intToBytes(column.data.byteLength, false));
-        bytes.push(...column.data.byteLength ? new Uint8Array(column.data) : []);
-    }
+    
 }

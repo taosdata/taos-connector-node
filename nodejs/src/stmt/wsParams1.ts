@@ -61,13 +61,13 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
                     let date:Date = params[i]
                     //node only support milliseconds, need fill 0
                     if (this.precisionLength == PrecisionLength['us']) {
-                        let ms =  date.getMilliseconds() * 1000
+                        let ms =  date.getTime() * 1000
                         dataBuffer.setBigInt64(i * 8, BigInt(ms), true);
                     }else if (this.precisionLength == PrecisionLength['ns']) {
-                        let ns =  date.getMilliseconds() * 1000 * 1000
+                        let ns =  date.getTime() * 1000 * 1000
                         dataBuffer.setBigInt64(i * 8, BigInt(ns), true);
                     }else {
-                        dataBuffer.setBigInt64(i * 8, BigInt(date.getMilliseconds()), true);
+                        dataBuffer.setBigInt64(i * 8, BigInt(date.getTime()), true);
                     }
                     
                 } else if (typeof params[i] == 'bigint' || typeof params[i] == 'number') {

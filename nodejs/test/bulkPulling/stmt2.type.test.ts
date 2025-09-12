@@ -2,6 +2,7 @@ import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
+import { WsStmt2 } from "../../src/stmt/wsStmt2";
 import { createBaseSTable, createBaseSTableJSON, createSTableJSON, getInsertBind } from "../utils";
 
 const stable = 'ws_stmt_stb';
@@ -83,7 +84,7 @@ const selectTableCN = `select * from ${tableCN}`
 const selectJsonTable = `select * from ${jsonTable}`
 const selectJsonTableCN = `select * from ${jsonTableCN}`
 
-let dsn = 'ws://root:taosdata@192.168.2.156:6041';
+let dsn = 'ws://root:taosdata@localhost:6041';
 setLevel("debug")
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dsn)
@@ -103,7 +104,8 @@ describe('TDWebSocket.Stmt()', () => {
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy()
+        expect(stmt).toBeInstanceOf(WsStmt2);      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare(getInsertBind(tableValues.length + 2, stableTags.length, db, stable));
         await stmt.setTableName(table);
@@ -159,7 +161,8 @@ describe('TDWebSocket.Stmt()', () => {
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
         let stmt = await (await connector).stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy()
+        expect(stmt).toBeInstanceOf(WsStmt2);      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare(getInsertBind(tableValues.length + 2, stableTags.length, db, stable));
         await stmt.setTableName(table);
@@ -215,7 +218,8 @@ describe('TDWebSocket.Stmt()', () => {
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
         let stmt = await (await connector).stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy()
+        expect(stmt).toBeInstanceOf(WsStmt2);
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare(getInsertBind(tableValues.length + 2, jsonTags.length, db, jsonTable));
         await stmt.setTableName(`${jsonTable}_001`);
@@ -258,7 +262,8 @@ describe('TDWebSocket.Stmt()', () => {
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy()
+        expect(stmt).toBeInstanceOf(WsStmt2);
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare(getInsertBind(tableValues.length + 2, jsonTags.length, db, jsonTable));
         await stmt.setTableName(`${jsonTable}_001`);
@@ -302,6 +307,7 @@ test('test bind exception cases', async() => {
     let wsConf = new WSConfig(dsn);
     let connector = await WsSql.open(wsConf) 
     let stmt = await connector.stmtInit()
+    expect(stmt).toBeInstanceOf(WsStmt2);
     const params = stmt.newStmtParam();
     
     const emptyArrayMethods = [
@@ -335,23 +341,26 @@ test('test bind exception cases', async() => {
     
     expect(() => {
         params.setBoolean(['not boolean']);
+        params.encode();
     }).toThrow('SetTinyIntColumn params is invalid!');
     
     expect(() => {
         params.setTinyInt(['not number']);
+        params.encode();
     }).toThrow('SetTinyIntColumn params is invalid!');
     
     expect(() => {
         params.setBigint(['not bigint']);
+        params.encode();
     }).toThrow('SetTinyIntColumn params is invalid!');
     await connector.close();
 });
 
 
 afterAll(async () => {
-    // let conf :WSConfig = new WSConfig(dsn)
-    // let ws = await WsSql.open(conf);
-    // await ws.exec(dropDB);
-    // await ws.close();
+    let conf :WSConfig = new WSConfig(dsn)
+    let ws = await WsSql.open(conf);
+    await ws.exec(dropDB);
+    await ws.close();
     WebSocketConnectionPool.instance().destroyed()
 })

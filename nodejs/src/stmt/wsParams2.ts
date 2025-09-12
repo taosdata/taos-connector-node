@@ -159,11 +159,11 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder  {
                     //node only support milliseconds, need fill 0
                     
                     if (this.precisionLength == PrecisionLength['us']) {
-                        timeStamp =  BigInt(date.getMilliseconds() * 1000);
+                        timeStamp =  BigInt(date.getTime() * 1000);
                     }else if (this.precisionLength == PrecisionLength['ns']) {
-                        timeStamp =  BigInt(date.getMilliseconds() * 1000 * 1000);
+                        timeStamp =  BigInt(date.getTime() * 1000 * 1000);
                     }else {
-                        timeStamp =  BigInt(date.getMilliseconds());
+                        timeStamp =  BigInt(date.getTime());
                     }
                     
                 } else if (typeof params[i] == 'bigint' || typeof params[i] == 'number') {

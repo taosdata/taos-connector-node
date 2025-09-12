@@ -8,7 +8,7 @@ export interface StringIndexable {
 
 export const BinaryQueryMessage: bigint = BigInt(6);
 export const FetchRawBlockMessage: bigint = BigInt(7);
-
+export const MinStmt2Version:string = "3.3.6.0";
 export const TDengineTypeName: IndexableString = {
     0: 'NULL',
     1: 'BOOL',

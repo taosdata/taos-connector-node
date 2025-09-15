@@ -4,7 +4,7 @@ import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
 import { WsStmt2 } from "../../src/stmt/wsStmt2";
 
-let dns = 'ws://192.168.2.156:6041'
+let dns = 'ws://localhost:6041'
 setLevel("debug")
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns);
@@ -298,7 +298,7 @@ describe('TDWebSocket.Stmt()', () => {
                     "('2024-12-19 17:12:46.642', 62.60000, 205, 0.33000) " +
                     "('2024-12-19 17:12:47.642', 72.30000, 206, 0.31000) ";
         await wsSql.exec(insertQuery);
-
+        
         let stmt = await wsSql.stmtInit()
         expect(stmt).toBeTruthy() 
         expect(stmt).toBeInstanceOf(WsStmt2);      

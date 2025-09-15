@@ -4,7 +4,7 @@ import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
 import { WsStmt2 } from "../../src/stmt/wsStmt2";
 
-let dns = 'ws://localhost:6041'
+let dns = 'ws://192.168.2.156:6041'
 setLevel("debug")
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns);
@@ -330,7 +330,7 @@ describe('TDWebSocket.Stmt()', () => {
         conf.setUser('root')
         conf.setPwd('taosdata')
         conf.setDb('power_func_stmt2')
-        let connector = await WsSql.open(conf) 
+        let connector = await WsSql.open(conf)
         let stmt = await connector.stmtInit()
         expect(stmt).toBeTruthy() 
         expect(stmt).toBeInstanceOf(WsStmt2);      
@@ -371,8 +371,8 @@ describe('TDWebSocket.Stmt()', () => {
         conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy() 
-        expect(stmt).toBeInstanceOf(WsStmt2);      
+        expect(stmt).toBeTruthy()
+        expect(stmt).toBeInstanceOf(WsStmt2);
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');

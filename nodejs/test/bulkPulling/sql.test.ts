@@ -92,7 +92,7 @@ describe('TDWebSocket.WsSql()', () => {
     })
 
     test('connect url', async() => {
-        let url = 'ws://root:taosdata@192.1682.156:6041/information_schema?timezone=Asia/Shanghai'
+        let url = 'ws://root:taosdata@localhost:6041/information_schema?timezone=Asia/Shanghai'
         let conf :WSConfig = new WSConfig(url)
         let wsSql = await WsSql.open(conf)
         let version = await wsSql.version()

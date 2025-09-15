@@ -4,7 +4,7 @@ import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
 import { WsStmt2 } from "../../src/stmt/wsStmt2";
 
-let dns = 'ws://localhost:6041'
+let dns = 'ws://192.168.2.156:6041'
 setLevel("debug")
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dns);
@@ -13,31 +13,6 @@ beforeAll(async () => {
     let wsSql = await WsSql.open(conf);
     await wsSql.exec('create database if not exists power_func_stmt2 KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
     await wsSql.exec('CREATE STABLE if not exists power_func_stmt2.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
-    await wsSql.exec('CREATE STABLE if not exists power_func_stmt2.query_meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
-    let insertQuery = "INSERT INTO " +
-                "power_func_stmt2.q1001 USING power_func_stmt2.query_meters TAGS('California.SanFrancisco', 1) " +
-                "VALUES " +
-                "('2024-12-19 19:12:45.642', 50.30000, 201, 0.31000) " +
-                "('2024-12-19 19:12:46.642', 82.60000, 202, 0.33000) " +
-                "('2024-12-19 19:12:47.642', 92.30000, 203, 0.31000) " +
-                "('2024-12-19 18:12:45.642', 50.30000, 201, 0.31000) " +
-                "('2024-12-19 18:12:46.642', 82.60000, 202, 0.33000) " +
-                "('2024-12-19 18:12:47.642', 92.30000, 203, 0.31000) " +
-                "('2024-12-19 17:12:45.642', 50.30000, 201, 0.31000) " +
-                "('2024-12-19 17:12:46.642', 82.60000, 202, 0.33000) " +
-                "('2024-12-19 17:12:47.642', 92.30000, 203, 0.31000) " +
-                "power_func_stmt2.q1002 USING power_func_stmt2.query_meters TAGS('Alabama.Montgomery', 2) " +
-                "VALUES " +
-                "('2024-12-19 19:12:45.642', 50.30000, 204, 0.25000) " +
-                "('2024-12-19 19:12:46.642', 62.60000, 205, 0.33000) " +
-                "('2024-12-19 19:12:47.642', 72.30000, 206, 0.31000) " +
-                "('2024-12-19 18:12:45.642', 50.30000, 204, 0.25000) " +
-                "('2024-12-19 18:12:46.642', 62.60000, 205, 0.33000) " +
-                "('2024-12-19 18:12:47.642', 72.30000, 206, 0.31000) " +
-                "('2024-12-19 17:12:45.642', 50.30000, 204, 0.25000) " +
-                "('2024-12-19 17:12:46.642', 62.60000, 205, 0.33000) " +
-                "('2024-12-19 17:12:47.642', 72.30000, 206, 0.31000) ";
-    await wsSql.exec(insertQuery);
     await wsSql.close();
 })
 describe('TDWebSocket.Stmt()', () => {
@@ -296,12 +271,35 @@ describe('TDWebSocket.Stmt()', () => {
         conf.setUser('root')
         conf.setPwd('taosdata')
         conf.setDb('power_func_stmt2')
-        let connector = await WsSql.open(conf) 
+        let wsSql = await WsSql.open(conf) 
 
+        await wsSql.exec('CREATE STABLE if not exists power_func_stmt2.query_meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
+        let insertQuery = "INSERT INTO " +
+                    "power_func_stmt2.q1001 USING power_func_stmt2.query_meters TAGS('California.SanFrancisco', 1) " +
+                    "VALUES " +
+                    "('2024-12-19 19:12:45.642', 50.30000, 201, 0.31000) " +
+                    "('2024-12-19 19:12:46.642', 82.60000, 202, 0.33000) " +
+                    "('2024-12-19 19:12:47.642', 92.30000, 203, 0.31000) " +
+                    "('2024-12-19 18:12:45.642', 50.30000, 201, 0.31000) " +
+                    "('2024-12-19 18:12:46.642', 82.60000, 202, 0.33000) " +
+                    "('2024-12-19 18:12:47.642', 92.30000, 203, 0.31000) " +
+                    "('2024-12-19 17:12:45.642', 50.30000, 201, 0.31000) " +
+                    "('2024-12-19 17:12:46.642', 82.60000, 202, 0.33000) " +
+                    "('2024-12-19 17:12:47.642', 92.30000, 203, 0.31000) " +
+                    "power_func_stmt2.q1002 USING power_func_stmt2.query_meters TAGS('Alabama.Montgomery', 2) " +
+                    "VALUES " +
+                    "('2024-12-19 19:12:45.642', 50.30000, 204, 0.25000) " +
+                    "('2024-12-19 19:12:46.642', 62.60000, 205, 0.33000) " +
+                    "('2024-12-19 19:12:47.642', 72.30000, 206, 0.31000) " +
+                    "('2024-12-19 18:12:45.642', 50.30000, 204, 0.25000) " +
+                    "('2024-12-19 18:12:46.642', 62.60000, 205, 0.33000) " +
+                    "('2024-12-19 18:12:47.642', 72.30000, 206, 0.31000) " +
+                    "('2024-12-19 17:12:45.642', 50.30000, 204, 0.25000) " +
+                    "('2024-12-19 17:12:46.642', 62.60000, 205, 0.33000) " +
+                    "('2024-12-19 17:12:47.642', 72.30000, 206, 0.31000) ";
+        await wsSql.exec(insertQuery);
 
-
-
-        let stmt = await connector.stmtInit()
+        let stmt = await wsSql.stmtInit()
         expect(stmt).toBeTruthy() 
         expect(stmt).toBeInstanceOf(WsStmt2);      
         await stmt.prepare('select * from query_meters where ts >= ? and ts <= ?');
@@ -321,7 +319,7 @@ describe('TDWebSocket.Stmt()', () => {
         expect(nRows).toEqual(18);
         await wsRows.close()
         await stmt.close()
-        await connector.close();
+        await wsSql.close();
     });
 
 

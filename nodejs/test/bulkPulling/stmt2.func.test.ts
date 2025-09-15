@@ -299,6 +299,9 @@ describe('TDWebSocket.Stmt()', () => {
                     "('2024-12-19 17:12:47.642', 72.30000, 206, 0.31000) ";
         await wsSql.exec(insertQuery);
         
+        let result = await wsSql.exec("select * from query_meters")
+        console.log(result)
+
         let stmt = await wsSql.stmtInit()
         expect(stmt).toBeTruthy() 
         expect(stmt).toBeInstanceOf(WsStmt2);      

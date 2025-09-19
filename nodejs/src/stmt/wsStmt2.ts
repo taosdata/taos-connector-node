@@ -227,6 +227,13 @@ export class WsStmt2 implements WsStmt{
             },
         };
         await this.execute(execMsg);
+        this.cleanup();
+    }
+
+    private cleanup() {
+        this._stmtTableInfo.clear();
+        this._stmtTableInfoList = [];
+        this._currentTableInfo = new TableInfo();
     }
 
     getLastAffected(): number | null | undefined {
@@ -282,11 +289,11 @@ export class WsStmt2 implements WsStmt{
                 if (resp.fields) {
                     this.fields = resp.fields;
                 }
+
                 if (resp.is_insert) {
                     this._isInsert = resp.is_insert;
-                } else {
-                    this._toBeBindColCount = resp.fields_count ? resp.fields_count : 0;
                 }
+
                 return resp;
             }
 

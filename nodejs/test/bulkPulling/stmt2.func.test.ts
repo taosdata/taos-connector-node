@@ -505,6 +505,7 @@ describe('TDWebSocket.Stmt()', () => {
         params.setVarchar(['SanFrancisco']);
         params.setInt([7]);
         await stmt.setTags(params) 
+        
         let dataParams = stmt.newStmtParam()
         dataParams.setTimestamp(multi[0])
         dataParams.setFloat(multi[1])

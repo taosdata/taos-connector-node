@@ -1,6 +1,6 @@
 import JSONBig from 'json-bigint';
 import { WsClient } from "../client/wsClient";
-import { ColumnsBlockType, FieldBindType, PrecisionLength } from "../common/constant";
+import { FieldBindType, PrecisionLength } from "../common/constant";
 import logger from "../common/log";
 import { ReqId } from "../common/reqid";
 import { ErrorCode, TaosResultError, TDWebSocketClientError } from "../common/wsError";
@@ -8,13 +8,10 @@ import { StmtBindParams } from "./wsParamsBase";
 import { stmt2BinaryBlockEncode, StmtFieldInfo, StmtMessageInfo, WsStmtQueryResponse } from "./wsProto";
 import { WsStmt } from "./wsStmt";
 import { _isVarType } from '../common/taosResult';
-import { bigintToBytes, intToBytes, shotToBytes } from '../common/utils';
 import { Stmt2BindParams } from './wsParams2';
 import { TableInfo } from './wsTableInfo';
-import { ColumnInfo } from './wsColumnInfo';
 import { WSRows } from '../sql/wsRows';
 import { FieldBindParams } from './FieldBindParams';
-import { log } from 'console';
 
 export class WsStmt2 implements WsStmt{
     private _wsClient: WsClient;

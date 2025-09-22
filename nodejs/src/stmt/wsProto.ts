@@ -1,9 +1,9 @@
 import exp from "constants";
 import { WSQueryResponse } from "../client/wsResponse";
-import { TDengineTypeLength } from "../common/constant";
+import { TDengineTypeCode, TDengineTypeLength } from "../common/constant";
 import { MessageResp } from "../common/taosResult";
 import { StmtBindParams } from "./wsParamsBase";
-import { bigintToBytes, intToBytes, shotToBytes } from "../common/utils";
+import { bigintToBytes, intToBytes, shortToBytes } from "../common/utils";
 import { ColumnInfo } from "./wsColumnInfo";
 import { ErrorCode, TaosResultError } from "../common/wsError";
 import { TableInfo } from "./wsTableInfo";
@@ -54,8 +54,8 @@ export const enum StmtBindType {
 export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindType, stmtId:bigint, reqId:bigint, row:number): ArrayBuffer {
     //Computing the length of data
     let columns = bindParams.getParams().length;
-    let length = TDengineTypeLength['BIGINT'] * 4;
-    length += TDengineTypeLength['INT'] * 5;
+    let length = TDengineTypeLength[TDengineTypeCode.BIGINT] * 4;
+    length += TDengineTypeLength[TDengineTypeCode.INT] * 5;
     length += columns * 5 + columns * 4;
     length += bindParams.getDataTotalLen();
 
@@ -119,7 +119,7 @@ export function stmt2BinaryBlockEncode(reqId: bigint,
         if(stmt_id == null || stmt_id == undefined) {
             throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "stmt_id is invalid");
         }
-        // cloc totol size
+        // cloc total size
         let totalTableNameSize  = 0;
         let tableNameSizeList:Array<number> = [];
         if (toBeBindTableNameIndex != null && toBeBindTableNameIndex != undefined) {
@@ -172,15 +172,15 @@ export function stmt2BinaryBlockEncode(reqId: bigint,
                 + (toBeBindColCount > 0 ? 1 : 0) * 4);
 
         const bytes: number[] = [];
-        // 写入 req_id
+        // write req_id
         bytes.push(...bigintToBytes(reqId));
         
-        // 写入 stmt_id
+        // write stmt_id
         if (stmt_id) {
             bytes.push(...bigintToBytes(stmt_id));
         }
         bytes.push(...bigintToBytes(9n));
-        bytes.push(...shotToBytes(1));
+        bytes.push(...shortToBytes(1));
         bytes.push(...intToBytes(-1));
         bytes.push(...intToBytes(totalSize + 28, false));
    
@@ -225,7 +225,7 @@ export function stmt2BinaryBlockEncode(reqId: bigint,
                 if (size === 0) {
                     throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Table name is empty");
                 }
-                bytes.push(...shotToBytes(size));
+                bytes.push(...shortToBytes(size));
             }
 
             for (let tableInfo of stmtTableInfoList) {

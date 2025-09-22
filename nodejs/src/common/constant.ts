@@ -6,6 +6,10 @@ export interface StringIndexable {
     [index: string]: number
 }
 
+export interface NumberIndexable {
+    [index: number]: number
+}
+
 export const BinaryQueryMessage: bigint = BigInt(6);
 export const FetchRawBlockMessage: bigint = BigInt(7);
 export const MinStmt2Version:string = "3.3.6.0";
@@ -83,19 +87,19 @@ export const TDenginePrecision: IndexableString = {
     2: "NANOSECOND",
 }
 
-export const TDengineTypeLength: StringIndexable = {
-    'BOOL': 1,
-    'TINYINT': 1,
-    'SMALLINT': 2,
-    'INT': 4,
-    'BIGINT': 8,
-    'FLOAT': 4,
-    'DOUBLE': 8,
-    'TIMESTAMP': 8,
-    'TINYINT UNSIGNED': 1,
-    'SMALLINT UNSIGNED': 2,
-    'INT UNSIGNED': 4,
-    'BIGINT UNSIGNED': 8,
+export const TDengineTypeLength: NumberIndexable = {
+    [TDengineTypeCode.BOOL]: 1,
+    [TDengineTypeCode.TINYINT]: 1,
+    [TDengineTypeCode.SMALLINT]: 2,
+    [TDengineTypeCode.INT]: 4,
+    [TDengineTypeCode.BIGINT]: 8,
+    [TDengineTypeCode.FLOAT]: 4,
+    [TDengineTypeCode.DOUBLE]: 8,
+    [TDengineTypeCode.TIMESTAMP]: 8,
+    [TDengineTypeCode.TINYINT_UNSIGNED]: 1,
+    [TDengineTypeCode.SMALLINT_UNSIGNED]: 2,
+    [TDengineTypeCode.INT_UNSIGNED]: 4,
+    [TDengineTypeCode.BIGINT_UNSIGNED]: 8,
 }
 
 export const PrecisionLength: StringIndexable = {

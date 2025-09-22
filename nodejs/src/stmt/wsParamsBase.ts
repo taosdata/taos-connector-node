@@ -72,21 +72,21 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBooleanColumn params is invalid!");
         }
-        this.addParams(params, "boolean", TDengineTypeLength['BOOL'], TDengineTypeCode.BOOL);
+        this.addParams(params, "boolean", TDengineTypeLength[TDengineTypeCode.BOOL], TDengineTypeCode.BOOL);
     }
 
     setTinyInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetTinyIntColumn params is invalid!");
         }
-        this.addParams(params, "number", TDengineTypeLength['TINYINT'], TDengineTypeCode.TINYINT)
+        this.addParams(params, "number", TDengineTypeLength[TDengineTypeCode.TINYINT], TDengineTypeCode.TINYINT)
     }
 
     setUTinyInt(params :any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetUTinyIntColumn params is invalid!");
         }      
-        this.addParams(params, "number", TDengineTypeLength['TINYINT UNSIGNED'], TDengineTypeCode.TINYINT_UNSIGNED)
+        this.addParams(params, "number", TDengineTypeLength[TDengineTypeCode.TINYINT_UNSIGNED], TDengineTypeCode.TINYINT_UNSIGNED)
         
     }
 
@@ -94,7 +94,7 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetSmallIntColumn params is invalid!");
         }      
-        this.addParams(params, "number", TDengineTypeLength['SMALLINT'], TDengineTypeCode.SMALLINT)
+        this.addParams(params, "number", TDengineTypeLength[TDengineTypeCode.SMALLINT], TDengineTypeCode.SMALLINT)
         
 
     }
@@ -103,7 +103,7 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetSmallIntColumn params is invalid!");
         }      
-        this.addParams(params, "number", TDengineTypeLength['SMALLINT UNSIGNED'], TDengineTypeCode.SMALLINT_UNSIGNED)
+        this.addParams(params, "number", TDengineTypeLength[TDengineTypeCode.SMALLINT_UNSIGNED], TDengineTypeCode.SMALLINT_UNSIGNED)
         
     }
 
@@ -111,7 +111,7 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetIntColumn params is invalid!");
         }      
-        this.addParams(params, "number", TDengineTypeLength['INT'], TDengineTypeCode.INT)
+        this.addParams(params, "number", TDengineTypeLength[TDengineTypeCode.INT], TDengineTypeCode.INT)
         
     }
 
@@ -119,7 +119,7 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetUIntColumn params is invalid!");
         }      
-        this.addParams(params, "number", TDengineTypeLength['INT UNSIGNED'], TDengineTypeCode.INT_UNSIGNED)
+        this.addParams(params, "number", TDengineTypeLength[TDengineTypeCode.INT_UNSIGNED], TDengineTypeCode.INT_UNSIGNED)
         
     }
 
@@ -127,7 +127,7 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetBigIntColumn params is invalid!");
         }      
-        this.addParams(params, "bigint", TDengineTypeLength['BIGINT'], TDengineTypeCode.BIGINT)
+        this.addParams(params, "bigint", TDengineTypeLength[TDengineTypeCode.BIGINT], TDengineTypeCode.BIGINT)
         
     }
 
@@ -135,7 +135,7 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetUBigIntColumn params is invalid!");
         }      
-        this.addParams(params, "bigint", TDengineTypeLength['BIGINT UNSIGNED'], TDengineTypeCode.BIGINT_UNSIGNED)
+        this.addParams(params, "bigint", TDengineTypeLength[TDengineTypeCode.BIGINT_UNSIGNED], TDengineTypeCode.BIGINT_UNSIGNED)
          
     }
 
@@ -143,7 +143,7 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetFloatColumn params is invalid!");
         }      
-        this.addParams(params, "number", TDengineTypeLength['FLOAT'], TDengineTypeCode.FLOAT)
+        this.addParams(params, "number", TDengineTypeLength[TDengineTypeCode.FLOAT], TDengineTypeCode.FLOAT)
          
     }
 
@@ -151,7 +151,7 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SetDoubleColumn params is invalid!");
         }      
-        this.addParams(params, "number", TDengineTypeLength['DOUBLE'], TDengineTypeCode.DOUBLE)
+        this.addParams(params, "number", TDengineTypeLength[TDengineTypeCode.DOUBLE], TDengineTypeCode.DOUBLE)
          
     }
 
@@ -205,8 +205,8 @@ export abstract class StmtBindParams {
         if (!params || params.length == 0) {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "SeTimestampColumn params is invalid!");
         } 
-        this.addParams(params, TDengineTypeName[9], TDengineTypeLength['TIMESTAMP'], TDengineTypeCode.TIMESTAMP);
-        
+        this.addParams(params, TDengineTypeName[9], TDengineTypeLength[TDengineTypeCode.TIMESTAMP], TDengineTypeCode.TIMESTAMP);
+
     }
 
     protected writeDataToBuffer(dataBuffer: DataView, params: any, dataType: string = 'number', typeLen: number, columnType: number, i:number): void {

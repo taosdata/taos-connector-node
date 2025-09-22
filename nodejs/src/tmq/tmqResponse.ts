@@ -251,7 +251,7 @@ export class WSTmqFetchBlockInfo {
                     //Variable length type   
                     let start = bufferOffset;
                     let offsets:number[]= [];
-                    for (let i = 0; i< rows; i++, start += TDengineTypeLength['INT']) {
+                    for (let i = 0; i< rows; i++, start += TDengineTypeLength[TDengineTypeCode.INT]) {
                         //get data length, -1 is null
                         offsets.push(dataView.getInt32(start, true)) 
                     }

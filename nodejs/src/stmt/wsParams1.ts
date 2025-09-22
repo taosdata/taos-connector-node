@@ -42,7 +42,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
         //computing bitmap length
         let bitMapLen:number = bitmapLen(params.length)
         //Computing the length of data
-        let arrayBuffer = new ArrayBuffer(bitMapLen + TDengineTypeLength['TIMESTAMP'] * params.length);
+        let arrayBuffer = new ArrayBuffer(bitMapLen + TDengineTypeLength[TDengineTypeCode.TIMESTAMP] * params.length);
         //bitmap get data range
         let bitmapBuffer = new DataView(arrayBuffer)
         //skip bitmap get data range 
@@ -102,7 +102,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
         }
 
         this._dataTotalLen += arrayBuffer.byteLength; 
-        this._params.push(new ColumnInfo([TDengineTypeLength['TIMESTAMP'] * params.length, arrayBuffer], TDengineTypeCode.TIMESTAMP, TDengineTypeLength['TIMESTAMP'], this._rows));  
+        this._params.push(new ColumnInfo([TDengineTypeLength[TDengineTypeCode.TIMESTAMP] * params.length, arrayBuffer], TDengineTypeCode.TIMESTAMP, TDengineTypeLength[TDengineTypeCode.TIMESTAMP], this._rows));  
     }
 
 
@@ -137,7 +137,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
         let data:ArrayBuffer[] = []
         let dataLength = 0;
         //create params length buffer
-        let paramsLenBuffer = new ArrayBuffer(TDengineTypeLength['INT'] * params.length)
+        let paramsLenBuffer = new ArrayBuffer(TDengineTypeLength[TDengineTypeCode.INT] * params.length)
         let paramsLenView = new DataView(paramsLenBuffer)
         if (this._rows > 0) {
             if (this._rows !== params.length) {
@@ -148,7 +148,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
         }
         for (let i = 0; i <  params.length; i++) {
             //get param length offset 4byte
-            let offset = TDengineTypeLength['INT'] * i;
+            let offset = TDengineTypeLength[TDengineTypeCode.INT] * i;
             if (!isEmpty(params[i])) {
                 //save param length offset 4byte
                 paramsLenView.setInt32(offset, dataLength, true);
@@ -158,11 +158,11 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
                     let value = encode.encode(params[i]).buffer;
                     data.push(value);
                     //add offset length
-                    dataLength += value.byteLength + TDengineTypeLength['SMALLINT'];
+                    dataLength += value.byteLength + TDengineTypeLength[TDengineTypeCode.SMALLINT];
                 } else if (params[i] instanceof ArrayBuffer) {
                     //input arraybuffer, save not need encode
                     let value:ArrayBuffer = params[i];
-                    dataLength += value.byteLength + TDengineTypeLength['SMALLINT'];
+                    dataLength += value.byteLength + TDengineTypeLength[TDengineTypeCode.SMALLINT];
                     data.push(value);
                 } else {
                     throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, 
@@ -171,7 +171,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
                 
             }else{
                 //set length -1, param is null
-                for (let j = 0; j < TDengineTypeLength['INT']; j++) {
+                for (let j = 0; j < TDengineTypeLength[TDengineTypeCode.INT]; j++) {
                     paramsLenView.setInt8(offset+j, 255);
                 }
                 
@@ -210,7 +210,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
     private encodeNcharColumn(params:any[]):ColumnInfo {
         let data:ArrayBuffer[] = []
         let dataLength = 0;
-        let indexBuffer = new ArrayBuffer(TDengineTypeLength['INT'] * params.length)
+        let indexBuffer = new ArrayBuffer(TDengineTypeLength[TDengineTypeCode.INT] * params.length)
         let indexView = new DataView(indexBuffer)
         if (this._rows > 0) {
             if (this._rows !== params.length) {
@@ -221,7 +221,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
         }
         
         for (let i = 0; i <  params.length; i++) {
-            let offset = TDengineTypeLength['INT'] * i;
+            let offset = TDengineTypeLength[TDengineTypeCode.INT] * i;
             if (!isEmpty(params[i])) {
                 indexView.setInt32(offset, dataLength, true);
                 if (typeof params[i] == 'string' ) {
@@ -239,11 +239,11 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
                         ncharView.setUint32(j*4, codes[j], true);
                     }
                     data.push(ncharBuffer);
-                    dataLength += codes.length * 4 + TDengineTypeLength['SMALLINT'];
+                    dataLength += codes.length * 4 + TDengineTypeLength[TDengineTypeCode.SMALLINT];
 
                 } else if (params[i] instanceof ArrayBuffer) {
                     let value:ArrayBuffer = params[i] 
-                    dataLength += value.byteLength + TDengineTypeLength['SMALLINT'];
+                    dataLength += value.byteLength + TDengineTypeLength[TDengineTypeCode.SMALLINT];
                     data.push(value);
                 } else {
                     throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "getColumString params is invalid! param_type:=" + typeof params[i])
@@ -251,7 +251,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
                 
             }else{
                 //set length -1, param is null
-                for (let j = 0; j < TDengineTypeLength['INT']; j++) {
+                for (let j = 0; j < TDengineTypeLength[TDengineTypeCode.INT]; j++) {
                     indexView.setInt8(offset+j, 255)
                 }
                 
@@ -259,7 +259,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder{
         }
         
         this._dataTotalLen += indexBuffer.byteLength + dataLength;
-        return new ColumnInfo([dataLength, this.getBinaryColumnArrayBuffer(data, indexView.buffer, dataLength)],  TDengineTypeCode.NCHAR, TDengineTypeLength['NCHAR'], this._rows);
+        return new ColumnInfo([dataLength, this.getBinaryColumnArrayBuffer(data, indexView.buffer, dataLength)],  TDengineTypeCode.NCHAR, 0, this._rows);
     }
 
     private countBigintDigits(numeral: bigint): number {  

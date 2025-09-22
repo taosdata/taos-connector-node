@@ -177,7 +177,7 @@ export function decimalToString(valueStr: string, fields_scale: bigint | null): 
     return decimalStr;
 }
 
-export const shotToBytes = (value: number): number[] => {
+export const shortToBytes = (value: number): number[] => {
     const buffer = new ArrayBuffer(2);
     const view = new DataView(buffer);
     view.setUint16(0, value, true);

@@ -1,4 +1,4 @@
-import { ColumnsBlockType, FieldBindType, PrecisionLength, TDengineTypeCode, TDengineTypeLength } from "../common/constant";
+import { ColumnsBlockType, FieldBindType, PrecisionLength } from "../common/constant";
 import { ErrorCode, TaosError } from "../common/wsError";
 import { isEmpty } from "../common/utils";
 import { ColumnInfo } from "./wsColumnInfo";

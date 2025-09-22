@@ -109,187 +109,172 @@ export function binaryBlockEncode(bindParams :StmtBindParams, bindType:StmtBindT
 
 }
 
-export function stmt2BinaryBlockEncode(reqId: bigint, 
-    stmtTableInfoList: TableInfo[], 
-    stmtTableInfo: Map<string, TableInfo>, 
-    stmt_id: bigint | undefined | null, 
-    toBeBindTableNameIndex:number | undefined | null, 
-    toBeBindTagCount:number, 
-    toBeBindColCount:number ):number[] {
-        if(stmt_id == null || stmt_id == undefined) {
-            throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "stmt_id is invalid");
-        }
-        // cloc total size
-        let totalTableNameSize  = 0;
-        let tableNameSizeList:Array<number> = [];
-        if (toBeBindTableNameIndex != null && toBeBindTableNameIndex != undefined) {
-            stmtTableInfo.forEach((tableInfo) => {
-                let tableName = tableInfo.getTableName();
-                if (tableName) {
-                    let size = new TextEncoder().encode(tableName).length;
-                    totalTableNameSize += size + 1;
-                    tableNameSizeList.push(size + 1);
-                } else {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Table name is empty");
-                }
-            });
-        }
-        let totalTagSize = 0;
-        let tagSizeList:Array<number> = [];
-        if (toBeBindTagCount > 0) {
-            stmtTableInfoList.forEach((tableInfo) => {
-                let params = tableInfo.getTags();
-                if (params) {
-                    params.encode();
-                    let tagSize = params.getDataTotalLen();
-                    totalTagSize += tagSize;
-                    tagSizeList.push(tagSize);
-                }
-            });
-        }
-        
-        let totalColSize = 0;
-        let colSizeList:Array<number> = [];
-        if (toBeBindColCount > 0) {
-            stmtTableInfoList.forEach((tableInfo) => {
-                let params = tableInfo.getParams();
-                if (!params) {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Bind params is empty!");
-                }
+function writeColumnToView(column: ColumnInfo, view: DataView, offset: number): number {
+    let currentOffset = offset;
 
-                params.encode();
-                let colSize = params.getDataTotalLen();
-                totalColSize += colSize;
-                colSizeList.push(colSize);
-                
-            });
-        }
-        let totalSize = totalTableNameSize + totalTagSize + totalColSize;
-        let toBeBindTableNameCount = (toBeBindTableNameIndex != null && toBeBindTableNameIndex >= 0) ? 1 : 0;
-        totalSize += stmtTableInfoList.length * (
-                toBeBindTableNameCount * 2
-                + (toBeBindTagCount > 0 ? 1 : 0) * 4
-                + (toBeBindColCount > 0 ? 1 : 0) * 4);
+    // length, type, _rows
+    view.setInt32(currentOffset, column.length, true);
+    currentOffset += TDengineTypeLength[TDengineTypeCode.INT];
+    view.setInt32(currentOffset, column.type, true);
+    currentOffset += TDengineTypeLength[TDengineTypeCode.INT];
+    view.setInt32(currentOffset, column._rows, true);
+    currentOffset += TDengineTypeLength[TDengineTypeCode.INT];
 
-        const bytes: number[] = [];
-        // write req_id
-        bytes.push(...bigintToBytes(reqId));
-        
-        // write stmt_id
-        if (stmt_id) {
-            bytes.push(...bigintToBytes(stmt_id));
-        }
-        bytes.push(...bigintToBytes(9n));
-        bytes.push(...shortToBytes(1));
-        bytes.push(...intToBytes(-1));
-        bytes.push(...intToBytes(totalSize + 28, false));
-   
-        bytes.push(...intToBytes(stmtTableInfoList.length));
-        bytes.push(...intToBytes(toBeBindTagCount));
-        bytes.push(...intToBytes(toBeBindColCount));
-        if (toBeBindTableNameCount > 0) {
-            bytes.push(...intToBytes(0x1C));
-        } else {
-            bytes.push(...intToBytes(0));
-        }
-        
-        if (toBeBindTagCount) {
-            if (toBeBindTableNameCount > 0) {
-                bytes.push(...intToBytes(28 + totalTableNameSize + 2 * stmtTableInfoList.length));
-            } else {
-                bytes.push(...intToBytes(28));
-            }
-        } else {
-            bytes.push(...intToBytes(0));
-        }
-            
-        if (toBeBindColCount > 0) {
-            let skipSize = 0;
-            if (toBeBindTableNameCount > 0) {
-                skipSize += totalTableNameSize + 2 * stmtTableInfoList.length;
-            }
-
-            if (toBeBindTagCount > 0) {
-                skipSize += totalTagSize + 4 * stmtTableInfoList.length;
-            }
-
-            // colOffset = 28(固定头) + skipSize
-            bytes.push(...intToBytes(28 + skipSize));
-        } else {
-            bytes.push(...intToBytes(0));
-        }
-
-
-        if (toBeBindTableNameCount > 0) {
-            for (let size of tableNameSizeList) {
-                if (size === 0) {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Table name is empty");
-                }
-                bytes.push(...shortToBytes(size));
-            }
-
-            for (let tableInfo of stmtTableInfoList) {
-                let tableName = tableInfo.getTableName();
-                if (tableName && tableName.length > 0) {
-                    let encoder = new TextEncoder().encode(tableName);
-                    bytes.push(...encoder);
-                    bytes.push(0); // null terminator
-                } else {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Table name is empty");
-                }
-            }
-        }
-
-        if (toBeBindTagCount > 0) {
-            for (let size of tagSizeList) {
-                bytes.push(...intToBytes(size));
-            }
-            for (let tableInfo of stmtTableInfoList) {
-                let tags = tableInfo.getTags();
-                if (tags && tags.getParams().length > 0) {
-                    for (let tagColumnInfo of tags.getParams()) {
-                        serializeColumn(tagColumnInfo, bytes);
-                    }
-                } else {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Tags are empty");
-                }
-            }
-        }
-
-        // ColumnDataLength
-        if (toBeBindColCount > 0) {
-            for (let colSize of colSizeList) {
-                bytes.push(...intToBytes(colSize, false));
-            }
-            for (let tableInfo of stmtTableInfoList) {
-                let params = tableInfo.getParams();
-                if (!params) {
-                    throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Bind params is empty!");
-                }
-                
-                let colColumnInfos:ColumnInfo[] = params.getParams()
-                colColumnInfos.forEach(colColumnInfo => {
-                    serializeColumn(colColumnInfo, bytes);
-                });   
-            }
-        }
-        return bytes
-
+    // isNull bitmap
+    if (column.isNull && column.isNull.length > 0) {
+        const isNullBuffer = new Uint8Array(column.isNull);
+        new Uint8Array(view.buffer, view.byteOffset + currentOffset).set(isNullBuffer);
+        currentOffset += isNullBuffer.length;
     }
 
-    function serializeColumn(column: ColumnInfo, bytes: number[]) {
-        bytes.push(...intToBytes(column.length, false));
-        bytes.push(...intToBytes(column.type));
-        bytes.push(...intToBytes(column._rows));
-        bytes.push(...column.isNull ? column.isNull : []);
-        bytes.push(column._haveLength);
-        
-       if (column._haveLength == 1 && column._dataLengths) {
-            column._dataLengths.forEach(length => {
-               bytes.push(...intToBytes(length));
-           });
+    // _haveLength and _dataLengths
+    view.setUint8(currentOffset, column._haveLength);
+    currentOffset += 1;
+    if (column._haveLength === 1 && column._dataLengths) {
+        for (const length of column._dataLengths) {
+            view.setInt32(currentOffset, length, true);
+            currentOffset += TDengineTypeLength[TDengineTypeCode.INT];
         }
-        bytes.push(...intToBytes(column.data.byteLength, false));
-        bytes.push(...column.data.byteLength ? new Uint8Array(column.data) : []);
     }
 
+    // data
+    view.setInt32(currentOffset, column.data.byteLength, true);
+    currentOffset += TDengineTypeLength[TDengineTypeCode.INT];
+    if (column.data.byteLength > 0) {
+        new Uint8Array(view.buffer, view.byteOffset + currentOffset).set(new Uint8Array(column.data));
+        currentOffset += column.data.byteLength;
+    }
+
+    return currentOffset - offset; // Return the total number of bytes written
+}
+
+export function stmt2BinaryBlockEncode(
+    reqId: bigint,
+    stmtTableInfoList: TableInfo[],
+    stmt_id: bigint | undefined | null,
+    toBeBindTableNameIndex: number | undefined | null,
+    toBeBindTagCount: number,
+    toBeBindColCount: number
+): ArrayBuffer {
+    if (!stmt_id) {
+        throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "stmt_id is invalid");
+    }
+
+    // --- 1. Single pass to prepare data and calculate the exact size ---
+    const hasTableName = toBeBindTableNameIndex != null && toBeBindTableNameIndex >= 0;
+    const hasTags = toBeBindTagCount > 0;
+    const hasCols = toBeBindColCount > 0;
+
+    let totalDataSize = 0;
+    const processedTables = stmtTableInfoList.map(tableInfo => {
+        const tableNameBytes = hasTableName ? new TextEncoder().encode(tableInfo.getTableName() || '') : null;
+        if (hasTableName && (!tableNameBytes || tableNameBytes.length === 0)) {
+            throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Table name is empty");
+        }
+
+        const tags = hasTags ? tableInfo.getTags() : null;
+        if (tags) tags.encode();
+
+        const params = hasCols ? tableInfo.getParams() : null;
+        if (params) {
+            params.encode();
+        } else {
+            throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Bind params is empty!");
+        }
+
+        // Accumulate the size of each part
+        const tableNameBlockSize = tableNameBytes ? 2 + tableNameBytes.length + 1 : 0; // 2(len) + data + 1(\0)
+        const tagsBlockSize = tags ? tags.getDataTotalLen() : 0;
+        const colsBlockSize = params ? params.getDataTotalLen() : 0;
+        
+        totalDataSize += tableNameBlockSize + tagsBlockSize + colsBlockSize;
+        if(hasTags){
+            totalDataSize += TDengineTypeLength[TDengineTypeCode.INT]; // tag block length
+        }
+        if(hasCols){
+            totalDataSize += TDengineTypeLength[TDengineTypeCode.INT]; // col block length
+        }
+
+        return { tableNameBytes, tags, params };
+    });
+
+    // --- 2. Allocate an ArrayBuffer with the exact size ---
+    const HEADER_SIZE = 28; // Fixed header size
+    const OFFSETS_SIZE = 12; // 3 offset pointers
+    const totalBufferSize = HEADER_SIZE + OFFSETS_SIZE + totalDataSize;
+    
+    const buffer = new ArrayBuffer(totalBufferSize);
+    const view = new DataView(buffer);
+    let offset = 0;
+
+    // --- 3. Write the fixed header ---
+    view.setBigUint64(offset, reqId, true); offset += TDengineTypeLength[TDengineTypeCode.BIGINT];
+    view.setBigUint64(offset, stmt_id, true); offset += TDengineTypeLength[TDengineTypeCode.BIGINT];
+    view.setBigUint64(offset, 9n, true); offset += TDengineTypeLength[TDengineTypeCode.BIGINT]; // action: bind
+    view.setUint32(offset, 1, true); offset += TDengineTypeLength[TDengineTypeCode.INT];
+
+    // --- 4. Write the dynamic header and offsets ---
+    const tableCount = stmtTableInfoList.length;
+    view.setInt32(offset, totalBufferSize, true); offset += TDengineTypeLength[TDengineTypeCode.INT]; // total length
+    view.setInt32(offset, tableCount, true); offset += TDengineTypeLength[TDengineTypeCode.INT];
+    view.setInt32(offset, toBeBindTagCount, true); offset += TDengineTypeLength[TDengineTypeCode.INT];
+    view.setInt32(offset, toBeBindColCount, true); offset += TDengineTypeLength[TDengineTypeCode.INT];
+
+    let currentDataOffset = HEADER_SIZE + OFFSETS_SIZE;
+    
+    // TableName Offset
+    view.setInt32(offset, hasTableName ? currentDataOffset : 0, true); offset += TDengineTypeLength[TDengineTypeCode.INT];
+    const tableNameDataStart = currentDataOffset;
+    if (hasTableName) {
+        currentDataOffset += processedTables.reduce((sum, t) => sum + (t.tableNameBytes ? 2 + t.tableNameBytes.length + 1 : 0), 0);
+    }
+
+    // Tags Offset
+    view.setInt32(offset, hasTags ? currentDataOffset : 0, true); offset += TDengineTypeLength[TDengineTypeCode.INT];
+    const tagsDataStart = currentDataOffset;
+    if (hasTags) {
+        currentDataOffset += processedTables.reduce((sum, t) => sum + 4 + (t.tags ? t.tags.getDataTotalLen() : 0), 0);
+    }
+
+    // Columns Offset
+    view.setInt32(offset, hasCols ? currentDataOffset : 0, true); offset += TDengineTypeLength[TDengineTypeCode.INT];
+
+    // --- 5. Write the actual data blocks ---
+    // a. Table Names
+    if (hasTableName) {
+        offset = tableNameDataStart;
+        for (const table of processedTables) {
+            const len = table.tableNameBytes!.length + 1;
+            view.setUint16(offset, len, true); offset += 2;
+            new Uint8Array(buffer, offset).set(table.tableNameBytes!); offset += table.tableNameBytes!.length;
+            view.setUint8(offset, 0); offset += 1; // null terminator
+        }
+    }
+
+    // b. Tags
+    if (hasTags) {
+        offset = tagsDataStart;
+        for (const table of processedTables) {
+            const tags = table.tags!;
+            const tagDataLen = tags.getDataTotalLen();
+            view.setInt32(offset, tagDataLen, true); offset += TDengineTypeLength[TDengineTypeCode.INT];
+            for (const col of tags.getParams()) {
+                offset += writeColumnToView(col, new DataView(buffer, offset), 0);
+            }
+        }
+    }
+
+    // c. Columns
+    if (hasCols) {
+        for (const table of processedTables) {
+            const params = table.params!;
+            const colDataLen = params.getDataTotalLen();
+            view.setInt32(offset, colDataLen, true); offset += TDengineTypeLength[TDengineTypeCode.INT];
+            for (const col of params.getParams()) {
+                offset += writeColumnToView(col, new DataView(buffer, offset), 0);
+            }
+        }
+    }
+
+    return buffer;
+}

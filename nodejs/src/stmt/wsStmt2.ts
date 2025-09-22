@@ -210,8 +210,7 @@ export class WsStmt2 implements WsStmt{
 
         let reqId = BigInt(ReqId.getReqID());
         let bytes = stmt2BinaryBlockEncode(reqId, 
-            this._stmtTableInfoList, 
-            this._stmtTableInfo, 
+            this._stmtTableInfoList,  
             this._stmt_id,
             this._toBeBindTableNameIndex,
             this._toBeBindTagCount, 

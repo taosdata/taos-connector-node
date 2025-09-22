@@ -93,8 +93,7 @@ export class WsStmt2 implements WsStmt{
                 get_fields: true,
             },
         };
-        await this.execute(queryMsg);
-
+        let resp = await this.execute(queryMsg);
         if (this._isInsert && this.fields) {            
             this._precision = this.fields[0].precision ? this.fields[0].precision : 0;
             this._toBeBindColCount = 0;
@@ -108,11 +107,14 @@ export class WsStmt2 implements WsStmt{
                     this._toBeBindColCount++;
                 }
             });            
-        } else {
-            this._stmtTableInfoList = [this._currentTableInfo];
+        } else {      
+            if (resp && resp.fields_count && resp.fields_count > 0) {
+                this._stmtTableInfoList = [this._currentTableInfo];
+                this._toBeBindColCount = resp.fields_count;
+            } else {
+                throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "prepare No columns to bind!");
+            }
         }
-
-
     }
 
     async setTableName(tableName: string): Promise<void> {

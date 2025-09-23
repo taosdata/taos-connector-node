@@ -176,28 +176,3 @@ export function decimalToString(valueStr: string, fields_scale: bigint | null): 
     }
     return decimalStr;
 }
-
-export const shortToBytes = (value: number): number[] => {
-    const buffer = new ArrayBuffer(2);
-    const view = new DataView(buffer);
-    view.setUint16(0, value, true);
-    return [...new Uint8Array(buffer)];
-};
-
-export const bigintToBytes = (value: bigint): number[] => {
-    const buffer = new ArrayBuffer(8);
-    const view = new DataView(buffer);
-    view.setBigUint64(0, value, true);
-    return [...new Uint8Array(buffer)];
-};
-
-export const intToBytes = (value: number, bSymbol = true): number[] => {
-    const buffer = new ArrayBuffer(4);
-    const view = new DataView(buffer);
-    if (bSymbol) {
-        view.setInt32(0, value, true);
-    } else {
-        view.setUint32(0, value, true);
-    }
-    return [...new Uint8Array(buffer)];
-};

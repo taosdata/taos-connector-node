@@ -3,7 +3,6 @@ import { WSQueryResponse } from "../client/wsResponse";
 import { TDengineTypeCode, TDengineTypeLength } from "../common/constant";
 import { MessageResp } from "../common/taosResult";
 import { StmtBindParams } from "./wsParamsBase";
-import { bigintToBytes, intToBytes, shortToBytes } from "../common/utils";
 import { ColumnInfo } from "./wsColumnInfo";
 import { ErrorCode, TaosResultError } from "../common/wsError";
 import { TableInfo } from "./wsTableInfo";
@@ -161,8 +160,6 @@ export function stmt2BinaryBlockEncode(
     }
 
     const listLength = stmtTableInfoList.length;
-    const textEncoder = new TextEncoder(); // 复用
-
     const result = {
         totalTableNameSize: 0,
         totalTagSize: 0, 
@@ -261,7 +258,7 @@ export function stmt2BinaryBlockEncode(
         if (toBeBindTagCount > 0) {
             skipSize += result.totalTagSize + 4 * stmtTableInfoList.length;
         }
-        // colOffset = 28(固定头) + skipSize
+        // colOffset = 28 + skipSize
         view.setInt32(offset, skipSize + headerSize, true);
     } else {
         view.setInt32(offset, 0, true);

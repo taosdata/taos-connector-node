@@ -140,7 +140,6 @@ function writeColumnToView(column: ColumnInfo, view: DataView, offset: number): 
     // data
     view.setInt32(currentOffset, column.data.byteLength, true);
     currentOffset += TDengineTypeLength[TDengineTypeCode.INT];
-    // console.log(currentOffset, column.data.byteLength, view.byteOffset, view.buffer.byteLength);
     if (column.data.byteLength > 0) {
         new Uint8Array(view.buffer, view.byteOffset + currentOffset).set(new Uint8Array(column.data));
         currentOffset += column.data.byteLength;
@@ -242,7 +241,6 @@ export function stmt2BinaryBlockEncode(
 
     view.setInt32(offset, toBeBindTableNameCount > 0 ? 0x1C : 0, true);
     offset += TDengineTypeLength[TDengineTypeCode.INT];
-    console.log(`bytes.length=${offset}, totalSize=${totalSize}`);
     if (toBeBindTagCount) {
         if (toBeBindTableNameCount > 0) {
             view.setInt32(offset, headerSize + result.totalTableNameSize + 2 * stmtTableInfoList.length, true);
@@ -278,7 +276,6 @@ export function stmt2BinaryBlockEncode(
 
             let tableName = stmtTableInfoList[i].getTableName();
             if (tableName && tableName.length > 0) {
-                console.log(`tableName=${tableName}, tableName.length=${tableName.length} dataOffset=${dataOffset}`);
                 new Uint8Array(buffer, dataOffset).set(tableName);
                 dataOffset += tableName.length;
                 view.setUint8(dataOffset, 0);
@@ -319,9 +316,7 @@ export function stmt2BinaryBlockEncode(
             if (!params) {
                 throw new TaosResultError(ErrorCode.ERR_INVALID_PARAMS, "Bind params is empty!");
             }
-            // console.log(headerSize + msgHeaderSize + totalSize, dataOffset);
             for (const col of params.getParams()) {
-                // console.log(dataOffset);
                 dataOffset += writeColumnToView(col, new DataView(buffer, dataOffset), 0);
             }   
         }

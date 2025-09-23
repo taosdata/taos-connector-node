@@ -483,7 +483,7 @@ describe('TDWebSocket.Stmt()', () => {
             await stmt.exec()
         }catch(e) {
             let err:any = e
-            expect(err.message).toMatch(/Retry needed|Tags are empty/);
+            expect(err.message).toMatch(/Retry needed|Bind tags is empty!/);
         }
         await stmt.close()
         await connector.close();

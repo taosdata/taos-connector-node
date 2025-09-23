@@ -3,16 +3,24 @@ import { StmtBindParams } from "./wsParamsBase";
 import JSONBig from 'json-bigint';
 
 export class TableInfo {
-    name: string | undefined | null;
+    name: Uint8Array | undefined | null;
     tags: StmtBindParams | undefined | null;
     params?: StmtBindParams;
-
+    length: number = 0;
+    textEncoder = new TextEncoder();
     constructor(name?: string) {
-        this.name = name;
+        if (name && name.length > 0) {
+            this.name = this.textEncoder.encode(name);
+            this.length = this.name.length; 
+        }
     }
 
-    public getTableName(): string | undefined | null {
+    public getTableName(): Uint8Array | undefined | null {
         return this.name;
+    }
+
+    public getTableNameLength(): number {
+        return this.length;
     }
 
     public getTags(): StmtBindParams | undefined | null {
@@ -25,7 +33,8 @@ export class TableInfo {
 
     public setTableName(name: string): void {
         if (name && name.length > 0) {
-            this.name = name;
+            this.name = this.textEncoder.encode(name);
+            this.length = this.name.length; 
         } else {
             throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "Table name is invalid!");
         }

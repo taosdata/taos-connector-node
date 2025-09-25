@@ -6,9 +6,13 @@ export interface StringIndexable {
     [index: string]: number
 }
 
+export interface NumberIndexable {
+    [index: number]: number
+}
+
 export const BinaryQueryMessage: bigint = BigInt(6);
 export const FetchRawBlockMessage: bigint = BigInt(7);
-
+export const MinStmt2Version:string = "3.3.6.0";
 export const TDengineTypeName: IndexableString = {
     0: 'NULL',
     1: 'BOOL',
@@ -70,25 +74,32 @@ export enum TSDB_OPTION_CONNECTION {
   TSDB_OPTION_CONNECTION_USER_APP,       // user app
 }
 
+export enum FieldBindType {
+    TAOS_FIELD_COL = 1,
+    TAOS_FIELD_TAG = 2,
+    TAOS_FIELD_QUERY = 3,
+    TAOS_FIELD_TBNAME = 4,
+}
+
 export const TDenginePrecision: IndexableString = {
     0: 'MILLISECOND',
     1: "MICROSECOND",
     2: "NANOSECOND",
 }
 
-export const TDengineTypeLength: StringIndexable = {
-    'BOOL': 1,
-    'TINYINT': 1,
-    'SMALLINT': 2,
-    'INT': 4,
-    'BIGINT': 8,
-    'FLOAT': 4,
-    'DOUBLE': 8,
-    'TIMESTAMP': 8,
-    'TINYINT UNSIGNED': 1,
-    'SMALLINT UNSIGNED': 2,
-    'INT UNSIGNED': 4,
-    'BIGINT UNSIGNED': 8,
+export const TDengineTypeLength: NumberIndexable = {
+    [TDengineTypeCode.BOOL]: 1,
+    [TDengineTypeCode.TINYINT]: 1,
+    [TDengineTypeCode.SMALLINT]: 2,
+    [TDengineTypeCode.INT]: 4,
+    [TDengineTypeCode.BIGINT]: 8,
+    [TDengineTypeCode.FLOAT]: 4,
+    [TDengineTypeCode.DOUBLE]: 8,
+    [TDengineTypeCode.TIMESTAMP]: 8,
+    [TDengineTypeCode.TINYINT_UNSIGNED]: 1,
+    [TDengineTypeCode.SMALLINT_UNSIGNED]: 2,
+    [TDengineTypeCode.INT_UNSIGNED]: 4,
+    [TDengineTypeCode.BIGINT_UNSIGNED]: 8,
 }
 
 export const PrecisionLength: StringIndexable = {

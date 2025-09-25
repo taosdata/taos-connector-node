@@ -176,4 +176,3 @@ export function decimalToString(valueStr: string, fields_scale: bigint | null): 
     }
     return decimalStr;
 }
-

@@ -1,11 +1,13 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
+import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
+import { WsStmt1 } from "../../src/stmt/wsStmt1";
 import { createBaseSTable, createBaseSTableJSON, createSTableJSON, getInsertBind } from "../utils";
 
 const stable = 'ws_stmt_stb';
 const table = 'stmt_001';
-const db = 'ws_stmt'
+const db = 'ws_stmt1'
 const createDB = `create database if not exists ${db} keep 3650`
 const useDB = `use ${db}`
 const dropDB = `drop database if exists ${db}`
@@ -83,6 +85,7 @@ const selectJsonTable = `select * from ${jsonTable}`
 const selectJsonTableCN = `select * from ${jsonTableCN}`
 
 let dsn = 'ws://root:taosdata@localhost:6041';
+setLevel("debug")
 beforeAll(async () => {
     let conf :WSConfig = new WSConfig(dsn)
     let ws = await WsSql.open(conf);
@@ -97,11 +100,13 @@ beforeAll(async () => {
 describe('TDWebSocket.Stmt()', () => {
     jest.setTimeout(20 * 1000)
     test('normal BindParam', async() => {
-        let wsConf = new WSConfig(dsn);
+        let wsConf = new WSConfig(dsn, "100.100.100.100");
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
-        let stmt = await (await connector).stmtInit()
-        expect(stmt).toBeTruthy()      
+        let stmt = await connector.stmtInit()
+                expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt1); 
+        expect(stmt).toBeInstanceOf(WsStmt1);
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare(getInsertBind(tableValues.length + 2, stableTags.length, db, stable));
         await stmt.setTableName(table);
@@ -153,11 +158,12 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('normal CN BindParam', async() => {
-        let wsConf = new WSConfig(dsn);
+        let wsConf = new WSConfig(dsn, "100.100.100.100");
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
         let stmt = await (await connector).stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt1);      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare(getInsertBind(tableValues.length + 2, stableTags.length, db, stable));
         await stmt.setTableName(table);
@@ -209,11 +215,12 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('normal json tag BindParam', async() => {
-        let wsConf = new WSConfig(dsn);
+        let wsConf = new WSConfig(dsn, "100.100.100.100");
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
         let stmt = await (await connector).stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt1);      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare(getInsertBind(tableValues.length + 2, jsonTags.length, db, jsonTable));
         await stmt.setTableName(`${jsonTable}_001`);
@@ -252,11 +259,12 @@ describe('TDWebSocket.Stmt()', () => {
     });
 
     test('normal json cn tag BindParam', async() => {
-        let wsConf = new WSConfig(dsn);
+        let wsConf = new WSConfig(dsn, "100.100.100.100");
         wsConf.setDb(db)
         let connector = await WsSql.open(wsConf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt1);      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare(getInsertBind(tableValues.length + 2, jsonTags.length, db, jsonTable));
         await stmt.setTableName(`${jsonTable}_001`);
@@ -297,9 +305,10 @@ describe('TDWebSocket.Stmt()', () => {
 })
 
 test('test bind exception cases', async() => {
-    let wsConf = new WSConfig(dsn);
+    let wsConf = new WSConfig(dsn, "100.100.100.100");
     let connector = await WsSql.open(wsConf) 
     let stmt = await connector.stmtInit()
+    expect(stmt).toBeInstanceOf(WsStmt1);
     const params = stmt.newStmtParam();
     
     const emptyArrayMethods = [

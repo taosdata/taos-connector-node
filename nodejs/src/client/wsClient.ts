@@ -18,6 +18,7 @@ export class WsClient {
     private _timezone?:string | undefined | null;
     private readonly _url:URL;
     private static readonly _minVersion = "3.3.2.0";
+    private _version?: string | undefined | null;
 
     constructor(url: URL, timeout ?:number | undefined | null) {
         this.checkURL(url);
@@ -203,6 +204,10 @@ export class WsClient {
     }
 
     async version(): Promise<string> {
+        if (this._version) {
+            return this._version;
+        }
+        
         let versionMsg = {
             action: 'version',
             args: {
@@ -246,11 +251,11 @@ export class WsClient {
     }
 
     async checkVersion() {
-        let version = await this.version();
-        let result = compareVersions(version, WsClient._minVersion);
+        this._version = await this.version();
+        let result = compareVersions(this._version, WsClient._minVersion);
         if (result < 0) {
-            logger.error(`TDengine version is too low, current version: ${version}, minimum required version: ${WsClient._minVersion}`);
-            throw(new WebSocketQueryError(ErrorCode.ERR_TDENIGNE_VERSION_IS_TOO_LOW, `Version mismatch. The minimum required TDengine version is ${WsClient._minVersion}`));  
+            logger.error(`TDengine version is too low, current version: ${this._version}, minimum required version: ${WsClient._minVersion}`);
+            throw(new WebSocketQueryError(ErrorCode.ERR_TDENIGNE_VERSION_IS_TOO_LOW, `Version mismatch. The minimum required TDengine version is ${WsClient._minVersion}`));
         }
     }
 }

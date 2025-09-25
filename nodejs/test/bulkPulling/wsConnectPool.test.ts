@@ -6,6 +6,7 @@ import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 import { Sleep } from "../utils";
 import { setLevel } from "../../src/common/log"
+import { WsStmt1 } from "../../src/stmt/wsStmt1";
 
 let dsn = 'ws://root:taosdata@localhost:6041';
 let tags = ['California.SanFrancisco', 3];
@@ -47,12 +48,12 @@ async function connect() {
 
 async function stmtConnect() {
     let dsn = 'ws://root:taosdata@localhost:6041';
-    let wsConf = new WSConfig(dsn);
+    let wsConf = new WSConfig(dsn, "100.100.100.100");
     wsConf.setDb(db)
     // let connector = WsStmtConnect.NewConnector(wsConf) 
     // let stmt = await connector.Init()
     let connector = await WsSql.open(wsConf) 
-    let stmt = await connector.stmtInit()
+    let stmt = (await connector.stmtInit()) as WsStmt1
     let id = stmt.getStmtId()
     if (id) {
         stmtIds.push(id)

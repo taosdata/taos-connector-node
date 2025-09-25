@@ -2,7 +2,7 @@ import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
-import { Sleep } from "../utils";
+import { WsStmt2 } from "../../src/stmt/wsStmt2";
 
 let dns = 'ws://localhost:6041'
 setLevel("debug")
@@ -11,8 +11,8 @@ beforeAll(async () => {
     conf.setUser('root');
     conf.setPwd('taosdata');
     let wsSql = await WsSql.open(conf);
-    await wsSql.exec('create database if not exists power_stmt KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
-    await wsSql.exec('CREATE STABLE if not exists power_stmt.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
+    await wsSql.exec('create database if not exists power_func_stmt2 KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
+    await wsSql.exec('CREATE STABLE if not exists power_func_stmt2.meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
     await wsSql.close();
 })
 describe('TDWebSocket.Stmt()', () => {
@@ -32,10 +32,11 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);     
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.close()
         await connector.close();
@@ -66,17 +67,18 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);       
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
         let params = stmt.newStmtParam()
         params.setVarchar([tags[0]]);
         params.setInt([tags[1]]);        
-        await stmt.setTags(params)
+        await stmt.setTags(params);
         await stmt.close()
         await connector.close();
     }); 
@@ -85,10 +87,11 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
@@ -107,17 +110,18 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
         expect(connector.state()).toBeGreaterThan(0)
         try{
             await stmt.prepare('INSERT ? INTO ? USING meters TAGS (?, ?) VALUES (?, ?, ?, ?)');
             await stmt.setTableName('d1001');
         }catch(e) {
             let err:any = e
-            expect(err.message).toMatch("syntax error near '? into ? using meters tags (?, ?) values (?, ?, ?, ?)' (keyword INTO is expected)")
+            expect(err.message).toMatch(/keyword INTO is expected|Syntax error in SQL/)
         }
         await stmt.close()
         await connector.close();
@@ -127,10 +131,11 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
         expect(connector.state()).toBeGreaterThan(0)
         try{
             await stmt.prepare('INSERT INTO ? USING meters TAGS (?, ?, ?) VALUES (?, ?, ?, ?)');
@@ -143,24 +148,61 @@ describe('TDWebSocket.Stmt()', () => {
         await connector.close();
     });
 
-    test('normal BindParam', async() => {
+    test('Bind supper table', async() => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
-        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
-        await stmt.setTableName('d1001');
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
+        await stmt.prepare('INSERT INTO meters (ts, tbname, current, voltage, phase, location, groupId) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        let lastTs = 0
+        for (let i = 0; i < 10; i++) {
+            for (let j = 0; j < multi[0].length; j++) {
+                multi[0][j] = multi[0][0] + j;
+                lastTs = multi[0][j]
+            }
+
+            let dataParams = stmt.newStmtParam()
+            dataParams.setTimestamp(multi[0])
+            dataParams.setVarchar([`d1001`, `d1002`, `d1003`])
+            dataParams.setFloat(multi[1])
+            dataParams.setInt(multi[2])
+            dataParams.setFloat(multi[3])
+            dataParams.setVarchar(['SanFrancisco_1', 'SanFrancisco_2','SanFrancisco_3']);
+            dataParams.setInt([1, 2, 3]);
+            await stmt.bind(dataParams)
+            multi[0][0] = lastTs + 1;
+
+        }
+        
+        await stmt.batch()
+        await stmt.exec()
+        expect(stmt.getLastAffected()).toEqual(30)
+        await stmt.close()
+        await connector.close();
+    });
+
+    test('Bind a single table', async() => {
+        let conf = new WSConfig(dns);
+        conf.setUser('root')
+        conf.setPwd('taosdata')
+        conf.setDb('power_func_stmt2')
+        let connector = await WsSql.open(conf) 
+        let stmt = await connector.stmtInit()
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) (ts, current, voltage, phase) VALUES (?, ?, ?, ?)');
+        await stmt.setTableName('power_func_stmt2.d1001');
 
         let params = stmt.newStmtParam()
         params.setVarchar(['SanFrancisco']);
-        params.setInt([7]);
+        params.setInt([1]);
         await stmt.setTags(params) 
 
         let lastTs = 0
-        const allp:any[] = []
         for (let i = 0; i < 10; i++) {
             for (let j = 0; j < multi[0].length; j++) {
                 multi[0][j] = multi[0][0] + j;
@@ -172,11 +214,10 @@ describe('TDWebSocket.Stmt()', () => {
             dataParams.setFloat(multi[1])
             dataParams.setInt(multi[2])
             dataParams.setFloat(multi[3])
-            allp.push(stmt.bind(dataParams))
-            multi[0][0] = lastTs + 1
+            await stmt.bind(dataParams)
 
+            multi[0][0] = lastTs + 1;
         }
-        await Promise.all(allp)
         await stmt.batch()
         await stmt.exec()
         expect(stmt.getLastAffected()).toEqual(30)
@@ -184,15 +225,116 @@ describe('TDWebSocket.Stmt()', () => {
         await connector.close();
     });
 
+    test('Bind multiple tables', async() => {
+        let conf = new WSConfig(dns);
+        conf.setUser('root')
+        conf.setPwd('taosdata')
+        conf.setDb('power_func_stmt2')
+        let connector = await WsSql.open(conf) 
+        let stmt = await connector.stmtInit()
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
+        await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) (ts, current, voltage, phase) VALUES (?, ?, ?, ?)');
+        let lastTs = 0
+        for (let i = 0; i < 10; i++) {
+            for (let j = 0; j < multi[0].length; j++) {
+                multi[0][j] = multi[0][0] + j;
+                lastTs = multi[0][j]
+            }
+            await stmt.setTableName(`power_func_stmt2.d100${i+1}`);
+
+            let params = stmt.newStmtParam()
+            params.setVarchar([`SanFrancisco${i+1}`]);
+            params.setInt([i+1]);
+            await stmt.setTags(params) 
+
+            let dataParams = stmt.newStmtParam()
+            dataParams.setTimestamp(multi[0])
+            dataParams.setFloat(multi[1])
+            dataParams.setInt(multi[2])
+            dataParams.setFloat(multi[3])
+            await stmt.bind(dataParams)
+
+            multi[0][0] = lastTs + 1;
+
+        }
+        
+        await stmt.batch()
+        await stmt.exec()
+        expect(stmt.getLastAffected()).toEqual(30)
+        await stmt.close()
+        await connector.close();
+    });
+
+    test('query bind', async() => {
+        let conf = new WSConfig(dns);
+        conf.setUser('root')
+        conf.setPwd('taosdata')
+        conf.setDb('power_func_stmt2')
+        let wsSql = await WsSql.open(conf) 
+
+        await wsSql.exec('CREATE STABLE if not exists power_func_stmt2.query_meters (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);');
+        let insertQuery = "INSERT INTO " +
+                    "power_func_stmt2.q1001 USING power_func_stmt2.query_meters TAGS('California.SanFrancisco', 1) " +
+                    "VALUES " +
+                    "('2024-12-19 19:12:45.642', 50.30000, 201, 0.31000) " +
+                    "('2024-12-19 19:12:46.642', 82.60000, 202, 0.33000) " +
+                    "('2024-12-19 19:12:47.642', 92.30000, 203, 0.31000) " +
+                    "('2024-12-19 18:12:45.642', 50.30000, 201, 0.31000) " +
+                    "('2024-12-19 18:12:46.642', 82.60000, 202, 0.33000) " +
+                    "('2024-12-19 18:12:47.642', 92.30000, 203, 0.31000) " +
+                    "('2024-12-19 17:12:45.642', 50.30000, 201, 0.31000) " +
+                    "('2024-12-19 17:12:46.642', 82.60000, 202, 0.33000) " +
+                    "('2024-12-19 17:12:47.642', 92.30000, 203, 0.31000) " +
+                    "power_func_stmt2.q1002 USING power_func_stmt2.query_meters TAGS('Alabama.Montgomery', 2) " +
+                    "VALUES " +
+                    "('2024-12-19 19:12:45.642', 50.30000, 204, 0.25000) " +
+                    "('2024-12-19 19:12:46.642', 62.60000, 205, 0.33000) " +
+                    "('2024-12-19 19:12:47.642', 72.30000, 206, 0.31000) " +
+                    "('2024-12-19 18:12:45.642', 50.30000, 204, 0.25000) " +
+                    "('2024-12-19 18:12:46.642', 62.60000, 205, 0.33000) " +
+                    "('2024-12-19 18:12:47.642', 72.30000, 206, 0.31000) " +
+                    "('2024-12-19 17:12:45.642', 50.30000, 204, 0.25000) " +
+                    "('2024-12-19 17:12:46.642', 62.60000, 205, 0.33000) " +
+                    "('2024-12-19 17:12:47.642', 72.30000, 206, 0.31000) ";
+        await wsSql.exec(insertQuery);
+        
+        // let result = await wsSql.exec("select * from query_meters")
+        // console.log(result)
+
+        let stmt = await wsSql.stmtInit()
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
+        await stmt.prepare('select * from query_meters where ts >= ? and ts <= ?');
+        let dataParams = stmt.newStmtParam()
+        dataParams.setTimestamp([1734628365642n])
+        dataParams.setTimestamp([1734635567642n])
+        await stmt.bind(dataParams)
+        await stmt.exec()
+        let wsRows = await stmt.resultSet()
+        let nRows = 0;
+        while (await wsRows.next()) {
+            let result = wsRows.getData();
+            console.log(result)
+            expect(result).toBeTruthy()
+            nRows++;
+        }
+        expect(nRows).toEqual(18);
+        await wsRows.close()
+        await stmt.close()
+        await wsSql.close();
+    });
+
 
     test('error BindParam', async() => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
-        let connector = await WsSql.open(conf) 
+        conf.setDb('power_func_stmt2')
+        let connector = await WsSql.open(conf)
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
@@ -217,7 +359,7 @@ describe('TDWebSocket.Stmt()', () => {
             await stmt.exec()
         }catch(e) {
             let err:any = e
-            expect(err.message).toMatch("wrong row length")
+            expect(err.message).toMatch(/wrong row length|bind data length error/)
         }
         await stmt.close()
         await connector.close();
@@ -227,10 +369,11 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy()
+        expect(stmt).toBeInstanceOf(WsStmt2);
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
@@ -264,10 +407,11 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
@@ -319,10 +463,11 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
@@ -338,7 +483,7 @@ describe('TDWebSocket.Stmt()', () => {
             await stmt.exec()
         }catch(e) {
             let err:any = e
-            expect(err.message).toMatch("Retry needed");
+            expect(err.message).toMatch(/Retry needed|Bind tags is empty!/);
         }
         await stmt.close()
         await connector.close();
@@ -348,10 +493,11 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf) 
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1002');
@@ -359,6 +505,7 @@ describe('TDWebSocket.Stmt()', () => {
         params.setVarchar(['SanFrancisco']);
         params.setInt([7]);
         await stmt.setTags(params) 
+
         let dataParams = stmt.newStmtParam()
         dataParams.setTimestamp(multi[0])
         dataParams.setFloat(multi[1])
@@ -369,7 +516,7 @@ describe('TDWebSocket.Stmt()', () => {
         await stmt.batch()
         await stmt.exec()
 
-        let result = await connector.exec("select * from power_stmt.meters")
+        let result = await connector.exec("select * from power_func_stmt2.meters")
         console.log(result)
         await stmt.close()
         await connector.close();
@@ -380,10 +527,11 @@ describe('TDWebSocket.Stmt()', () => {
         let conf = new WSConfig(dns);
         conf.setUser('root')
         conf.setPwd('taosdata')
-        conf.setDb('power_stmt')
+        conf.setDb('power_func_stmt2')
         let connector = await WsSql.open(conf)  
         let stmt = await connector.stmtInit()
-        expect(stmt).toBeTruthy()      
+        expect(stmt).toBeTruthy() 
+        expect(stmt).toBeInstanceOf(WsStmt2);      
         expect(connector.state()).toBeGreaterThan(0)
         await stmt.prepare('INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)');
         await stmt.setTableName('d1001');
@@ -415,7 +563,7 @@ afterAll(async () => {
     conf.setUser('root');
     conf.setPwd('taosdata');
     let wsSql = await WsSql.open(conf);
-    await wsSql.exec('drop database power_stmt');
+    await wsSql.exec('drop database power_func_stmt2');
     await wsSql.close();
     WebSocketConnectionPool.instance().destroyed()
 })

@@ -15,6 +15,7 @@ export function getInsertBind(valuesLen: number, tagsLen: number, db: string, st
         sql += ', ?'
     }
     sql += ')'
+    logger.debug(`Insert bind sql: ${sql}`);
     return sql;
 }
 

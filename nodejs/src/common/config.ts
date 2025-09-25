@@ -1,3 +1,5 @@
+import { MinStmt2Version } from "./constant";
+
 export class WSConfig {
     private _user: string | undefined | null;
     private _password: string | undefined | null;
@@ -6,9 +8,15 @@ export class WSConfig {
     private _timeout:number| undefined | null;
     private _token:string | undefined | null;
     private _timezone:string | undefined | null;
+    private _minStmt2Version:string;
 
-    constructor(url:string) {
+    constructor(url:string, minStmt2Version?:string) {
         this._url = url;
+        if (!minStmt2Version){
+            this._minStmt2Version = MinStmt2Version;
+        } else {
+            this._minStmt2Version = minStmt2Version;
+        }
     }
 
     public getToken(): string | undefined | null {
@@ -58,5 +66,8 @@ export class WSConfig {
     }
     public getTimezone(): string | undefined | null {
         return this._timezone;
+    }
+    public getMinStmt2Version(){
+        return this._minStmt2Version;
     }
 }

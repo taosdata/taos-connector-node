@@ -13,6 +13,8 @@ beforeAll(async () => {
     conf.setUser('root')
     conf.setPwd('taosdata')
     let wsSql = await WsSql.open(conf)
+    await wsSql.exec('drop database if exists sql_test');
+    await wsSql.exec('drop database if exists sql_create')
     await wsSql.exec(`CREATE USER user1 PASS '${password1}'`);
     await wsSql.exec(`CREATE USER user2 PASS '${password2}'`);
     await wsSql.exec('create database if not exists sql_test KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;');
@@ -217,6 +219,7 @@ afterAll(async () => {
     conf.setPwd('taosdata');
     let wsSql = await WsSql.open(conf);
     await wsSql.exec('drop database sql_test');
+    await wsSql.exec('drop database sql_create');
     await wsSql.exec('DROP USER user1;')
     await wsSql.exec('DROP USER user2;')
     await wsSql.close();

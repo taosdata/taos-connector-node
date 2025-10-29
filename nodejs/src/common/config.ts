@@ -5,14 +5,14 @@ export class WSConfig {
     private _password: string | undefined | null;
     private _db: string | undefined | null;
     private _url: string;
-    private _timeout:number| undefined | null;
-    private _token:string | undefined | null;
-    private _timezone:string | undefined | null;
-    private _minStmt2Version:string;
+    private _timeout: number | undefined | null;
+    private _token: string | undefined | null;
+    private _timezone: string | undefined | null;
+    private _minStmt2Version: string;
 
-    constructor(url:string, minStmt2Version?:string) {
+    constructor(url: string, minStmt2Version?: string) {
         this._url = url;
-        if (!minStmt2Version){
+        if (!minStmt2Version) {
             this._minStmt2Version = MinStmt2Version;
         } else {
             this._minStmt2Version = minStmt2Version;
@@ -36,7 +36,7 @@ export class WSConfig {
     public getPwd(): string | undefined | null {
         return this._password;
     }
-    public setPwd(pws:string) {
+    public setPwd(pws: string) {
         this._password = pws;
     }
 
@@ -54,12 +54,12 @@ export class WSConfig {
     public setUrl(url: string) {
         this._url = url;
     }
-    
-    public setTimeOut(ms : number) {
-        this._timeout = ms
+
+    public setTimeOut(ms: number) {
+        this._timeout = ms;
     }
     public getTimeOut(): number | undefined | null {
-        return this._timeout
+        return this._timeout;
     }
     public setTimezone(timezone: string) {
         this._timezone = timezone;
@@ -67,7 +67,7 @@ export class WSConfig {
     public getTimezone(): string | undefined | null {
         return this._timezone;
     }
-    public getMinStmt2Version(){
+    public getMinStmt2Version() {
         return this._minStmt2Version;
     }
 }

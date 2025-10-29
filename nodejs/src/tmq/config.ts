@@ -14,9 +14,8 @@ export class TmqConfig {
     auto_commit_interval_ms: number = 5 * 1000;
     timeout: number = 5000;
     otherConfigs: Map<string, any>;
-  
 
-    constructor(wsConfig:Map<string, any>) {
+    constructor(wsConfig: Map<string, any>) {
         this.otherConfigs = new Map();
         for (const [key, value] of wsConfig) {
             switch (key) {
@@ -49,28 +48,24 @@ export class TmqConfig {
                     break;
                 default:
                     this.otherConfigs.set(key, value);
-
             }
         }
-    
+
         if (this.url) {
             if (this.user) {
                 this.url.username = this.user;
-            }else{
+            } else {
                 this.user = this.url.username;
             }
             if (this.password) {
                 this.url.password = this.password;
-                
-            }else{
+            } else {
                 this.password = this.url.password;
             }
-            
+
             this.sql_url = new URL(this.url);
-            this.sql_url.pathname = '/ws';
-            this.url.pathname = '/rest/tmq'
+            this.sql_url.pathname = "/ws";
+            this.url.pathname = "/rest/tmq";
         }
-
     }
-
 }

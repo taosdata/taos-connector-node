@@ -22,17 +22,17 @@ async function dir(folder, ts = []) {
 async function autoIndex() {
     let ts = await dir("./src");
     ts.sort(); // make sure same sort on windows and unix
-    let improts = "",
+    let imports = "",
         _dir = __dirname.replace(/\\/g, "/"); // fix windows path
     for (let path of ts) {
-        improts += `export * from "${path
+        imports += `export * from "${path
             .replace(_dir, ".")
             .slice(0, -3)}"\r\n`;
     }
     let content = await readFile(resolve(__dirname, "./index.ts"), "utf-8");
-    if (improts !== content) {
+    if (imports !== content) {
         console.log("[autoIndex] index.ts");
-        await writeFile(resolve(__dirname, "./index.ts"), improts);
+        await writeFile(resolve(__dirname, "./index.ts"), imports);
     }
 }
 

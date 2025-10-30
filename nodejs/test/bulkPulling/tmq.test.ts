@@ -298,7 +298,7 @@ describe("TDWebSocket.Tmq()", () => {
             await consumer.subscribe(topics);
         } catch (e: any) {
             console.log(e);
-            expect(e.code).toBe(65535);
+            expect(e.code).toBe(280);
         } finally {
             if (consumer) {
                 await consumer.close();

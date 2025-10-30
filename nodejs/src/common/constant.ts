@@ -1,47 +1,46 @@
 export interface IndexableString {
-    [index: number]: string
+    [index: number]: string;
 }
 
 export interface StringIndexable {
-    [index: string]: number
+    [index: string]: number;
 }
 
 export interface NumberIndexable {
-    [index: number]: number
+    [index: number]: number;
 }
 
 export const BinaryQueryMessage: bigint = BigInt(6);
 export const FetchRawBlockMessage: bigint = BigInt(7);
-export const MinStmt2Version:string = "3.3.6.0";
+export const MinStmt2Version: string = "3.3.6.0";
 export const TDengineTypeName: IndexableString = {
-    0: 'NULL',
-    1: 'BOOL',
-    2: 'TINYINT',
-    3: 'SMALLINT',
-    4: 'INT',
-    5: 'BIGINT',
-    6: 'FLOAT',
-    7: 'DOUBLE',
-    8: 'VARCHAR',
-    9: 'TIMESTAMP',
-    10: 'NCHAR',
-    11: 'TINYINT UNSIGNED',
-    12: 'SMALLINT UNSIGNED',
-    13: 'INT UNSIGNED',
-    14: 'BIGINT UNSIGNED',
-    15: 'JSON',
-    16: 'VARBINARY',
-    20: 'GEOMETRY',
-}
+    0: "NULL",
+    1: "BOOL",
+    2: "TINYINT",
+    3: "SMALLINT",
+    4: "INT",
+    5: "BIGINT",
+    6: "FLOAT",
+    7: "DOUBLE",
+    8: "VARCHAR",
+    9: "TIMESTAMP",
+    10: "NCHAR",
+    11: "TINYINT UNSIGNED",
+    12: "SMALLINT UNSIGNED",
+    13: "INT UNSIGNED",
+    14: "BIGINT UNSIGNED",
+    15: "JSON",
+    16: "VARBINARY",
+    20: "GEOMETRY",
+};
 
 export const ColumnsBlockType: StringIndexable = {
-    'SOLID': 0,
-    'VARCHAR': 1,
-    'NCHAR': 2,
-    'GEOMETRY': 3,
-    'VARBINARY':4,
-}
-
+    SOLID: 0,
+    VARCHAR: 1,
+    NCHAR: 2,
+    GEOMETRY: 3,
+    VARBINARY: 4,
+};
 
 export enum TDengineTypeCode {
     NULL = 0,
@@ -68,10 +67,10 @@ export enum TDengineTypeCode {
 }
 
 export enum TSDB_OPTION_CONNECTION {
-  TSDB_OPTION_CONNECTION_CHARSET,        // charset, Same as the scope supported by the system
-  TSDB_OPTION_CONNECTION_TIMEZONE,       // timezone, Same as the scope supported by the system
-  TSDB_OPTION_CONNECTION_USER_IP,        // user ip
-  TSDB_OPTION_CONNECTION_USER_APP,       // user app
+    TSDB_OPTION_CONNECTION_CHARSET, // charset, Same as the scope supported by the system
+    TSDB_OPTION_CONNECTION_TIMEZONE, // timezone, Same as the scope supported by the system
+    TSDB_OPTION_CONNECTION_USER_IP, // user ip
+    TSDB_OPTION_CONNECTION_USER_APP, // user app
 }
 
 export enum FieldBindType {
@@ -82,10 +81,10 @@ export enum FieldBindType {
 }
 
 export const TDenginePrecision: IndexableString = {
-    0: 'MILLISECOND',
+    0: "MILLISECOND",
     1: "MICROSECOND",
     2: "NANOSECOND",
-}
+};
 
 export const TDengineTypeLength: NumberIndexable = {
     [TDengineTypeCode.BOOL]: 1,
@@ -100,10 +99,10 @@ export const TDengineTypeLength: NumberIndexable = {
     [TDengineTypeCode.SMALLINT_UNSIGNED]: 2,
     [TDengineTypeCode.INT_UNSIGNED]: 4,
     [TDengineTypeCode.BIGINT_UNSIGNED]: 8,
-}
+};
 
 export const PrecisionLength: StringIndexable = {
-    'ms': 13,
-    'us': 16,
-    'ns': 19
-}
+    ms: 13,
+    us: 16,
+    ns: 19,
+};

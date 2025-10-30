@@ -14,9 +14,11 @@
 [![StackOverflow](https://img.shields.io/badge/Ask_StackOverflow--white?logo=stackoverflow&style=social&logoColor=orange)](https://stackoverflow.com/questions/tagged/tdengine)
 
 English | [简体中文](README-CN.md)
+
 <!-- omit in toc -->
 ## Table of Contents
 <!-- omit in toc -->
+
 - [1. Introduction](#1-introduction)
 - [2. Documentation](#2-documentation)
 - [3. Prerequisites](#3-prerequisites)

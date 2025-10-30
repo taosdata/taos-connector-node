@@ -1,6 +1,6 @@
 import { ErrorCode, TaosError } from "../common/wsError";
 import { StmtBindParams } from "./wsParamsBase";
-import JSONBig from 'json-bigint';
+import JSONBig from "json-bigint";
 
 export class TableInfo {
     name: Uint8Array | undefined | null;
@@ -11,7 +11,7 @@ export class TableInfo {
     constructor(name?: string) {
         if (name && name.length > 0) {
             this.name = this.textEncoder.encode(name);
-            this.length = this.name.length; 
+            this.length = this.name.length;
         }
     }
 
@@ -34,16 +34,22 @@ export class TableInfo {
     public setTableName(name: string): void {
         if (name && name.length > 0) {
             this.name = this.textEncoder.encode(name);
-            this.length = this.name.length; 
+            this.length = this.name.length;
         } else {
-            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "Table name is invalid!");
+            throw new TaosError(
+                ErrorCode.ERR_INVALID_PARAMS,
+                "Table name is invalid!"
+            );
         }
     }
-    async setTags(paramsArray:StmtBindParams): Promise<void> {
+    async setTags(paramsArray: StmtBindParams): Promise<void> {
         if (paramsArray) {
             this.tags = paramsArray;
         } else {
-            throw new TaosError(ErrorCode.ERR_INVALID_PARAMS, "Table tags is invalid!");
+            throw new TaosError(
+                ErrorCode.ERR_INVALID_PARAMS,
+                "Table tags is invalid!"
+            );
         }
     }
     async setParams(bindParams: StmtBindParams): Promise<void> {

@@ -163,17 +163,15 @@ export class WSTmqFetchBlockInfo {
             dataBuffer = this.parseSchemaInfo(dataView, offset);
             rows += this.parseTmqBlock(dataView, 1);
         }
-        // const parseEndTime = new Date().getTime();
-        // console.log("------------->", parseEndTime- parseStartTime, rows);
         logger.info(
             "parseBlockInfos blockNum=" +
-                blockNum +
-                ", withTableName=" +
-                this.withTableName +
-                ", withSchema=" +
-                this.withSchema +
-                ", rows=" +
-                rows
+            blockNum +
+            ", withTableName=" +
+            this.withTableName +
+            ", withSchema=" +
+            this.withSchema +
+            ", rows=" +
+            rows
         );
         return rows;
     }

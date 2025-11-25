@@ -14,11 +14,11 @@ export class TDWebSocketClientError extends Error {
         }
     }
 }
-export class WebSocketQueryError extends TDWebSocketClientError {}
-export class WebSocketInterfaceError extends TDWebSocketClientError {}
-export class WebSocketQueryInterFaceError extends WebSocketInterfaceError {}
-export class TaosResultError extends TDWebSocketClientError {}
-export class TaosError extends TDWebSocketClientError {}
+export class WebSocketQueryError extends TDWebSocketClientError { }
+export class WebSocketInterfaceError extends TDWebSocketClientError { }
+export class WebSocketQueryInterFaceError extends WebSocketInterfaceError { }
+export class TaosResultError extends TDWebSocketClientError { }
+export class TaosError extends TDWebSocketClientError { }
 
 export enum ErrorCode {
     ERR_INVALID_PARAMS = 100,

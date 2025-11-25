@@ -62,8 +62,7 @@ async function insert() {
     let wsSql = await sqlConnect(conf);
     for (let i = 0; i < 10000; i++) {
         await wsSql.exec(
-            `INSERT INTO d1001 USING ${stable} (location, groupId) TAGS ("California.SanFrancisco", 3) VALUES (NOW + ${i}a, ${
-                10 + i
+            `INSERT INTO d1001 USING ${stable} (location, groupId) TAGS ("California.SanFrancisco", 3) VALUES (NOW + ${i}a, ${10 + i
             }, ${200 + i}, ${0.32 + i})`
         );
     }

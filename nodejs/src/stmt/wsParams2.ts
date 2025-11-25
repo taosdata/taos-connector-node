@@ -41,14 +41,13 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                 if (this._fieldParams[this.paramIndex]) {
                     if (
                         this._fieldParams[this.paramIndex].dataType !==
-                            dataType ||
+                        dataType ||
                         this._fieldParams[this.paramIndex].columnType !==
-                            columnType
+                        columnType
                     ) {
                         throw new TaosError(
                             ErrorCode.ERR_INVALID_PARAMS,
-                            `StmtBindParams params type is not match! ${
-                                this.paramIndex
+                            `StmtBindParams params type is not match! ${this.paramIndex
                             } ${this.paramsCount} ${JSONBig.stringify({
                                 dataType,
                                 columnType,
@@ -206,7 +205,7 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                     throw new TaosError(
                         ErrorCode.ERR_INVALID_PARAMS,
                         "getColumString params is invalid! param_type:=" +
-                            typeof params[i]
+                        typeof params[i]
                     );
                 }
             } else {

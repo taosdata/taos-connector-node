@@ -66,7 +66,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
         //Computing the length of data
         let arrayBuffer = new ArrayBuffer(
             bitMapLen +
-                TDengineTypeLength[TDengineTypeCode.TIMESTAMP] * params.length
+            TDengineTypeLength[TDengineTypeCode.TIMESTAMP] * params.length
         );
         //bitmap get data range
         let bitmapBuffer = new DataView(arrayBuffer);
@@ -121,7 +121,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
                             throw new TaosError(
                                 ErrorCode.ERR_INVALID_PARAMS,
                                 "SeTimestampColumn params precisionLength is invalid! param:=" +
-                                    params[i]
+                                params[i]
                             );
                         }
                     } else if (this.precisionLength == digit) {
@@ -130,7 +130,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
                         throw new TaosError(
                             ErrorCode.ERR_INVALID_PARAMS,
                             "SeTimestampColumn params is invalid! param:=" +
-                                params[i]
+                            params[i]
                         );
                     }
                 }
@@ -147,7 +147,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
             new ColumnInfo(
                 [
                     TDengineTypeLength[TDengineTypeCode.TIMESTAMP] *
-                        params.length,
+                    params.length,
                     arrayBuffer,
                 ],
                 TDengineTypeCode.TIMESTAMP,
@@ -254,7 +254,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
                     throw new TaosError(
                         ErrorCode.ERR_INVALID_PARAMS,
                         "getColumString params is invalid! param_type:=" +
-                            typeof params[i]
+                        typeof params[i]
                     );
                 }
             } else {
@@ -371,7 +371,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
                     throw new TaosError(
                         ErrorCode.ERR_INVALID_PARAMS,
                         "getColumString params is invalid! param_type:=" +
-                            typeof params[i]
+                        typeof params[i]
                     );
                 }
             } else {

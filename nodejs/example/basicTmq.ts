@@ -5,7 +5,6 @@ import { destroy, setLogLevel, sqlConnect, tmqConnect } from "../src";
 const stable = "meters";
 const db = "power";
 const topics: string[] = ["topic_ws_map"];
-let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`;
 let configMap = new Map([
     [TMQConstants.GROUP_ID, "gId_11"],
     [TMQConstants.CONNECT_USER, "root"],
@@ -31,8 +30,7 @@ async function Prepare() {
     await ws.exec(createTopic);
     for (let i = 0; i < 1000; i++) {
         await ws.exec(
-            `INSERT INTO d1001 USING ${stable} (location, groupId) TAGS ("California.SanFrancisco", 3) VALUES (NOW + ${i}a, ${
-                10 + i
+            `INSERT INTO d1001 USING ${stable} (location, groupId) TAGS ("California.SanFrancisco", 3) VALUES (NOW + ${i}a, ${10 + i
             }, ${200 + i}, ${0.32 + i})`
         );
     }

@@ -1,5 +1,5 @@
 import { WSConfig } from "../src/common/config";
-import { sqlConnect, destroy, setLogLevel } from "../src";
+import { sqlConnect, destroy } from "../src";
 
 let dsn = "ws://127.0.0.1:6041";
 async function json_tag_example() {
@@ -29,8 +29,8 @@ async function json_tag_example() {
         let taosResult = await wsSql.exec(insertQuery);
         console.log(
             "Successfully inserted " +
-                taosResult.getAffectRows() +
-                " rows to example_json_tag.stb."
+            taosResult.getAffectRows() +
+            " rows to example_json_tag.stb."
         );
 
         let sql = "SELECT ts, v, jt FROM example_json_tag.stb limit 100";
@@ -70,10 +70,10 @@ async function all_type_example() {
         // create table
         await wsSql.exec(
             "create table if not exists all_type_example.stb (ts timestamp, " +
-                "int_col INT, double_col DOUBLE, bool_col BOOL, binary_col BINARY(100)," +
-                "nchar_col NCHAR(100), varbinary_col VARBINARY(100), geometry_col GEOMETRY(100)) " +
-                "tags(int_tag INT, double_tag DOUBLE, bool_tag BOOL, binary_tag BINARY(100)," +
-                "nchar_tag NCHAR(100), varbinary_tag VARBINARY(100), geometry_tag GEOMETRY(100));"
+            "int_col INT, double_col DOUBLE, bool_col BOOL, binary_col BINARY(100)," +
+            "nchar_col NCHAR(100), varbinary_col VARBINARY(100), geometry_col GEOMETRY(100)) " +
+            "tags(int_tag INT, double_tag DOUBLE, bool_tag BOOL, binary_tag BINARY(100)," +
+            "nchar_tag NCHAR(100), varbinary_tag VARBINARY(100), geometry_tag GEOMETRY(100));"
         );
 
         console.log("Create stable all_type_example.stb successfully");
@@ -85,8 +85,8 @@ async function all_type_example() {
         let taosResult = await wsSql.exec(insertQuery);
         console.log(
             "Successfully inserted " +
-                taosResult.getAffectRows() +
-                " rows to all_type_example.stb."
+            taosResult.getAffectRows() +
+            " rows to all_type_example.stb."
         );
 
         let sql = "SELECT * FROM all_type_example.stb limit 100";

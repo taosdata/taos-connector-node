@@ -5,7 +5,7 @@ import { WsClient } from "../client/wsClient";
 import logger from "../common/log";
 import { ReqId } from "../common/reqid";
 import { getBinarySql } from "../common/utils";
-import { BinaryQueryMessage, FetchRawBlockMessage } from "../common/constant";
+import { FetchRawBlockMessage } from "../common/constant";
 
 export class WSRows {
     private _wsClient: WsClient;

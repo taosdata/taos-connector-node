@@ -15,7 +15,6 @@ import { ReqId } from "../common/reqid";
 import {
     BinaryQueryMessage,
     FetchRawBlockMessage,
-    MinStmt2Version,
     PrecisionLength,
     TSDB_OPTION_CONNECTION,
 } from "../common/constant";
@@ -27,10 +26,11 @@ import { WsStmt2 } from "../stmt/wsStmt2";
 export class WsSql {
     private wsConfig: WSConfig;
     private _wsClient: WsClient;
+
     constructor(wsConfig: WSConfig) {
         let url = getUrl(wsConfig);
-        this._wsClient = new WsClient(url, wsConfig.getTimeOut());
         this.wsConfig = wsConfig;
+        this._wsClient = new WsClient(url, wsConfig.getTimeOut());
     }
 
     static async open(wsConfig: WSConfig): Promise<WsSql> {

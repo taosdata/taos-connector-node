@@ -2,7 +2,7 @@ import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { Sleep } from "../utils";
-import logger, { setLevel } from "../../src/common/log";
+import { setLevel } from "../../src/common/log";
 
 let dns = "ws://localhost:6041";
 let password1 = "Ab1!@#$%,.:?<>;~";

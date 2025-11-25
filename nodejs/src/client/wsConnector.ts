@@ -210,9 +210,9 @@ export class WebSocketConnector {
                 }
                 logger.debug(
                     "[wsClient.sendBinaryMsg()]===>" +
-                        reqId +
-                        action +
-                        message.byteLength
+                    reqId +
+                    action +
+                    message.byteLength
                 );
                 this._wsConn.send(message);
             } else {

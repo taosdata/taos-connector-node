@@ -279,8 +279,8 @@ export function stmt2BinaryBlockEncode(
             view.setInt32(
                 offset,
                 headerSize +
-                    result.totalTableNameSize +
-                    2 * stmtTableInfoList.length,
+                result.totalTableNameSize +
+                2 * stmtTableInfoList.length,
                 true
             );
         } else {
@@ -312,7 +312,7 @@ export function stmt2BinaryBlockEncode(
         let dataOffset =
             offset +
             result.tableNameSizeList.length *
-                TDengineTypeLength[TDengineTypeCode.SMALLINT];
+            TDengineTypeLength[TDengineTypeCode.SMALLINT];
         for (let i = 0; i < listLength; i++) {
             view.setInt16(offset, result.tableNameSizeList[i], true);
             offset += TDengineTypeLength[TDengineTypeCode.SMALLINT];
@@ -337,7 +337,7 @@ export function stmt2BinaryBlockEncode(
         let dataOffset =
             offset +
             result.tagSizeList.length *
-                TDengineTypeLength[TDengineTypeCode.INT];
+            TDengineTypeLength[TDengineTypeCode.INT];
         for (let i = 0; i < listLength; i++) {
             view.setInt32(offset, result.tagSizeList[i], true);
             offset += TDengineTypeLength[TDengineTypeCode.INT];
@@ -366,7 +366,7 @@ export function stmt2BinaryBlockEncode(
         let dataOffset =
             offset +
             result.colSizeList.length *
-                TDengineTypeLength[TDengineTypeCode.INT];
+            TDengineTypeLength[TDengineTypeCode.INT];
         for (let i = 0; i < listLength; i++) {
             view.setInt32(offset, result.colSizeList[i], true);
             offset += TDengineTypeLength[TDengineTypeCode.INT];

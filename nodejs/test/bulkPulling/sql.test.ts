@@ -2,7 +2,7 @@ import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { Sleep } from "../utils";
-import logger, { setLevel } from "../../src/common/log";
+import { setLevel } from "../../src/common/log";
 
 let dns = "ws://localhost:6041";
 let password1 = "Ab1!@#$%,.:?<>;~";
@@ -219,6 +219,50 @@ describe("TDWebSocket.WsSql()", () => {
         expect(taosResult).toBeTruthy();
         let wsRows = await wsSql.query("select * from meters");
         await wsRows.close();
+        await wsSql.close();
+    });
+
+    test("timestamp order check", async () => {
+        const conf: WSConfig = new WSConfig(dns);
+        conf.setUser("root");
+        conf.setPwd("taosdata");
+
+        const wsSql = await WsSql.open(conf);
+        await wsSql.exec("use sql_test");
+        await wsSql.exec("drop table if exists t_order");
+        await wsSql.exec("create table t_order (ts timestamp, c1 int)");
+        await wsSql.exec("insert into t_order values (1726803356466, 1)");
+        await wsSql.exec("insert into t_order values (1726803357466, 2)");
+        await wsSql.exec("insert into t_order values (1726803358466, 3)");
+
+        const expectRowsAsc = [
+            [1726803356466n, 1],
+            [1726803357466n, 2],
+            [1726803358466n, 3],
+        ];
+        const expectRowsDesc = expectRowsAsc.slice().reverse();
+
+        const actualRowsAsc = [];
+        const actualRowsDesc = [];
+
+        const rowsAsc = await wsSql.query("select * from t_order order by ts asc");
+        while (await rowsAsc.next()) {
+            const data = rowsAsc.getData();
+            if (!data) break;
+            actualRowsAsc.push(data);
+        }
+        await rowsAsc.close();
+        expect(actualRowsAsc).toEqual(expectRowsAsc);
+
+        const rowsDesc = await wsSql.query("select * from t_order order by ts desc");
+        while (await rowsDesc.next()) {
+            const data = rowsDesc.getData();
+            if (!data) break;
+            actualRowsDesc.push(data);
+        }
+        await rowsDesc.close();
+        expect(actualRowsDesc).toEqual(expectRowsDesc);
+
         await wsSql.close();
     });
 });

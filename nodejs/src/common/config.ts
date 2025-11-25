@@ -22,6 +22,7 @@ export class WSConfig {
     public getToken(): string | undefined | null {
         return this._token;
     }
+
     public setToken(token: string) {
         this._token = token;
     }
@@ -29,6 +30,7 @@ export class WSConfig {
     public getUser(): string | undefined | null {
         return this._user;
     }
+
     public setUser(user: string) {
         this._user = user;
     }
@@ -36,6 +38,7 @@ export class WSConfig {
     public getPwd(): string | undefined | null {
         return this._password;
     }
+
     public setPwd(pws: string) {
         this._password = pws;
     }
@@ -43,6 +46,7 @@ export class WSConfig {
     public getDb(): string | undefined | null {
         return this._db;
     }
+
     public setDb(db: string) {
         this._db = db;
     }
@@ -55,18 +59,22 @@ export class WSConfig {
         this._url = url;
     }
 
-    public setTimeOut(ms: number) {
-        this._timeout = ms;
-    }
     public getTimeOut(): number | undefined | null {
         return this._timeout;
     }
-    public setTimezone(timezone: string) {
-        this._timezone = timezone;
+
+    public setTimeOut(ms: number) {
+        this._timeout = ms;
     }
+
     public getTimezone(): string | undefined | null {
         return this._timezone;
     }
+
+    public setTimezone(timezone: string) {
+        this._timezone = timezone;
+    }
+
     public getMinStmt2Version() {
         return this._minStmt2Version;
     }

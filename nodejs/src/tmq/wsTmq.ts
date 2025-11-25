@@ -343,7 +343,7 @@ export class WsConsumer {
             );
             logger.debug(
                 "[WSTmqFetchBlockInfo.fetchBlockData]===>" +
-                    wsTmqResponse.taosResult
+                wsTmqResponse.taosResult
             );
             if (wsTmqResponse.rows > 0) {
                 return true;

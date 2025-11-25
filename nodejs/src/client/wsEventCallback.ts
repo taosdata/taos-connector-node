@@ -33,7 +33,7 @@ export class WsEventCallback {
     private static _instance?: WsEventCallback;
     private static _msgActionRegister: Map<MessageId, MessageAction> =
         new Map();
-    private constructor() {}
+    private constructor() { }
 
     public static instance(): WsEventCallback {
         if (!WsEventCallback._instance) {
@@ -124,9 +124,9 @@ export class WsEventCallback {
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WS_NO_CALLBACK,
                 "no callback registered for fetch_block with req_id=" +
-                    msg.req_id +
-                    " action" +
-                    msg.action
+                msg.req_id +
+                " action" +
+                msg.action
             );
         }
     }

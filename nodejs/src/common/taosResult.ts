@@ -123,9 +123,11 @@ export class TaosResult {
     public getData(): Array<Array<any>> | null {
         return this._data;
     }
+
     public setData(value: Array<Array<any>> | null) {
         this._data = value;
     }
+
     public getAffectRows(): number | null | undefined {
         return this._affectRows;
     }
@@ -137,9 +139,11 @@ export class TaosResult {
     public getPrecision(): number | null | undefined {
         return this._precision;
     }
+
     public getTotalTime() {
         return this._totalTime;
     }
+
     public addTotalTime(totalTime: number) {
         this._totalTime += totalTime;
     }

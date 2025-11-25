@@ -14,7 +14,7 @@ import {
     tableMeta,
     tagMeta,
 } from "../utils";
-// const DSN = 'ws://root:taosdata@127.0.0.1:6041'
+
 let dsn = "ws://root:taosdata@localhost:6041";
 let conf: WSConfig = new WSConfig(dsn);
 const resultMap: Map<string, any> = new Map();
@@ -337,7 +337,6 @@ describe("ws.query(stable)", () => {
 
             for (let i = 0; i < actualData.length; i++) {
                 actualData[i].forEach((d, index) => {
-                    // //   console.log(i, index, d, expectData[i][index])
                     if (
                         expectMeta[index].name == "geo" ||
                         expectMeta[index].name == "vbinary"
@@ -379,9 +378,7 @@ describe("ws.query(stable)", () => {
         let ws = await WsSql.open(conf);
         await ws.exec(useDB);
         let insertCN = insertStable(tableCNValues, stableCNTags, stableCN);
-        // console.log(insertCN)
         let insertRes = await ws.exec(insertCN);
-        // console.log(insertRes)
         expect(insertRes.getAffectRows()).toBe(5);
 
         let queryRes = await ws.exec(selectStableCN);
@@ -443,7 +440,6 @@ describe("ws.query(table)", () => {
         let ws = await WsSql.open(conf);
         await ws.exec(useDB);
         let insert = insertNTable(tableValues, table);
-        // console.log(insert)
         let insertRes = await ws.exec(insert);
         expect(insertRes.getAffectRows()).toBe(5);
 
@@ -456,7 +452,6 @@ describe("ws.query(table)", () => {
         await ws.close();
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
-                // console.log(meta,expectMeta[index]);
                 expect(meta.name).toBe(expectMeta[index].name);
                 expect(meta.type).toBe(expectMeta[index].type);
                 expect(meta.length).toBe(expectMeta[index].length);
@@ -483,9 +478,7 @@ describe("ws.query(table)", () => {
         let ws = await WsSql.open(conf);
         await ws.exec(useDB);
         let insertCN = insertNTable(tableCNValues, tableCN);
-        // console.log(insertCN)
         let insertRes = await ws.exec(insertCN);
-        // console.log(insertRes)
         expect(insertRes.getAffectRows()).toBe(5);
 
         let queryRes = await ws.exec(selectTableCN);
@@ -497,8 +490,6 @@ describe("ws.query(table)", () => {
         await ws.close();
         if (actualData && actualMeta) {
             actualMeta.forEach((meta, index) => {
-                // console.log(meta, expectMeta[index]);
-
                 expect(meta.name).toBe(expectMeta[index].name);
                 expect(meta.type).toBe(expectMeta[index].type);
                 expect(meta.length).toBe(expectMeta[index].length);
@@ -527,7 +518,6 @@ describe("ws.query(jsonTable)", () => {
         let ws = await WsSql.open(conf);
         await ws.exec(useDB);
         let insert = insertStable(tableValues, jsonTags, jsonTable);
-        // console.log(insert)
 
         let insertRes = await ws.exec(insert);
         expect(insertRes.getAffectRows()).toBe(5);
@@ -567,7 +557,6 @@ describe("ws.query(jsonTable)", () => {
         let ws = await WsSql.open(conf);
         await ws.exec(useDB);
         let insert = insertStable(tableCNValues, jsonTagsCN, jsonTableCN);
-        // console.log(insert)
 
         let insertRes = await ws.exec(insert);
         expect(insertRes.getAffectRows()).toBe(5);
@@ -610,5 +599,3 @@ afterAll(async () => {
     await ws.close();
     WebSocketConnectionPool.instance().destroyed();
 });
-
-//--detectOpenHandles --maxConcurrency=1 --forceExit

@@ -5,7 +5,7 @@ import { WsClient } from "../client/wsClient";
 import logger from "../common/log";
 import { ReqId } from "../common/reqid";
 import { getBinarySql } from "../common/utils";
-import { BinaryQueryMessage, FetchRawBlockMessage } from "../common/constant";
+import { FetchRawBlockMessage } from "../common/constant";
 
 export class WSRows {
     private _wsClient: WsClient;
@@ -107,7 +107,7 @@ export class WSRows {
         let data = this._taosResult.getData();
         if (this._taosResult && data != null) {
             if (Array.isArray(data) && data.length > 0) {
-                return data.pop();
+                return data.shift();
             }
         }
         return undefined;

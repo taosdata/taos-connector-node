@@ -67,7 +67,7 @@ export class WebSocketConnectionPool {
             if (connector) {
                 logger.debug(
                     "get connection success:" +
-                        Atomics.load(WebSocketConnectionPool.sharedArray, 0)
+                    Atomics.load(WebSocketConnectionPool.sharedArray, 0)
                 );
                 return connector;
             }
@@ -75,20 +75,20 @@ export class WebSocketConnectionPool {
             if (
                 this._maxConnections != -1 &&
                 Atomics.load(WebSocketConnectionPool.sharedArray, 0) >
-                    this._maxConnections
+                this._maxConnections
             ) {
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT,
                     "websocket connect arrived limited:" +
-                        Atomics.load(WebSocketConnectionPool.sharedArray, 0)
+                    Atomics.load(WebSocketConnectionPool.sharedArray, 0)
                 );
             }
             Atomics.add(WebSocketConnectionPool.sharedArray, 0, 1);
             logger.info(
                 "getConnection, new connection count:" +
-                    Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
-                    ", connectAddr:" +
-                    connectAddr
+                Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
+                ", connectAddr:" +
+                connectAddr
             );
             return new WebSocketConnector(url, timeout);
         } finally {
@@ -115,14 +115,14 @@ export class WebSocketConnectionPool {
                     }
                     logger.info(
                         "releaseConnection, current connection count:" +
-                            connectors.length
+                        connectors.length
                     );
                 } else {
                     Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
                     connector.close();
                     logger.info(
                         "releaseConnection, current connection status fail:" +
-                            Atomics.load(WebSocketConnectionPool.sharedArray, 0)
+                        Atomics.load(WebSocketConnectionPool.sharedArray, 0)
                     );
                 }
             } finally {
@@ -143,9 +143,9 @@ export class WebSocketConnectionPool {
         }
         logger.info(
             "destroyed connect:" +
-                Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
-                " current count:" +
-                num
+            Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
+            " current count:" +
+            num
         );
         Atomics.store(WebSocketConnectionPool.sharedArray, 0, 0);
         this.pool = new Map();

@@ -80,10 +80,10 @@ async function all_type_example() {
         // create table
         await wsSql.exec(
             "create table if not exists stb (ts timestamp, " +
-                "int_col INT, double_col DOUBLE, bool_col BOOL, binary_col BINARY(100)," +
-                "nchar_col NCHAR(100), varbinary_col VARBINARY(100), geometry_col GEOMETRY(100)) " +
-                "tags(int_tag INT, double_tag DOUBLE, bool_tag BOOL, binary_tag BINARY(100)," +
-                "nchar_tag NCHAR(100), varbinary_tag VARBINARY(100), geometry_tag GEOMETRY(100));"
+            "int_col INT, double_col DOUBLE, bool_col BOOL, binary_col BINARY(100)," +
+            "nchar_col NCHAR(100), varbinary_col VARBINARY(100), geometry_col GEOMETRY(100)) " +
+            "tags(int_tag INT, double_tag DOUBLE, bool_tag BOOL, binary_tag BINARY(100)," +
+            "nchar_tag NCHAR(100), varbinary_tag VARBINARY(100), geometry_tag GEOMETRY(100));"
         );
 
         console.log("Create stable all_type_example.stb successfully");

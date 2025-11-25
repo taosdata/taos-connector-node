@@ -347,7 +347,6 @@ export class WsClient {
                 this._wsConnector
             );
             this._wsConnector = undefined;
-            // this._wsConnector.close();
         }
     }
 

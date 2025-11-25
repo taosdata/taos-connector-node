@@ -38,7 +38,7 @@ jobs:
             libgeos-dev libjansson-dev libsnappy-dev liblzma-dev libz-dev \
             zlib1g pkg-config libssl-dev gawk
 
-      - name: install TDengine
+      - name: Install TDengine
         run: |
           cd TDengine
           mkdir debug
@@ -49,11 +49,11 @@ jobs:
           which taosd
           which taosadapter
 
-      - name: start taosd
+      - name: Start taosd
         run: |
           nohup sudo taosd &
 
-      - name: start taosadapter
+      - name: Start taosadapter
         run: |
           nohup sudo taosadapter &
 
@@ -69,7 +69,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: test nodejs websocket
+      - name: Test nodejs websocket
         working-directory: nodejs-connector/nodejs
         run: |
           export TDENGINE_CLOUD_URL=${{ secrets.TDENGINE_CLOUD_URL }}

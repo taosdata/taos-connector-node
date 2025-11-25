@@ -107,7 +107,7 @@ export class WSRows {
         let data = this._taosResult.getData();
         if (this._taosResult && data != null) {
             if (Array.isArray(data) && data.length > 0) {
-                return data.pop();
+                return data.shift();
             }
         }
         return undefined;

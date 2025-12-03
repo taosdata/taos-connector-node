@@ -56,13 +56,7 @@ export class WsSql {
                     TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_TIMEZONE,
                     timezone
                 );
-            } else {
-                await wsSql._wsClient.setOptionConnection(
-                    TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_TIMEZONE,
-                    null
-                );
             }
-
             return wsSql;
         } catch (e: any) {
             logger.error(`WsSql open is failed, ${e.code}, ${e.message}`);

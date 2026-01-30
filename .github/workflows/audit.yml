@@ -18,6 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
+
       - name: Audit check
         run: npx audit-ci --moderate --allowlist GHSA-qm9p-f9j5-w83w
 

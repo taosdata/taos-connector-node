@@ -18,14 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 300
-
       - name: Audit check
+        working-directory: nodejs
         run: npx audit-ci --moderate --allowlist GHSA-qm9p-f9j5-w83w
 
       - name: License check
+        working-directory: nodejs
         run: |
           npx license-checker-rseidelsohn \
             --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;MPL-2.0;CC-BY-4.0;0BSD"

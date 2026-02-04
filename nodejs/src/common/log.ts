@@ -1,6 +1,27 @@
 import winston from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 
+export function redactMessage(msg: any): any {
+    if (typeof msg === "string") {
+        return msg
+            .replace(/("password"\s*:\s*")([^"]*)(")/gi, '$1[REDACTED]$3')
+            .replace(/(token=)([^&\s]+)/gi, "$1[REDACTED]")
+            .replace(/(\/\/[^:@\s]+:)([^@/\s]+)(@)/gi, "$1[REDACTED]$3");
+    }
+    if (msg && typeof msg === "object") {
+        const clone: any = Array.isArray(msg) ? [] : {};
+        for (const [k, v] of Object.entries(msg)) {
+            if (["password", "token", "bearer_token"].includes(k.toLowerCase())) {
+                clone[k] = "[REDACTED]";
+            } else {
+                clone[k] = redactMessage(v);
+            }
+        }
+        return clone;
+    }
+    return msg;
+}
+
 const customFormat = winston.format.printf(
     ({ level, message, label, timestamp }) => {
         if (
@@ -10,6 +31,7 @@ const customFormat = winston.format.printf(
         ) {
             message = (message as any).toJSON();
         }
+        message = redactMessage(message);
         return `${timestamp} [${label}] ${level}: ${message}`;
     }
 );

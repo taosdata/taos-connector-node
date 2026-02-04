@@ -2,9 +2,9 @@ import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { createSTable, insertStable } from "../utils";
+import { createSTable, insertStable, testPassword, testUsername } from "../utils";
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import logger, { setLevel } from "../../src/common/log";
+import { setLevel } from "../../src/common/log";
 
 setLevel("debug");
 const stable = "st";
@@ -17,7 +17,7 @@ let createTopic = `create topic if not exists ${topics[0]} as select * from ${db
 let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`;
 // let dropTopic2 = `DROP TOPIC IF EXISTS ${topic2};`
 
-let dsn = "ws://root:taosdata@localhost:6041";
+let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
 let tmqDsn = "ws://localhost:6041";
 
 beforeAll(async () => {
@@ -258,8 +258,8 @@ describe("TDWebSocket.Tmq()", () => {
     jest.setTimeout(20 * 1000);
     let configMap = new Map([
         [TMQConstants.GROUP_ID, "gId"],
-        [TMQConstants.CONNECT_USER, "root"],
-        [TMQConstants.CONNECT_PASS, "taosdata"],
+        [TMQConstants.CONNECT_USER, testUsername()],
+        [TMQConstants.CONNECT_PASS, testPassword()],
         [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
         [TMQConstants.CLIENT_ID, "test_tmq_client"],
         [TMQConstants.WS_URL, tmqDsn],

@@ -1,7 +1,7 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { Sleep } from "../utils";
+import { Sleep, testPassword, testUsername } from "../utils";
 import { setLevel } from "../../src/common/log";
 
 let dns = "ws://localhost:6041";
@@ -10,8 +10,8 @@ let password2 = "Bc%^&*()-_+=[]{}";
 setLevel("debug");
 beforeAll(async () => {
     let conf: WSConfig = new WSConfig(dns);
-    conf.setUser("root");
-    conf.setPwd("taosdata");
+    conf.setUser(testUsername());
+    conf.setPwd(testPassword());
     let wsSql = await WsSql.open(conf);
     await wsSql.exec("drop database if exists sql_test");
     await wsSql.exec("drop database if exists sql_create");
@@ -34,8 +34,8 @@ describe("TDWebSocket.WsSql()", () => {
         let wsSql = null;
         let conf: WSConfig = new WSConfig("");
         conf.setUrl(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("sql_test");
         conf.setTimezone("America/New_York");
         conf.setTimeOut(6000);
@@ -81,8 +81,8 @@ describe("TDWebSocket.WsSql()", () => {
         let wsSql = null;
         try {
             let conf: WSConfig = new WSConfig(dns);
-            conf.setUser("root");
-            conf.setPwd("taosdata");
+            conf.setUser(testUsername());
+            conf.setPwd(testPassword());
             conf.setDb("jest");
             wsSql = await WsSql.open(conf);
         } catch (e) {
@@ -97,7 +97,7 @@ describe("TDWebSocket.WsSql()", () => {
 
     test("connect url", async () => {
         let url =
-            "ws://root:taosdata@localhost:6041/information_schema?timezone=Asia/Shanghai";
+            `ws://${testUsername()}:${testPassword()}@localhost:6041/information_schema?timezone=Asia/Shanghai`;
         let conf: WSConfig = new WSConfig(url);
         let wsSql = await WsSql.open(conf);
         let version = await wsSql.version();
@@ -115,8 +115,8 @@ describe("TDWebSocket.WsSql()", () => {
 
     test("get taosc version", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         let wsSql = await WsSql.open(conf);
         let version = await wsSql.version();
         await wsSql.close();
@@ -126,8 +126,8 @@ describe("TDWebSocket.WsSql()", () => {
 
     test("show databases", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         let wsSql = await WsSql.open(conf);
         let taosResult = await wsSql.exec("show databases");
         await wsSql.close();
@@ -137,8 +137,8 @@ describe("TDWebSocket.WsSql()", () => {
 
     test("create databases", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         let wsSql = await WsSql.open(conf);
         let taosResult = await wsSql.exec(
             "create database if not exists sql_create KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;"
@@ -150,8 +150,8 @@ describe("TDWebSocket.WsSql()", () => {
 
     test("create stable", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         let wsSql = await WsSql.open(conf);
         let taosResult = await wsSql.exec("use sql_test");
         console.log(taosResult);
@@ -167,8 +167,8 @@ describe("TDWebSocket.WsSql()", () => {
 
     test("insert recoder", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         let wsSql = await WsSql.open(conf);
         let taosResult = await wsSql.exec("use sql_test");
         console.log(taosResult);
@@ -187,8 +187,8 @@ describe("TDWebSocket.WsSql()", () => {
 
     test("query sql", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         let wsSql = await WsSql.open(conf);
         let taosResult = await wsSql.exec("use sql_test");
         console.log(taosResult);
@@ -211,8 +211,8 @@ describe("TDWebSocket.WsSql()", () => {
 
     test("query sql no getdata", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         let wsSql = await WsSql.open(conf);
         let taosResult = await wsSql.exec("use sql_test");
         console.log(taosResult);
@@ -224,8 +224,8 @@ describe("TDWebSocket.WsSql()", () => {
 
     test("timestamp order check", async () => {
         const conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
 
         const wsSql = await WsSql.open(conf);
         await wsSql.exec("use sql_test");
@@ -269,8 +269,8 @@ describe("TDWebSocket.WsSql()", () => {
 
 afterAll(async () => {
     let conf: WSConfig = new WSConfig(dns);
-    conf.setUser("root");
-    conf.setPwd("taosdata");
+    conf.setUser(testUsername());
+    conf.setPwd(testPassword());
     let wsSql = await WsSql.open(conf);
     await wsSql.exec("drop database sql_test");
     await wsSql.exec("drop database sql_create");

@@ -4,11 +4,11 @@ import { ReqId } from "../../src/common/reqid";
 import { WsSql } from "../../src/sql/wsSql";
 import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
-import { Sleep } from "../utils";
+import { Sleep, testPassword, testUsername } from "../utils";
 import { setLevel } from "../../src/common/log";
 import { WsStmt1 } from "../../src/stmt/wsStmt1";
 
-let dsn = "ws://root:taosdata@localhost:6041";
+let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
 let tags = ["California.SanFrancisco", 3];
 let multi = [
     [1709183268567, 1709183268568, 1709183268569],
@@ -19,8 +19,8 @@ let multi = [
 
 let configMap = new Map([
     [TMQConstants.GROUP_ID, "gId"],
-    [TMQConstants.CONNECT_USER, "root"],
-    [TMQConstants.CONNECT_PASS, "taosdata"],
+    [TMQConstants.CONNECT_USER, testUsername()],
+    [TMQConstants.CONNECT_PASS, testPassword()],
     [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
     [TMQConstants.CLIENT_ID, "test_tmq_client"],
     [TMQConstants.WS_URL, "ws://localhost:6041"],
@@ -30,12 +30,12 @@ let configMap = new Map([
 const stable = "meters";
 const db = "power_connect";
 const topics: string[] = ["pwer_meters_topic"];
-let createTopic = `create topic if not exists ${topics[0]} as select * from ${db}.${stable}`;
+let createTopic = `create topic if not exists ${topics[0]} as select * from ${db}.${stable} `;
 let stmtIds: bigint[] = [];
 setLevel("debug");
 
 async function connect() {
-    let dsn = "ws://root:taosdata@localhost:6041";
+    let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
     let wsSql = null;
     let conf: WSConfig = new WSConfig(dsn);
     conf.setDb(db);
@@ -46,7 +46,7 @@ async function connect() {
 }
 
 async function stmtConnect() {
-    let dsn = "ws://root:taosdata@localhost:6041";
+    let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
     let wsConf = new WSConfig(dsn, "100.100.100.100");
     wsConf.setDb(db);
     // let connector = WsStmtConnect.NewConnector(wsConf)
@@ -59,7 +59,7 @@ async function stmtConnect() {
     }
     expect(stmt).toBeTruthy();
     await stmt.prepare(
-        `INSERT INTO ? USING ${stable} (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)`
+        `INSERT INTO ? USING ${stable} (location, groupId) TAGS(?, ?) VALUES(?, ?, ?, ?)`
     );
     await stmt.setTableName("d1001");
     await stmt.setJsonTags(tags);
@@ -121,11 +121,11 @@ beforeAll(async () => {
     let conf: WSConfig = new WSConfig(dsn);
     let ws = await WsSql.open(conf);
     await ws.exec(
-        `create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;`
+        `create database if not exists ${db} KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1; `
     );
     await Sleep(100);
     await ws.exec(
-        `CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS (location binary(64), groupId int);`
+        `CREATE STABLE if not exists ${db}.${stable} (ts timestamp, current float, voltage int, phase float) TAGS(location binary(64), groupId int); `
     );
     await Sleep(100);
     await ws.exec(createTopic, ReqId.getReqID());
@@ -156,8 +156,8 @@ describe("TDWebSocket.WsSql()", () => {
 
 afterAll(async () => {
     let conf: WSConfig = new WSConfig(dsn);
-    conf.setUser("root");
-    conf.setPwd("taosdata");
+    conf.setUser(testUsername());
+    conf.setPwd(testPassword());
 
     let wsSql = await WsSql.open(conf);
     await wsSql.exec(`drop topic if exists ${topics[0]};`);

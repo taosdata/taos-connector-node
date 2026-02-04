@@ -5,9 +5,10 @@ import { WsSql } from "../../src/sql/wsSql";
 import { WsStmt2 } from "../../src/stmt/wsStmt2";
 import {
     createBaseSTable,
-    createBaseSTableJSON,
     createSTableJSON,
     getInsertBind,
+    testPassword,
+    testUsername,
 } from "../utils";
 
 const stable = "ws_stmt_stb";
@@ -164,7 +165,7 @@ const selectTableCN = `select * from ${tableCN}`;
 const selectJsonTable = `select * from ${jsonTable}`;
 const selectJsonTableCN = `select * from ${jsonTableCN}`;
 
-let dsn = "ws://root:taosdata@localhost:6041";
+let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
 setLevel("debug");
 beforeAll(async () => {
     let conf: WSConfig = new WSConfig(dsn);
@@ -233,7 +234,7 @@ describe("TDWebSocket.Stmt()", () => {
         await stmt.exec();
         expect(stmt.getLastAffected()).toEqual(5);
         await stmt.close();
-        let result = await connector.exec(`select * from ${db}.${stable}`);
+        let result = await connector.exec(`select * from ${db}.${stable} `);
         console.log(result);
         await connector.close();
     });
@@ -293,7 +294,7 @@ describe("TDWebSocket.Stmt()", () => {
         expect(stmt.getLastAffected()).toEqual(5);
         await stmt.close();
         let result = await connector.exec(
-            `select count(*) from ${db}.${stable}`
+            `select count(*) from ${db}.${stable} `
         );
         console.log(result);
         await connector.close();
@@ -315,7 +316,7 @@ describe("TDWebSocket.Stmt()", () => {
                 jsonTable
             )
         );
-        await stmt.setTableName(`${jsonTable}_001`);
+        await stmt.setTableName(`${jsonTable} _001`);
         let tagParams = stmt.newStmtParam();
         tagParams.setJson(jsonTags);
         await stmt.setTags(tagParams);
@@ -345,7 +346,7 @@ describe("TDWebSocket.Stmt()", () => {
         await stmt.exec();
         expect(stmt.getLastAffected()).toEqual(5);
         await stmt.close();
-        let result = await connector.exec(`select * from ${db}.${jsonTable}`);
+        let result = await connector.exec(`select * from ${db}.${jsonTable} `);
         console.log(result);
         await connector.close();
     });
@@ -366,7 +367,7 @@ describe("TDWebSocket.Stmt()", () => {
                 jsonTable
             )
         );
-        await stmt.setTableName(`${jsonTable}_001`);
+        await stmt.setTableName(`${jsonTable} _001`);
         let tagParams = stmt.newStmtParam();
         tagParams.setJson(jsonTagsCN);
         await stmt.setTags(tagParams);
@@ -396,7 +397,7 @@ describe("TDWebSocket.Stmt()", () => {
         await stmt.exec();
         expect(stmt.getLastAffected()).toEqual(5);
         await stmt.close();
-        let result = await connector.exec(`select * from ${db}.${jsonTable}`);
+        let result = await connector.exec(`select * from ${db}.${jsonTable} `);
         console.log(result);
         await connector.close();
     });

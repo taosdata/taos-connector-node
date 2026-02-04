@@ -1,17 +1,18 @@
 import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import logger, { setLevel } from "../../src/common/log";
+import { setLevel } from "../../src/common/log";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
+import { testPassword, testUsername } from "../utils";
 
 beforeAll(async () => {
     const url = `wss://${process.env.TDENGINE_CLOUD_URL}?token=${process.env.TDENGINE_CLOUD_TOKEN}`;
     let wsSql = null;
     try {
         const conf = new WSConfig(url);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         wsSql = await WsSql.open(conf);
         let sql = `INSERT INTO dmeters.d1001 USING dmeters.meters (groupid, location) TAGS(2, 'SanFrancisco')
             VALUES (NOW + 1a, 10.30000, 219, 0.31000) (NOW + 2a, 12.60000, 218, 0.33000) (NOW + 3a, 12.30000, 221, 0.31000)

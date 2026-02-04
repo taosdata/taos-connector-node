@@ -3,13 +3,14 @@ import { WSConfig } from "../../src/common/config";
 import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
 import { WsStmt2 } from "../../src/stmt/wsStmt2";
+import { testPassword, testUsername } from "../utils";
 
 let dns = "ws://localhost:6041";
 setLevel("debug");
 beforeAll(async () => {
     let conf: WSConfig = new WSConfig(dns);
-    conf.setUser("root");
-    conf.setPwd("taosdata");
+    conf.setUser(testUsername());
+    conf.setPwd(testPassword());
     let wsSql = await WsSql.open(conf);
     await wsSql.exec(
         "create database if not exists power_func_stmt2 KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;"
@@ -34,8 +35,8 @@ describe("TDWebSocket.Stmt()", () => {
     ];
     test("normal connect", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -51,8 +52,8 @@ describe("TDWebSocket.Stmt()", () => {
         let connector = null;
         try {
             let conf: WSConfig = new WSConfig(dns);
-            conf.setUser("root");
-            conf.setPwd("taosdata");
+            conf.setUser(testUsername());
+            conf.setPwd(testPassword());
             conf.setDb("jest");
             connector = await WsSql.open(conf);
             let stmt = await connector.stmtInit();
@@ -69,8 +70,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("normal Prepare", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -91,8 +92,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("set tag error", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -116,8 +117,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("error Prepare table", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -141,8 +142,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("error Prepare tag", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -164,8 +165,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("Bind supper table", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -206,8 +207,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("Bind a single table", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -248,8 +249,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("Bind multiple tables", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -290,8 +291,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("query bind", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let wsSql = await WsSql.open(conf);
 
@@ -354,8 +355,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("error BindParam", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -397,8 +398,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("no Batch", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -437,8 +438,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("Batch after BindParam", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -495,8 +496,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("no set tag", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -527,8 +528,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("normal binary BindParam", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -564,8 +565,8 @@ describe("TDWebSocket.Stmt()", () => {
 
     test("normal json BindParam", async () => {
         let conf = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_func_stmt2");
         let connector = await WsSql.open(conf);
         let stmt = await connector.stmtInit();
@@ -601,8 +602,8 @@ describe("TDWebSocket.Stmt()", () => {
 
 afterAll(async () => {
     let conf: WSConfig = new WSConfig(dns);
-    conf.setUser("root");
-    conf.setPwd("taosdata");
+    conf.setUser(testUsername());
+    conf.setPwd(testPassword());
     let wsSql = await WsSql.open(conf);
     await wsSql.exec("drop database power_func_stmt2");
     await wsSql.close();

@@ -70,9 +70,12 @@ jobs:
 
       - name: Test nodejs websocket
         working-directory: nodejs-connector/nodejs
+        env:
+          TDENGINE_CLOUD_URL: ${{ secrets.TDENGINE_CLOUD_URL }}
+          TDENGINE_CLOUD_TOKEN: ${{ secrets.TDENGINE_CLOUD_TOKEN }}
+          TDENGINE_TEST_USERNAME: ${{ secrets.TDENGINE_TEST_USERNAME }}
+          TDENGINE_TEST_PASSWORD: ${{ secrets.TDENGINE_TEST_PASSWORD }}
         run: |
-          export TDENGINE_CLOUD_URL=${{ secrets.TDENGINE_CLOUD_URL }}
-          export TDENGINE_CLOUD_TOKEN=${{ secrets.TDENGINE_CLOUD_TOKEN }}
           ls -al
           npm install
           npm list

@@ -1,8 +1,8 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { Sleep } from "../utils";
-import logger, { setLevel } from "../../src/common/log";
+import { Sleep, testPassword, testUsername } from "../utils";
+import { setLevel } from "../../src/common/log";
 import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 
@@ -12,8 +12,8 @@ let dropTopic = `DROP TOPIC IF EXISTS topic_decimal_test;`;
 setLevel("debug");
 beforeAll(async () => {
     let conf: WSConfig = new WSConfig(dns);
-    conf.setUser("root");
-    conf.setPwd("taosdata");
+    conf.setUser(testUsername());
+    conf.setPwd(testPassword());
     let wsSql = await WsSql.open(conf);
     await wsSql.exec(dropTopic);
     await wsSql.exec("drop database if exists power");
@@ -64,8 +64,8 @@ describe("TDWebSocket.WsSql()", () => {
 
     test("insert recoder", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         let wsSql = await WsSql.open(conf);
         let taosResult = await wsSql.exec("use power");
         console.log(taosResult);
@@ -108,8 +108,8 @@ describe("TDWebSocket.WsSql()", () => {
 test("normal Subscribe", async () => {
     let configMap = new Map([
         [TMQConstants.GROUP_ID, "gId"],
-        [TMQConstants.CONNECT_USER, "root"],
-        [TMQConstants.CONNECT_PASS, "taosdata"],
+        [TMQConstants.CONNECT_USER, testUsername()],
+        [TMQConstants.CONNECT_PASS, testPassword()],
         [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
         [TMQConstants.CLIENT_ID, "test_tmq_client"],
         [TMQConstants.WS_URL, dns],
@@ -159,8 +159,8 @@ test("normal Subscribe", async () => {
 
 afterAll(async () => {
     let conf: WSConfig = new WSConfig(dns);
-    conf.setUser("root");
-    conf.setPwd("taosdata");
+    conf.setUser(testUsername());
+    conf.setPwd(testPassword());
     let wsSql = await WsSql.open(conf);
     await wsSql.exec(dropTopic);
     await wsSql.exec("drop database power");

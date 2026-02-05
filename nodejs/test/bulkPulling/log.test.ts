@@ -115,6 +115,12 @@ describe("redact message", () => {
         expect(output).toBe("ws://root:[REDACTED]@localhost:6041/ws");
     });
 
+    test("redacts password in ws url :password@", () => {
+        const input = "ws://:taosdata@localhost:6041/ws";
+        const output = redactMessage(input);
+        expect(output).toBe("ws://:[REDACTED]@localhost:6041/ws");
+    });
+
     test("does not change url without credentials", () => {
         const input = "ws://localhost:6041/ws";
         const output = redactMessage(input);

@@ -2,37 +2,13 @@ import winston from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 
 export function redactMessage(msg: any): any {
-    const seen = new WeakSet();
-    function redact(val: any): any {
-        if (typeof val === "string") {
-            return val
-                .replace(/("password"\s*:\s*")([^"]*)(")/gi, '$1[REDACTED]$3')
-                .replace(/((?:bearer_)?token=)([^&\s]+)/gi, "$1[REDACTED]")
-                .replace(/(\/\/[^:@\s]*:)([^@\/\s]+)(@)/gi, "$1[REDACTED]$3");
-        }
-        if (val instanceof URL) {
-            const url = new URL(val.href);
-            if (url.password) url.password = '[REDACTED]';
-            return url;
-        }
-        if (val && typeof val === "object") {
-            if (seen.has(val)) {
-                return "[Circular]";
-            }
-            seen.add(val);
-            const clone: any = Array.isArray(val) ? [] : {};
-            for (const [k, v] of Object.entries(val)) {
-                if (["password", "token", "bearer_token"].includes(k.toLowerCase())) {
-                    clone[k] = "[REDACTED]";
-                } else {
-                    clone[k] = redact(v);
-                }
-            }
-            return clone;
-        }
-        return val;
+    if (typeof msg === "string") {
+        return msg
+            .replace(/("password"\s*:\s*")([^"]*)(")/gi, '$1[REDACTED]$3')
+            .replace(/((?:bearer_)?token=)([^&\s]+)/gi, "$1[REDACTED]")
+            .replace(/(\/\/[^:@\s]*:)([^@\/\s]+)(@)/gi, "$1[REDACTED]$3");
     }
-    return redact(msg);
+    return msg;
 }
 
 const customFormat = winston.format.printf(
@@ -44,9 +20,7 @@ const customFormat = winston.format.printf(
         ) {
             message = (message as any).toJSON();
         }
-        message = redactMessage(message);
-        // const messageStr = (message && typeof message === "object") ? JSON.stringify(message) : message;
-        return `${timestamp} [${label}] ${level}: ${message}`;
+        return redactMessage(`${timestamp} [${label}] ${level}: ${message}`);
     }
 );
 

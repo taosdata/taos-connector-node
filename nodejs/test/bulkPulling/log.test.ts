@@ -24,106 +24,56 @@ describe("log level print", () => {
 
 describe("redact message", () => {
     test("redacts password field in JSON-like string", () => {
-        const input = '{"password": "secret123"}';
+        const input = '{"user":"root","password":"taosdata"}';
         const output = redactMessage(input);
-        expect(output).toBe('{"password": "[REDACTED]"}');
+        expect(output).toBe('{"user":"root","password":"[REDACTED]"}');
+    });
+
+    test("redacts case-insensitive  password field in JSON-like string", () => {
+        const input = '{"user":"root","PassWord":"taosdata"}';
+        const output = redactMessage(input);
+        expect(output).toBe('{"user":"root","PassWord":"[REDACTED]"}');
     });
 
     test("redacts token in query string", () => {
-        const input = "https://example.com?token=abcdef123456&other=1";
+        const input = "ws://localhost:6041?token=abc123&x=1";
         const output = redactMessage(input);
-        expect(output).toBe(
-            "https://example.com?token=[REDACTED]&other=1"
-        );
+        expect(output).toBe("ws://localhost:6041?token=[REDACTED]&x=1");
     });
 
-    test("redacts bearer token in query string", () => {
-        const input = "https://example.com?bearer_token=abcdef123456&other=1";
+    test("redacts bearer_token in query string", () => {
+        const input = "ws://localhost:6041?bearer_token=abc123&x=1";
         const output = redactMessage(input);
-        expect(output).toBe(
-            "https://example.com?bearer_token=[REDACTED]&other=1"
-        );
+        expect(output).toBe("ws://localhost:6041?bearer_token=[REDACTED]&x=1");
     });
 
-    test("is case-insensitive for password key", () => {
-        const input = '{"PassWord": "secret123"}';
+    test("redacts password in ws url user:password@", () => {
+        const input = "ws://root:taosdata@localhost:6041";
         const output = redactMessage(input);
-        expect(output).toBe('{"PassWord": "[REDACTED]"}');
+        expect(output).toBe("ws://root:[REDACTED]@localhost:6041");
     });
 
-    test("leaves string without sensitive data unchanged", () => {
-        const input = "normal message without secrets";
+    test("redacts password in ws url :password@", () => {
+        const input = "ws://:taosdata@localhost:6041";
+        const output = redactMessage(input);
+        expect(output).toBe("ws://:[REDACTED]@localhost:6041");
+    });
+
+    test("does not change url without credentials", () => {
+        const input = "ws://localhost:6041";
         const output = redactMessage(input);
         expect(output).toBe(input);
     });
 
-    test("redacts password and token fields on plain object", () => {
-        const input = {
-            user: "u1",
-            password: "secret",
-            token: "abc123",
-            bearer_token: "def456",
-            other: "keep",
-        };
-        const output = redactMessage(input) as any;
-
-        expect(output.user).toBe("u1");
-        expect(output.password).toBe("[REDACTED]");
-        expect(output.token).toBe("[REDACTED]");
-        expect(output.bearer_token).toBe("[REDACTED]");
-        expect(output.other).toBe("keep");
-    });
-
-    test("redacts nested objects recursively", () => {
-        const input = {
-            level1: {
-                password: "p1",
-                nested: {
-                    token: "t1",
-                    value: 42,
-                },
-            },
-        };
-        const output = redactMessage(input) as any;
-
-        expect(output.level1.password).toBe("[REDACTED]");
-        expect(output.level1.nested.token).toBe("[REDACTED]");
-        expect(output.level1.nested.value).toBe(42);
-    });
-
-    test("redacts objects inside array", () => {
-        const input = [
-            { password: "p1" },
-            { token: "t2", ok: true },
-        ];
-        const output = redactMessage(input) as any[];
-
-        expect(output[0].password).toBe("[REDACTED]");
-        expect(output[1].token).toBe("[REDACTED]");
-        expect(output[1].ok).toBe(true);
+    test("does not change string without sensitive data", () => {
+        const input = "normal log message without secrets";
+        const output = redactMessage(input);
+        expect(output).toBe(input);
     });
 
     test("returns same primitive for non-object/non-string", () => {
         expect(redactMessage(123)).toBe(123);
         expect(redactMessage(null)).toBeNull();
         expect(redactMessage(undefined)).toBeUndefined();
-    });
-
-    test("redacts password in ws url user:password@", () => {
-        const input = "ws://root:taosdata@localhost:6041/ws";
-        const output = redactMessage(input);
-        expect(output).toBe("ws://root:[REDACTED]@localhost:6041/ws");
-    });
-
-    test("redacts password in ws url :password@", () => {
-        const input = "ws://:taosdata@localhost:6041/ws";
-        const output = redactMessage(input);
-        expect(output).toBe("ws://:[REDACTED]@localhost:6041/ws");
-    });
-
-    test("does not change url without credentials", () => {
-        const input = "ws://localhost:6041/ws";
-        const output = redactMessage(input);
-        expect(output).toBe(input);
     });
 });

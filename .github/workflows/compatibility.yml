@@ -44,10 +44,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 300
-
       - name: Run tests
         working-directory: nodejs-connector/nodejs
         env:

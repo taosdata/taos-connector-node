@@ -1,7 +1,6 @@
 import { TMQConstants } from "./constant";
 
 export class TmqConfig {
-    // req_id: number;
     url: URL | null = null;
     sql_url: URL | null = null;
     user: string | null = null;

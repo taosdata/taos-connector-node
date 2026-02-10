@@ -18,7 +18,6 @@ import {
     TopicPartition,
     WSTmqFetchBlockInfo,
     WsPollResponse,
-    WsTmqQueryResponse,
 } from "./tmqResponse";
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
@@ -30,6 +29,7 @@ export class WsConsumer {
     private _topics?: string[];
     private _commitTime?: number;
     private _lastMessageID?: bigint;
+
     private constructor(wsConfig: Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig);
         logger.debug(this._wsConfig);

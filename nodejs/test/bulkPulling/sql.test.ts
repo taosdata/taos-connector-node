@@ -265,6 +265,26 @@ describe("TDWebSocket.WsSql()", () => {
 
         await wsSql.close();
     });
+
+    test("connector version info", async () => {
+        let conf: WSConfig = new WSConfig(dns);
+        conf.setUser("root");
+        conf.setPwd("taosdata");
+        let wsSql = await WsSql.open(conf);
+        await Sleep(2000);
+        let wsRows = await wsSql.query("show connections");
+        let hasNodejsWs = false;
+        while (await wsRows.next()) {
+            const data = wsRows.getData();
+            if (Array.isArray(data) && data.some(v => typeof v === "string" && v.includes("nodejs-ws"))) {
+                hasNodejsWs = true;
+                break;
+            }
+        }
+        expect(hasNodejsWs).toBe(true);
+        await wsRows.close();
+        await wsSql.close();
+    });
 });
 
 afterAll(async () => {

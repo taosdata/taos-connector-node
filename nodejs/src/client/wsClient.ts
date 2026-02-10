@@ -13,6 +13,9 @@ import logger from "../common/log";
 import { safeDecodeURIComponent, compareVersions } from "../common/utils";
 import { w3cwebsocket } from "websocket";
 import { TSDB_OPTION_CONNECTION } from "../common/constant";
+import pkg from "../../package.json";
+
+const connectorInfo = `nodejs-ws-v${pkg.version}-ncid000`;
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
@@ -41,6 +44,7 @@ export class WsClient {
                 user: safeDecodeURIComponent(this._url.username),
                 password: safeDecodeURIComponent(this._url.password),
                 db: database,
+                connector: connectorInfo,
                 ...(this._timezone && { tz: this._timezone }),
             },
         };

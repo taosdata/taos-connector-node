@@ -159,19 +159,13 @@ process.on("exit", (code) => {
 });
 
 process.on("SIGINT", () => {
-    logger.info(
-        "Received SIGINT. Press Control-D to exit, begin destroy connect..."
-    );
+    logger.info("Received SIGINT. Press Control-D to exit, begin destroy connect...");
     WebSocketConnectionPool.instance().destroyed();
     process.exit();
 });
 
 process.on("SIGTERM", () => {
-    logger.info(
-        "Received SIGINT. Press Control-D to exit, begin destroy connect"
-    );
+    logger.info("Received SIGINT. Press Control-D to exit, begin destroy connect");
     WebSocketConnectionPool.instance().destroyed();
     process.exit();
 });
-
-// process.kill(process.pid, 'SIGINT');

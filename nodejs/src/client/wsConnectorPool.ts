@@ -165,7 +165,7 @@ process.on("SIGINT", () => {
 });
 
 process.on("SIGTERM", () => {
-    logger.info("Received SIGINT. Press Control-D to exit, begin destroy connect");
+    logger.info("Received SIGTERM. Press Control-D to exit, begin destroy connect...");
     WebSocketConnectionPool.instance().destroyed();
     process.exit();
 });

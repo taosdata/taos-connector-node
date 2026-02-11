@@ -399,7 +399,9 @@ describe("TDWebSocket.Tmq()", () => {
         await consumer.close();
     });
 
-    test("connector version info", async () => {
+    const maybeConnectorVersionTest = process.env.TEST_3360 ? test.skip : test;
+
+    maybeConnectorVersionTest("connector version info", async () => {
         let consumer = await WsConsumer.newConsumer(configMap);
         await consumer.subscribe(topics);
 

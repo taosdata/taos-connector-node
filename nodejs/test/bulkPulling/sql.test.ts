@@ -266,7 +266,9 @@ describe("TDWebSocket.WsSql()", () => {
         await wsSql.close();
     });
 
-    test("connector version info", async () => {
+    const maybeConnectorVersionTest = process.env.TEST_3360 ? test.skip : test;
+
+    maybeConnectorVersionTest("connector version info", async () => {
         let conf: WSConfig = new WSConfig(dns);
         conf.setUser("root");
         conf.setPwd("taosdata");

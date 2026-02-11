@@ -1,3 +1,5 @@
+import pkg from "../../package.json";
+
 export interface IndexableString {
     [index: number]: string;
 }
@@ -10,6 +12,7 @@ export interface NumberIndexable {
     [index: number]: number;
 }
 
+export const ConnectorInfo = `nodejs-ws-v${pkg.version}-ncid000`;
 export const BinaryQueryMessage: bigint = BigInt(6);
 export const FetchRawBlockMessage: bigint = BigInt(7);
 export const MinStmt2Version: string = "3.3.6.0";

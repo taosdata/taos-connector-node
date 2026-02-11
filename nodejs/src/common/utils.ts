@@ -1,8 +1,5 @@
 import { WSConfig } from "./config";
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
-import pkg from "../../package.json";
-
-export const CONNECTOR_INFO = `nodejs-ws-v${pkg.version}-ncid000`;
 
 export function getUrl(wsConfig: WSConfig): URL {
     let url = new URL(wsConfig.getUrl());

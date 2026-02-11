@@ -22,7 +22,7 @@ import {
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
 import { WSFetchBlockResponse } from "../client/wsResponse";
-import { CONNECTOR_INFO } from "../common/utils";
+import { ConnectorInfo } from "../common/constant";
 
 export class WsConsumer {
     private _wsClient: WsClient;
@@ -107,7 +107,7 @@ export class WsConsumer {
                 auto_commit: this._wsConfig.auto_commit,
                 auto_commit_interval_ms: this._wsConfig.auto_commit_interval_ms,
                 config: this._wsConfig.otherConfigs,
-                connector: CONNECTOR_INFO,
+                connector: ConnectorInfo,
             },
         };
         this._topics = topics;

@@ -10,9 +10,9 @@ import {
 import { WSVersionResponse, WSQueryResponse } from "./wsResponse";
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
-import { safeDecodeURIComponent, compareVersions, CONNECTOR_INFO } from "../common/utils";
+import { safeDecodeURIComponent, compareVersions } from "../common/utils";
 import { w3cwebsocket } from "websocket";
-import { TSDB_OPTION_CONNECTION } from "../common/constant";
+import { ConnectorInfo, TSDB_OPTION_CONNECTION } from "../common/constant";
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
@@ -41,7 +41,7 @@ export class WsClient {
                 user: safeDecodeURIComponent(this._url.username),
                 password: safeDecodeURIComponent(this._url.password),
                 db: database,
-                connector: CONNECTOR_INFO,
+                connector: ConnectorInfo,
                 ...(this._timezone && { tz: this._timezone }),
             },
         };

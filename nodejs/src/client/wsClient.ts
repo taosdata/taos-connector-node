@@ -123,7 +123,7 @@ export class WsClient {
     // Need to construct Response
     async exec(queryMsg: string, bSqlQuery: boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
-            logger.debug("[wsQueryInterface.query.queryMsg]===>" + JSON.parse(queryMsg, (key, value) =>
+            logger.debug("[wsQueryInterface.query.queryMsg]===>" + JSONBig.stringify(JSONBig.parse(queryMsg), (key, value) =>
                 key === "password" ? "[REDACTED]" : value
             ));
             if (

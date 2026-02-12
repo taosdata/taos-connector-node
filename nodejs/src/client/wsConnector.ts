@@ -152,10 +152,10 @@ export class WebSocketConnector {
     }
 
     async sendMsg(message: string, register: Boolean = true) {
-        logger.debug("[wsClient.sendMessage()]===>" + JSON.parse(message, (key, value) =>
+        let msg = JSON.parse(message);
+        logger.debug("[wsClient.sendMessage()]===>" + JSON.stringify(msg, (key, value) =>
             key === "password" ? "[REDACTED]" : value
         ));
-        let msg = JSON.parse(message);
         if (msg.args.id !== undefined) {
             msg.args.id = BigInt(msg.args.id);
         }
@@ -174,7 +174,7 @@ export class WebSocketConnector {
                         reject
                     );
                 }
-                logger.debug("[wsClient.sendMessage.msg]===>" + JSON.parse(message, (key, value) =>
+                logger.debug("[wsClient.sendMessage.msg]===>" + JSON.stringify(JSON.parse(message), (key, value) =>
                     key === "password" ? "[REDACTED]" : value
                 ));
                 this._wsConn.send(message);

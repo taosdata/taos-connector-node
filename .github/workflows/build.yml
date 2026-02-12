@@ -1,6 +1,4 @@
-# Triggered by pull request or push to develop branch
-# Test TypeScript rest connector.
-name: nodejs Release
+name: Node.js Build
 
 on:
   push:
@@ -11,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-
     strategy:
       matrix:
         node-version: [16.x, 20.x]
@@ -49,12 +46,10 @@ jobs:
           which taosadapter
 
       - name: Start taosd
-        run: |
-          nohup sudo taosd &
+        run: nohup sudo taosd &
 
       - name: Start taosadapter
-        run: |
-          nohup sudo taosadapter &
+        run: nohup sudo taosadapter &
 
       - name: Checkout current repo
         uses: actions/checkout@v4

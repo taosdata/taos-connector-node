@@ -44,9 +44,9 @@ export class WsClient {
                 ...(this._timezone && { tz: this._timezone }),
             },
         };
-        logger.debug(
-            "[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg)
-        );
+        logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg, (key, value) =>
+            key === "password" ? "[REDACTED]" : value
+        ));
         this._wsConnector =
             await WebSocketConnectionPool.instance().getConnection(
                 this._url,
@@ -120,10 +120,12 @@ export class WsClient {
         );
     }
 
-    // need to construct Response.
+    // Need to construct Response
     async exec(queryMsg: string, bSqlQuery: boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
-            logger.debug("[wsQueryInterface.query.queryMsg]===>" + queryMsg);
+            logger.debug("[wsQueryInterface.query.queryMsg]===>" + JSON.parse(queryMsg, (key, value) =>
+                key === "password" ? "[REDACTED]" : value
+            ));
             if (
                 this._wsConnector &&
                 this._wsConnector.readyState() === w3cwebsocket.OPEN

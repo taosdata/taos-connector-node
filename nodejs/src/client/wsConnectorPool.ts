@@ -88,7 +88,7 @@ export class WebSocketConnectionPool {
                 "getConnection, new connection count:" +
                 Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
                 ", connectAddr:" +
-                connectAddr
+                connectAddr.replace(/(token=)[^&]*/i, "$1[REDACTED]")
             );
             return new WebSocketConnector(url, timeout);
         } finally {

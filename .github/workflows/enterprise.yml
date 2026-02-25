@@ -29,6 +29,7 @@ jobs:
 
       - name: Start TDengine
         run: |
+          sudo mkdir -p /var/log/taos
           nohup sudo taosd &
           nohup sudo taosadapter &
 

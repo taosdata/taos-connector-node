@@ -1,6 +1,4 @@
-# Triggered by pull request or push to develop branch
-# Test TypeScript rest connector.
-name: nodejs Release
+name: nodejs Build
 
 on:
   push:
@@ -11,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-
     strategy:
       matrix:
         node-version: [16.x, 20.x]
@@ -68,7 +65,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Test nodejs websocket
+      - name: Run tests
         working-directory: nodejs-connector/nodejs
         run: |
           export TDENGINE_CLOUD_URL=${{ secrets.TDENGINE_CLOUD_URL }}

@@ -12,7 +12,6 @@ import {
 import { appendRune } from "./ut8Helper";
 import logger from "./log";
 import { decimalToString } from "./utils";
-import { TMQRawDataSchema } from "../tmq/constant";
 
 export interface TDengineMeta {
     name: string;

@@ -15,8 +15,9 @@ beforeAll(async () => {
     let wsSql = await WsSql.open(conf);
     await wsSql.exec("drop database if exists sql_test");
     await wsSql.exec("drop database if exists sql_create");
-    await wsSql.exec(`CREATE USER user1 PASS '${password1}'`);
-    await wsSql.exec(`CREATE USER user2 PASS '${password2}'`);
+    await wsSql.exec(`create user user1 pass '${password1}'`);
+    await wsSql.exec(`create user user2 pass '${password2}'`);
+    await wsSql.exec("create user token_user pass 'token_pass_1'");
     await wsSql.exec(
         "create database if not exists sql_test KEEP 3650 DURATION 10 BUFFER 16 WAL_LEVEL 1;"
     );
@@ -265,6 +266,43 @@ describe("TDWebSocket.WsSql()", () => {
 
         await wsSql.close();
     });
+
+    test("bearer token connect", async () => {
+        const conf: WSConfig = new WSConfig(dns);
+        conf.setUser("root");
+        conf.setPwd("taosdata");
+        const wsSql = await WsSql.open(conf);
+        const wsRows = await wsSql.query("create token test_bearer_token from user token_user");
+        await wsRows.next();
+        const token = wsRows.getData()?.[0] as string;
+        expect(token).toBeTruthy();
+        await wsRows.close();
+        await wsSql.close();
+
+        const assertServerVersionWithConfig = async (config: WSConfig) => {
+            const client = await WsSql.open(config);
+            const rows = await client.query("select server_version()");
+            await rows.next();
+            const version = rows.getData()?.[0] as string;
+            expect(version).toBeTruthy();
+            await rows.close();
+            await client.close();
+        };
+
+        const conf1 = new WSConfig(dns);
+        conf1.setBearerToken(token);
+        await assertServerVersionWithConfig(conf1);
+
+        const conf2 = new WSConfig("ws://localhost:6041?bearer_token=" + token);
+        await assertServerVersionWithConfig(conf2);
+    });
+
+    test("bearer token connect error", async () => {
+        const conf = new WSConfig("ws://localhost:6041?bearer_token=invalid_token");
+        await expect(WsSql.open(conf)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid token/i),
+        });
+    });
 });
 
 afterAll(async () => {
@@ -274,8 +312,9 @@ afterAll(async () => {
     let wsSql = await WsSql.open(conf);
     await wsSql.exec("drop database sql_test");
     await wsSql.exec("drop database sql_create");
-    await wsSql.exec("DROP USER user1;");
-    await wsSql.exec("DROP USER user2;");
+    await wsSql.exec("drop user user1");
+    await wsSql.exec("drop user user2");
+    await wsSql.exec("drop user token_user");
     await wsSql.close();
     WebSocketConnectionPool.instance().destroyed();
 });

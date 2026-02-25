@@ -16,27 +16,18 @@ export class WebSocketConnectionPool {
     private constructor(maxConnections: number = -1) {
         this._maxConnections = maxConnections;
         WebSocketConnectionPool.sharedBuffer = new SharedArrayBuffer(4);
-        WebSocketConnectionPool.sharedArray = new Int32Array(
-            WebSocketConnectionPool.sharedBuffer
-        );
+        WebSocketConnectionPool.sharedArray = new Int32Array(WebSocketConnectionPool.sharedBuffer);
         Atomics.store(WebSocketConnectionPool.sharedArray, 0, 0);
     }
 
-    public static instance(
-        maxConnections: number = -1
-    ): WebSocketConnectionPool {
+    public static instance(maxConnections: number = -1): WebSocketConnectionPool {
         if (!WebSocketConnectionPool._instance) {
-            WebSocketConnectionPool._instance = new WebSocketConnectionPool(
-                maxConnections
-            );
+            WebSocketConnectionPool._instance = new WebSocketConnectionPool(maxConnections);
         }
         return WebSocketConnectionPool._instance;
     }
 
-    async getConnection(
-        url: URL,
-        timeout: number | undefined | null
-    ): Promise<WebSocketConnector> {
+    async getConnection(url: URL, timeout: number | undefined | null): Promise<WebSocketConnector> {
         let connectAddr = url.origin.concat(url.pathname).concat(url.search);
         let connector: WebSocketConnector | undefined;
         const unlock = await mutex.acquire();
@@ -48,18 +39,13 @@ export class WebSocketConnectionPool {
                     if (!candidate) {
                         continue;
                     }
-                    if (
-                        candidate &&
-                        candidate.readyState() === w3cwebsocket.OPEN
-                    ) {
+                    if (candidate && candidate.readyState() === w3cwebsocket.OPEN) {
                         connector = candidate;
                         break;
                     } else if (candidate) {
                         Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
                         candidate.close();
-                        logger.error(
-                            `getConnection, current connection status fail, url: ${connectAddr}`
-                        );
+                        logger.error(`getConnection, current connection status fail, url: ${connectAddr}`);
                     }
                 }
             }
@@ -74,8 +60,7 @@ export class WebSocketConnectionPool {
 
             if (
                 this._maxConnections != -1 &&
-                Atomics.load(WebSocketConnectionPool.sharedArray, 0) >
-                this._maxConnections
+                Atomics.load(WebSocketConnectionPool.sharedArray, 0) > this._maxConnections
             ) {
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT,
@@ -102,9 +87,7 @@ export class WebSocketConnectionPool {
             try {
                 if (connector.readyState() === w3cwebsocket.OPEN) {
                     let url = connector.getWsURL();
-                    let connectAddr = url.origin
-                        .concat(url.pathname)
-                        .concat(url.search);
+                    let connectAddr = url.origin.concat(url.pathname).concat(url.search);
                     let connectors = this.pool.get(connectAddr);
                     if (!connectors) {
                         connectors = new Array();
@@ -113,10 +96,7 @@ export class WebSocketConnectionPool {
                     } else {
                         connectors.push(connector);
                     }
-                    logger.info(
-                        "releaseConnection, current connection count:" +
-                        connectors.length
-                    );
+                    logger.info("releaseConnection, current connection count:" + connectors.length);
                 } else {
                     Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
                     connector.close();
@@ -159,19 +139,13 @@ process.on("exit", (code) => {
 });
 
 process.on("SIGINT", () => {
-    logger.info(
-        "Received SIGINT. Press Control-D to exit, begin destroy connect..."
-    );
+    logger.info("Received SIGINT. Press Control-D to exit, begin destroy connect...");
     WebSocketConnectionPool.instance().destroyed();
     process.exit();
 });
 
 process.on("SIGTERM", () => {
-    logger.info(
-        "Received SIGINT. Press Control-D to exit, begin destroy connect"
-    );
+    logger.info("Received SIGTERM. Press Control-D to exit, begin destroy connect...");
     WebSocketConnectionPool.instance().destroyed();
     process.exit();
 });
-
-// process.kill(process.pid, 'SIGINT');

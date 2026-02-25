@@ -28,6 +28,14 @@ export function getUrl(wsConfig: WSConfig): URL {
         wsConfig.setTimezone(url.searchParams.get("timezone") || "");
     }
 
+    let bearerToken = wsConfig.getBearerToken();
+    if (bearerToken) {
+        url.searchParams.set("bearer_token", bearerToken);
+    }
+    if (url.searchParams.has("bearer_token")) {
+        wsConfig.setBearerToken(url.searchParams.get("bearer_token") || "");
+    }
+
     url.pathname = "/ws";
     return url;
 }

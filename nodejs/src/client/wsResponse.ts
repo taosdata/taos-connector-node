@@ -1,7 +1,3 @@
-/**
- * define ws Response type|class, for query?
- */
-
 import { MessageResp, readVarchar } from "../common/taosResult";
 
 export class WSVersionResponse {
@@ -10,6 +6,7 @@ export class WSVersionResponse {
     message: string;
     action: string;
     totalTime: number;
+
     constructor(resp: MessageResp) {
         this.version = resp.msg.version;
         this.code = resp.msg.code;
@@ -41,6 +38,7 @@ export class WSQueryResponse {
         this.totalTime = resp.totalTime;
         this.initMsg(resp.msg);
     }
+
     private initMsg(msg: any) {
         this.code = msg.code;
         this.message = msg.message;
@@ -81,6 +79,7 @@ export class WSFetchBlockResponse {
     finished: number | undefined;
     metaType: number | undefined;
     textDecoder: TextDecoder;
+
     constructor(msg: ArrayBuffer) {
         let dataView = new DataView(msg);
         this.action = dataView.getBigUint64(8, true);

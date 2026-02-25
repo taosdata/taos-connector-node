@@ -21,15 +21,18 @@ export class WsClient {
     private readonly _url: URL;
     private static readonly _minVersion = "3.3.2.0";
     private _version?: string | undefined | null;
+    private _bearerToken?: string | undefined | null;
 
     constructor(url: URL, timeout?: number | undefined | null) {
         this.checkURL(url);
         this._url = url;
         this._timeout = timeout;
         if (this._url.searchParams.has("timezone")) {
-            this._timezone =
-                this._url.searchParams.get("timezone") || undefined;
+            this._timezone = this._url.searchParams.get("timezone") || undefined;
             this._url.searchParams.delete("timezone");
+        }
+        if (this._url.searchParams.has("bearer_token")) {
+            this._bearerToken = this._url.searchParams.get("bearer_token") || undefined;
         }
     }
 
@@ -42,16 +45,14 @@ export class WsClient {
                 password: safeDecodeURIComponent(this._url.password),
                 db: database,
                 ...(this._timezone && { tz: this._timezone }),
+                ...(this._bearerToken && { bearer_token: this._bearerToken }),
             },
         };
-        logger.debug(
-            "[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg)
+        logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg));
+        this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
+            this._url,
+            this._timeout
         );
-        this._wsConnector =
-            await WebSocketConnectionPool.instance().getConnection(
-                this._url,
-                this._timeout
-            );
         if (this._wsConnector.readyState() === w3cwebsocket.OPEN) {
             return;
         }
@@ -351,8 +352,8 @@ export class WsClient {
     }
 
     checkURL(url: URL) {
-        // Assert is cloud url
-        if (!url.searchParams.has("token")) {
+        // Assert token or bearer_token exists, otherwise username and password must exist.
+        if (!url.searchParams.has("token") && !url.searchParams.has("bearer_token")) {
             if (!(url.username || url.password)) {
                 throw new WebSocketInterfaceError(
                     ErrorCode.ERR_INVALID_AUTHENTICATION,

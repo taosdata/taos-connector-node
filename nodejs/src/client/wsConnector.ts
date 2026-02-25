@@ -13,9 +13,7 @@ export class WebSocketConnector {
     private _wsURL: URL;
     _timeout = 5000;
 
-    // create ws
     constructor(url: URL, timeout: number | undefined | null) {
-        // return w3bsocket3
         if (url) {
             this._wsURL = url;
             let origin = url.origin;
@@ -153,9 +151,11 @@ export class WebSocketConnector {
 
     async sendMsg(message: string, register: Boolean = true) {
         let msg = JSON.parse(message);
-        logger.debug("[wsClient.sendMessage()]===>" + JSON.stringify(msg, (key, value) =>
-            key === "password" ? "[REDACTED]" : value
-        ));
+        if (logger.isDebugEnabled()) {
+            logger.debug("[wsClient.sendMessage()]===>" + JSON.stringify(msg, (key, value) =>
+                key === "password" ? "[REDACTED]" : value
+            ));
+        }
         if (msg.args.id !== undefined) {
             msg.args.id = BigInt(msg.args.id);
         }
@@ -174,9 +174,11 @@ export class WebSocketConnector {
                         reject
                     );
                 }
-                logger.debug("[wsClient.sendMessage.msg]===>" + JSON.stringify(JSON.parse(message), (key, value) =>
-                    key === "password" ? "[REDACTED]" : value
-                ));
+                if (logger.isDebugEnabled()) {
+                    logger.debug("[wsClient.sendMessage.msg]===>" + JSON.stringify(JSON.parse(message), (key, value) =>
+                        key === "password" ? "[REDACTED]" : value
+                    ));
+                }
                 this._wsConn.send(message);
             } else {
                 reject(

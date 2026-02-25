@@ -267,7 +267,9 @@ describe("TDWebSocket.WsSql()", () => {
         await wsSql.close();
     });
 
-    test("bearer token connect", async () => {
+    const testEnterprise = process.env.TEST_ENTERPRISE ? test : test.skip;
+
+    testEnterprise("bearer token connect", async () => {
         const conf: WSConfig = new WSConfig(dns);
         conf.setUser("root");
         conf.setPwd("taosdata");
@@ -297,7 +299,7 @@ describe("TDWebSocket.WsSql()", () => {
         await assertServerVersionWithConfig(conf2);
     });
 
-    test("bearer token connect error", async () => {
+    testEnterprise("bearer token connect error", async () => {
         const conf = new WSConfig("ws://localhost:6041?bearer_token=invalid_token");
         await expect(WsSql.open(conf)).rejects.toMatchObject({
             message: expect.stringMatching(/invalid token/i),

@@ -7,6 +7,7 @@ import {
 import { OnMessageType, WsEventCallback } from "./wsEventCallback";
 import logger from "../common/log";
 import { ReqId } from "../common/reqid";
+import { maskPasswordForLog } from "../common/utils";
 
 export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
@@ -150,12 +151,10 @@ export class WebSocketConnector {
     }
 
     async sendMsg(message: string, register: Boolean = true) {
-        let msg = JSON.parse(message);
         if (logger.isDebugEnabled()) {
-            logger.debug("[wsClient.sendMessage()]===>" + JSON.stringify(msg, (key, value) =>
-                key === "password" ? "[REDACTED]" : value
-            ));
+            logger.debug("[wsClient.sendMessage()]===>" + maskPasswordForLog(message));
         }
+        let msg = JSON.parse(message);
         if (msg.args.id !== undefined) {
             msg.args.id = BigInt(msg.args.id);
         }
@@ -175,9 +174,7 @@ export class WebSocketConnector {
                     );
                 }
                 if (logger.isDebugEnabled()) {
-                    logger.debug("[wsClient.sendMessage.msg]===>" + JSON.stringify(JSON.parse(message), (key, value) =>
-                        key === "password" ? "[REDACTED]" : value
-                    ));
+                    logger.debug("[wsClient.sendMessage.msg]===>" + maskPasswordForLog(message));
                 }
                 this._wsConn.send(message);
             } else {

@@ -10,7 +10,7 @@ import {
 import { WSVersionResponse, WSQueryResponse } from "./wsResponse";
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
-import { safeDecodeURIComponent, compareVersions } from "../common/utils";
+import { safeDecodeURIComponent, compareVersions, maskPasswordForLog } from "../common/utils";
 import { w3cwebsocket } from "websocket";
 import { TSDB_OPTION_CONNECTION } from "../common/constant";
 
@@ -125,9 +125,7 @@ export class WsClient {
     async exec(queryMsg: string, bSqlQuery: boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
             if (logger.isDebugEnabled()) {
-                logger.debug("[wsQueryInterface.query.queryMsg]===>" + JSONBig.stringify(JSONBig.parse(queryMsg), (key, value) =>
-                    key === "password" ? "[REDACTED]" : value
-                ));
+                logger.debug("[wsQueryInterface.query.queryMsg]===>" + maskPasswordForLog(queryMsg));
             }
             if (
                 this._wsConnector &&

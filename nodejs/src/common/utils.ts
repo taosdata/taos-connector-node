@@ -31,8 +31,7 @@ export function getUrl(wsConfig: WSConfig): URL {
     let bearerToken = wsConfig.getBearerToken();
     if (bearerToken) {
         url.searchParams.set("bearer_token", bearerToken);
-    }
-    if (url.searchParams.has("bearer_token")) {
+    } else if (url.searchParams.has("bearer_token")) {
         wsConfig.setBearerToken(url.searchParams.get("bearer_token") || "");
     }
 

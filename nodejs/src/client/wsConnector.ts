@@ -34,7 +34,7 @@ export class WebSocketConnector {
                 }
             );
             this._wsConn.onerror = function (err: Error) {
-                logger.error(`webSocket connection failed, url: ${this.url}, error: ${err.message}`);
+                logger.error(`webSocket connection failed, url: ${this.url.split('?')[0]}, error: ${err.message}`);
             };
             this._wsConn.onclose = this._onclose;
             this._wsConn.onmessage = this._onmessage;

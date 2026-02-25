@@ -45,7 +45,7 @@ export class WebSocketConnectionPool {
                     } else if (candidate) {
                         Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
                         candidate.close();
-                        logger.error(`getConnection, current connection status fail, url: ${connectAddr}`);
+                        logger.error(`getConnection, current connection status fail, url: ${connectAddr.split('?')[0]}`);
                     }
                 }
             }

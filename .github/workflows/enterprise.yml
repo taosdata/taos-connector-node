@@ -27,11 +27,15 @@ jobs:
           cd tsdb-nightly-3.0
           sudo ./install.sh
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
+
       - name: Start TDengine
         run: |
           sudo mkdir -p /var/log/taos
-          nohup sudo taosd &
-          nohup sudo taosadapter &
+          sudo nohup taosd &
+          sudo nonup taosadapter &
 
       - name: Checkout
         uses: actions/checkout@v4

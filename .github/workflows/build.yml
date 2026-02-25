@@ -29,7 +29,6 @@ jobs:
           repository: "taosdata/TDengine"
           path: "TDengine"
           ref: "main"
-          submodules: "recursive"
 
       - name: Install system dependencies
         run: |

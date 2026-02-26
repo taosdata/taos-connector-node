@@ -10,7 +10,7 @@ import {
 import { WSVersionResponse, WSQueryResponse } from "./wsResponse";
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
-import { safeDecodeURIComponent, compareVersions } from "../common/utils";
+import { safeDecodeURIComponent, compareVersions, maskPasswordForLog } from "../common/utils";
 import { w3cwebsocket } from "websocket";
 import { TSDB_OPTION_CONNECTION } from "../common/constant";
 
@@ -48,7 +48,11 @@ export class WsClient {
                 ...(this._bearerToken && { bearer_token: this._bearerToken }),
             },
         };
-        logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg));
+        if (logger.isDebugEnabled()) {
+            logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg, (key, value) =>
+                key === "password" ? "[REDACTED]" : value
+            ));
+        }
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
             this._url,
             this._timeout
@@ -121,10 +125,12 @@ export class WsClient {
         );
     }
 
-    // need to construct Response.
+    // Need to construct Response
     async exec(queryMsg: string, bSqlQuery: boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
-            logger.debug("[wsQueryInterface.query.queryMsg]===>" + queryMsg);
+            if (logger.isDebugEnabled()) {
+                logger.debug("[wsQueryInterface.query.queryMsg]===>" + maskPasswordForLog(queryMsg));
+            }
             if (
                 this._wsConnector &&
                 this._wsConnector.readyState() === w3cwebsocket.OPEN

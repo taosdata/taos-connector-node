@@ -324,4 +324,12 @@ export function Sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export function testUsername(): string {
+    return process.env.TDENGINE_TEST_USERNAME || "root";
+}
+
+export function testPassword(): string {
+    return process.env.TDENGINE_TEST_PASSWORD || "taosdata";
+}
+
 export const testEnterprise = process.env.TEST_ENTERPRISE?.toLowerCase() === "true" ? test : test.skip;

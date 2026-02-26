@@ -41,9 +41,7 @@ export function getUrl(wsConfig: WSConfig): URL {
 
 export function isEmpty(value: any): boolean {
     if (value === null || value === undefined) return true;
-    // if (typeof value === 'string' && value.trim() === '') return true;
     if (Array.isArray(value) && value.length === 0) return true;
-    // if (typeof value === 'object' && Object.keys(value).length === 0) return true;
     return false;
 }
 
@@ -53,8 +51,6 @@ export function getBinarySql(
     resultId: bigint,
     sql?: string
 ): ArrayBuffer {
-    // construct msg
-
     if (sql) {
         const encoder = new TextEncoder();
         const buffer = encoder.encode(sql);
@@ -193,4 +189,10 @@ export function decimalToString(
         }
     }
     return decimalStr;
+}
+
+const PASSWORD_FIELD_REGEX = /("password"\s*:\s*)"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+
+export function maskPasswordForLog(message: string): string {
+    return message.replace(PASSWORD_FIELD_REGEX, '$1"[REDACTED]"');
 }

@@ -69,12 +69,14 @@ export class WebSocketConnectionPool {
                 );
             }
             Atomics.add(WebSocketConnectionPool.sharedArray, 0, 1);
-            logger.info(
-                "getConnection, new connection count:" +
-                Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
-                ", connectAddr:" +
-                connectAddr
-            );
+            if (logger.isInfoEnabled()) {
+                logger.info(
+                    "getConnection, new connection count:" +
+                    Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
+                    ", connectAddr:" +
+                    connectAddr.replace(/(token=)[^&]*/i, "$1[REDACTED]")
+                );
+            }
             return new WebSocketConnector(url, timeout);
         } finally {
             unlock();

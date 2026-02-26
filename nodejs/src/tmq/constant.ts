@@ -60,6 +60,11 @@ export class TMQConstants {
     public static CONNECT_PASS: string = "td.connect.pass";
 
     /**
+     * connection token
+     */
+    public static CONNECT_TOKEN: string = "td.connect.token";
+
+    /**
      * connect type websocket or jni, default is jni
      */
     public static CONNECT_TYPE: string = "td.connect.type";

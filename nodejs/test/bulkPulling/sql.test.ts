@@ -1,15 +1,15 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { Sleep } from "../utils";
+import { Sleep, testEnterprise } from "../utils";
 import { setLevel } from "../../src/common/log";
 
-let dns = "ws://localhost:6041";
+let dsn = "ws://localhost:6041";
 let password1 = "Ab1!@#$%,.:?<>;~";
 let password2 = "Bc%^&*()-_+=[]{}";
 setLevel("debug");
 beforeAll(async () => {
-    let conf: WSConfig = new WSConfig(dns);
+    let conf: WSConfig = new WSConfig(dsn);
     conf.setUser("root");
     conf.setPwd("taosdata");
     let wsSql = await WsSql.open(conf);
@@ -34,7 +34,7 @@ describe("TDWebSocket.WsSql()", () => {
     test("normal connect", async () => {
         let wsSql = null;
         let conf: WSConfig = new WSConfig("");
-        conf.setUrl(dns);
+        conf.setUrl(dsn);
         conf.setUser("root");
         conf.setPwd("taosdata");
         conf.setDb("sql_test");
@@ -54,7 +54,7 @@ describe("TDWebSocket.WsSql()", () => {
 
     test("special characters connect1", async () => {
         let wsSql = null;
-        let conf: WSConfig = new WSConfig(dns);
+        let conf: WSConfig = new WSConfig(dsn);
         conf.setUser("user1");
         conf.setPwd(password1);
         wsSql = await WsSql.open(conf);
@@ -66,7 +66,7 @@ describe("TDWebSocket.WsSql()", () => {
     });
     test("special characters connect2", async () => {
         let wsSql = null;
-        let conf: WSConfig = new WSConfig(dns);
+        let conf: WSConfig = new WSConfig(dsn);
         conf.setUser("user2");
         conf.setPwd(password2);
         wsSql = await WsSql.open(conf);
@@ -81,7 +81,7 @@ describe("TDWebSocket.WsSql()", () => {
         expect.assertions(1);
         let wsSql = null;
         try {
-            let conf: WSConfig = new WSConfig(dns);
+            let conf: WSConfig = new WSConfig(dsn);
             conf.setUser("root");
             conf.setPwd("taosdata");
             conf.setDb("jest");
@@ -115,7 +115,7 @@ describe("TDWebSocket.WsSql()", () => {
     });
 
     test("get taosc version", async () => {
-        let conf: WSConfig = new WSConfig(dns);
+        let conf: WSConfig = new WSConfig(dsn);
         conf.setUser("root");
         conf.setPwd("taosdata");
         let wsSql = await WsSql.open(conf);
@@ -126,7 +126,7 @@ describe("TDWebSocket.WsSql()", () => {
     });
 
     test("show databases", async () => {
-        let conf: WSConfig = new WSConfig(dns);
+        let conf: WSConfig = new WSConfig(dsn);
         conf.setUser("root");
         conf.setPwd("taosdata");
         let wsSql = await WsSql.open(conf);
@@ -137,7 +137,7 @@ describe("TDWebSocket.WsSql()", () => {
     });
 
     test("create databases", async () => {
-        let conf: WSConfig = new WSConfig(dns);
+        let conf: WSConfig = new WSConfig(dsn);
         conf.setUser("root");
         conf.setPwd("taosdata");
         let wsSql = await WsSql.open(conf);
@@ -150,7 +150,7 @@ describe("TDWebSocket.WsSql()", () => {
     });
 
     test("create stable", async () => {
-        let conf: WSConfig = new WSConfig(dns);
+        let conf: WSConfig = new WSConfig(dsn);
         conf.setUser("root");
         conf.setPwd("taosdata");
         let wsSql = await WsSql.open(conf);
@@ -167,7 +167,7 @@ describe("TDWebSocket.WsSql()", () => {
     });
 
     test("insert recoder", async () => {
-        let conf: WSConfig = new WSConfig(dns);
+        let conf: WSConfig = new WSConfig(dsn);
         conf.setUser("root");
         conf.setPwd("taosdata");
         let wsSql = await WsSql.open(conf);
@@ -187,7 +187,7 @@ describe("TDWebSocket.WsSql()", () => {
     });
 
     test("query sql", async () => {
-        let conf: WSConfig = new WSConfig(dns);
+        let conf: WSConfig = new WSConfig(dsn);
         conf.setUser("root");
         conf.setPwd("taosdata");
         let wsSql = await WsSql.open(conf);
@@ -211,7 +211,7 @@ describe("TDWebSocket.WsSql()", () => {
     });
 
     test("query sql no getdata", async () => {
-        let conf: WSConfig = new WSConfig(dns);
+        let conf: WSConfig = new WSConfig(dsn);
         conf.setUser("root");
         conf.setPwd("taosdata");
         let wsSql = await WsSql.open(conf);
@@ -224,7 +224,7 @@ describe("TDWebSocket.WsSql()", () => {
     });
 
     test("timestamp order check", async () => {
-        const conf: WSConfig = new WSConfig(dns);
+        const conf: WSConfig = new WSConfig(dsn);
         conf.setUser("root");
         conf.setPwd("taosdata");
 
@@ -267,10 +267,8 @@ describe("TDWebSocket.WsSql()", () => {
         await wsSql.close();
     });
 
-    const testEnterprise = process.env.TEST_ENTERPRISE ? test : test.skip;
-
-    testEnterprise("bearer token connect", async () => {
-        const conf: WSConfig = new WSConfig(dns);
+    testEnterprise("connect with token", async () => {
+        const conf = new WSConfig(dsn);
         conf.setUser("root");
         conf.setPwd("taosdata");
         const wsSql = await WsSql.open(conf);
@@ -291,7 +289,7 @@ describe("TDWebSocket.WsSql()", () => {
             await client.close();
         };
 
-        const conf1 = new WSConfig(dns);
+        const conf1 = new WSConfig(dsn);
         conf1.setBearerToken(token);
         await assertServerVersionWithConfig(conf1);
 
@@ -299,7 +297,7 @@ describe("TDWebSocket.WsSql()", () => {
         await assertServerVersionWithConfig(conf2);
     });
 
-    testEnterprise("bearer token connect error", async () => {
+    testEnterprise("connect with invalid token", async () => {
         const conf = new WSConfig("ws://localhost:6041?bearer_token=invalid_token");
         await expect(WsSql.open(conf)).rejects.toMatchObject({
             message: expect.stringMatching(/invalid token/i),
@@ -308,7 +306,7 @@ describe("TDWebSocket.WsSql()", () => {
 });
 
 afterAll(async () => {
-    let conf: WSConfig = new WSConfig(dns);
+    let conf: WSConfig = new WSConfig(dsn);
     conf.setUser("root");
     conf.setPwd("taosdata");
     let wsSql = await WsSql.open(conf);

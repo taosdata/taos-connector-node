@@ -219,19 +219,14 @@ export class WsClient {
 
     async ready(): Promise<void> {
         try {
-            this._wsConnector =
-                await WebSocketConnectionPool.instance().getConnection(
-                    this._url,
-                    this._timeout
-                );
+            this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
+                this._url,
+                this._timeout
+            );
             if (this._wsConnector.readyState() !== w3cwebsocket.OPEN) {
                 await this._wsConnector.ready();
             }
-            logger.debug(
-                "ready status ",
-                this._url,
-                this._wsConnector.readyState()
-            );
+            logger.debug("ready status ", this._url, this._wsConnector.readyState());
             return;
         } catch (e: any) {
             logger.error(
@@ -319,16 +314,11 @@ export class WsClient {
                 if (this._wsConnector.readyState() !== w3cwebsocket.OPEN) {
                     await this._wsConnector.ready();
                 }
-                let result: any = await this._wsConnector.sendMsg(
-                    JSONBig.stringify(versionMsg)
-                );
+                let result: any = await this._wsConnector.sendMsg(JSONBig.stringify(versionMsg));
                 if (result.msg.code == 0) {
                     return new WSVersionResponse(result).version;
                 }
-                throw new WebSocketInterfaceError(
-                    result.msg.code,
-                    result.msg.message
-                );
+                throw new WebSocketInterfaceError(result.msg.code, result.msg.message);
             } catch (e: any) {
                 logger.error(
                     `connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`

@@ -269,8 +269,8 @@ describe("TDWebSocket.WsSql()", () => {
 
     testEnterprise("connect with token", async () => {
         const conf = new WSConfig(dsn);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         const wsSql = await WsSql.open(conf);
         const wsRows = await wsSql.query("create token test_bearer_token from user token_user");
         await wsRows.next();

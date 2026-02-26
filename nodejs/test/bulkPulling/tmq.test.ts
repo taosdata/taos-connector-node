@@ -398,8 +398,8 @@ describe("TDWebSocket.Tmq()", () => {
 
     testEnterprise("connect with token", async () => {
         const conf = new WSConfig(dsn);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         const wsSql = await WsSql.open(conf);
         const wsRows = await wsSql.query("create token test_tmq_token from user tmq_token_user");
         await wsRows.next();
@@ -454,7 +454,7 @@ afterAll(async () => {
     await ws.exec(dropTopic);
     await ws.exec(`drop topic if exists ${tokenTopic}`);
     await ws.exec(dropDB);
-    await ws.exec("drop user if exists tmq_token_user");
+    await ws.exec("drop user tmq_token_user");
     await ws.close();
     WebSocketConnectionPool.instance().destroyed();
 });

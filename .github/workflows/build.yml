@@ -1,4 +1,4 @@
-name: nodejs Build
+name: Node.js Build
 
 on:
   push:
@@ -46,12 +46,10 @@ jobs:
           which taosadapter
 
       - name: Start taosd
-        run: |
-          nohup sudo taosd &
+        run: nohup sudo taosd &
 
       - name: Start taosadapter
-        run: |
-          nohup sudo taosadapter &
+        run: nohup sudo taosadapter &
 
       - name: Checkout current repo
         uses: actions/checkout@v4

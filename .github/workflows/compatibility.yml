@@ -1,4 +1,4 @@
-name: nodejs Compatibility
+name: Node.js Compatibility
 
 on:
   push:

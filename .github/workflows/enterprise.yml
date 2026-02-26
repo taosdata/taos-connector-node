@@ -1,4 +1,4 @@
-name: nodejs Enterprise
+name: Node.js Enterprise
 
 on:
   push:
@@ -27,15 +27,12 @@ jobs:
           cd tsdb-nightly-3.0
           sudo ./install.sh
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 300
-
       - name: Start TDengine
         run: |
+          sudo mkdir -p /etc/taos
           sudo mkdir -p /var/log/taos
-          sudo nohup taosd &
-          sudo nonup taosadapter &
+          nohup sudo taosd &
+          nohup sudo taosadapter &
 
       - name: Checkout
         uses: actions/checkout@v4

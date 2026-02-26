@@ -7,15 +7,14 @@ import {
 import { OnMessageType, WsEventCallback } from "./wsEventCallback";
 import logger from "../common/log";
 import { ReqId } from "../common/reqid";
+import { maskPasswordForLog } from "../common/utils";
 
 export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
     private _wsURL: URL;
     _timeout = 5000;
 
-    // create ws
     constructor(url: URL, timeout: number | undefined | null) {
-        // return w3bsocket3
         if (url) {
             this._wsURL = url;
             let origin = url.origin;
@@ -152,7 +151,9 @@ export class WebSocketConnector {
     }
 
     async sendMsg(message: string, register: Boolean = true) {
-        logger.debug("[wsClient.sendMessage()]===>" + message);
+        if (logger.isDebugEnabled()) {
+            logger.debug("[wsClient.sendMessage()]===>" + maskPasswordForLog(message));
+        }
         let msg = JSON.parse(message);
         if (msg.args.id !== undefined) {
             msg.args.id = BigInt(msg.args.id);
@@ -166,16 +167,15 @@ export class WebSocketConnector {
                             action: msg.action,
                             req_id: msg.args.req_id,
                             timeout: this._timeout,
-                            id:
-                                msg.args.id === undefined
-                                    ? msg.args.id
-                                    : BigInt(msg.args.id),
+                            id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id),
                         },
                         resolve,
                         reject
                     );
                 }
-                logger.debug(`[wsClient.sendMessage.msg]===> ${message}`);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("[wsClient.sendMessage.msg]===>" + maskPasswordForLog(message));
+                }
                 this._wsConn.send(message);
             } else {
                 reject(

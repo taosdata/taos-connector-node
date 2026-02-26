@@ -13,9 +13,11 @@ import {
     jsonMeta,
     tableMeta,
     tagMeta,
+    testPassword,
+    testUsername,
 } from "../utils";
 
-let dsn = "ws://root:taosdata@localhost:6041";
+let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
 let conf: WSConfig = new WSConfig(dsn);
 const resultMap: Map<string, any> = new Map();
 resultMap.set(

@@ -2,12 +2,14 @@ import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { Precision, SchemalessProto } from "../../src/sql/wsProto";
 import { WsSql } from "../../src/sql/wsSql";
+import { testPassword, testUsername } from "../utils";
+
 let dns = "ws://localhost:6041";
 
 beforeAll(async () => {
     let conf: WSConfig = new WSConfig(dns);
-    conf.setUser("root");
-    conf.setPwd("taosdata");
+    conf.setUser(testUsername());
+    conf.setPwd(testPassword());
 
     let wsSql = await WsSql.open(conf);
     await wsSql.exec("drop database if exists power_schemaless;");
@@ -30,8 +32,8 @@ describe("TDWebSocket.WsSchemaless()", () => {
 
     test("normal connect", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_schemaless");
         let wsSchemaless = await WsSql.open(conf);
         expect(wsSchemaless.state()).toBeGreaterThan(0);
@@ -43,8 +45,8 @@ describe("TDWebSocket.WsSchemaless()", () => {
         let wsSchemaless = null;
         try {
             let conf: WSConfig = new WSConfig(dns);
-            conf.setUser("root");
-            conf.setPwd("taosdata");
+            conf.setUser(testUsername());
+            conf.setPwd(testPassword());
             conf.setDb("jest");
             wsSchemaless = await WsSql.open(conf);
         } catch (e: any) {
@@ -59,8 +61,8 @@ describe("TDWebSocket.WsSchemaless()", () => {
 
     test("normal insert", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_schemaless");
         let wsSchemaless = await WsSql.open(conf);
         expect(wsSchemaless.state()).toBeGreaterThan(0);
@@ -87,8 +89,8 @@ describe("TDWebSocket.WsSchemaless()", () => {
 
     test("normal wsSql insert", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_schemaless");
         let wsSchemaless = await WsSql.open(conf);
         expect(wsSchemaless.state()).toBeGreaterThan(0);
@@ -122,8 +124,8 @@ describe("TDWebSocket.WsSchemaless()", () => {
 
     test("SchemalessProto error", async () => {
         let conf: WSConfig = new WSConfig(dns);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
         conf.setDb("power_schemaless");
         let wsSchemaless = await WsSql.open(conf);
         expect(wsSchemaless.state()).toBeGreaterThan(0);
@@ -144,8 +146,8 @@ describe("TDWebSocket.WsSchemaless()", () => {
 
 afterAll(async () => {
     let conf: WSConfig = new WSConfig(dns);
-    conf.setUser("root");
-    conf.setPwd("taosdata");
+    conf.setUser(testUsername());
+    conf.setPwd(testPassword());
 
     let wsSql = await WsSql.open(conf);
     await wsSql.exec("drop database if exists power_schemaless;");

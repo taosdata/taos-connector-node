@@ -5,9 +5,10 @@ import { WsSql } from "../../src/sql/wsSql";
 import { WsStmt2 } from "../../src/stmt/wsStmt2";
 import {
     createBaseSTable,
-    createBaseSTableJSON,
     createSTableJSON,
     getInsertBind,
+    testPassword,
+    testUsername,
 } from "../utils";
 
 const stable = "ws_stmt_stb";
@@ -164,7 +165,7 @@ const selectTableCN = `select * from ${tableCN}`;
 const selectJsonTable = `select * from ${jsonTable}`;
 const selectJsonTableCN = `select * from ${jsonTableCN}`;
 
-let dsn = "ws://root:taosdata@localhost:6041";
+let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
 setLevel("debug");
 beforeAll(async () => {
     let conf: WSConfig = new WSConfig(dsn);

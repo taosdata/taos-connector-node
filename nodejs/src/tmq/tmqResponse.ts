@@ -147,13 +147,10 @@ export class WSTmqFetchBlockInfo {
         this.withTableName = dataView.getUint8(4) == 1 ? true : false;
         this.withSchema = dataView.getUint8(5) == 1 ? true : false;
 
-        // let dataBuffer = dataView.buffer.slice(6)
         let dataBuffer = new DataView(dataView.buffer, dataView.byteOffset + 6);
         let rows = 0;
-        // const parseStartTime = new Date().getTime();
-        // console.log("parseBlockInfos blockNum="+ blockNum)
         for (let i = 0; i < blockNum; i++) {
-            let variableInfo = this.parseVariableByteInteger(dataBuffer);
+            const variableInfo = this.parseVariableByteInteger(dataBuffer);
             this.taosResult.setPrecision(variableInfo[1].getUint8(17));
             dataView = new DataView(
                 variableInfo[1].buffer,

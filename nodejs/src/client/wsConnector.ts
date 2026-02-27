@@ -7,7 +7,7 @@ import {
 import { OnMessageType, WsEventCallback } from "./wsEventCallback";
 import logger from "../common/log";
 import { ReqId } from "../common/reqid";
-import { maskPasswordForLog } from "../common/utils";
+import { maskSensitiveForLog } from "../common/utils";
 
 export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
@@ -146,7 +146,7 @@ export class WebSocketConnector {
 
     async sendMsg(message: string, register: Boolean = true) {
         if (logger.isDebugEnabled()) {
-            logger.debug("[wsClient.sendMessage()]===>" + maskPasswordForLog(message));
+            logger.debug("[wsClient.sendMessage()]===>" + maskSensitiveForLog(message));
         }
         let msg = JSON.parse(message);
         if (msg.args.id !== undefined) {
@@ -168,7 +168,7 @@ export class WebSocketConnector {
                     );
                 }
                 if (logger.isDebugEnabled()) {
-                    logger.debug("[wsClient.sendMessage.msg]===>" + maskPasswordForLog(message));
+                    logger.debug("[wsClient.sendMessage.msg]===>" + maskSensitiveForLog(message));
                 }
                 this._wsConn.send(message);
             } else {

@@ -10,7 +10,7 @@ import {
 import { WSVersionResponse, WSQueryResponse } from "./wsResponse";
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
-import { safeDecodeURIComponent, compareVersions, maskPasswordForLog } from "../common/utils";
+import { safeDecodeURIComponent, compareVersions, maskSensitiveForLog, maskUrlForLog } from "../common/utils";
 import { w3cwebsocket } from "websocket";
 import { TSDB_OPTION_CONNECTION } from "../common/constant";
 
@@ -50,7 +50,7 @@ export class WsClient {
         };
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg, (key, value) =>
-                key === "password" ? "[REDACTED]" : value
+                (key === "password" || key === "bearer_token") ? "[REDACTED]" : value
             ));
         }
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
@@ -62,9 +62,7 @@ export class WsClient {
         }
         try {
             await this._wsConnector.ready();
-            let result: any = await this._wsConnector.sendMsg(
-                JSON.stringify(connMsg)
-            );
+            let result: any = await this._wsConnector.sendMsg(JSON.stringify(connMsg));
             if (result.msg.code == 0) {
                 return;
             }
@@ -72,24 +70,17 @@ export class WsClient {
             throw new WebSocketQueryError(result.msg.code, result.msg.message);
         } catch (e: any) {
             await this.close();
-            logger.error(
-                `connection creation failed, url: ${this._url}, code:${e.code}, msg:${e.message}`
-            );
+            const maskedUrl = maskUrlForLog(this._url);
+            logger.error(`connection creation failed, url: ${maskedUrl}, code:${e.code}, msg:${e.message}`);
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `connection creation failed, url: ${this._url}, code:${e.code}, msg:${e.message}`
+                `connection creation failed, url: ${maskedUrl}, code:${e.code}, msg:${e.message}`
             );
         }
     }
 
-    async setOptionConnection(
-        option: TSDB_OPTION_CONNECTION,
-        value: string | null
-    ): Promise<void> {
-        logger.debug(
-            "[wsClient.setOptionConnection]===>" + option + ", " + value
-        );
-
+    async setOptionConnection(option: TSDB_OPTION_CONNECTION, value: string | null): Promise<void> {
+        logger.debug("[wsClient.setOptionConnection]===>" + option + ", " + value);
         let connMsg = {
             action: "options_connection",
             args: {
@@ -129,7 +120,7 @@ export class WsClient {
     async exec(queryMsg: string, bSqlQuery: boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
             if (logger.isDebugEnabled()) {
-                logger.debug("[wsQueryInterface.query.queryMsg]===>" + maskPasswordForLog(queryMsg));
+                logger.debug("[wsQueryInterface.query.queryMsg]===>" + maskSensitiveForLog(queryMsg));
             }
             if (
                 this._wsConnector &&
@@ -232,15 +223,18 @@ export class WsClient {
             if (this._wsConnector.readyState() !== w3cwebsocket.OPEN) {
                 await this._wsConnector.ready();
             }
-            logger.debug("ready status ", this._url, this._wsConnector.readyState());
+            if (logger.isDebugEnabled()) {
+                logger.debug("ready status ", maskUrlForLog(this._url), this._wsConnector.readyState());
+            }
             return;
         } catch (e: any) {
+            const maskedUrl = maskUrlForLog(this._url);
             logger.error(
-                `connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`
+                `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
             );
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`
+                `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
             );
         }
     }
@@ -326,12 +320,13 @@ export class WsClient {
                 }
                 throw new WebSocketInterfaceError(result.msg.code, result.msg.message);
             } catch (e: any) {
+                const maskedUrl = maskUrlForLog(this._url);
                 logger.error(
-                    `connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`
+                    `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
                 );
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                    `connection creation failed, url: ${this._url}, code: ${e.code}, message: ${e.message}`
+                    `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
                 );
             }
         }

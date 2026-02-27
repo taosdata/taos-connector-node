@@ -196,8 +196,20 @@ export function decimalToString(
     return decimalStr;
 }
 
-const PASSWORD_FIELD_REGEX = /("password"\s*:\s*)"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+const SENSITIVE_FIELD_REGEX = /("(?:password|bearer_token)"\s*:\s*)"([^"\\]*(?:\\.[^"\\]*)*)"/g;
 
-export function maskPasswordForLog(message: string): string {
-    return message.replace(PASSWORD_FIELD_REGEX, '$1"[REDACTED]"');
+export function maskSensitiveForLog(message: string): string {
+    return message.replace(SENSITIVE_FIELD_REGEX, '$1"[REDACTED]"');
+}
+
+export function maskUrlForLog(url: URL): string {
+    const masked = new URL(url.toString());
+    masked.password = "[REDACTED]";
+    if (masked.searchParams.has("token")) {
+        masked.searchParams.set("token", "[REDACTED]");
+    }
+    if (masked.searchParams.has("bearer_token")) {
+        masked.searchParams.set("bearer_token", "[REDACTED]");
+    }
+    return masked.toString();
 }

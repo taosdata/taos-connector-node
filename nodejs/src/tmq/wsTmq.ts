@@ -34,7 +34,7 @@ export class WsConsumer {
     private constructor(wsConfig: Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig);
         if (logger.isDebugEnabled()) {
-            logger.debug(maskTmqConfigForLog(wsConfig));
+            logger.debug(maskTmqConfigForLog(this._wsConfig));
         }
         if (wsConfig.size == 0 || !this._wsConfig.url) {
             throw new WebSocketInterfaceError(

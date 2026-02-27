@@ -219,19 +219,19 @@ export function maskUrlForLog(url: URL | null): string {
     return masked.toString().replace(/%5BREDACTED%5D/g, "[REDACTED]");
 }
 
-export function maskTmqConfigForLog(config: Map<string, any>): TmqConfig {
-    const maskedConfig = new TmqConfig(config);
-    if (maskedConfig.url) {
-        maskedConfig.url = new URL(maskUrlForLog(maskedConfig.url));
+export function maskTmqConfigForLog(config: TmqConfig): object {
+    const masked = { ...config, otherConfigs: Object.fromEntries(config.otherConfigs) };
+    if (masked.url) {
+        masked.url = new URL(maskUrlForLog(masked.url));
     }
-    if (maskedConfig.sql_url) {
-        maskedConfig.sql_url = new URL(maskUrlForLog(maskedConfig.sql_url));
+    if (masked.sql_url) {
+        masked.sql_url = new URL(maskUrlForLog(masked.sql_url));
     }
-    if (maskedConfig.token) {
-        maskedConfig.token = "[REDACTED]";
+    if (masked.token) {
+        masked.token = "[REDACTED]";
     }
-    if (maskedConfig.password) {
-        maskedConfig.password = "[REDACTED]";
+    if (masked.password) {
+        masked.password = "[REDACTED]";
     }
-    return maskedConfig;
+    return masked;
 }

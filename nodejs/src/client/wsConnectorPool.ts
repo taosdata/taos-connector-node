@@ -3,6 +3,7 @@ import { WebSocketConnector } from "./wsConnector";
 import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
 import { w3cwebsocket } from "websocket";
+import { maskUrlForLog } from "../common/utils";
 
 const mutex = new Mutex();
 
@@ -45,7 +46,7 @@ export class WebSocketConnectionPool {
                     } else if (candidate) {
                         Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
                         candidate.close();
-                        logger.error(`getConnection, current connection status fail, url: ${connectAddr.split('?')[0]}`);
+                        logger.error(`getConnection, current connection status fail, url: ${maskUrlForLog(new URL(connectAddr))}`);
                     }
                 }
             }

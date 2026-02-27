@@ -7,7 +7,7 @@ import {
 import { OnMessageType, WsEventCallback } from "./wsEventCallback";
 import logger from "../common/log";
 import { ReqId } from "../common/reqid";
-import { maskSensitiveForLog } from "../common/utils";
+import { maskSensitiveForLog, maskUrlForLog } from "../common/utils";
 
 export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
@@ -35,7 +35,7 @@ export class WebSocketConnector {
                 }
             );
             this._wsConn.onerror = function (err: Error) {
-                logger.error(`webSocket connection failed, url: ${this.url.split('?')[0]}, error: ${err.message}`);
+                logger.error(`webSocket connection failed, url: ${maskUrlForLog(new URL(this.url))}, error: ${err.message}`);
             };
             this._wsConn.onclose = this._onclose;
             this._wsConn.onmessage = this._onmessage;

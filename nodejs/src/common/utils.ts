@@ -1,3 +1,4 @@
+import { TmqConfig } from "../tmq/config";
 import { WSConfig } from "./config";
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
 
@@ -202,7 +203,11 @@ export function maskSensitiveForLog(message: string): string {
     return message.replace(SENSITIVE_FIELD_REGEX, '$1"[REDACTED]"');
 }
 
-export function maskUrlForLog(url: URL): string {
+export function maskUrlForLog(url: URL | null): string {
+    if (!url) {
+        return "";
+    }
+
     const masked = new URL(url.toString());
     masked.password = "[REDACTED]";
     if (masked.searchParams.has("token")) {
@@ -211,5 +216,22 @@ export function maskUrlForLog(url: URL): string {
     if (masked.searchParams.has("bearer_token")) {
         masked.searchParams.set("bearer_token", "[REDACTED]");
     }
-    return masked.toString();
+    return masked.toString().replace(/%5BREDACTED%5D/g, "[REDACTED]");
+}
+
+export function maskTmqConfigForLog(config: Map<string, any>): TmqConfig {
+    const maskedConfig = new TmqConfig(config);
+    if (maskedConfig.url) {
+        maskedConfig.url = new URL(maskUrlForLog(maskedConfig.url));
+    }
+    if (maskedConfig.sql_url) {
+        maskedConfig.sql_url = new URL(maskUrlForLog(maskedConfig.sql_url));
+    }
+    if (maskedConfig.token) {
+        maskedConfig.token = "[REDACTED]";
+    }
+    if (maskedConfig.password) {
+        maskedConfig.password = "[REDACTED]";
+    }
+    return maskedConfig;
 }

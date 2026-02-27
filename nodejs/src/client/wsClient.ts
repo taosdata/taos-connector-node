@@ -344,7 +344,7 @@ export class WsClient {
 
     checkURL(url: URL) {
         // Assert token or bearer_token exists, otherwise username and password must exist.
-        if (!url.searchParams.has("token") && !url.searchParams.has("bearer_token")) {
+        if (!url.searchParams.get("token") && !url.searchParams.get("bearer_token")) {
             if (!(url.username || url.password)) {
                 throw new WebSocketInterfaceError(
                     ErrorCode.ERR_INVALID_AUTHENTICATION,

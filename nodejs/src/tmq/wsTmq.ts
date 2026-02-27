@@ -22,6 +22,7 @@ import {
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
 import { WSFetchBlockResponse } from "../client/wsResponse";
+import { maskTmqConfigForLog, maskUrlForLog } from "../common/utils";
 
 export class WsConsumer {
     private _wsClient: WsClient;
@@ -32,7 +33,9 @@ export class WsConsumer {
 
     private constructor(wsConfig: Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig);
-        logger.debug(this._wsConfig);
+        if (logger.isDebugEnabled()) {
+            logger.debug(maskTmqConfigForLog(wsConfig));
+        }
         if (wsConfig.size == 0 || !this._wsConfig.url) {
             throw new WebSocketInterfaceError(
                 ErrorCode.ERR_INVALID_URL,
@@ -60,7 +63,7 @@ export class WsConsumer {
             } else {
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                    `connection creation failed, url: ${this._wsConfig.url}`
+                    `connection creation failed, url: ${maskUrlForLog(this._wsConfig.url)}`
                 );
             }
         } catch (e: any) {

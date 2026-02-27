@@ -68,7 +68,12 @@ export class TmqConfig {
             if (this.token) {
                 this.url.searchParams.set("bearer_token", this.token);
             } else {
-                this.token = this.url.searchParams.get("bearer_token");
+                const bearerToken = this.url.searchParams.get("bearer_token");
+                if (bearerToken) {
+                    this.token = bearerToken;
+                } else {
+                    this.url.searchParams.delete("bearer_token");
+                }
             }
 
             this.sql_url = new URL(this.url);

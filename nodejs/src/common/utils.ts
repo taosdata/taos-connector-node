@@ -28,11 +28,16 @@ export function getUrl(wsConfig: WSConfig): URL {
         wsConfig.setTimezone(url.searchParams.get("timezone") || "");
     }
 
-    let bearerToken = wsConfig.getBearerToken();
+    const bearerToken = wsConfig.getBearerToken();
     if (bearerToken) {
         url.searchParams.set("bearer_token", bearerToken);
-    } else if (url.searchParams.has("bearer_token")) {
-        wsConfig.setBearerToken(url.searchParams.get("bearer_token") || "");
+    } else {
+        const bearerTokenFromUrl = url.searchParams.get("bearer_token");
+        if (bearerTokenFromUrl) {
+            wsConfig.setBearerToken(bearerTokenFromUrl);
+        } else {
+            url.searchParams.delete("bearer_token");
+        }
     }
 
     url.pathname = "/ws";

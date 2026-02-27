@@ -410,6 +410,7 @@ describe("TDWebSocket.Tmq()", () => {
 
         const tokenConfigMap = new Map(configMap);
         tokenConfigMap.set(TMQConstants.CONNECT_TOKEN, token);
+        tokenConfigMap.set(TMQConstants.GROUP_ID, "token_group");
         const consumer = await WsConsumer.newConsumer(tokenConfigMap);
         await consumer.subscribe([tokenTopic]);
 
@@ -433,16 +434,30 @@ describe("TDWebSocket.Tmq()", () => {
 
     testEnterprise("connect with invalid token", async () => {
         const tokenConfigMap = new Map([
-            [TMQConstants.GROUP_ID, "gId"],
-            [TMQConstants.CONNECT_TOKEN, "invalid_token"],
-            [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
-            [TMQConstants.CLIENT_ID, "test_tmq_client_token"],
-            [TMQConstants.WS_URL, tmqDsn],
-            [TMQConstants.ENABLE_AUTO_COMMIT, "true"],
-            [TMQConstants.AUTO_COMMIT_INTERVAL_MS, "1000"],
+            [TMQConstants.GROUP_ID, "token_group1"],
+            [TMQConstants.CLIENT_ID, "token_client1"],
+            [TMQConstants.WS_URL, "ws://localhost:6041?bearer_token=invalid_token"],
         ]);
         await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
             message: expect.stringMatching(/invalid token/i),
+        });
+
+        tokenConfigMap.set(TMQConstants.WS_URL, "ws://localhost:6041");
+        tokenConfigMap.set(TMQConstants.CONNECT_TOKEN, "invalid_token1");
+        await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid token/i),
+        });
+
+        tokenConfigMap.set(TMQConstants.WS_URL, "ws://localhost:6041?bearer_token=");
+        tokenConfigMap.delete(TMQConstants.CONNECT_TOKEN);
+        await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid url/i),
+        });
+
+        tokenConfigMap.set(TMQConstants.WS_URL, "ws://localhost:6041");
+        tokenConfigMap.set(TMQConstants.CONNECT_TOKEN, "");
+        await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid url/i),
         });
     });
 });

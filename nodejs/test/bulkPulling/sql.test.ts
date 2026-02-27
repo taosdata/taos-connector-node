@@ -298,9 +298,32 @@ describe("TDWebSocket.WsSql()", () => {
     });
 
     testEnterprise("connect with invalid token", async () => {
-        const conf = new WSConfig("ws://localhost:6041?bearer_token=invalid_token");
+        let conf = new WSConfig("ws://localhost:6041?bearer_token=invalid_token");
         await expect(WsSql.open(conf)).rejects.toMatchObject({
             message: expect.stringMatching(/invalid token/i),
+        });
+
+        conf = new WSConfig("ws://localhost:6041");
+        conf.setBearerToken("invalid_token1");
+        await expect(WsSql.open(conf)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid token/i),
+        });
+
+        conf = new WSConfig("ws://localhost:6041");
+        conf.setBearerToken(" ");
+        await expect(WsSql.open(conf)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid token/i),
+        });
+
+        conf = new WSConfig("ws://localhost:6041?bearer_token=");
+        await expect(WsSql.open(conf)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid url/i),
+        });
+
+        conf = new WSConfig("ws://localhost:6041");
+        conf.setBearerToken("");
+        await expect(WsSql.open(conf)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid url/i),
         });
     });
 });

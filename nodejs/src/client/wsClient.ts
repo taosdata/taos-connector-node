@@ -353,7 +353,7 @@ export class WsClient {
             if (!(url.username || url.password)) {
                 throw new WebSocketInterfaceError(
                     ErrorCode.ERR_INVALID_AUTHENTICATION,
-                    "invalid url, password or username needed."
+                    `invalid url, provide non-empty "token" or "bearer_token", or provide username/password`
                 );
             }
         }

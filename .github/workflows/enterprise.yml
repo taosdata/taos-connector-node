@@ -12,6 +12,7 @@ on:
 
 jobs:
   build:
+    if: ${{ secrets.NIGHTLY_TDENGINE_ENTERPRISE_BASE_URL != '' }}
     runs-on: ubuntu-22.04
     strategy:
       matrix:

@@ -1,11 +1,11 @@
 import { TMQConstants } from "./constant";
 
 export class TmqConfig {
-    // req_id: number;
     url: URL | null = null;
     sql_url: URL | null = null;
     user: string | null = null;
     password: string | null = null;
+    token: string | null = null;
     group_id: string | null = null;
     client_id: string | null = null;
     offset_rest: string | null = null;
@@ -27,6 +27,9 @@ export class TmqConfig {
                     break;
                 case TMQConstants.CONNECT_PASS:
                     this.password = value;
+                    break;
+                case TMQConstants.CONNECT_TOKEN:
+                    this.token = value;
                     break;
                 case TMQConstants.GROUP_ID:
                     this.group_id = value;
@@ -61,6 +64,16 @@ export class TmqConfig {
                 this.url.password = this.password;
             } else {
                 this.password = this.url.password;
+            }
+            if (this.token) {
+                this.url.searchParams.set("bearer_token", this.token);
+            } else {
+                const bearerToken = this.url.searchParams.get("bearer_token");
+                if (bearerToken) {
+                    this.token = bearerToken;
+                } else {
+                    this.url.searchParams.delete("bearer_token");
+                }
             }
 
             this.sql_url = new URL(this.url);

@@ -181,6 +181,7 @@ export const jsonMeta: Array<TDengineMeta> = [
         length: 4095,
     },
 ];
+
 export const tagMeta: Array<TDengineMeta> = [
     {
         name: "tb",
@@ -330,3 +331,5 @@ export function testUsername(): string {
 export function testPassword(): string {
     return process.env.TDENGINE_TEST_PASSWORD || "taosdata";
 }
+
+export const testEnterprise = process.env.TEST_ENTERPRISE?.toLowerCase() === "true" ? test : test.skip;

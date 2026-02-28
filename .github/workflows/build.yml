@@ -63,7 +63,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Test nodejs websocket
+      - name: Run tests
         working-directory: nodejs-connector/nodejs
         env:
           TDENGINE_CLOUD_URL: ${{ secrets.TDENGINE_CLOUD_URL }}

@@ -9,6 +9,7 @@ export class WSConfig {
     private _token: string | undefined | null;
     private _timezone: string | undefined | null;
     private _minStmt2Version: string;
+    private _bearerToken: string | undefined | null;
 
     constructor(url: string, minStmt2Version?: string) {
         this._url = url;
@@ -73,6 +74,14 @@ export class WSConfig {
 
     public setTimezone(timezone: string) {
         this._timezone = timezone;
+    }
+
+    public getBearerToken(): string | undefined | null {
+        return this._bearerToken;
+    }
+
+    public setBearerToken(token: string) {
+        this._bearerToken = token;
     }
 
     public getMinStmt2Version() {

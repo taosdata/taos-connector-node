@@ -7,7 +7,7 @@ import {
 import { OnMessageType, WsEventCallback } from "./wsEventCallback";
 import logger from "../common/log";
 import { ReqId } from "../common/reqid";
-import { maskPasswordForLog } from "../common/utils";
+import { maskSensitiveForLog, maskUrlForLog } from "../common/utils";
 
 export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
@@ -35,13 +35,9 @@ export class WebSocketConnector {
                 }
             );
             this._wsConn.onerror = function (err: Error) {
-                logger.error(
-                    `webSocket connection failed, url: ${this.url}, error: ${err.message}`
-                );
+                logger.error(`webSocket connection failed, url: ${maskUrlForLog(new URL(this.url))}, error: ${err.message}`);
             };
-
             this._wsConn.onclose = this._onclose;
-
             this._wsConn.onmessage = this._onmessage;
             this._wsConn._binaryType = "arraybuffer";
         } else {
@@ -87,9 +83,7 @@ export class WebSocketConnector {
 
     private _onmessage(event: any) {
         let data = event.data;
-        logger.debug(
-            "wsClient._onMessage()====" + Object.prototype.toString.call(data)
-        );
+        logger.debug("wsClient._onMessage()====" + Object.prototype.toString.call(data));
         if (Object.prototype.toString.call(data) === "[object ArrayBuffer]") {
             let id = new DataView(data, 26, 8).getBigUint64(0, true);
             WsEventCallback.instance().handleEventCallback(
@@ -143,7 +137,7 @@ export class WebSocketConnector {
                 reject(
                     new WebSocketQueryError(
                         ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                        `WebSocket connection is not ready,status :${this._wsConn?.readyState}`
+                        `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
                     )
                 );
             }
@@ -152,7 +146,7 @@ export class WebSocketConnector {
 
     async sendMsg(message: string, register: Boolean = true) {
         if (logger.isDebugEnabled()) {
-            logger.debug("[wsClient.sendMessage()]===>" + maskPasswordForLog(message));
+            logger.debug("[wsClient.sendMessage()]===>" + maskSensitiveForLog(message));
         }
         let msg = JSON.parse(message);
         if (msg.args.id !== undefined) {
@@ -174,14 +168,14 @@ export class WebSocketConnector {
                     );
                 }
                 if (logger.isDebugEnabled()) {
-                    logger.debug("[wsClient.sendMessage.msg]===>" + maskPasswordForLog(message));
+                    logger.debug("[wsClient.sendMessage.msg]===>" + maskSensitiveForLog(message));
                 }
                 this._wsConn.send(message);
             } else {
                 reject(
                     new WebSocketQueryError(
                         ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                        `WebSocket connection is not ready,status :${this._wsConn?.readyState}`
+                        `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
                     )
                 );
             }
@@ -219,7 +213,7 @@ export class WebSocketConnector {
                 reject(
                     new WebSocketQueryError(
                         ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                        `WebSocket connection is not ready,status :${this._wsConn?.readyState}`
+                        `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
                     )
                 );
             }

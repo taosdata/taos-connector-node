@@ -1,3 +1,4 @@
+import { TmqConfig } from "../tmq/config";
 import { WSConfig } from "./config";
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
 
@@ -26,6 +27,18 @@ export function getUrl(wsConfig: WSConfig): URL {
 
     if (url.searchParams.has("timezone")) {
         wsConfig.setTimezone(url.searchParams.get("timezone") || "");
+    }
+
+    const bearerToken = wsConfig.getBearerToken();
+    if (bearerToken) {
+        url.searchParams.set("bearer_token", bearerToken);
+    } else {
+        const bearerTokenFromUrl = url.searchParams.get("bearer_token");
+        if (bearerTokenFromUrl) {
+            wsConfig.setBearerToken(bearerTokenFromUrl);
+        } else {
+            url.searchParams.delete("bearer_token");
+        }
     }
 
     url.pathname = "/ws";
@@ -184,8 +197,41 @@ export function decimalToString(
     return decimalStr;
 }
 
-const PASSWORD_FIELD_REGEX = /("password"\s*:\s*)"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+const SENSITIVE_FIELD_REGEX = /("(?:password|bearer_token)"\s*:\s*)"([^"\\]*(?:\\.[^"\\]*)*)"/g;
 
-export function maskPasswordForLog(message: string): string {
-    return message.replace(PASSWORD_FIELD_REGEX, '$1"[REDACTED]"');
+export function maskSensitiveForLog(message: string): string {
+    return message.replace(SENSITIVE_FIELD_REGEX, '$1"[REDACTED]"');
+}
+
+export function maskUrlForLog(url: URL | null): string {
+    if (!url) {
+        return "";
+    }
+
+    const masked = new URL(url.toString());
+    masked.password = "[REDACTED]";
+    if (masked.searchParams.has("token")) {
+        masked.searchParams.set("token", "[REDACTED]");
+    }
+    if (masked.searchParams.has("bearer_token")) {
+        masked.searchParams.set("bearer_token", "[REDACTED]");
+    }
+    return masked.toString().replace(/%5BREDACTED%5D/g, "[REDACTED]");
+}
+
+export function maskTmqConfigForLog(config: TmqConfig): object {
+    const masked = { ...config, otherConfigs: Object.fromEntries(config.otherConfigs) };
+    if (masked.url) {
+        masked.url = new URL(maskUrlForLog(masked.url));
+    }
+    if (masked.sql_url) {
+        masked.sql_url = new URL(maskUrlForLog(masked.sql_url));
+    }
+    if (masked.token) {
+        masked.token = "[REDACTED]";
+    }
+    if (masked.password) {
+        masked.password = "[REDACTED]";
+    }
+    return masked;
 }

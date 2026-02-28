@@ -18,11 +18,11 @@ import {
     TopicPartition,
     WSTmqFetchBlockInfo,
     WsPollResponse,
-    WsTmqQueryResponse,
 } from "./tmqResponse";
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
 import { WSFetchBlockResponse } from "../client/wsResponse";
+import { maskTmqConfigForLog, maskUrlForLog } from "../common/utils";
 
 export class WsConsumer {
     private _wsClient: WsClient;
@@ -30,9 +30,12 @@ export class WsConsumer {
     private _topics?: string[];
     private _commitTime?: number;
     private _lastMessageID?: bigint;
+
     private constructor(wsConfig: Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig);
-        logger.debug(this._wsConfig);
+        if (logger.isDebugEnabled()) {
+            logger.debug(maskTmqConfigForLog(this._wsConfig));
+        }
         if (wsConfig.size == 0 || !this._wsConfig.url) {
             throw new WebSocketInterfaceError(
                 ErrorCode.ERR_INVALID_URL,
@@ -60,7 +63,7 @@ export class WsConsumer {
             } else {
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                    `connection creation failed, url: ${this._wsConfig.url}`
+                    `connection creation failed, url: ${maskUrlForLog(this._wsConfig.url)}`
                 );
             }
         } catch (e: any) {
@@ -99,6 +102,7 @@ export class WsConsumer {
                 req_id: ReqId.getReqID(reqId),
                 user: this._wsConfig.user,
                 password: this._wsConfig.password,
+                ...(this._wsConfig.token && { bearer_token: this._wsConfig.token }),
                 group_id: this._wsConfig.group_id,
                 client_id: this._wsConfig.client_id,
                 topics: topics,
@@ -122,10 +126,7 @@ export class WsConsumer {
         return await this._wsClient.exec(JSON.stringify(queryMsg));
     }
 
-    async poll(
-        timeoutMs: number,
-        reqId?: number
-    ): Promise<Map<string, TaosResult>> {
+    async poll(timeoutMs: number, reqId?: number): Promise<Map<string, TaosResult>> {
         if (this._wsConfig.auto_commit) {
             if (this._commitTime) {
                 let currTime = new Date().getTime();
@@ -148,7 +149,6 @@ export class WsConsumer {
                 req_id: ReqId.getReqID(reqId),
             },
         };
-
         let resp = await this._wsClient.exec(JSON.stringify(queryMsg), false);
         return new SubscriptionResp(resp).topics;
     }
@@ -166,7 +166,6 @@ export class WsConsumer {
                 message_id: 0,
             },
         };
-
         await this._wsClient.exec(JSON.stringify(queryMsg));
     }
 
@@ -205,9 +204,7 @@ export class WsConsumer {
         return new CommittedResp(resp).setTopicPartitions(offsets);
     }
 
-    async commitOffsets(
-        partitions: Array<TopicPartition>
-    ): Promise<Array<TopicPartition>> {
+    async commitOffsets(partitions: Array<TopicPartition>): Promise<Array<TopicPartition>> {
         if (!partitions || partitions.length == 0) {
             throw new TaosResultError(
                 ErrorCode.ERR_INVALID_PARAMS,
@@ -222,10 +219,7 @@ export class WsConsumer {
         return await this.committed(partitions);
     }
 
-    async commitOffset(
-        partition: TopicPartition,
-        reqId?: number
-    ): Promise<void> {
+    async commitOffset(partition: TopicPartition, reqId?: number): Promise<void> {
         if (!partition) {
             throw new TaosResultError(
                 ErrorCode.ERR_INVALID_PARAMS,
@@ -313,7 +307,6 @@ export class WsConsumer {
                 "WsTmq SeekToEnd params is error!"
             );
         }
-
         return await this.seekToBeginOrEnd(partitions, false);
     }
 
@@ -349,7 +342,6 @@ export class WsConsumer {
                 return true;
             }
         }
-
         return false;
     }
 

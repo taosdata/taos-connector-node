@@ -166,17 +166,16 @@ export class WsSql {
     ): Promise<TaosResult> {
         try {
             let bigintReqId = BigInt(ReqId.getReqID(reqId));
-            let wsQueryResponse: WSQueryResponse =
-                await this._wsClient.sendBinaryMsg(
+            let wsQueryResponse: WSQueryResponse = await this._wsClient.sendBinaryMsg(
+                bigintReqId,
+                action,
+                getBinarySql(
+                    BinaryQueryMessage,
                     bigintReqId,
-                    action,
-                    getBinarySql(
-                        BinaryQueryMessage,
-                        bigintReqId,
-                        BigInt(0),
-                        sql
-                    )
-                );
+                    BigInt(0),
+                    sql
+                )
+            );
             let taosResult = new TaosResult(wsQueryResponse);
             if (wsQueryResponse.is_update) {
                 return taosResult;

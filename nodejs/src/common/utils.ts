@@ -1,3 +1,4 @@
+import { TmqConfig } from "../tmq/config";
 import { WSConfig } from "./config";
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
 
@@ -28,15 +29,25 @@ export function getUrl(wsConfig: WSConfig): URL {
         wsConfig.setTimezone(url.searchParams.get("timezone") || "");
     }
 
+    const bearerToken = wsConfig.getBearerToken();
+    if (bearerToken) {
+        url.searchParams.set("bearer_token", bearerToken);
+    } else {
+        const bearerTokenFromUrl = url.searchParams.get("bearer_token");
+        if (bearerTokenFromUrl) {
+            wsConfig.setBearerToken(bearerTokenFromUrl);
+        } else {
+            url.searchParams.delete("bearer_token");
+        }
+    }
+
     url.pathname = "/ws";
     return url;
 }
 
 export function isEmpty(value: any): boolean {
     if (value === null || value === undefined) return true;
-    // if (typeof value === 'string' && value.trim() === '') return true;
     if (Array.isArray(value) && value.length === 0) return true;
-    // if (typeof value === 'object' && Object.keys(value).length === 0) return true;
     return false;
 }
 
@@ -46,8 +57,6 @@ export function getBinarySql(
     resultId: bigint,
     sql?: string
 ): ArrayBuffer {
-    // construct msg
-
     if (sql) {
         const encoder = new TextEncoder();
         const buffer = encoder.encode(sql);
@@ -186,4 +195,43 @@ export function decimalToString(
         }
     }
     return decimalStr;
+}
+
+const SENSITIVE_FIELD_REGEX = /("(?:password|bearer_token)"\s*:\s*)"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+
+export function maskSensitiveForLog(message: string): string {
+    return message.replace(SENSITIVE_FIELD_REGEX, '$1"[REDACTED]"');
+}
+
+export function maskUrlForLog(url: URL | null): string {
+    if (!url) {
+        return "";
+    }
+
+    const masked = new URL(url.toString());
+    masked.password = "[REDACTED]";
+    if (masked.searchParams.has("token")) {
+        masked.searchParams.set("token", "[REDACTED]");
+    }
+    if (masked.searchParams.has("bearer_token")) {
+        masked.searchParams.set("bearer_token", "[REDACTED]");
+    }
+    return masked.toString().replace(/%5BREDACTED%5D/g, "[REDACTED]");
+}
+
+export function maskTmqConfigForLog(config: TmqConfig): object {
+    const masked = { ...config, otherConfigs: Object.fromEntries(config.otherConfigs) };
+    if (masked.url) {
+        masked.url = new URL(maskUrlForLog(masked.url));
+    }
+    if (masked.sql_url) {
+        masked.sql_url = new URL(maskUrlForLog(masked.sql_url));
+    }
+    if (masked.token) {
+        masked.token = "[REDACTED]";
+    }
+    if (masked.password) {
+        masked.password = "[REDACTED]";
+    }
+    return masked;
 }

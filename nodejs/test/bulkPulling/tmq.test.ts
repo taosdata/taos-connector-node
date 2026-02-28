@@ -2,22 +2,21 @@ import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { createSTable, insertStable, Sleep } from "../utils";
+import { createSTable, insertStable, testPassword, testUsername, Sleep, testEnterprise } from "../utils";
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { setLevel } from "../../src/common/log";
 
 setLevel("debug");
+
 const stable = "st";
 const db = "ws_tmq_test";
 const topics: string[] = ["topic_ws_bean"];
-// const topic2 = 'topic_ws_bean_2'
-// let createTopic = `create topic if not exists ${topic} as select ts, c1, c2, c3, c4, c5, t1 from ${db}.${stable}`
-// let createTopic2 = `create topic if not exists ${topic2} as select ts, c1, c4, c5, t1 from ${db}.${stable}`
+const tokenTopic = "topic_token_test";
+
 let createTopic = `create topic if not exists ${topics[0]} as select * from ${db}.${stable}`;
 let dropTopic = `DROP TOPIC IF EXISTS ${topics[0]};`;
-// let dropTopic2 = `DROP TOPIC IF EXISTS ${topic2};`
 
-let dsn = "ws://root:taosdata@localhost:6041";
+let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
 let tmqDsn = "ws://localhost:6041";
 
 beforeAll(async () => {
@@ -240,17 +239,17 @@ beforeAll(async () => {
 
     let ws = await WsSql.open(conf);
     await ws.exec(dropTopic);
-    // await ws.Exec(dropTopic2);
     await ws.exec(dropDB);
     await ws.exec(createDB);
     await ws.exec(useDB);
     await ws.exec(createSTable(stable));
     await ws.exec(createTopic);
-    // await ws.Exec(createTopic2);
     let insert = insertStable(tableValues, stableTags, stable);
     let insertRes = await ws.exec(insert);
     insert = insertStable(tableCNValues, stableTags, stable);
     insertRes = await ws.exec(insert);
+    await ws.exec("create user tmq_token_user pass 'token_pass_1'");
+    await ws.exec(`create topic if not exists ${tokenTopic} as select * from ${db}.${stable}`);
     await ws.close();
 });
 
@@ -258,8 +257,8 @@ describe("TDWebSocket.Tmq()", () => {
     jest.setTimeout(20 * 1000);
     let configMap = new Map([
         [TMQConstants.GROUP_ID, "gId"],
-        [TMQConstants.CONNECT_USER, "root"],
-        [TMQConstants.CONNECT_PASS, "taosdata"],
+        [TMQConstants.CONNECT_USER, testUsername()],
+        [TMQConstants.CONNECT_PASS, testPassword()],
         [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
         [TMQConstants.CLIENT_ID, "test_tmq_client"],
         [TMQConstants.WS_URL, tmqDsn],
@@ -331,7 +330,6 @@ describe("TDWebSocket.Tmq()", () => {
                     console.log("-----===>>", record);
                 }
             }
-            // await Sleep(100)
         }
 
         await consumer.seekToBeginning(assignment);
@@ -350,7 +348,6 @@ describe("TDWebSocket.Tmq()", () => {
 
                 counts += data.length;
             }
-            // await Sleep(100)
         }
         let topicArray = await consumer.subscription();
         expect(topics.length).toEqual(topicArray.length);
@@ -399,6 +396,71 @@ describe("TDWebSocket.Tmq()", () => {
         await consumer.close();
     });
 
+    testEnterprise("connect with token", async () => {
+        const conf = new WSConfig(dsn);
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
+        const wsSql = await WsSql.open(conf);
+        const wsRows = await wsSql.query("create token test_tmq_token from user tmq_token_user");
+        await wsRows.next();
+        const token = wsRows.getData()?.[0] as string;
+        expect(token).toBeTruthy();
+        await wsRows.close();
+        await wsSql.close();
+
+        const tokenConfigMap = new Map(configMap);
+        tokenConfigMap.set(TMQConstants.CONNECT_TOKEN, token);
+        tokenConfigMap.set(TMQConstants.GROUP_ID, "token_group");
+        const consumer = await WsConsumer.newConsumer(tokenConfigMap);
+        await consumer.subscribe([tokenTopic]);
+
+        let count: number = 0;
+        for (let i = 0; i < 5; i++) {
+            const res = await consumer.poll(500);
+            for (const [, value] of res) {
+                const data = value.getData();
+                if (data == null || data.length == 0) {
+                    break;
+                }
+                count += data.length;
+            }
+        }
+        expect(count).toEqual(10);
+
+        await Sleep(3000);
+        await consumer.unsubscribe();
+        await consumer.close();
+    });
+
+    testEnterprise("connect with invalid token", async () => {
+        const tokenConfigMap = new Map([
+            [TMQConstants.GROUP_ID, "token_group1"],
+            [TMQConstants.CLIENT_ID, "token_client1"],
+            [TMQConstants.WS_URL, "ws://localhost:6041?bearer_token=invalid_token"],
+        ]);
+        await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid token/i),
+        });
+
+        tokenConfigMap.set(TMQConstants.WS_URL, "ws://localhost:6041");
+        tokenConfigMap.set(TMQConstants.CONNECT_TOKEN, "invalid_token1");
+        await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid token/i),
+        });
+
+        tokenConfigMap.set(TMQConstants.WS_URL, "ws://localhost:6041?bearer_token=");
+        tokenConfigMap.delete(TMQConstants.CONNECT_TOKEN);
+        await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid url/i),
+        });
+
+        tokenConfigMap.set(TMQConstants.WS_URL, "ws://localhost:6041");
+        tokenConfigMap.set(TMQConstants.CONNECT_TOKEN, "");
+        await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
+            message: expect.stringMatching(/invalid url/i),
+        });
+    });
+
     const maybeConnectorVersionTest = process.env.TEST_3360 ? test.skip : test;
 
     maybeConnectorVersionTest("connector version info", async () => {
@@ -430,10 +492,12 @@ describe("TDWebSocket.Tmq()", () => {
 
 afterAll(async () => {
     const dropDB = `drop database if exists ${db}`;
-    let conf: WSConfig = new WSConfig(dsn);
-    let ws = await WsSql.open(conf);
+    const conf = new WSConfig(dsn);
+    const ws = await WsSql.open(conf);
     await ws.exec(dropTopic);
+    await ws.exec(`drop topic if exists ${tokenTopic}`);
     await ws.exec(dropDB);
+    await ws.exec("drop user tmq_token_user");
     await ws.close();
     WebSocketConnectionPool.instance().destroyed();
 });

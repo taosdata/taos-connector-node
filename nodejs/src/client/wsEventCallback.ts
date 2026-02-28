@@ -33,6 +33,7 @@ const eventMutex = new Mutex();
 export class WsEventCallback {
     private static _instance?: WsEventCallback;
     private static _msgActionRegister: Map<MessageId, MessageAction> = new Map();
+
     private constructor() { }
 
     public static instance(): WsEventCallback {

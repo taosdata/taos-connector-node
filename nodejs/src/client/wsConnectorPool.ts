@@ -3,6 +3,7 @@ import { WebSocketConnector } from "./wsConnector";
 import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
 import { w3cwebsocket } from "websocket";
+import { maskUrlForLog } from "../common/utils";
 
 const mutex = new Mutex();
 
@@ -16,27 +17,18 @@ export class WebSocketConnectionPool {
     private constructor(maxConnections: number = -1) {
         this._maxConnections = maxConnections;
         WebSocketConnectionPool.sharedBuffer = new SharedArrayBuffer(4);
-        WebSocketConnectionPool.sharedArray = new Int32Array(
-            WebSocketConnectionPool.sharedBuffer
-        );
+        WebSocketConnectionPool.sharedArray = new Int32Array(WebSocketConnectionPool.sharedBuffer);
         Atomics.store(WebSocketConnectionPool.sharedArray, 0, 0);
     }
 
-    public static instance(
-        maxConnections: number = -1
-    ): WebSocketConnectionPool {
+    public static instance(maxConnections: number = -1): WebSocketConnectionPool {
         if (!WebSocketConnectionPool._instance) {
-            WebSocketConnectionPool._instance = new WebSocketConnectionPool(
-                maxConnections
-            );
+            WebSocketConnectionPool._instance = new WebSocketConnectionPool(maxConnections);
         }
         return WebSocketConnectionPool._instance;
     }
 
-    async getConnection(
-        url: URL,
-        timeout: number | undefined | null
-    ): Promise<WebSocketConnector> {
+    async getConnection(url: URL, timeout: number | undefined | null): Promise<WebSocketConnector> {
         let connectAddr = url.origin.concat(url.pathname).concat(url.search);
         let connector: WebSocketConnector | undefined;
         const unlock = await mutex.acquire();
@@ -48,18 +40,13 @@ export class WebSocketConnectionPool {
                     if (!candidate) {
                         continue;
                     }
-                    if (
-                        candidate &&
-                        candidate.readyState() === w3cwebsocket.OPEN
-                    ) {
+                    if (candidate && candidate.readyState() === w3cwebsocket.OPEN) {
                         connector = candidate;
                         break;
                     } else if (candidate) {
                         Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
                         candidate.close();
-                        logger.error(
-                            `getConnection, current connection status fail, url: ${connectAddr}`
-                        );
+                        logger.error(`getConnection, current connection status fail, url: ${maskUrlForLog(new URL(connectAddr))}`);
                     }
                 }
             }
@@ -74,8 +61,7 @@ export class WebSocketConnectionPool {
 
             if (
                 this._maxConnections != -1 &&
-                Atomics.load(WebSocketConnectionPool.sharedArray, 0) >
-                this._maxConnections
+                Atomics.load(WebSocketConnectionPool.sharedArray, 0) > this._maxConnections
             ) {
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT,
@@ -84,12 +70,14 @@ export class WebSocketConnectionPool {
                 );
             }
             Atomics.add(WebSocketConnectionPool.sharedArray, 0, 1);
-            logger.info(
-                "getConnection, new connection count:" +
-                Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
-                ", connectAddr:" +
-                connectAddr
-            );
+            if (logger.isInfoEnabled()) {
+                logger.info(
+                    "getConnection, new connection count:" +
+                    Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
+                    ", connectAddr:" +
+                    connectAddr.replace(/(token=)[^&]*/i, "$1[REDACTED]")
+                );
+            }
             return new WebSocketConnector(url, timeout);
         } finally {
             unlock();
@@ -102,9 +90,7 @@ export class WebSocketConnectionPool {
             try {
                 if (connector.readyState() === w3cwebsocket.OPEN) {
                     let url = connector.getWsURL();
-                    let connectAddr = url.origin
-                        .concat(url.pathname)
-                        .concat(url.search);
+                    let connectAddr = url.origin.concat(url.pathname).concat(url.search);
                     let connectors = this.pool.get(connectAddr);
                     if (!connectors) {
                         connectors = new Array();
@@ -113,10 +99,7 @@ export class WebSocketConnectionPool {
                     } else {
                         connectors.push(connector);
                     }
-                    logger.info(
-                        "releaseConnection, current connection count:" +
-                        connectors.length
-                    );
+                    logger.info("releaseConnection, current connection count:" + connectors.length);
                 } else {
                     Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
                     connector.close();

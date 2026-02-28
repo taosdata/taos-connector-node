@@ -150,7 +150,7 @@ export class WSTmqFetchBlockInfo {
         let dataBuffer = new DataView(dataView.buffer, dataView.byteOffset + 6);
         let rows = 0;
         for (let i = 0; i < blockNum; i++) {
-            let variableInfo = this.parseVariableByteInteger(dataBuffer);
+            const variableInfo = this.parseVariableByteInteger(dataBuffer);
             this.taosResult.setPrecision(variableInfo[1].getUint8(17));
             dataView = new DataView(
                 variableInfo[1].buffer,

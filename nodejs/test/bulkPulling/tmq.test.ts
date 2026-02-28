@@ -2,7 +2,7 @@ import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { createSTable, insertStable, testPassword, testUsername, Sleep, testEnterprise } from "../utils";
+import { createSTable, insertStable, testPassword, testUsername, Sleep, testEnterprise, testNon3360 } from "../utils";
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { setLevel } from "../../src/common/log";
 
@@ -461,19 +461,17 @@ describe("TDWebSocket.Tmq()", () => {
         });
     });
 
-    const maybeConnectorVersionTest = process.env.TEST_3360 ? test.skip : test;
-
-    maybeConnectorVersionTest("connector version info", async () => {
-        let consumer = await WsConsumer.newConsumer(configMap);
+    testNon3360("connector version info", async () => {
+        const consumer = await WsConsumer.newConsumer(configMap);
         await consumer.subscribe(topics);
 
-        let conf: WSConfig = new WSConfig("ws://localhost:6041");
-        conf.setUser("root");
-        conf.setPwd("taosdata");
-        let wsSql = await WsSql.open(conf);
+        const conf = new WSConfig("ws://localhost:6041");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
+        const wsSql = await WsSql.open(conf);
         await Sleep(2000);
 
-        let wsRows = await wsSql.query("show connections");
+        const wsRows = await wsSql.query("show connections");
         let count = 0;
         while (await wsRows.next()) {
             const data = wsRows.getData();

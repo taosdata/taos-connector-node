@@ -1,7 +1,7 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { Sleep, testPassword, testUsername, testEnterprise } from "../utils";
+import { Sleep, testPassword, testUsername, testEnterprise, testNon3360 } from "../utils";
 import { setLevel } from "../../src/common/log";
 
 let dsn = "ws://localhost:6041";
@@ -327,15 +327,13 @@ describe("TDWebSocket.WsSql()", () => {
         });
     });
 
-    const maybeConnectorVersionTest = process.env.TEST_3360 ? test.skip : test;
-
-    maybeConnectorVersionTest("connector version info", async () => {
-        let conf: WSConfig = new WSConfig(dsn);
-        conf.setUser("root");
-        conf.setPwd("taosdata");
-        let wsSql = await WsSql.open(conf);
+    testNon3360("connector version info", async () => {
+        const conf = new WSConfig(dsn);
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
+        const wsSql = await WsSql.open(conf);
         await Sleep(2000);
-        let wsRows = await wsSql.query("show connections");
+        const wsRows = await wsSql.query("show connections");
         let hasNodejsWs = false;
         while (await wsRows.next()) {
             const data = wsRows.getData();

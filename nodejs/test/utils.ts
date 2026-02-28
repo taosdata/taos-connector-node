@@ -333,3 +333,4 @@ export function testPassword(): string {
 }
 
 export const testEnterprise = process.env.TEST_ENTERPRISE?.toLowerCase() === "true" ? test : test.skip;
+export const testNon3360 = process.env.TEST_3360?.toLowerCase() === "true" ? test.skip : test;

@@ -198,7 +198,7 @@ export function decimalToString(
 }
 
 const SENSITIVE_FIELD_REGEX =
-    /("(?:password|bearer_token|td\.connect\.token)"\s*:\s*)"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+    /("(?:password|token|bearer_token|td\.connect\.token)"\s*:\s*)"([^"\\]*(?:\\.[^"\\]*)*)"/g;
 
 export function maskSensitiveForLog(message: string): string {
     return message.replace(SENSITIVE_FIELD_REGEX, '$1"[REDACTED]"');
@@ -232,6 +232,7 @@ export function maskTmqConfigForLog(config: TmqConfig): string {
                 return maskUrlForLog(value);
             case 'token':
             case 'password':
+            case 'bearer_token':
             case 'td.connect.token':
                 return value ? '[REDACTED]' : value;
             default:

@@ -197,7 +197,8 @@ export function decimalToString(
     return decimalStr;
 }
 
-const SENSITIVE_FIELD_REGEX = /("(?:password|bearer_token)"\s*:\s*)"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+const SENSITIVE_FIELD_REGEX =
+    /("(?:password|bearer_token|td\.connect\.token)"\s*:\s*)"([^"\\]*(?:\\.[^"\\]*)*)"/g;
 
 export function maskSensitiveForLog(message: string): string {
     return message.replace(SENSITIVE_FIELD_REGEX, '$1"[REDACTED]"');
@@ -219,19 +220,19 @@ export function maskUrlForLog(url: URL | null): string {
     return masked.toString().replace(/%5BREDACTED%5D/g, "[REDACTED]");
 }
 
-export function maskTmqConfigForLog(config: TmqConfig): object {
-    const masked = { ...config, otherConfigs: Object.fromEntries(config.otherConfigs) };
-    if (masked.url) {
-        masked.url = new URL(maskUrlForLog(masked.url));
-    }
-    if (masked.sql_url) {
-        masked.sql_url = new URL(maskUrlForLog(masked.sql_url));
-    }
+export function maskTmqConfigForLog(config: TmqConfig): string {
+    const masked = {
+        ...config,
+        otherConfigs: Object.fromEntries(config.otherConfigs)
+    };
     if (masked.token) {
         masked.token = "[REDACTED]";
     }
     if (masked.password) {
         masked.password = "[REDACTED]";
     }
-    return masked;
+    return JSON.stringify(masked, (key, value) =>
+        (key === "url" || key === "sql_url")
+            ? maskUrlForLog(value) : (key === "td.connect.token" ? "[REDACTED]" : value)
+    );
 }

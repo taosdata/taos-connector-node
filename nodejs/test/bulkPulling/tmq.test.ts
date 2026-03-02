@@ -449,15 +449,15 @@ describe("TDWebSocket.Tmq()", () => {
         expect(token).toBeTruthy();
         await wsRows.close();
 
-        const tmqConf = new Map([
+        const tmqConf = new Map<string, any>([
             [TMQConstants.WS_URL, `ws://localhost:6041?bearer_token=${token}`],
             [TMQConstants.CONNECT_USER, "invalid_user"],
             [TMQConstants.CONNECT_PASS, "invalid_pass"],
             [TMQConstants.GROUP_ID, "g1103"],
             [TMQConstants.CLIENT_ID, "c1103"],
             [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
-            [TMQConstants.ENABLE_AUTO_COMMIT, "false"],
-            [TMQConstants.AUTO_COMMIT_INTERVAL_MS, "1000"],
+            [TMQConstants.ENABLE_AUTO_COMMIT, false],
+            [TMQConstants.AUTO_COMMIT_INTERVAL_MS, 1000],
         ]);
         const consumer = await WsConsumer.newConsumer(tmqConf);
         await consumer.subscribe([tokenTopic]);

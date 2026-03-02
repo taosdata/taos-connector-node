@@ -106,8 +106,8 @@ export class WsConsumer {
                 client_id: this._wsConfig.client_id,
                 topics: topics,
                 offset_rest: this._wsConfig.offset_rest,
-                auto_commit: this._wsConfig.auto_commit,
-                auto_commit_interval_ms: this._wsConfig.auto_commit_interval_ms,
+                auto_commit: String(this._wsConfig.auto_commit),
+                auto_commit_interval_ms: String(this._wsConfig.auto_commit_interval_ms),
                 config: Object.fromEntries(this._wsConfig.otherConfigs),
             },
         };

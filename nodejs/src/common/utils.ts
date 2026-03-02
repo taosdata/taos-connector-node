@@ -225,14 +225,17 @@ export function maskTmqConfigForLog(config: TmqConfig): string {
         ...config,
         otherConfigs: Object.fromEntries(config.otherConfigs)
     };
-    if (masked.token) {
-        masked.token = "[REDACTED]";
-    }
-    if (masked.password) {
-        masked.password = "[REDACTED]";
-    }
-    return JSON.stringify(masked, (key, value) =>
-        (key === "url" || key === "sql_url")
-            ? maskUrlForLog(value) : (key === "td.connect.token" ? "[REDACTED]" : value)
-    );
+    return JSON.stringify(masked, (key, value) => {
+        switch (key) {
+            case 'url':
+            case 'sql_url':
+                return maskUrlForLog(value);
+            case 'token':
+            case 'password':
+            case 'td.connect.token':
+                return value ? '[REDACTED]' : value;
+            default:
+                return value;
+        }
+    });
 }

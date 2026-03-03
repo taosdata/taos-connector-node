@@ -36,8 +36,7 @@ export class TMQConstants {
     /**
      * encode for deserializer String value
      */
-    public static VALUE_DESERIALIZER_ENCODING: string =
-        "value.deserializer.encoding";
+    public static VALUE_DESERIALIZER_ENCODING: string = "value.deserializer.encoding";
 
     /**
      * connection ip

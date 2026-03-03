@@ -30,6 +30,7 @@ export class TmqConfig {
                     break;
                 case TMQConstants.CONNECT_TOKEN:
                     this.token = value;
+                    this.otherConfigs.set(key, value);
                     break;
                 case TMQConstants.GROUP_ID:
                     this.group_id = value;
@@ -72,6 +73,7 @@ export class TmqConfig {
                 const bearerToken = this.url.searchParams.get("bearer_token");
                 if (bearerToken) {
                     this.token = bearerToken;
+                    this.otherConfigs.set(TMQConstants.CONNECT_TOKEN, bearerToken);
                 } else {
                     this.url.searchParams.delete("bearer_token");
                 }

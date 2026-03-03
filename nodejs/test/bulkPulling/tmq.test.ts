@@ -248,7 +248,6 @@ beforeAll(async () => {
     let insertRes = await ws.exec(insert);
     insert = insertStable(tableCNValues, stableTags, stable);
     insertRes = await ws.exec(insert);
-    await ws.exec("create user tmq_token_user pass 'token_pass_1'");
     await ws.exec(`create topic if not exists ${tokenTopic} as select * from ${db}.${stable}`);
     await ws.close();
 });
@@ -398,20 +397,26 @@ describe("TDWebSocket.Tmq()", () => {
 
     testEnterprise("connect with token", async () => {
         const conf = new WSConfig(dsn);
-        conf.setUser(testUsername());
-        conf.setPwd(testPassword());
         const wsSql = await WsSql.open(conf);
-        const wsRows = await wsSql.query("create token test_tmq_token from user tmq_token_user");
+        await wsSql.exec("drop token if exists test_tmq_token");
+        const wsRows = await wsSql.query(`create token test_tmq_token from user ${testUsername()}`);
         await wsRows.next();
         const token = wsRows.getData()?.[0] as string;
         expect(token).toBeTruthy();
         await wsRows.close();
-        await wsSql.close();
 
-        const tokenConfigMap = new Map(configMap);
-        tokenConfigMap.set(TMQConstants.CONNECT_TOKEN, token);
-        tokenConfigMap.set(TMQConstants.GROUP_ID, "token_group");
-        const consumer = await WsConsumer.newConsumer(tokenConfigMap);
+        const tmqConf = new Map([
+            [TMQConstants.WS_URL, "ws://localhost:6041"],
+            [TMQConstants.CONNECT_USER, "invalid_user"],
+            [TMQConstants.CONNECT_PASS, "invalid_pass"],
+            [TMQConstants.CONNECT_TOKEN, token],
+            [TMQConstants.GROUP_ID, "g1101"],
+            [TMQConstants.CLIENT_ID, "c1101"],
+            [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
+            [TMQConstants.ENABLE_AUTO_COMMIT, "false"],
+            [TMQConstants.AUTO_COMMIT_INTERVAL_MS, "1000"],
+        ]);
+        const consumer = await WsConsumer.newConsumer(tmqConf);
         await consumer.subscribe([tokenTopic]);
 
         let count: number = 0;
@@ -430,33 +435,78 @@ describe("TDWebSocket.Tmq()", () => {
         await Sleep(3000);
         await consumer.unsubscribe();
         await consumer.close();
+        await wsSql.exec("drop token if exists test_tmq_token");
+        await wsSql.close();
+    });
+
+    testEnterprise("connect with token url", async () => {
+        const conf = new WSConfig(dsn);
+        const wsSql = await WsSql.open(conf);
+        await wsSql.exec("drop token if exists test_tmq_token_url");
+        const wsRows = await wsSql.query(`create token test_tmq_token_url from user ${testUsername()}`);
+        await wsRows.next();
+        const token = wsRows.getData()?.[0] as string;
+        expect(token).toBeTruthy();
+        await wsRows.close();
+
+        const tmqConf = new Map<string, any>([
+            [TMQConstants.WS_URL, `ws://localhost:6041?bearer_token=${token}`],
+            [TMQConstants.CONNECT_USER, "invalid_user"],
+            [TMQConstants.CONNECT_PASS, "invalid_pass"],
+            [TMQConstants.GROUP_ID, "g1103"],
+            [TMQConstants.CLIENT_ID, "c1103"],
+            [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
+            [TMQConstants.ENABLE_AUTO_COMMIT, false],
+            [TMQConstants.AUTO_COMMIT_INTERVAL_MS, 1000],
+        ]);
+        const consumer = await WsConsumer.newConsumer(tmqConf);
+        await consumer.subscribe([tokenTopic]);
+
+        let count: number = 0;
+        for (let i = 0; i < 5; i++) {
+            const res = await consumer.poll(500);
+            for (const [, value] of res) {
+                const data = value.getData();
+                if (data == null || data.length == 0) {
+                    break;
+                }
+                count += data.length;
+            }
+        }
+        expect(count).toEqual(10);
+
+        await Sleep(3000);
+        await consumer.unsubscribe();
+        await consumer.close();
+        await wsSql.exec("drop token if exists test_tmq_token_url");
+        await wsSql.close();
     });
 
     testEnterprise("connect with invalid token", async () => {
-        const tokenConfigMap = new Map([
-            [TMQConstants.GROUP_ID, "token_group1"],
-            [TMQConstants.CLIENT_ID, "token_client1"],
+        const conf = new Map([
+            [TMQConstants.GROUP_ID, "g1102"],
+            [TMQConstants.CLIENT_ID, "c1102"],
             [TMQConstants.WS_URL, "ws://localhost:6041?bearer_token=invalid_token"],
         ]);
-        await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
+        await expect(WsConsumer.newConsumer(conf)).rejects.toMatchObject({
             message: expect.stringMatching(/invalid token/i),
         });
 
-        tokenConfigMap.set(TMQConstants.WS_URL, "ws://localhost:6041");
-        tokenConfigMap.set(TMQConstants.CONNECT_TOKEN, "invalid_token1");
-        await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
+        conf.set(TMQConstants.WS_URL, "ws://localhost:6041");
+        conf.set(TMQConstants.CONNECT_TOKEN, "invalid_token1");
+        await expect(WsConsumer.newConsumer(conf)).rejects.toMatchObject({
             message: expect.stringMatching(/invalid token/i),
         });
 
-        tokenConfigMap.set(TMQConstants.WS_URL, "ws://localhost:6041?bearer_token=");
-        tokenConfigMap.delete(TMQConstants.CONNECT_TOKEN);
-        await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
+        conf.set(TMQConstants.WS_URL, "ws://localhost:6041?bearer_token=");
+        conf.delete(TMQConstants.CONNECT_TOKEN);
+        await expect(WsConsumer.newConsumer(conf)).rejects.toMatchObject({
             message: expect.stringMatching(/invalid url/i),
         });
 
-        tokenConfigMap.set(TMQConstants.WS_URL, "ws://localhost:6041");
-        tokenConfigMap.set(TMQConstants.CONNECT_TOKEN, "");
-        await expect(WsConsumer.newConsumer(tokenConfigMap)).rejects.toMatchObject({
+        conf.set(TMQConstants.WS_URL, "ws://localhost:6041");
+        conf.set(TMQConstants.CONNECT_TOKEN, "");
+        await expect(WsConsumer.newConsumer(conf)).rejects.toMatchObject({
             message: expect.stringMatching(/invalid url/i),
         });
     });
@@ -495,7 +545,6 @@ afterAll(async () => {
     await ws.exec(dropTopic);
     await ws.exec(`drop topic if exists ${tokenTopic}`);
     await ws.exec(dropDB);
-    await ws.exec("drop user tmq_token_user");
     await ws.close();
     WebSocketConnectionPool.instance().destroyed();
 });

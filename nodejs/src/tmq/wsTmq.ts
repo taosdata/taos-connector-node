@@ -35,7 +35,7 @@ export class WsConsumer {
     private constructor(wsConfig: Map<string, any>) {
         this._wsConfig = new TmqConfig(wsConfig);
         if (logger.isDebugEnabled()) {
-            logger.debug(maskTmqConfigForLog(this._wsConfig));
+            logger.debug("WsConsumer config: " + maskTmqConfigForLog(this._wsConfig));
         }
         if (wsConfig.size == 0 || !this._wsConfig.url) {
             throw new WebSocketInterfaceError(
@@ -103,14 +103,13 @@ export class WsConsumer {
                 req_id: ReqId.getReqID(reqId),
                 user: this._wsConfig.user,
                 password: this._wsConfig.password,
-                ...(this._wsConfig.token && { bearer_token: this._wsConfig.token }),
                 group_id: this._wsConfig.group_id,
                 client_id: this._wsConfig.client_id,
                 topics: topics,
                 offset_rest: this._wsConfig.offset_rest,
-                auto_commit: this._wsConfig.auto_commit,
-                auto_commit_interval_ms: this._wsConfig.auto_commit_interval_ms,
-                config: this._wsConfig.otherConfigs,
+                auto_commit: String(this._wsConfig.auto_commit),
+                auto_commit_interval_ms: String(this._wsConfig.auto_commit_interval_ms),
+                config: Object.fromEntries(this._wsConfig.otherConfigs),
                 connector: ConnectorInfo,
             },
         };

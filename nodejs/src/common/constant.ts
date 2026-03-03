@@ -1,4 +1,4 @@
-import pkg from "../../package.json";
+const pkg = require("../../package.json") as { version: string };
 
 export interface IndexableString {
     [index: number]: string;

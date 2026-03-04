@@ -12,7 +12,7 @@ import { ReqId } from "../common/reqid";
 import logger from "../common/log";
 import { safeDecodeURIComponent, compareVersions, maskSensitiveForLog, maskUrlForLog } from "../common/utils";
 import { w3cwebsocket } from "websocket";
-import { TSDB_OPTION_CONNECTION } from "../common/constant";
+import { ConnectorInfo, TSDB_OPTION_CONNECTION } from "../common/constant";
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
@@ -44,6 +44,7 @@ export class WsClient {
                 user: safeDecodeURIComponent(this._url.username),
                 password: safeDecodeURIComponent(this._url.password),
                 db: database,
+                connector: ConnectorInfo,
                 ...(this._timezone && { tz: this._timezone }),
                 ...(this._bearerToken && { bearer_token: this._bearerToken }),
             },

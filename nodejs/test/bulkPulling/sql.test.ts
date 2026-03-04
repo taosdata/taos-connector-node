@@ -1,7 +1,7 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { Sleep, testPassword, testUsername, testEnterprise } from "../utils";
+import { Sleep, testPassword, testUsername, testEnterprise, testNon3360 } from "../utils";
 import { setLevel } from "../../src/common/log";
 
 let dsn = "ws://localhost:6041";
@@ -325,6 +325,26 @@ describe("TDWebSocket.WsSql()", () => {
         await expect(WsSql.open(conf)).rejects.toMatchObject({
             message: expect.stringMatching(/invalid url/i),
         });
+    });
+
+    testNon3360("connector version info", async () => {
+        const conf = new WSConfig(dsn);
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
+        const wsSql = await WsSql.open(conf);
+        await Sleep(2000);
+        const wsRows = await wsSql.query("show connections");
+        let hasNodejsWs = false;
+        while (await wsRows.next()) {
+            const data = wsRows.getData();
+            if (Array.isArray(data) && data.some(v => typeof v === "string" && v.includes("nodejs-ws"))) {
+                hasNodejsWs = true;
+                break;
+            }
+        }
+        expect(hasNodejsWs).toBe(true);
+        await wsRows.close();
+        await wsSql.close();
     });
 });
 

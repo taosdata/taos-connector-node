@@ -23,6 +23,7 @@ import { ReqId } from "../common/reqid";
 import logger from "../common/log";
 import { WSFetchBlockResponse } from "../client/wsResponse";
 import { maskTmqConfigForLog, maskUrlForLog } from "../common/utils";
+import { ConnectorInfo } from "../common/constant";
 
 export class WsConsumer {
     private _wsClient: WsClient;
@@ -109,6 +110,7 @@ export class WsConsumer {
                 auto_commit: String(this._wsConfig.auto_commit),
                 auto_commit_interval_ms: String(this._wsConfig.auto_commit_interval_ms),
                 config: Object.fromEntries(this._wsConfig.otherConfigs),
+                connector: ConnectorInfo,
             },
         };
         this._topics = topics;

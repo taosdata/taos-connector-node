@@ -61,6 +61,7 @@ export class TmqConfig {
             } else {
                 this.user = this.url.username;
             }
+
             if (this.password) {
                 this.url.password = this.password;
             } else {

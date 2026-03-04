@@ -29,4 +29,5 @@ let setLogLevel = (level: string) => {
 let destroy = () => {
     WebSocketConnectionPool.instance().destroyed();
 };
+
 export { sqlConnect, tmqConnect, setLogLevel, destroy };

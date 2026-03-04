@@ -4,6 +4,7 @@ const path = require("path");
 const { resolve, parse } = path;
 
 const tsFile = /\/src\/.*.ts$/;
+
 async function dir(folder, ts = []) {
     let files = await readdir(folder);
     for (let f of files) {

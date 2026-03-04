@@ -2,7 +2,7 @@ import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { createSTable, insertStable, testPassword, testUsername, Sleep, testEnterprise } from "../utils";
+import { createSTable, insertStable, testPassword, testUsername, Sleep, testEnterprise, testNon3360 } from "../utils";
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { setLevel } from "../../src/common/log";
 
@@ -509,6 +509,32 @@ describe("TDWebSocket.Tmq()", () => {
         await expect(WsConsumer.newConsumer(conf)).rejects.toMatchObject({
             message: expect.stringMatching(/invalid url/i),
         });
+    });
+
+    testNon3360("connector version info", async () => {
+        const consumer = await WsConsumer.newConsumer(configMap);
+        await consumer.subscribe(topics);
+
+        const conf = new WSConfig("ws://localhost:6041");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
+        const wsSql = await WsSql.open(conf);
+        await Sleep(2000);
+
+        const wsRows = await wsSql.query("show connections");
+        let count = 0;
+        while (await wsRows.next()) {
+            const data = wsRows.getData();
+            if (Array.isArray(data) && data.some(v => typeof v === "string" && v.includes("nodejs-ws"))) {
+                count++;
+            }
+        }
+        expect(count).toBeGreaterThanOrEqual(2);
+        await wsRows.close();
+        await wsSql.close();
+
+        await consumer.unsubscribe();
+        await consumer.close();
     });
 });
 

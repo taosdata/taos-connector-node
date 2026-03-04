@@ -51,6 +51,7 @@ jobs:
           TDENGINE_CLOUD_TOKEN: ${{ secrets.TDENGINE_CLOUD_TOKEN }}
           TDENGINE_TEST_USERNAME: ${{ secrets.TDENGINE_TEST_USERNAME }}
           TDENGINE_TEST_PASSWORD: ${{ secrets.TDENGINE_TEST_PASSWORD }}
+          TEST_3360: true
         run: |
           npm install
           npm list

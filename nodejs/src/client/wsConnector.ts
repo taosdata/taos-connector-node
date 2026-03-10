@@ -12,6 +12,7 @@ import { maskSensitiveForLog, maskUrlForLog } from "../common/utils";
 export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
     private _wsURL: URL;
+    private _onCloseHandler?: (e?: ICloseEvent) => void;
     _timeout = 5000;
 
     constructor(url: URL, timeout: number | undefined | null) {
@@ -34,10 +35,18 @@ export class WebSocketConnector {
                     maxReceivedMessageSize: 0x60000000,
                 }
             );
-            this._wsConn.onerror = function (err: Error) {
+            this._wsConn.onerror = (err: Error) => {
                 logger.error(`webSocket connection failed, url: ${maskUrlForLog(new URL(this.url))}, error: ${err.message}`);
+                if (this._onCloseHandler) {
+                    this._onCloseHandler();
+                }
             };
-            this._wsConn.onclose = this._onclose;
+            this._wsConn.onclose = (e: ICloseEvent) => {
+                this._onclose(e);
+                if (this._onCloseHandler) {
+                    this._onCloseHandler(e);
+                }
+            };
             this._wsConn.onmessage = this._onmessage;
             this._wsConn._binaryType = "arraybuffer";
         } else {
@@ -46,6 +55,10 @@ export class WebSocketConnector {
                 "websocket URL must be defined"
             );
         }
+    }
+
+    setOnCloseHandler(handler?: (e?: ICloseEvent) => void) {
+        this._onCloseHandler = handler;
     }
 
     async ready() {

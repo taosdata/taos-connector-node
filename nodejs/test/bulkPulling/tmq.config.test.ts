@@ -26,44 +26,44 @@ describe("TmqConfig - td.connect.token", () => {
         expect(cfg.token).toBe("mytoken123");
     });
 
-    test("bearer_token is appended to url search params when token is provided", () => {
+    test("bearer_token is appended to url when token is provided", () => {
         const configMap = new Map([
             [TMQConstants.WS_URL, baseUrl],
             [TMQConstants.CONNECT_TOKEN, "mytoken123"],
             [TMQConstants.GROUP_ID, "g1"],
         ]);
         const cfg = new TmqConfig(configMap);
-        expect(cfg.url?.searchParams.get("bearer_token")).toBe("mytoken123");
+        expect(cfg.url).toContain("bearer_token=mytoken123");
     });
 
-    test("bearer_token is appended to sql_url search params when token is provided", () => {
+    test("bearer_token is appended to sql_url when token is provided", () => {
         const configMap = new Map([
             [TMQConstants.WS_URL, baseUrl],
             [TMQConstants.CONNECT_TOKEN, "mytoken123"],
             [TMQConstants.GROUP_ID, "g1"],
         ]);
         const cfg = new TmqConfig(configMap);
-        expect(cfg.sql_url?.searchParams.get("bearer_token")).toBe("mytoken123");
+        expect(cfg.sql_url).toContain("bearer_token=mytoken123");
     });
 
-    test("sql_url pathname is /ws when token is provided", () => {
+    test("sql_url contains /ws path when token is provided", () => {
         const configMap = new Map([
             [TMQConstants.WS_URL, baseUrl],
             [TMQConstants.CONNECT_TOKEN, "mytoken123"],
             [TMQConstants.GROUP_ID, "g1"],
         ]);
         const cfg = new TmqConfig(configMap);
-        expect(cfg.sql_url?.pathname).toBe("/ws");
+        expect(cfg.sql_url).toContain("/ws");
     });
 
-    test("url pathname is /rest/tmq when token is provided", () => {
+    test("url contains /rest/tmq path when token is provided", () => {
         const configMap = new Map([
             [TMQConstants.WS_URL, baseUrl],
             [TMQConstants.CONNECT_TOKEN, "mytoken123"],
             [TMQConstants.GROUP_ID, "g1"],
         ]);
         const cfg = new TmqConfig(configMap);
-        expect(cfg.url?.pathname).toBe("/rest/tmq");
+        expect(cfg.url).toContain("/rest/tmq");
     });
 
     test("bearer_token not set on urls when token is not provided", () => {
@@ -74,8 +74,8 @@ describe("TmqConfig - td.connect.token", () => {
             [TMQConstants.GROUP_ID, "g1"],
         ]);
         const cfg = new TmqConfig(configMap);
-        expect(cfg.url?.searchParams.has("bearer_token")).toBe(false);
-        expect(cfg.sql_url?.searchParams.has("bearer_token")).toBe(false);
+        expect(cfg.url).not.toContain("bearer_token");
+        expect(cfg.sql_url).not.toContain("bearer_token");
     });
 
     test("CONNECT_TOKEN constant value is td.connect.token", () => {

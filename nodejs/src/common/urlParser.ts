@@ -17,6 +17,7 @@ export interface ParsedMultiAddress {
     retryBackoffMaxMs: number;
 }
 
+const DEFAULT_PORT = 6041;
 const DEFAULT_RETRIES = 5;
 const DEFAULT_RETRY_BACKOFF_MS = 200;
 const DEFAULT_RETRY_BACKOFF_MAX_MS = 2000;
@@ -43,31 +44,60 @@ export function parseMultiAddressUrl(urlStr: string): ParsedMultiAddress {
         );
     }
     const scheme = schemeMatch[1].toLowerCase();
-    let remaining = urlStr.slice(schemeMatch[0].length);
+    const afterScheme = schemeMatch[0].length; // position after "ws://" or "wss://"
 
-    // Extract userinfo (user:pass@)
+    // Locate host:port section boundaries
+    // If user:pass@ exists, @ marks the end of userinfo; host starts after @
+    // Otherwise host starts right after "//"
     let username = "";
     let password = "";
-    const atIndex = findUserInfoEnd(remaining);
+    let hostStart: number;
+
+    const atIndex = urlStr.indexOf("@", afterScheme);
     if (atIndex !== -1) {
-        const userInfo = remaining.slice(0, atIndex);
-        remaining = remaining.slice(atIndex + 1);
-        const colonIndex = userInfo.indexOf(":");
-        if (colonIndex !== -1) {
-            username = userInfo.slice(0, colonIndex);
-            password = userInfo.slice(colonIndex + 1);
+        // Verify @ comes before any / or ? (i.e. it's part of userinfo, not path)
+        const slashIndex = urlStr.indexOf("/", afterScheme);
+        const questionIndex = urlStr.indexOf("?", afterScheme);
+        const pathStart = Math.min(
+            slashIndex === -1 ? urlStr.length : slashIndex,
+            questionIndex === -1 ? urlStr.length : questionIndex
+        );
+        if (atIndex < pathStart) {
+            const userInfo = urlStr.slice(afterScheme, atIndex);
+            const colonIndex = userInfo.indexOf(":");
+            if (colonIndex !== -1) {
+                username = userInfo.slice(0, colonIndex);
+                password = userInfo.slice(colonIndex + 1);
+            } else {
+                username = userInfo;
+            }
+            hostStart = atIndex + 1;
         } else {
-            username = userInfo;
+            // @ is in path/query, not userinfo
+            hostStart = afterScheme;
+        }
+    } else {
+        hostStart = afterScheme;
+    }
+
+    // Find end of host:port section: first "/" or "?" after hostStart
+    // For IPv6 brackets we only need to skip content inside []
+    let hostEnd = urlStr.length;
+    let inBracket = false;
+    for (let i = hostStart; i < urlStr.length; i++) {
+        const ch = urlStr[i];
+        if (ch === "[") inBracket = true;
+        else if (ch === "]") inBracket = false;
+        else if ((ch === "/" || ch === "?") && !inBracket) {
+            hostEnd = i;
+            break;
         }
     }
 
-    // Split host part from path+query
-    // Find the first '/' or '?' that is NOT inside brackets
-    let hostEnd = findHostEnd(remaining);
-    const hostPart = remaining.slice(0, hostEnd);
-    remaining = remaining.slice(hostEnd);
+    const hostPart = urlStr.slice(hostStart, hostEnd);
+    const remaining = urlStr.slice(hostEnd);
 
-    // Parse hosts
+    // Parse hosts from the comma-separated host:port section
     const hosts = parseHosts(hostPart);
     if (hosts.length === 0) {
         throw new TDWebSocketClientError(
@@ -76,7 +106,7 @@ export function parseMultiAddressUrl(urlStr: string): ParsedMultiAddress {
         );
     }
 
-    // Parse path and query
+    // Parse path and query from remaining
     let pathname = "/";
     let search = "";
     const queryIndex = remaining.indexOf("?");
@@ -128,38 +158,6 @@ export function buildUrlForHost(parsed: ParsedMultiAddress, hostIndex: number): 
 }
 
 /**
- * Find the '@' that ends userinfo. Must not be inside [] brackets.
- */
-function findUserInfoEnd(str: string): number {
-    let inBracket = false;
-    for (let i = 0; i < str.length; i++) {
-        const ch = str[i];
-        if (ch === "[") inBracket = true;
-        else if (ch === "]") inBracket = false;
-        else if (ch === "@" && !inBracket) return i;
-        else if (ch === "/" || ch === "?" || ch === "#") {
-            // No userinfo
-            return -1;
-        }
-    }
-    return -1;
-}
-
-/**
- * Find where the host section ends (first '/' or '?' not inside brackets).
- */
-function findHostEnd(str: string): number {
-    let inBracket = false;
-    for (let i = 0; i < str.length; i++) {
-        const ch = str[i];
-        if (ch === "[") inBracket = true;
-        else if (ch === "]") inBracket = false;
-        else if ((ch === "/" || ch === "?") && !inBracket) return i;
-    }
-    return str.length;
-}
-
-/**
  * Parse comma-separated host:port entries.
  * Supports: hostname:port, IPv4:port, [IPv6]:port
  * If port is omitted, defaults to 6041.
@@ -168,10 +166,8 @@ function parseHosts(hostPart: string): HostPort[] {
     if (!hostPart) return [];
 
     const results: HostPort[] = [];
-    const DEFAULT_PORT = 6041;
-
     // Split by comma, respecting brackets
-    const segments = splitHostSegments(hostPart);
+    const segments = splitByComma(hostPart);
 
     for (const seg of segments) {
         const trimmed = seg.trim();
@@ -200,7 +196,7 @@ function parseHosts(hostPart: string): HostPort[] {
             }
             results.push({ host, port });
         } else {
-            // IPv4 or hostname
+            // IPv4 or hostname: use lastIndexOf(":") to find port separator
             const lastColon = trimmed.lastIndexOf(":");
             if (lastColon === -1) {
                 results.push({ host: trimmed, port: DEFAULT_PORT });
@@ -209,7 +205,6 @@ function parseHosts(hostPart: string): HostPort[] {
                 const portStr = trimmed.slice(lastColon + 1);
                 const port = parseInt(portStr, 10);
                 if (isNaN(port)) {
-                    // Might be hostname without port that contains something odd, treat whole as host
                     results.push({ host: trimmed, port: DEFAULT_PORT });
                 } else {
                     results.push({ host, port });
@@ -221,14 +216,12 @@ function parseHosts(hostPart: string): HostPort[] {
     return results;
 }
 
-/**
- * Split host part by commas, but not inside brackets.
- */
-function splitHostSegments(hostPart: string): string[] {
+/** Split string by commas, but not inside [] brackets. */
+function splitByComma(str: string): string[] {
     const segments: string[] = [];
     let current = "";
     let inBracket = false;
-    for (const ch of hostPart) {
+    for (const ch of str) {
         if (ch === "[") inBracket = true;
         else if (ch === "]") inBracket = false;
         if (ch === "," && !inBracket) {

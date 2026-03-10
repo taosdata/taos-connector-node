@@ -33,8 +33,8 @@ export class WsSql {
         // 解析并校验，支持多地址
         let url = getUrl(wsConfig);
         this.wsConfig = wsConfig;
-        // 传递 ParsedMultiAddress 给 WsClient，支持多地址连接
-        this._wsClient = new WsClient(url, wsConfig.getTimeOut(), wsConfig.getParsedMultiAddress());
+        // 传递 string URL 给 WsClient，支持多地址连接
+        this._wsClient = new WsClient(url, wsConfig.getTimeOut());
     }
 
     static async open(wsConfig: WSConfig): Promise<WsSql> {

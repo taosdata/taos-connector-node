@@ -45,8 +45,7 @@ export class WsConsumer {
         }
         this._wsClient = new WsClient(
             this._wsConfig.url,
-            this._wsConfig.timeout,
-            this._wsConfig.parsedMultiAddress || undefined
+            this._wsConfig.timeout
         );
         this._lastMessageID = BigInt(0);
     }
@@ -57,8 +56,7 @@ export class WsConsumer {
             if (this._wsConfig.sql_url) {
                 wsSql = new WsClient(
                     this._wsConfig.sql_url,
-                    this._wsConfig.timeout,
-                    this._wsConfig.parsedMultiAddress || undefined
+                    this._wsConfig.timeout
                 );
                 await wsSql.connect();
                 await wsSql.checkVersion();
@@ -67,7 +65,7 @@ export class WsConsumer {
             } else {
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                    `connection creation failed, url: ${maskUrlForLog(this._wsConfig.url)}`
+                    `connection creation failed, url: ${this._wsConfig.url}`
                 );
             }
         } catch (e: any) {

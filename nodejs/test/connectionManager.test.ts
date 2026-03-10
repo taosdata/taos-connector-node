@@ -1,35 +1,35 @@
-import { parseMultiAddressUrl, buildUrlForHost } from "../src/common/urlParser";
-import { ConnectionManager } from "../src/client/wsConnectionManager";
+import { WebSocketConnector } from "../src/client/wsConnector";
 
-describe("ConnectionManager", () => {
-    test("constructor initializes with random index", () => {
-        const parsed = parseMultiAddressUrl(
-            "ws://root:taosdata@host1:6041,host2:6042,host3:6043?retries=2&retry_backoff_ms=100"
+describe("WebSocketConnector", () => {
+    test("constructor initializes with parsed multi-address", () => {
+        const connector = new WebSocketConnector(
+            "ws://root:taosdata@host1:6041,host2:6042,host3:6043?retries=2&retry_backoff_ms=100",
+            5000
         );
-        const mgr = new ConnectionManager(parsed, 5000);
-        expect(mgr).toBeDefined();
-        expect(mgr.getParsed()).toBe(parsed);
-        expect(mgr.isConnected()).toBe(false);
-        expect(mgr.getConnector()).toBeNull();
-        expect(mgr.getInflightCount()).toBe(0);
+        expect(connector).toBeDefined();
+        expect(connector.getParsed().hosts.length).toBe(3);
+        expect(connector.isConnected()).toBe(false);
+        expect(connector.getInflightCount()).toBe(0);
     });
 
     test("getCurrentUrl returns valid URL", () => {
-        const parsed = parseMultiAddressUrl(
-            "ws://root:taosdata@localhost:6041,localhost:6042"
+        const connector = new WebSocketConnector(
+            "ws://root:taosdata@localhost:6041,localhost:6042",
+            5000
         );
-        const mgr = new ConnectionManager(parsed, 5000);
-        const url = mgr.getCurrentUrl();
+        const url = connector.getCurrentUrl();
         expect(url.protocol).toBe("ws:");
         expect(url.username).toBe("root");
         expect(["6041", "6042"]).toContain(url.port);
     });
 
     test("trackRequest and completeRequest", () => {
-        const parsed = parseMultiAddressUrl("ws://root:taosdata@localhost:6041");
-        const mgr = new ConnectionManager(parsed, 5000);
-        
-        mgr.trackRequest("req1", {
+        const connector = new WebSocketConnector(
+            "ws://root:taosdata@localhost:6041",
+            5000
+        );
+
+        connector.trackRequest("req1", {
             id: "req1",
             type: "text",
             message: '{"action":"test"}',
@@ -37,17 +37,19 @@ describe("ConnectionManager", () => {
             reject: () => {},
             register: true,
         });
-        expect(mgr.getInflightCount()).toBe(1);
+        expect(connector.getInflightCount()).toBe(1);
 
-        mgr.completeRequest("req1");
-        expect(mgr.getInflightCount()).toBe(0);
+        connector.completeRequest("req1");
+        expect(connector.getInflightCount()).toBe(0);
     });
 
-    test("close clears inflight requests", async () => {
-        const parsed = parseMultiAddressUrl("ws://root:taosdata@localhost:6041");
-        const mgr = new ConnectionManager(parsed, 5000);
-        
-        mgr.trackRequest("req1", {
+    test("close clears inflight requests", () => {
+        const connector = new WebSocketConnector(
+            "ws://root:taosdata@localhost:6041",
+            5000
+        );
+
+        connector.trackRequest("req1", {
             id: "req1",
             type: "text",
             message: '{"action":"test"}',
@@ -55,9 +57,9 @@ describe("ConnectionManager", () => {
             reject: () => {},
             register: true,
         });
-        expect(mgr.getInflightCount()).toBe(1);
+        expect(connector.getInflightCount()).toBe(1);
 
-        await mgr.close();
-        expect(mgr.getInflightCount()).toBe(0);
+        connector.close();
+        expect(connector.getInflightCount()).toBe(0);
     });
 });

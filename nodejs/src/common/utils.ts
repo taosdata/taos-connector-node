@@ -3,12 +3,11 @@ import { WSConfig } from "./config";
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
 import { parseMultiAddressUrl, buildUrlForHost } from "./urlParser";
 
-export function getUrl(wsConfig: WSConfig): URL {
+export function getUrl(wsConfig: WSConfig): string {
     const rawUrl = wsConfig.getUrl();
 
-    // Try multi-address parsing first
+    // Parse multi-address URL to apply overrides
     const parsed = parseMultiAddressUrl(rawUrl);
-    wsConfig.setParsedMultiAddress(parsed);
 
     // Apply user/password overrides from WSConfig
     if (wsConfig.getUser()) {
@@ -56,11 +55,25 @@ export function getUrl(wsConfig: WSConfig): URL {
     // Set pathname to /ws for WebSocket endpoint
     parsed.pathname = "/ws";
 
-    // Update the stored parsed multi-address
-    wsConfig.setParsedMultiAddress(parsed);
+    // Rebuild the URL string with all overrides applied
+    const url = buildUrlForHost(parsed, 0);
+    // For multi-address, reconstruct the full multi-address URL string
+    if (parsed.hosts.length > 1) {
+        const hosts = parsed.hosts.map(hp => {
+            const isIPv6 = hp.host.includes(":");
+            return isIPv6 ? `[${hp.host}]:${hp.port}` : `${hp.host}:${hp.port}`;
+        }).join(",");
+        let result = `${parsed.scheme}://`;
+        if (parsed.username || parsed.password) {
+            result += `${encodeURIComponent(parsed.username)}:${encodeURIComponent(parsed.password)}@`;
+        }
+        result += hosts + parsed.pathname;
+        const search = parsed.searchParams.toString();
+        if (search) result += "?" + search;
+        return result;
+    }
 
-    // Return URL for first host (backward compatibility)
-    return buildUrlForHost(parsed, 0);
+    return url.toString();
 }
 
 export function isEmpty(value: any): boolean {
@@ -245,9 +258,6 @@ export function maskTmqConfigForLog(config: TmqConfig): string {
     };
     return JSON.stringify(masked, (key, value) => {
         switch (key) {
-            case 'url':
-            case 'sql_url':
-                return maskUrlForLog(value);
             case 'token':
             case 'password':
             case 'bearer_token':

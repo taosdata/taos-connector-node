@@ -1,4 +1,5 @@
 import { TMQConstants } from "./constant";
+import { parseMultiAddressUrl, buildUrlForHost, ParsedMultiAddress } from "../common/urlParser";
 
 export class TmqConfig {
     url: URL | null = null;
@@ -14,13 +15,15 @@ export class TmqConfig {
     auto_commit_interval_ms: number = 5 * 1000;
     timeout: number = 5000;
     otherConfigs: Map<string, any>;
+    parsedMultiAddress: ParsedMultiAddress | null = null;
 
     constructor(wsConfig: Map<string, any>) {
         this.otherConfigs = new Map();
+        let rawUrl: string | null = null;
         for (const [key, value] of wsConfig) {
             switch (key) {
                 case TMQConstants.WS_URL:
-                    this.url = new URL(value);
+                    rawUrl = value;
                     break;
                 case TMQConstants.CONNECT_USER:
                     this.user = value;
@@ -55,20 +58,30 @@ export class TmqConfig {
             }
         }
 
-        if (this.url) {
+        if (rawUrl) {
+            // Parse multi-address URL
+            const parsed = parseMultiAddressUrl(rawUrl);
+            this.parsedMultiAddress = parsed;
+
+            // Build URL from first host for compatibility
+            this.url = buildUrlForHost(parsed, 0);
+
             if (this.user) {
                 this.url.username = this.user;
+                parsed.username = this.user;
             } else {
                 this.user = this.url.username;
             }
 
             if (this.password) {
                 this.url.password = this.password;
+                parsed.password = this.password;
             } else {
                 this.password = this.url.password;
             }
             if (this.token) {
                 this.url.searchParams.set("bearer_token", this.token);
+                parsed.searchParams.set("bearer_token", this.token);
             } else {
                 const bearerToken = this.url.searchParams.get("bearer_token");
                 if (bearerToken) {
@@ -79,7 +92,7 @@ export class TmqConfig {
                 }
             }
 
-            this.sql_url = new URL(this.url);
+            this.sql_url = new URL(this.url.toString());
             this.sql_url.pathname = "/ws";
             this.url.pathname = "/rest/tmq";
         }

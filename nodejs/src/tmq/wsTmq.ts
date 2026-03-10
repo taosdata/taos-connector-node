@@ -45,7 +45,8 @@ export class WsConsumer {
         }
         this._wsClient = new WsClient(
             this._wsConfig.url,
-            this._wsConfig.timeout
+            this._wsConfig.timeout,
+            this._wsConfig.parsedMultiAddress || undefined
         );
         this._lastMessageID = BigInt(0);
     }
@@ -56,10 +57,12 @@ export class WsConsumer {
             if (this._wsConfig.sql_url) {
                 wsSql = new WsClient(
                     this._wsConfig.sql_url,
-                    this._wsConfig.timeout
+                    this._wsConfig.timeout,
+                    this._wsConfig.parsedMultiAddress || undefined
                 );
                 await wsSql.connect();
                 await wsSql.checkVersion();
+                // 创建 ws 连接
                 await this._wsClient.ready();
             } else {
                 throw new TDWebSocketClientError(

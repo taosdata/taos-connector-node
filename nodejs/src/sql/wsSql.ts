@@ -27,10 +27,14 @@ export class WsSql {
     private wsConfig: WSConfig;
     private _wsClient: WsClient;
 
+    // 没有建立连接
     constructor(wsConfig: WSConfig) {
+        // string -> url
+        // 解析并校验，支持多地址
         let url = getUrl(wsConfig);
         this.wsConfig = wsConfig;
-        this._wsClient = new WsClient(url, wsConfig.getTimeOut());
+        // 传递 ParsedMultiAddress 给 WsClient，支持多地址连接
+        this._wsClient = new WsClient(url, wsConfig.getTimeOut(), wsConfig.getParsedMultiAddress());
     }
 
     static async open(wsConfig: WSConfig): Promise<WsSql> {
@@ -128,7 +132,6 @@ export class WsSql {
                         "'";
                     let result = await this.exec(sql);
                     let data = result.getData();
-
                     if (data && data[0] && data[0][0]) {
                         precision = PrecisionLength[data[0][0]];
                     }

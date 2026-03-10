@@ -1,15 +1,17 @@
 import { MinStmt2Version } from "./constant";
+import { ParsedMultiAddress } from "./urlParser";
 
 export class WSConfig {
     private _user: string | undefined | null;
     private _password: string | undefined | null;
     private _db: string | undefined | null;
-    private _url: string;
+    private _url: string; // 支持多地址
     private _timeout: number | undefined | null;
     private _token: string | undefined | null;
     private _timezone: string | undefined | null;
     private _minStmt2Version: string;
     private _bearerToken: string | undefined | null;
+    private _parsedMultiAddress: ParsedMultiAddress | undefined;
 
     constructor(url: string, minStmt2Version?: string) {
         this._url = url;
@@ -86,5 +88,13 @@ export class WSConfig {
 
     public getMinStmt2Version() {
         return this._minStmt2Version;
+    }
+
+    public getParsedMultiAddress(): ParsedMultiAddress | undefined {
+        return this._parsedMultiAddress;
+    }
+
+    public setParsedMultiAddress(parsed: ParsedMultiAddress) {
+        this._parsedMultiAddress = parsed;
     }
 }

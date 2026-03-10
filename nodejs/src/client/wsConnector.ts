@@ -10,9 +10,11 @@ import { ReqId } from "../common/reqid";
 import { maskSensitiveForLog, maskUrlForLog } from "../common/utils";
 
 export class WebSocketConnector {
+    // 底层 ws 连接
     private _wsConn: w3cwebsocket;
     private _wsURL: URL;
     _timeout = 5000;
+    private _onCloseCallbacks: Array<(event: ICloseEvent) => void> = [];
 
     constructor(url: URL, timeout: number | undefined | null) {
         if (url) {
@@ -37,7 +39,12 @@ export class WebSocketConnector {
             this._wsConn.onerror = function (err: Error) {
                 logger.error(`webSocket connection failed, url: ${maskUrlForLog(new URL(this.url))}, error: ${err.message}`);
             };
-            this._wsConn.onclose = this._onclose;
+            this._wsConn.onclose = (e: ICloseEvent) => {
+                this._onclose(e);
+                for (const cb of this._onCloseCallbacks) {
+                    try { cb(e); } catch (_) { /* ignore callback errors */ }
+                }
+            };
             this._wsConn.onmessage = this._onmessage;
             this._wsConn._binaryType = "arraybuffer";
         } else {
@@ -48,6 +55,15 @@ export class WebSocketConnector {
         }
     }
 
+    /**
+     * Register a callback to be invoked when the underlying WebSocket closes.
+     */
+    onClose(callback: (event: ICloseEvent) => void): void {
+        this._onCloseCallbacks.push(callback);
+    }
+
+    // ？？？
+    // 连接建立成功后，发送连接成功的消息，触发后续的事件回调
     async ready() {
         return new Promise((resolve, reject) => {
             let reqId = ReqId.getReqID();
@@ -107,6 +123,7 @@ export class WebSocketConnector {
         }
     }
 
+    // 关闭底层 ws 连接
     close() {
         if (this._wsConn) {
             this._wsConn.close();
@@ -154,6 +171,13 @@ export class WebSocketConnector {
         }
 
         return new Promise((resolve, reject) => {
+            /*
+            w3c 连接有状态
+            CONNECTING: number;
+            OPEN: number;
+            CLOSING: number;
+            CLOSED: number;
+            */
             if (this._wsConn && this._wsConn.readyState === w3cwebsocket.OPEN) {
                 if (register) {
                     WsEventCallback.instance().registerCallback(
@@ -172,6 +196,9 @@ export class WebSocketConnector {
                 }
                 this._wsConn.send(message);
             } else {
+                // 连接重建，重试机制
+                // reconnect 后重新发送请求
+                // 有没有 inflight 请求？如果有需要添加缓存机制，重试时重新发送
                 reject(
                     new WebSocketQueryError(
                         ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
@@ -218,6 +245,20 @@ export class WebSocketConnector {
                 );
             }
         });
+    }
+
+    /**
+     * Send raw binary data without callback registration (used for inflight resend).
+     */
+    sendBinaryMsgRaw(message: ArrayBuffer): void {
+        if (this._wsConn && this._wsConn.readyState === w3cwebsocket.OPEN) {
+            this._wsConn.send(message);
+        } else {
+            throw new WebSocketQueryError(
+                ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
+                `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
+            );
+        }
     }
 
     public getWsURL(): URL {

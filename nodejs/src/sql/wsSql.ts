@@ -8,7 +8,7 @@ import {
     WebSocketInterfaceError,
 } from "../common/wsError";
 import { WSConfig } from "../common/config";
-import { compareVersions, getBinarySql, getUrl } from "../common/utils";
+import { compareVersions, getBinarySql, getUrls } from "../common/utils";
 import { WSFetchBlockResponse, WSQueryResponse } from "../client/wsResponse";
 import { Precision, SchemalessMessageInfo, SchemalessProto } from "./wsProto";
 import { ReqId } from "../common/reqid";
@@ -28,9 +28,9 @@ export class WsSql {
     private _wsClient: WsClient;
 
     constructor(wsConfig: WSConfig) {
-        let url = getUrl(wsConfig);
+        let { urls, failover } = getUrls(wsConfig);
         this.wsConfig = wsConfig;
-        this._wsClient = new WsClient(url, wsConfig.getTimeOut());
+        this._wsClient = new WsClient(urls, wsConfig.getTimeOut(), failover);
     }
 
     static async open(wsConfig: WSConfig): Promise<WsSql> {

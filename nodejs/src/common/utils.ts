@@ -2,8 +2,23 @@ import { TmqConfig } from "../tmq/config";
 import { WSConfig } from "./config";
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
 
+export interface FailoverOptions {
+    retries: number;
+    retryBackoffMs: number;
+    retryBackoffMaxMs: number;
+}
+
+export function getUrls(wsConfig: WSConfig): { urls: URL[]; failover: FailoverOptions } {
+    const { urls, failover } = parseMultiHostUrlString(wsConfig.getUrl());
+    const applied = urls.map((u) => applyWsConfigToUrl(u, wsConfig));
+    return { urls: applied, failover };
+}
+
 export function getUrl(wsConfig: WSConfig): URL {
-    let url = new URL(wsConfig.getUrl());
+    return getUrls(wsConfig).urls[0];
+}
+
+function applyWsConfigToUrl(url: URL, wsConfig: WSConfig): URL {
     if (wsConfig.getUser()) {
         url.username = wsConfig.getUser() || "";
     }
@@ -43,6 +58,110 @@ export function getUrl(wsConfig: WSConfig): URL {
 
     url.pathname = "/ws";
     return url;
+}
+
+function parseMultiHostUrlString(rawUrl: string): { urls: URL[]; failover: FailoverOptions } {
+    const schemeMatch = rawUrl.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\/(.*)$/);
+    if (!schemeMatch) {
+        throw new TDWebSocketClientError(
+            ErrorCode.ERR_INVALID_URL,
+            `invalid url: ${rawUrl}`
+        );
+    }
+
+    const scheme = schemeMatch[1];
+    const rest = schemeMatch[2];
+    const idx = rest.search(/[\/?#]/);
+    const authority = idx >= 0 ? rest.slice(0, idx) : rest;
+    const tail = idx >= 0 ? rest.slice(idx) : "";
+
+    const atIndex = authority.lastIndexOf("@");
+    const userInfo = atIndex >= 0 ? authority.slice(0, atIndex) : "";
+    const hostList = atIndex >= 0 ? authority.slice(atIndex + 1) : authority;
+
+    const hosts = splitHostList(hostList);
+    if (hosts.length === 0) {
+        throw new TDWebSocketClientError(
+            ErrorCode.ERR_INVALID_URL,
+            `invalid url, no host: ${rawUrl}`
+        );
+    }
+
+    const urls: URL[] = hosts.map((host) => new URL(`${scheme}://${host}${tail}`));
+    if (userInfo) {
+        const sep = userInfo.indexOf(":");
+        const user = sep >= 0 ? userInfo.slice(0, sep) : userInfo;
+        const pass = sep >= 0 ? userInfo.slice(sep + 1) : "";
+        urls.forEach((u) => {
+            if (user) {
+                u.username = user;
+            }
+            if (pass) {
+                u.password = pass;
+            }
+        });
+    }
+
+    const failover = parseFailoverOptions(urls[0]);
+    urls.forEach((u) => {
+        u.searchParams.delete("retries");
+        u.searchParams.delete("retry_backoff_ms");
+        u.searchParams.delete("retry_backoff_max_ms");
+    });
+
+    return { urls, failover };
+}
+
+function parseFailoverOptions(url: URL): FailoverOptions {
+    const retries = parseInt(url.searchParams.get("retries") || "0", 10);
+    const retryBackoffMs = parseInt(url.searchParams.get("retry_backoff_ms") || "0", 10);
+    const retryBackoffMaxMs = parseInt(
+        url.searchParams.get("retry_backoff_max_ms") || "0",
+        10
+    );
+    return {
+        retries: Number.isFinite(retries) && retries > 0 ? retries : 0,
+        retryBackoffMs: Number.isFinite(retryBackoffMs) && retryBackoffMs > 0 ? retryBackoffMs : 0,
+        retryBackoffMaxMs:
+            Number.isFinite(retryBackoffMaxMs) && retryBackoffMaxMs > 0
+                ? retryBackoffMaxMs
+                : 0,
+    };
+}
+
+function splitHostList(hostList: string): string[] {
+    const hosts: string[] = [];
+    let buf = "";
+    let bracketDepth = 0;
+    for (let i = 0; i < hostList.length; i++) {
+        const ch = hostList[i];
+        if (ch === "[") {
+            bracketDepth++;
+            buf += ch;
+            continue;
+        }
+        if (ch === "]") {
+            if (bracketDepth > 0) {
+                bracketDepth--;
+            }
+            buf += ch;
+            continue;
+        }
+        if (ch === "," && bracketDepth === 0) {
+            const trimmed = buf.trim();
+            if (trimmed.length > 0) {
+                hosts.push(trimmed);
+            }
+            buf = "";
+            continue;
+        }
+        buf += ch;
+    }
+    const trimmed = buf.trim();
+    if (trimmed.length > 0) {
+        hosts.push(trimmed);
+    }
+    return hosts;
 }
 
 export function isEmpty(value: any): boolean {

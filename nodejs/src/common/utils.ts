@@ -1,48 +1,79 @@
 import { TmqConfig } from "../tmq/config";
 import { WSConfig } from "./config";
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
+import { parseMultiAddressUrl, buildUrlForHost } from "./urlParser";
 
-export function getUrl(wsConfig: WSConfig): URL {
-    let url = new URL(wsConfig.getUrl());
+export function getUrl(wsConfig: WSConfig): string {
+    const rawUrl = wsConfig.getUrl();
+
+    // Parse multi-address URL to apply overrides
+    const parsed = parseMultiAddressUrl(rawUrl);
+
+    // Apply user/password overrides from WSConfig
     if (wsConfig.getUser()) {
-        url.username = wsConfig.getUser() || "";
+        parsed.username = wsConfig.getUser() || "";
     }
     if (wsConfig.getPwd()) {
-        url.password = wsConfig.getPwd() || "";
+        parsed.password = wsConfig.getPwd() || "";
     }
 
+    // Apply token
     let token = wsConfig.getToken();
     if (token) {
-        url.searchParams.set("token", token);
+        parsed.searchParams.set("token", token);
     }
 
+    // Apply timezone
     let timezone = wsConfig.getTimezone();
     if (timezone) {
-        url.searchParams.set("timezone", timezone);
+        parsed.searchParams.set("timezone", timezone);
     }
 
-    if (url.pathname && url.pathname !== "/") {
-        wsConfig.setDb(url.pathname.slice(1));
+    // Extract db from path
+    if (parsed.pathname && parsed.pathname !== "/") {
+        wsConfig.setDb(parsed.pathname.slice(1));
     }
 
-    if (url.searchParams.has("timezone")) {
-        wsConfig.setTimezone(url.searchParams.get("timezone") || "");
+    // Read timezone from searchParams
+    if (parsed.searchParams.has("timezone")) {
+        wsConfig.setTimezone(parsed.searchParams.get("timezone") || "");
     }
 
+    // Apply bearer token
     const bearerToken = wsConfig.getBearerToken();
     if (bearerToken) {
-        url.searchParams.set("bearer_token", bearerToken);
+        parsed.searchParams.set("bearer_token", bearerToken);
     } else {
-        const bearerTokenFromUrl = url.searchParams.get("bearer_token");
+        const bearerTokenFromUrl = parsed.searchParams.get("bearer_token");
         if (bearerTokenFromUrl) {
             wsConfig.setBearerToken(bearerTokenFromUrl);
         } else {
-            url.searchParams.delete("bearer_token");
+            parsed.searchParams.delete("bearer_token");
         }
     }
 
-    url.pathname = "/ws";
-    return url;
+    // Set pathname to /ws for WebSocket endpoint
+    parsed.pathname = "/ws";
+
+    // Rebuild the URL string with all overrides applied
+    const url = buildUrlForHost(parsed, 0);
+    // For multi-address, reconstruct the full multi-address URL string
+    if (parsed.hosts.length > 1) {
+        const hosts = parsed.hosts.map(hp => {
+            const isIPv6 = hp.host.includes(":");
+            return isIPv6 ? `[${hp.host}]:${hp.port}` : `${hp.host}:${hp.port}`;
+        }).join(",");
+        let result = `${parsed.scheme}://`;
+        if (parsed.username || parsed.password) {
+            result += `${encodeURIComponent(parsed.username)}:${encodeURIComponent(parsed.password)}@`;
+        }
+        result += hosts + parsed.pathname;
+        const search = parsed.searchParams.toString();
+        if (search) result += "?" + search;
+        return result;
+    }
+
+    return url.toString();
 }
 
 export function isEmpty(value: any): boolean {
@@ -227,9 +258,6 @@ export function maskTmqConfigForLog(config: TmqConfig): string {
     };
     return JSON.stringify(masked, (key, value) => {
         switch (key) {
-            case 'url':
-            case 'sql_url':
-                return maskUrlForLog(value);
             case 'token':
             case 'password':
             case 'bearer_token':

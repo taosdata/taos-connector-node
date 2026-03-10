@@ -60,11 +60,12 @@ export class WsConsumer {
                 );
                 await wsSql.connect();
                 await wsSql.checkVersion();
+                // 创建 ws 连接
                 await this._wsClient.ready();
             } else {
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                    `connection creation failed, url: ${maskUrlForLog(this._wsConfig.url)}`
+                    `connection creation failed, url: ${this._wsConfig.url}`
                 );
             }
         } catch (e: any) {

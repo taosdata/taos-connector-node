@@ -4,7 +4,7 @@ export class WSConfig {
     private _user: string | undefined | null;
     private _password: string | undefined | null;
     private _db: string | undefined | null;
-    private _url: string;
+    private _url: string; // 支持多地址
     private _timeout: number | undefined | null;
     private _token: string | undefined | null;
     private _timezone: string | undefined | null;

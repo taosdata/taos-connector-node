@@ -3,7 +3,6 @@ import { WebSocketConnector } from "./wsConnector";
 import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
 import { w3cwebsocket } from "websocket";
-import { maskUrlForLog } from "../common/utils";
 
 const mutex = new Mutex();
 
@@ -28,13 +27,12 @@ export class WebSocketConnectionPool {
         return WebSocketConnectionPool._instance;
     }
 
-    async getConnection(url: URL, timeout: number | undefined | null): Promise<WebSocketConnector> {
-        let connectAddr = url.origin.concat(url.pathname).concat(url.search);
+    async getConnection(url: string, timeout?: number | null): Promise<WebSocketConnector> {
         let connector: WebSocketConnector | undefined;
         const unlock = await mutex.acquire();
         try {
-            if (this.pool.has(connectAddr)) {
-                const connectors = this.pool.get(connectAddr);
+            if (this.pool.has(url)) {
+                const connectors = this.pool.get(url);
                 while (connectors && connectors.length > 0) {
                     const candidate = connectors.pop();
                     if (!candidate) {
@@ -46,7 +44,7 @@ export class WebSocketConnectionPool {
                     } else if (candidate) {
                         Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
                         candidate.close();
-                        logger.error(`getConnection, current connection status fail, url: ${maskUrlForLog(new URL(connectAddr))}`);
+                        logger.error(`getConnection, current connection status fail, url: ${url}`);
                     }
                 }
             }
@@ -74,8 +72,8 @@ export class WebSocketConnectionPool {
                 logger.info(
                     "getConnection, new connection count:" +
                     Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
-                    ", connectAddr:" +
-                    connectAddr.replace(/(token=)[^&]*/i, "$1[REDACTED]")
+                    ", url:" +
+                    url.replace(/(token=)[^&]*/i, "$1[REDACTED]")
                 );
             }
             return new WebSocketConnector(url, timeout);
@@ -89,13 +87,13 @@ export class WebSocketConnectionPool {
             const unlock = await mutex.acquire();
             try {
                 if (connector.readyState() === w3cwebsocket.OPEN) {
-                    let url = connector.getWsURL();
-                    let connectAddr = url.origin.concat(url.pathname).concat(url.search);
-                    let connectors = this.pool.get(connectAddr);
+                    const url = connector.getCurrentUrl();
+                    const key = url.origin + url.pathname + url.search;
+                    let connectors = this.pool.get(key);
                     if (!connectors) {
-                        connectors = new Array();
+                        connectors = [];
                         connectors.push(connector);
-                        this.pool.set(connectAddr, connectors);
+                        this.pool.set(key, connectors);
                     } else {
                         connectors.push(connector);
                     }

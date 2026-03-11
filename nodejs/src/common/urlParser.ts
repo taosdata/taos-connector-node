@@ -16,10 +16,10 @@ export interface ParsedUrl {
 
 /**
  * Parse a multi-host TDengine WebSocket URL.
- * Format: ws://user:password@host1:port1,host2:port2,[::1]:port3/db?key=value
+ * Format: ws://username:password@host1:port1,host2:port2,[::1]:port3/db?key=value
  */
-export function parseMultiHostUrl(rawUrl: string): ParsedUrl {
-    if (!rawUrl || rawUrl.trim().length === 0) {
+export function parseMultiHostUrl(url: string): ParsedUrl {
+    if (!url || url.trim().length === 0) {
         throw new TDWebSocketClientError(
             ErrorCode.ERR_INVALID_URL,
             "URL must not be empty"
@@ -27,17 +27,17 @@ export function parseMultiHostUrl(rawUrl: string): ParsedUrl {
     }
 
     // Extract scheme
-    const schemeMatch = rawUrl.match(/^(wss?):\/\//i);
+    const schemeMatch = url.match(/^(wss?):\/\//i);
     if (!schemeMatch) {
         throw new TDWebSocketClientError(
             ErrorCode.ERR_INVALID_URL,
-            `Invalid URL scheme, expected ws:// or wss://, got: ${rawUrl}`
+            `Invalid URL scheme, expected ws:// or wss://, got: ${url}`
         );
     }
     const scheme = schemeMatch[1].toLowerCase();
-    let remainder = rawUrl.slice(schemeMatch[0].length);
+    let remainder = url.slice(schemeMatch[0].length);
 
-    // Extract user:password@ if present
+    // Extract username:password@ if present
     let username = "";
     let password = "";
     const atIndex = remainder.indexOf("@");
@@ -111,60 +111,60 @@ const DEFAULT_PORT = 6041;
  * Parse comma-separated host list. Supports IPv6 in brackets.
  * Examples: "host1:6041,host2:6042", "[::1]:6041,host2:6042"
  */
-function parseHostList(hostString: string): HostInfo[] {
-    if (!hostString || hostString.trim().length === 0) {
+function parseHostList(hostStr: string): HostInfo[] {
+    if (!hostStr || hostStr.trim().length === 0) {
         return [];
     }
 
     const hosts: HostInfo[] = [];
     let i = 0;
 
-    while (i < hostString.length) {
+    while (i < hostStr.length) {
         // Skip comma separator
-        if (hostString[i] === ",") {
+        if (hostStr[i] === ",") {
             i++;
             continue;
         }
 
-        if (hostString[i] === "[") {
+        if (hostStr[i] === "[") {
             // IPv6 address in brackets
-            const closeBracket = hostString.indexOf("]", i);
+            const closeBracket = hostStr.indexOf("]", i);
             if (closeBracket === -1) {
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_INVALID_URL,
-                    `Unclosed bracket in IPv6 address: ${hostString.slice(i)}`
+                    `Unclosed bracket in IPv6 address: ${hostStr.slice(i)}`
                 );
             }
-            const ipv6Host = hostString.slice(i + 1, closeBracket);
+            const ipv6Host = hostStr.slice(i + 1, closeBracket);
             let port = DEFAULT_PORT;
             let next = closeBracket + 1;
-            if (next < hostString.length && hostString[next] === ":") {
-                const portEnd = hostString.indexOf(",", next);
+            if (next < hostStr.length && hostStr[next] === ":") {
+                const portEnd = hostStr.indexOf(",", next);
                 const portStr = portEnd === -1
-                    ? hostString.slice(next + 1)
-                    : hostString.slice(next + 1, portEnd);
-                port = parsePort(portStr, hostString);
-                i = portEnd === -1 ? hostString.length : portEnd;
+                    ? hostStr.slice(next + 1)
+                    : hostStr.slice(next + 1, portEnd);
+                port = parsePort(portStr, hostStr);
+                i = portEnd === -1 ? hostStr.length : portEnd;
             } else {
                 i = next;
             }
             hosts.push({ host: `[${ipv6Host}]`, port });
         } else {
             // Regular host or IPv4
-            const commaIndex = hostString.indexOf(",", i);
+            const commaIndex = hostStr.indexOf(",", i);
             const segment = commaIndex === -1
-                ? hostString.slice(i)
-                : hostString.slice(i, commaIndex);
+                ? hostStr.slice(i)
+                : hostStr.slice(i, commaIndex);
 
             const lastColon = segment.lastIndexOf(":");
             if (lastColon !== -1) {
                 const host = segment.slice(0, lastColon);
-                const port = parsePort(segment.slice(lastColon + 1), hostString);
+                const port = parsePort(segment.slice(lastColon + 1), hostStr);
                 hosts.push({ host, port });
             } else {
                 hosts.push({ host: segment, port: DEFAULT_PORT });
             }
-            i = commaIndex === -1 ? hostString.length : commaIndex;
+            i = commaIndex === -1 ? hostStr.length : commaIndex;
         }
     }
 

@@ -2,7 +2,6 @@ import {
     parseMultiHostUrl,
     buildHostUrl,
     extractRetryOptions,
-    HostInfo,
     ParsedUrl,
 } from "../../src/common/urlParser";
 

@@ -389,10 +389,14 @@ export class ConnectionManager {
                 throw new WebSocketQueryError(result.msg.code, result.msg.message);
             }
         } catch (e: any) {
-            // Auth failure — don't retry this host
+            // If it's already a WebSocketQueryError, preserve the original error
+            if (e instanceof WebSocketQueryError) {
+                throw e;
+            }
+            // For other errors, wrap as authentication failure
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `Authentication failed: ${e.message}`
+                `Authentication failed: ${e.message || e}`
             );
         }
     }

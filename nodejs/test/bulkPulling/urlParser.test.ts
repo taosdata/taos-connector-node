@@ -252,6 +252,79 @@ describe("urlParser", () => {
             expect(result.params.get("timezone")).toBe("UTC");
         });
 
+        test("full IPv6 address (not abbreviated)", () => {
+            const result = parseMultiHostUrl("ws://root:taosdata@[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:6041");
+            expect(result.scheme).toBe("ws");
+            expect(result.username).toBe("root");
+            expect(result.password).toBe("taosdata");
+            expect(result.hosts).toEqual([{ host: "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]", port: 6041 }]);
+            expect(result.database).toBe("");
+            expect(result.params.size).toBe(0);
+        });
+
+        test("full IPv6 address without port uses default", () => {
+            const result = parseMultiHostUrl("ws://root:taosdata@[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:");
+            expect(result.scheme).toBe("ws");
+            expect(result.username).toBe("root");
+            expect(result.password).toBe("taosdata");
+            expect(result.hosts).toEqual([{ host: "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]", port: 6041 }]);
+            expect(result.database).toBe("");
+            expect(result.params.size).toBe(0);
+        });
+
+        test("no username only password", () => {
+            const result = parseMultiHostUrl("ws://:pass@localhost:6041");
+            expect(result.scheme).toBe("ws");
+            expect(result.username).toBe("");
+            expect(result.password).toBe("pass");
+            expect(result.hosts).toEqual([{ host: "localhost", port: 6041 }]);
+            expect(result.database).toBe("");
+            expect(result.params.size).toBe(0);
+        });
+
+        test("no username only password with database", () => {
+            const result = parseMultiHostUrl("ws://:taosdata@localhost:6041/mydb");
+            expect(result.scheme).toBe("ws");
+            expect(result.username).toBe("");
+            expect(result.password).toBe("taosdata");
+            expect(result.hosts).toEqual([{ host: "localhost", port: 6041 }]);
+            expect(result.database).toBe("mydb");
+            expect(result.params.size).toBe(0);
+        });
+
+        test("empty port uses default 6041", () => {
+            const result = parseMultiHostUrl("ws://root:taosdata@host1:");
+            expect(result.scheme).toBe("ws");
+            expect(result.username).toBe("root");
+            expect(result.password).toBe("taosdata");
+            expect(result.hosts).toEqual([{ host: "host1", port: 6041 }]);
+            expect(result.database).toBe("");
+            expect(result.params.size).toBe(0);
+        });
+
+        test("IPv4 with empty port uses default 6041", () => {
+            const result = parseMultiHostUrl("ws://root:taosdata@127.0.1.0:");
+            expect(result.scheme).toBe("ws");
+            expect(result.username).toBe("root");
+            expect(result.password).toBe("taosdata");
+            expect(result.hosts).toEqual([{ host: "127.0.1.0", port: 6041 }]);
+            expect(result.database).toBe("");
+            expect(result.params.size).toBe(0);
+        });
+
+        test("multiple hosts with empty ports use default", () => {
+            const result = parseMultiHostUrl("ws://root:taosdata@host1:,host2:,127.0.0.1:");
+            expect(result.scheme).toBe("ws");
+            expect(result.username).toBe("root");
+            expect(result.password).toBe("taosdata");
+            expect(result.hosts).toHaveLength(3);
+            expect(result.hosts[0]).toEqual({ host: "host1", port: 6041 });
+            expect(result.hosts[1]).toEqual({ host: "host2", port: 6041 });
+            expect(result.hosts[2]).toEqual({ host: "127.0.0.1", port: 6041 });
+            expect(result.database).toBe("");
+            expect(result.params.size).toBe(0);
+        });
+
         // Boundary test cases
         test("port boundary - minimum valid port 1", () => {
             const result = parseMultiHostUrl("ws://root:taosdata@localhost:1");
@@ -365,12 +438,6 @@ describe("urlParser", () => {
         test("negative port throws", () => {
             expect(() =>
                 parseMultiHostUrl("ws://root:taosdata@host1:-1")
-            ).toThrow("Invalid port");
-        });
-
-        test("empty port throws", () => {
-            expect(() =>
-                parseMultiHostUrl("ws://root:taosdata@host1:")
             ).toThrow("Invalid port");
         });
 

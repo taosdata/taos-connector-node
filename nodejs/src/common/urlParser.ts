@@ -172,6 +172,17 @@ function parseHostList(hostStr: string): HostInfo[] {
 }
 
 function parsePort(portStr: string, context: string): number {
+    // If port string is empty, use default port
+    if (portStr.length === 0) {
+        return DEFAULT_PORT;
+    }
+    // Validate that port string contains only digits
+    if (!/^\d+$/.test(portStr)) {
+        throw new TDWebSocketClientError(
+            ErrorCode.ERR_INVALID_URL,
+            `Invalid port "${portStr}" in host string: ${context}`
+        );
+    }
     const port = parseInt(portStr, 10);
     if (isNaN(port) || port < 1 || port > 65535) {
         throw new TDWebSocketClientError(

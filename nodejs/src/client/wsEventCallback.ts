@@ -7,18 +7,25 @@ import {
 import { MessageResp } from "../common/taosResult";
 import logger from "../common/log";
 
-interface MessageId {
+export interface MessageId {
     action: string;
     req_id: bigint;
     id?: bigint;
     timeout?: number;
 }
 
-interface MessageAction {
+export interface MessageAction {
     reject: Function;
     resolve: Function;
     timer: ReturnType<typeof setTimeout>;
     sendTime: number;
+}
+
+export interface CancelledCallback {
+    messageId: MessageId;
+    action: MessageAction;
+    elapsedMs: number;
+    remainingTimeoutMs: number;
 }
 
 export enum OnMessageType {
@@ -129,6 +136,33 @@ export class WsEventCallback {
                 " action" +
                 msg.action
             );
+        }
+    }
+
+    /**
+     * Cancel all registered callbacks, clearing their timers.
+     * Returns the cancelled entries with elapsed/remaining timeout info.
+     */
+    async cancelAllCallbacks(): Promise<CancelledCallback[]> {
+        let release = await eventMutex.acquire();
+        try {
+            const now = Date.now();
+            const cancelled: CancelledCallback[] = [];
+            for (const [msgId, msgAction] of WsEventCallback._msgActionRegister) {
+                clearTimeout(msgAction.timer);
+                const elapsed = now - msgAction.sendTime;
+                const timeout = msgId.timeout || 5000;
+                cancelled.push({
+                    messageId: msgId,
+                    action: msgAction,
+                    elapsedMs: elapsed,
+                    remainingTimeoutMs: Math.max(0, timeout - elapsed),
+                });
+            }
+            WsEventCallback._msgActionRegister.clear();
+            return cancelled;
+        } finally {
+            release();
         }
     }
 }

@@ -1,6 +1,7 @@
 import { WSRows } from "./wsRows";
 import { parseBlock, TaosResult } from "../common/taosResult";
 import { WsClient } from "../client/wsClient";
+import { ConnectionManager, AuthInfo, RetryOptions } from "../client/wsConnectionManager";
 import {
     ErrorCode,
     TDWebSocketClientError,
@@ -8,7 +9,8 @@ import {
     WebSocketInterfaceError,
 } from "../common/wsError";
 import { WSConfig } from "../common/config";
-import { compareVersions, getBinarySql, getUrl } from "../common/utils";
+import { compareVersions, getBinarySql, getUrl, parseWsConfigUrl } from "../common/utils";
+import { extractRetryOptions, ParsedUrl } from "../common/urlParser";
 import { WSFetchBlockResponse, WSQueryResponse } from "../client/wsResponse";
 import { Precision, SchemalessMessageInfo, SchemalessProto } from "./wsProto";
 import { ReqId } from "../common/reqid";
@@ -28,9 +30,43 @@ export class WsSql {
     private _wsClient: WsClient;
 
     constructor(wsConfig: WSConfig) {
-        let url = getUrl(wsConfig);
+        // Build ConnectionManager from config
+        const parsed = parseWsConfigUrl(wsConfig);
+        const urlRetryOpts = extractRetryOptions(parsed.params);
+
+        // WSConfig API takes precedence over URL params
+        const retryOptions: Partial<RetryOptions> = {
+            retries: wsConfig.getRetries() ?? urlRetryOpts.retries,
+            retryBackoffMs: wsConfig.getRetryBackoffMs() ?? urlRetryOpts.retryBackoffMs,
+            retryBackoffMaxMs: wsConfig.getRetryBackoffMaxMs() ?? urlRetryOpts.retryBackoffMaxMs,
+            resendWrite: wsConfig.getResendWrite() ?? urlRetryOpts.resendWrite,
+        };
+
+        // Clean undefined values
+        Object.keys(retryOptions).forEach((key) => {
+            if ((retryOptions as any)[key] === undefined || (retryOptions as any)[key] === null) {
+                delete (retryOptions as any)[key];
+            }
+        });
+
+        const authInfo: AuthInfo = {
+            username: parsed.username,
+            password: parsed.password,
+            database: wsConfig.getDb() || parsed.database || undefined,
+            timezone: wsConfig.getTimezone() || parsed.params.get("timezone") || undefined,
+            bearerToken: wsConfig.getBearerToken() || parsed.params.get("bearer_token") || undefined,
+            token: wsConfig.getToken() || parsed.params.get("token") || undefined,
+        };
+
+        const connManager = new ConnectionManager(
+            parsed,
+            authInfo,
+            retryOptions,
+            wsConfig.getTimeOut()
+        );
+
         this.wsConfig = wsConfig;
-        this._wsClient = new WsClient(url, wsConfig.getTimeOut());
+        this._wsClient = WsClient.withConnectionManager(connManager);
     }
 
     static async open(wsConfig: WSConfig): Promise<WsSql> {

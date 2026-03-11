@@ -81,6 +81,17 @@ export class WebSocketConnector {
         logger.info("websocket connection closed");
     }
 
+    /**
+     * Set an external handler for WebSocket close events.
+     * Used by ConnectionManager to detect disconnections for failover.
+     */
+    setOnCloseHandler(handler: (e: ICloseEvent) => void) {
+        this._wsConn.onclose = (e: ICloseEvent) => {
+            logger.info("websocket connection closed");
+            handler(e);
+        };
+    }
+
     private _onmessage(event: any) {
         let data = event.data;
         logger.debug("wsClient._onMessage()====" + Object.prototype.toString.call(data));

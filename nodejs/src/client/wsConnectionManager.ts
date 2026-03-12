@@ -1,8 +1,6 @@
 import { ICloseEvent, w3cwebsocket } from "websocket";
-import { Mutex } from "async-mutex";
-import JSONBig from "json-bigint";
 import { WebSocketConnector } from "./wsConnector";
-import { CancelledCallback, WsEventCallback } from "./wsEventCallback";
+import { WsEventCallback } from "./wsEventCallback";
 import {
     ErrorCode,
     TDWebSocketClientError,
@@ -61,15 +59,13 @@ export interface AuthInfo {
 }
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-    retries: 3,
+    retries: 5,
     retryBackoffMs: 200,
     retryBackoffMaxMs: 2000,
     resendWrite: false,
 };
 
 const NORMAL_CLOSE_CODE = 1000;
-
-const stateMutex = new Mutex();
 
 export class ConnectionManager {
     private _hosts: HostInfo[];

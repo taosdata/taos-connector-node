@@ -1,6 +1,7 @@
 import JSONBig from "json-bigint";
 import { WebSocketConnector } from "./wsConnector";
 import { WebSocketConnectionPool } from "./wsConnectorPool";
+import { ConnectionManager } from "./wsConnectionManager";
 import {
     ErrorCode,
     TDWebSocketClientError,
@@ -16,33 +17,53 @@ import { ConnectorInfo, TSDB_OPTION_CONNECTION } from "../common/constant";
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
+    private _connManager?: ConnectionManager;
     private _timeout?: number | undefined | null;
     private _timezone?: string | undefined | null;
-    private readonly _url: URL;
+    private readonly _url?: URL;
     private static readonly _minVersion = "3.3.2.0";
     private _version?: string | undefined | null;
     private _bearerToken?: string | undefined | null;
+    private _useConnManager: boolean = false;
 
-    constructor(url: URL, timeout?: number | undefined | null) {
-        this.checkURL(url);
-        this._url = url;
-        this._timeout = timeout;
-        if (this._url.searchParams.has("timezone")) {
-            this._timezone = this._url.searchParams.get("timezone") || undefined;
-            this._url.searchParams.delete("timezone");
-        }
-        if (this._url.searchParams.has("bearer_token")) {
-            this._bearerToken = this._url.searchParams.get("bearer_token") || undefined;
+    /**
+     * Create a WsClient backed by a ConnectionManager (new multi-host path).
+     */
+    static withConnectionManager(connManager: ConnectionManager): WsClient {
+        const client = new WsClient();
+        client._connManager = connManager;
+        client._useConnManager = true;
+        return client;
+    }
+
+    constructor(url?: URL, timeout?: number | undefined | null) {
+        if (url) {
+            this.checkURL(url);
+            this._url = url;
+            this._timeout = timeout;
+            if (this._url.searchParams.has("timezone")) {
+                this._timezone = this._url.searchParams.get("timezone") || undefined;
+                this._url.searchParams.delete("timezone");
+            }
+            if (this._url.searchParams.has("bearer_token")) {
+                this._bearerToken = this._url.searchParams.get("bearer_token") || undefined;
+            }
         }
     }
 
     async connect(database?: string | undefined | null): Promise<void> {
+        if (this._useConnManager && this._connManager) {
+            await this._connManager.connect(database || undefined);
+            return;
+        }
+
+        // Legacy path (for TMQ/Stmt that haven't migrated)
         let connMsg = {
             action: "conn",
             args: {
                 req_id: ReqId.getReqID(),
-                user: safeDecodeURIComponent(this._url.username),
-                password: safeDecodeURIComponent(this._url.password),
+                user: safeDecodeURIComponent(this._url!.username),
+                password: safeDecodeURIComponent(this._url!.password),
                 db: database,
                 connector: ConnectorInfo,
                 ...(this._timezone && { tz: this._timezone }),
@@ -55,7 +76,7 @@ export class WsClient {
             ));
         }
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
-            this._url,
+            this._url!,
             this._timeout
         );
         if (this._wsConnector.readyState() === w3cwebsocket.OPEN) {
@@ -71,7 +92,7 @@ export class WsClient {
             throw new WebSocketQueryError(result.msg.code, result.msg.message);
         } catch (e: any) {
             await this.close();
-            const maskedUrl = maskUrlForLog(this._url);
+            const maskedUrl = maskUrlForLog(this._url!);
             logger.error(`connection creation failed, url: ${maskedUrl}, code:${e.code}, msg:${e.message}`);
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
@@ -104,6 +125,12 @@ export class WsClient {
 
     async execNoResp(queryMsg: string): Promise<void> {
         logger.debug("[wsQueryInterface.query.queryMsg]===>" + queryMsg);
+
+        if (this._useConnManager && this._connManager) {
+            await this._connManager.sendMsgNoResp(queryMsg);
+            return;
+        }
+
         if (
             this._wsConnector &&
             this._wsConnector.readyState() === w3cwebsocket.OPEN
@@ -119,6 +146,10 @@ export class WsClient {
 
     // Need to construct Response
     async exec(queryMsg: string, bSqlQuery: boolean = true): Promise<any> {
+        if (this._useConnManager && this._connManager) {
+            return this._execViaConnManager(queryMsg, bSqlQuery);
+        }
+
         return new Promise((resolve, reject) => {
             if (logger.isDebugEnabled()) {
                 logger.debug("[wsQueryInterface.query.queryMsg]===>" + maskSensitiveForLog(queryMsg));
@@ -159,6 +190,17 @@ export class WsClient {
         });
     }
 
+    private async _execViaConnManager(queryMsg: string, bSqlQuery: boolean): Promise<any> {
+        if (logger.isDebugEnabled()) {
+            logger.debug("[wsQueryInterface.query.queryMsg]===>" + maskSensitiveForLog(queryMsg));
+        }
+        const e: any = await this._connManager!.sendMsg(queryMsg);
+        if (e.msg.code == 0) {
+            return bSqlQuery ? new WSQueryResponse(e) : e;
+        }
+        throw new WebSocketInterfaceError(e.msg.code, e.msg.message);
+    }
+
     // need to construct Response.
     async sendBinaryMsg(
         reqId: bigint,
@@ -167,6 +209,10 @@ export class WsClient {
         bSqlQuery: boolean = true,
         bResultBinary: boolean = false
     ): Promise<any> {
+        if (this._useConnManager && this._connManager) {
+            return this._sendBinaryMsgViaConnManager(reqId, action, message, bSqlQuery, bResultBinary);
+        }
+
         return new Promise((resolve, reject) => {
             if (
                 this._wsConnector &&
@@ -208,7 +254,27 @@ export class WsClient {
         });
     }
 
+    private async _sendBinaryMsgViaConnManager(
+        reqId: bigint,
+        action: string,
+        message: ArrayBuffer,
+        bSqlQuery: boolean,
+        bResultBinary: boolean
+    ): Promise<any> {
+        const e: any = await this._connManager!.sendBinaryMsg(reqId, action, message);
+        if (bResultBinary) {
+            return e;
+        }
+        if (e.msg.code == 0) {
+            return bSqlQuery ? new WSQueryResponse(e) : e;
+        }
+        throw new WebSocketInterfaceError(e.msg.code, e.msg.message);
+    }
+
     getState() {
+        if (this._useConnManager && this._connManager) {
+            return this._connManager.getReadyState();
+        }
         if (this._wsConnector) {
             return this._wsConnector.readyState();
         }
@@ -216,20 +282,25 @@ export class WsClient {
     }
 
     async ready(): Promise<void> {
+        if (this._useConnManager) {
+            // ConnectionManager handles readiness internally
+            return;
+        }
+
         try {
             this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
-                this._url,
+                this._url!,
                 this._timeout
             );
             if (this._wsConnector.readyState() !== w3cwebsocket.OPEN) {
                 await this._wsConnector.ready();
             }
             if (logger.isDebugEnabled()) {
-                logger.debug("ready status ", maskUrlForLog(this._url), this._wsConnector.readyState());
+                logger.debug("ready status ", maskUrlForLog(this._url!), this._wsConnector.readyState());
             }
             return;
         } catch (e: any) {
-            const maskedUrl = maskUrlForLog(this._url);
+            const maskedUrl = maskUrlForLog(this._url!);
             logger.error(
                 `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
             );
@@ -241,6 +312,10 @@ export class WsClient {
     }
 
     async sendMsg(msg: string): Promise<any> {
+        if (this._useConnManager && this._connManager) {
+            return this._connManager.sendMsg(msg);
+        }
+
         return new Promise((resolve, reject) => {
             logger.debug("[wsQueryInterface.sendMsg]===>" + msg);
             if (
@@ -277,6 +352,14 @@ export class WsClient {
             logger.debug(
                 "[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr
             );
+
+            if (this._useConnManager && this._connManager) {
+                this._connManager.sendMsgNoResp(jsonStr)
+                    .then((e: any) => resolve(e))
+                    .catch((e) => reject(e));
+                return;
+            }
+
             if (
                 this._wsConnector &&
                 this._wsConnector.readyState() === w3cwebsocket.OPEN
@@ -310,6 +393,22 @@ export class WsClient {
             },
         };
 
+        if (this._useConnManager && this._connManager) {
+            try {
+                const result: any = await this._connManager.sendMsg(JSONBig.stringify(versionMsg));
+                if (result.msg.code == 0) {
+                    this._version = new WSVersionResponse(result).version;
+                    return this._version;
+                }
+                throw new WebSocketInterfaceError(result.msg.code, result.msg.message);
+            } catch (e: any) {
+                throw new TDWebSocketClientError(
+                    ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
+                    `version query failed: ${e.message}`
+                );
+            }
+        }
+
         if (this._wsConnector) {
             try {
                 if (this._wsConnector.readyState() !== w3cwebsocket.OPEN) {
@@ -321,7 +420,7 @@ export class WsClient {
                 }
                 throw new WebSocketInterfaceError(result.msg.code, result.msg.message);
             } catch (e: any) {
-                const maskedUrl = maskUrlForLog(this._url);
+                const maskedUrl = maskUrlForLog(this._url!);
                 logger.error(
                     `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
                 );
@@ -335,6 +434,11 @@ export class WsClient {
     }
 
     async close(): Promise<void> {
+        if (this._useConnManager && this._connManager) {
+            await this._connManager.close();
+            return;
+        }
+
         if (this._wsConnector) {
             await WebSocketConnectionPool.instance().releaseConnection(
                 this._wsConnector

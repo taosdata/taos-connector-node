@@ -30,6 +30,7 @@ export class ReqId {
     private static _pid = 0;
     private static sharedBuffer = new SharedArrayBuffer(4);
     private static int32View = new Int32Array(ReqId.sharedBuffer);
+
     static {
         this._uuid = uuidToHash();
 

@@ -10,6 +10,10 @@ export class WSConfig {
     private _timezone: string | undefined | null;
     private _minStmt2Version: string;
     private _bearerToken: string | undefined | null;
+    private _retries: number | undefined | null;
+    private _retryBackoffMs: number | undefined | null;
+    private _retryBackoffMaxMs: number | undefined | null;
+    private _resendWrite: boolean | undefined | null;
 
     constructor(url: string, minStmt2Version?: string) {
         this._url = url;
@@ -86,5 +90,37 @@ export class WSConfig {
 
     public getMinStmt2Version() {
         return this._minStmt2Version;
+    }
+
+    public getRetries(): number | undefined | null {
+        return this._retries;
+    }
+
+    public setRetries(retries: number) {
+        this._retries = retries;
+    }
+
+    public getRetryBackoffMs(): number | undefined | null {
+        return this._retryBackoffMs;
+    }
+
+    public setRetryBackoffMs(ms: number) {
+        this._retryBackoffMs = ms;
+    }
+
+    public getRetryBackoffMaxMs(): number | undefined | null {
+        return this._retryBackoffMaxMs;
+    }
+
+    public setRetryBackoffMaxMs(ms: number) {
+        this._retryBackoffMaxMs = ms;
+    }
+
+    public getResendWrite(): boolean | undefined | null {
+        return this._resendWrite;
+    }
+
+    public setResendWrite(resendWrite: boolean) {
+        this._resendWrite = resendWrite;
     }
 }

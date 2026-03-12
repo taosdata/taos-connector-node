@@ -1,6 +1,56 @@
 import { TmqConfig } from "../tmq/config";
 import { WSConfig } from "./config";
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
+import {
+    parseMultiHostUrl,
+    extractRetryOptions,
+    buildHostUrl,
+    ParsedUrl,
+    HostInfo,
+} from "./urlParser";
+
+/**
+ * Parse a WSConfig into a multi-host ParsedUrl structure.
+ * Applies WSConfig overrides (user, password, token, timezone, bearerToken, db)
+ * over whatever was parsed from the URL string.
+ */
+export function parseWsConfigUrl(wsConfig: WSConfig): ParsedUrl {
+    const parsed = parseMultiHostUrl(wsConfig.getUrl());
+
+    // WSConfig overrides URL values
+    if (wsConfig.getUser()) {
+        parsed.username = wsConfig.getUser() || "";
+    }
+    if (wsConfig.getPwd()) {
+        parsed.password = wsConfig.getPwd() || "";
+    }
+    if (wsConfig.getToken()) {
+        parsed.params.set("token", wsConfig.getToken()!);
+    }
+    if (wsConfig.getTimezone()) {
+        parsed.params.set("timezone", wsConfig.getTimezone()!);
+    }
+    if (wsConfig.getBearerToken()) {
+        parsed.params.set("bearer_token", wsConfig.getBearerToken()!);
+    }
+
+    // Extract database from URL path or WSConfig
+    if (parsed.database && parsed.database.length > 0) {
+        wsConfig.setDb(parsed.database);
+    }
+
+    // Sync timezone from URL params to WSConfig
+    if (parsed.params.has("timezone") && !wsConfig.getTimezone()) {
+        wsConfig.setTimezone(parsed.params.get("timezone")!);
+    }
+
+    // Sync bearer_token from URL params to WSConfig
+    if (parsed.params.has("bearer_token") && !wsConfig.getBearerToken()) {
+        wsConfig.setBearerToken(parsed.params.get("bearer_token")!);
+    }
+
+    return parsed;
+}
 
 export function getUrl(wsConfig: WSConfig): URL {
     let url = new URL(wsConfig.getUrl());

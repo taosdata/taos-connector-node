@@ -1,7 +1,7 @@
 import { WSRows } from "./wsRows";
 import { parseBlock, TaosResult } from "../common/taosResult";
 import { WsClient } from "../client/wsClient";
-import { WebSocketConnectorConfig, AuthInfo, RetryOptions } from "../client/wsConnector";
+import { ConnectionManager, AuthInfo, RetryOptions } from "../client/wsConnectionManager";
 import {
     ErrorCode,
     TDWebSocketClientError,
@@ -30,7 +30,7 @@ export class WsSql {
     private _wsClient: WsClient;
 
     constructor(wsConfig: WSConfig) {
-        // Build WebSocketConnectorConfig from config
+        // Build ConnectionManager from config
         const parsed = parseWsConfigUrl(wsConfig);
         const urlRetryOpts = extractRetryOptions(parsed.params);
 
@@ -58,16 +58,15 @@ export class WsSql {
             token: wsConfig.getToken() || parsed.params.get("token") || undefined,
         };
 
-        const connectorConfig: WebSocketConnectorConfig = {
-            hosts: parsed.hosts,
-            parsedUrl: parsed,
-            authInfo: authInfo,
-            retryOptions: retryOptions,
-            timeout: wsConfig.getTimeOut() || undefined
-        };
+        const connManager = new ConnectionManager(
+            parsed,
+            authInfo,
+            retryOptions,
+            wsConfig.getTimeOut()
+        );
 
         this.wsConfig = wsConfig;
-        this._wsClient = new WsClient(connectorConfig);
+        this._wsClient = WsClient.withConnectionManager(connManager);
     }
 
     static async open(wsConfig: WSConfig): Promise<WsSql> {

@@ -2,7 +2,6 @@ import JSONBig from "json-bigint";
 import { TmqConfig } from "./config";
 import { TMQConstants, TMQMessageType } from "./constant";
 import { WsClient } from "../client/wsClient";
-import { WebSocketConnectorConfig, AuthInfo } from "../client/wsConnector";
 import { TaosResult } from "../common/taosResult";
 import {
     ErrorCode,
@@ -25,7 +24,6 @@ import logger from "../common/log";
 import { WSFetchBlockResponse } from "../client/wsResponse";
 import { maskTmqConfigForLog, maskUrlForLog } from "../common/utils";
 import { ConnectorInfo } from "../common/constant";
-import { parseMultiHostUrl } from "../common/urlParser";
 
 export class WsConsumer {
     private _wsClient: WsClient;
@@ -45,26 +43,10 @@ export class WsConsumer {
                 "invalid url, password or username needed."
             );
         }
-
-        // Parse URL for multi-host support (single host is a special case)
-        const parsed = parseMultiHostUrl(this._wsConfig.url.toString());
-
-        const authInfo: AuthInfo = {
-            username: parsed.username || this._wsConfig.user || "",
-            password: parsed.password || this._wsConfig.password || "",
-            timezone: parsed.params.get("timezone"),
-            bearerToken: this._wsConfig.token || parsed.params.get("bearer_token"),
-            token: this._wsConfig.token || parsed.params.get("token"),
-        };
-
-        const connectorConfig: WebSocketConnectorConfig = {
-            hosts: parsed.hosts,
-            parsedUrl: parsed,
-            authInfo: authInfo,
-            timeout: this._wsConfig.timeout
-        };
-
-        this._wsClient = new WsClient(connectorConfig);
+        this._wsClient = new WsClient(
+            this._wsConfig.url,
+            this._wsConfig.timeout
+        );
         this._lastMessageID = BigInt(0);
     }
 
@@ -72,25 +54,13 @@ export class WsConsumer {
         let wsSql = null;
         try {
             if (this._wsConfig.sql_url) {
-                // Parse SQL URL for version check
-                const sqlParsed = parseMultiHostUrl(this._wsConfig.sql_url.toString());
-                const sqlAuthInfo: AuthInfo = {
-                    username: sqlParsed.username || this._wsConfig.user || "",
-                    password: sqlParsed.password || this._wsConfig.password || "",
-                    timezone: sqlParsed.params.get("timezone"),
-                    bearerToken: this._wsConfig.token || sqlParsed.params.get("bearer_token"),
-                    token: this._wsConfig.token || sqlParsed.params.get("token"),
-                };
-                const sqlConfig: WebSocketConnectorConfig = {
-                    hosts: sqlParsed.hosts,
-                    parsedUrl: sqlParsed,
-                    authInfo: sqlAuthInfo,
-                    timeout: this._wsConfig.timeout
-                };
-                wsSql = new WsClient(sqlConfig);
+                wsSql = new WsClient(
+                    this._wsConfig.sql_url,
+                    this._wsConfig.timeout
+                );
                 await wsSql.connect();
                 await wsSql.checkVersion();
-                await this._wsClient.connect();
+                await this._wsClient.ready();
             } else {
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,

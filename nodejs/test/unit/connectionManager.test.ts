@@ -1,4 +1,4 @@
-import { ConnectionManager, ConnectionState, AuthInfo, RetryOptions } from "../../src/client/wsConnectionManager";
+import { WebSocketConnector, ConnectionState, AuthInfo, RetryOptions, WebSocketConnectorConfig } from "../../src/client/wsConnector";
 import { ParsedUrl, HostInfo } from "../../src/common/urlParser";
 
 function makeParsedUrl(hosts: HostInfo[]): ParsedUrl {
@@ -20,12 +20,22 @@ function makeAuthInfo(): AuthInfo {
     };
 }
 
-describe("ConnectionManager", () => {
+function makeConfig(hosts: HostInfo[], options?: Partial<RetryOptions>): WebSocketConnectorConfig {
+    return {
+        hosts,
+        parsedUrl: makeParsedUrl(hosts),
+        authInfo: makeAuthInfo(),
+        retryOptions: options,
+        timeout: 5000,
+    };
+}
+
+describe("WebSocketConnector", () => {
     describe("constructor", () => {
         test("initializes with CLOSED state", () => {
-            const parsed = makeParsedUrl([{ host: "host1", port: 6041 }]);
-            const cm = new ConnectionManager(parsed, makeAuthInfo());
-            expect(cm.state).toBe(ConnectionState.CLOSED);
+            const config = makeConfig([{ host: "host1", port: 6041 }]);
+            const connector = new WebSocketConnector(config);
+            expect(connector.state).toBe(ConnectionState.CLOSED);
         });
 
         test("random initial host selection is within range", () => {
@@ -34,72 +44,94 @@ describe("ConnectionManager", () => {
                 { host: "host2", port: 6042 },
                 { host: "host3", port: 6043 },
             ];
-            const parsed = makeParsedUrl(hosts);
 
             // Run multiple times to verify randomness stays in bounds
             for (let i = 0; i < 20; i++) {
-                const cm = new ConnectionManager(parsed, makeAuthInfo());
-                const current = cm.currentHost;
+                const config = makeConfig(hosts);
+                const connector = new WebSocketConnector(config);
+                const current = connector.currentHost;
                 expect(current).toBeDefined();
                 expect(hosts).toContainEqual(current);
             }
         });
 
         test("applies custom retry options", () => {
-            const parsed = makeParsedUrl([{ host: "host1", port: 6041 }]);
             const opts: Partial<RetryOptions> = {
                 retries: 5,
                 retryBackoffMs: 500,
                 retryBackoffMaxMs: 10000,
                 resendWrite: true,
             };
-            const cm = new ConnectionManager(parsed, makeAuthInfo(), opts);
-            expect(cm.state).toBe(ConnectionState.CLOSED);
+            const config = makeConfig([{ host: "host1", port: 6041 }], opts);
+            const connector = new WebSocketConnector(config);
+            expect(connector.state).toBe(ConnectionState.CLOSED);
         });
     });
 
     describe("state management", () => {
         test("cannot connect when not in CLOSED state", async () => {
-            const parsed = makeParsedUrl([{ host: "localhost", port: 1 }]);
-            const cm = new ConnectionManager(parsed, makeAuthInfo(), { retries: 0 }, 2000);
+            const config = makeConfig([{ host: "localhost", port: 1 }], { retries: 0 });
+            config.timeout = 2000;
+            const connector = new WebSocketConnector(config);
 
             // First connect will fail (no server), putting us back to CLOSED
             try {
-                await cm.connect();
+                await connector.connect();
             } catch (e) {
                 // expected
             }
-            expect(cm.state).toBe(ConnectionState.CLOSED);
+            expect(connector.state).toBe(ConnectionState.CLOSED);
         }, 15000);
 
         test("close on already closed is a no-op", async () => {
-            const parsed = makeParsedUrl([{ host: "host1", port: 6041 }]);
-            const cm = new ConnectionManager(parsed, makeAuthInfo());
-            await cm.close(); // Should not throw
-            expect(cm.state).toBe(ConnectionState.CLOSED);
+            const config = makeConfig([{ host: "host1", port: 6041 }]);
+            const connector = new WebSocketConnector(config);
+            await connector.close(); // Should not throw
+            expect(connector.state).toBe(ConnectionState.CLOSED);
         });
 
-        test("getReadyState returns -1 when not connected", () => {
-            const parsed = makeParsedUrl([{ host: "host1", port: 6041 }]);
-            const cm = new ConnectionManager(parsed, makeAuthInfo());
-            expect(cm.getReadyState()).toBe(-1);
+        test("readyState returns CLOSED when not connected", () => {
+            const config = makeConfig([{ host: "host1", port: 6041 }]);
+            const connector = new WebSocketConnector(config);
+            expect(connector.readyState()).toBe(3); // w3cwebsocket.CLOSED = 3
         });
     });
 
     describe("connection failure", () => {
         test("throws ERR_ALL_HOSTS_EXHAUSTED after all retries", async () => {
-            const parsed = makeParsedUrl([
-                { host: "nonexistent1", port: 1 },
-                { host: "nonexistent2", port: 2 },
-            ]);
-            const cm = new ConnectionManager(
-                parsed,
-                makeAuthInfo(),
+            const config = makeConfig(
+                [
+                    { host: "nonexistent1", port: 1 },
+                    { host: "nonexistent2", port: 2 },
+                ],
                 { retries: 0, retryBackoffMs: 1, retryBackoffMaxMs: 1 }
             );
+            const connector = new WebSocketConnector(config);
 
-            await expect(cm.connect()).rejects.toThrow("All hosts exhausted");
-            expect(cm.state).toBe(ConnectionState.CLOSED);
+            await expect(connector.connect()).rejects.toThrow("All hosts exhausted");
+            expect(connector.state).toBe(ConnectionState.CLOSED);
         }, 30000);
+    });
+
+    describe("multi-host URL generation", () => {
+        test("generates correct multi-host URL for single host", () => {
+            const config = makeConfig([{ host: "localhost", port: 6041 }]);
+            const connector = new WebSocketConnector(config);
+            const url = connector.getMultiHostUrl();
+            expect(url).toContain("localhost:6041");
+            expect(url).toContain("ws://");
+        });
+
+        test("generates correct multi-host URL for multiple hosts", () => {
+            const config = makeConfig([
+                { host: "host1", port: 6041 },
+                { host: "host2", port: 6042 },
+            ]);
+            const connector = new WebSocketConnector(config);
+            const url = connector.getMultiHostUrl();
+            expect(url).toContain("host1:6041");
+            expect(url).toContain("host2:6042");
+            expect(url).toContain(",");
+        });
     });
 });

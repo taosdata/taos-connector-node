@@ -7,6 +7,11 @@ import { maskUrlForLog } from "../common/utils";
 
 const mutex = new Mutex();
 
+/**
+ * Legacy connection pool - kept for backward compatibility with destroy() API.
+ * In the new architecture, each WebSocketConnector manages its own lifecycle.
+ * This pool is no longer actively used for connection pooling.
+ */
 export class WebSocketConnectionPool {
     private static _instance?: WebSocketConnectionPool;
     private pool: Map<string, WebSocketConnector[]> = new Map();
@@ -26,92 +31,6 @@ export class WebSocketConnectionPool {
             WebSocketConnectionPool._instance = new WebSocketConnectionPool(maxConnections);
         }
         return WebSocketConnectionPool._instance;
-    }
-
-    async getConnection(url: URL, timeout: number | undefined | null): Promise<WebSocketConnector> {
-        let connectAddr = url.origin.concat(url.pathname).concat(url.search);
-        let connector: WebSocketConnector | undefined;
-        const unlock = await mutex.acquire();
-        try {
-            if (this.pool.has(connectAddr)) {
-                const connectors = this.pool.get(connectAddr);
-                while (connectors && connectors.length > 0) {
-                    const candidate = connectors.pop();
-                    if (!candidate) {
-                        continue;
-                    }
-                    if (candidate && candidate.readyState() === w3cwebsocket.OPEN) {
-                        connector = candidate;
-                        break;
-                    } else if (candidate) {
-                        Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
-                        candidate.close();
-                        logger.error(`getConnection, current connection status fail, url: ${maskUrlForLog(new URL(connectAddr))}`);
-                    }
-                }
-            }
-
-            if (connector) {
-                logger.debug(
-                    "get connection success:" +
-                    Atomics.load(WebSocketConnectionPool.sharedArray, 0)
-                );
-                return connector;
-            }
-
-            if (
-                this._maxConnections != -1 &&
-                Atomics.load(WebSocketConnectionPool.sharedArray, 0) > this._maxConnections
-            ) {
-                throw new TDWebSocketClientError(
-                    ErrorCode.ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT,
-                    "websocket connect arrived limited:" +
-                    Atomics.load(WebSocketConnectionPool.sharedArray, 0)
-                );
-            }
-            Atomics.add(WebSocketConnectionPool.sharedArray, 0, 1);
-            if (logger.isInfoEnabled()) {
-                logger.info(
-                    "getConnection, new connection count:" +
-                    Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
-                    ", connectAddr:" +
-                    connectAddr.replace(/(token=)[^&]*/i, "$1[REDACTED]")
-                );
-            }
-            return new WebSocketConnector(url, timeout);
-        } finally {
-            unlock();
-        }
-    }
-
-    async releaseConnection(connector: WebSocketConnector): Promise<void> {
-        if (connector) {
-            const unlock = await mutex.acquire();
-            try {
-                if (connector.readyState() === w3cwebsocket.OPEN) {
-                    let url = connector.getWsURL();
-                    let connectAddr = url.origin.concat(url.pathname).concat(url.search);
-                    let connectors = this.pool.get(connectAddr);
-                    if (!connectors) {
-                        connectors = new Array();
-                        connectors.push(connector);
-                        this.pool.set(connectAddr, connectors);
-                    } else {
-                        connectors.push(connector);
-                    }
-                    logger.info("releaseConnection, current connection count:" + connectors.length);
-                } else {
-                    Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
-                    connector.close();
-                    logger.info(
-                        "releaseConnection, current connection status fail:" +
-                        Atomics.load(WebSocketConnectionPool.sharedArray, 0)
-                    );
-                }
-            } finally {
-                unlock();
-            }
-        }
     }
 
     destroyed() {

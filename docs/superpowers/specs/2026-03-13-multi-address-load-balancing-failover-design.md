@@ -48,7 +48,7 @@ w3cwebsocket (底层 WebSocket)
 3. **连接池 key**: 基于规范化的地址列表（排序后的字符串）
 4. **请求重试**:
    - Inflight 请求：根据 action 类型过滤（`insert`、`query`、`CheckServerStatus`、`OptionsConnection`，二进制 action 4/5/6/10）
-   - 重连期间新请求：全部缓存并在重连成功后发送
+   - 重连期间新请求：阻塞等待重连完成或失败
 5. **作用域**: 本期只处理 SQL 操作
 
 ### 2.3 配置方式
@@ -96,8 +96,6 @@ class RetryConfig {
 #### 3.2.1 新增属性
 
 ```typescript
-import { Semaphore } from 'async-mutex';
-
 class WebSocketConnector {
     private _addresses: Address[];           // 所有可用地址
     private _currentAddressIndex: number;    // 当前使用的地址索引
@@ -106,11 +104,8 @@ class WebSocketConnector {
     private _token: string | null;           // token 认证（如果有）
     private _isReconnecting: boolean;        // 是否正在重连
     private _reconnectPromise: Promise<void> | null; // 重连 Promise，用于并发控制
-    private _pendingRequests: PendingRequest[]; // 重连期间的新请求队列
     private _inflightRequests: Map<bigint, InflightRequest>; // 进行中的请求
     private _poolKey: string;                // 连接池 key
-    private static readonly MAX_PENDING_REQUESTS = 64; // 待处理请求队列最大长度
-    private _pendingQueueSemaphore: Semaphore; // 控制待处理队列的信号量
     // ... 现有属性
 }
 ```
@@ -120,12 +115,6 @@ class WebSocketConnector {
 ```typescript
 interface InflightRequest {
     reqId: bigint;
-    message: string | ArrayBuffer;
-    resolve: (value: any) => void;
-    reject: (error: any) => void;
-}
-
-interface PendingRequest {
     message: string | ArrayBuffer;
     resolve: (value: any) => void;
     reject: (error: any) => void;
@@ -142,7 +131,6 @@ constructor(dsn: Dsn, timeout?: number) {
     this._scheme = dsn.scheme;
     this._token = dsn.params.get('token') || null;
     this._poolKey = this.generatePoolKey(dsn);
-    this._pendingQueueSemaphore = new Semaphore(WebSocketConnector.MAX_PENDING_REQUESTS);
 
     // 使用当前地址创建 WebSocket 连接
     const url = this.buildWebSocketUrl('ws'); // SQL 使用 'ws' 路径
@@ -248,7 +236,7 @@ private async attemptReconnect(): Promise<void> {
 
     // 所有地址都尝试失败
     this._isReconnecting = false;
-    this.failAllPendingRequests(new TDWebSocketClientError(
+    this.failAllInflightRequests(new TDWebSocketClientError(
         ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
         'Failed to reconnect to any available address'
     ));
@@ -284,24 +272,17 @@ private isRetriableBinaryAction(action: bigint): boolean {
 async sendMsg(message: string, register: Boolean = true) {
     let msg = JSON.parse(message);
 
-    // 如果正在重连，将请求加入待处理队列
-    if (this._isReconnecting) {
-        // 使用信号量控制队列大小，如果队列满则阻塞等待
-        const release = await this._pendingQueueSemaphore.acquire();
-
-        return new Promise((resolve, reject) => {
-            this._pendingRequests.push({
-                message,
-                resolve: (value) => {
-                    release(); // 请求完成后释放信号量
-                    resolve(value);
-                },
-                reject: (error) => {
-                    release(); // 请求失败后释放信号量
-                    reject(error);
-                }
-            });
-        });
+    // 如果正在重连，阻塞等待重连完成
+    if (this._isReconnecting && this._reconnectPromise) {
+        try {
+            await this._reconnectPromise;
+        } catch (err) {
+            // 重连失败，直接抛出错误
+            throw new WebSocketQueryError(
+                ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
+                `Failed to reconnect: ${err.message}`
+            );
+        }
     }
 
     return new Promise((resolve, reject) => {
@@ -354,7 +335,7 @@ async sendMsg(message: string, register: Boolean = true) {
 private async replayRequests(): Promise<void> {
     logger.info(`Replaying requests after reconnection`);
 
-    // 1. 重发 inflight 请求
+    // 重发 inflight 请求
     const inflightRequests = Array.from(this._inflightRequests.values());
     for (const req of inflightRequests) {
         try {
@@ -366,34 +347,14 @@ private async replayRequests(): Promise<void> {
             this._inflightRequests.delete(req.reqId);
         }
     }
-
-    // 2. 发送重连期间收到的新请求
-    const pendingRequests = [...this._pendingRequests];
-    this._pendingRequests = [];
-
-    for (const req of pendingRequests) {
-        try {
-            this._wsConn.send(req.message);
-            logger.debug(`Sent pending request`);
-        } catch (err) {
-            logger.error(`Failed to send pending request: ${err.message}`);
-            req.reject(err);
-        }
-    }
 }
 
-private failAllPendingRequests(error: Error): void {
+private failAllInflightRequests(error: Error): void {
     // 失败所有 inflight 请求
     for (const req of this._inflightRequests.values()) {
         req.reject(error);
     }
     this._inflightRequests.clear();
-
-    // 失败所有待处理请求
-    for (const req of this._pendingRequests) {
-        req.reject(error);
-    }
-    this._pendingRequests = [];
 }
 ```
 
@@ -506,7 +467,7 @@ export enum ErrorCode {
 
 1. **DSN 解析失败**: 在 `parse()` 函数中抛出 `ERR_INVALID_DSN`
 2. **所有地址连接失败**: 在 `attemptReconnect()` 中抛出 `ERR_ALL_ADDRESSES_FAILED`
-3. **重连期间请求队列控制**: 使用信号量（Semaphore）控制待处理请求队列大小（默认 64），队列满时新请求会阻塞等待，直到有空间或重连完成
+3. **重连期间新请求**: 阻塞等待重连完成，重连失败时抛出连接错误
 4. **连接池满**: 现有的 `ERR_WEBSOCKET_CONNECTION_ARRIVED_LIMIT` 处理
 
 ## 5. 测试策略
@@ -540,7 +501,7 @@ export enum ErrorCode {
 
 #### 重连场景
 - 连接断开时的自动重连
-- 重连期间的请求缓存
+- 重连期间的请求阻塞等待
 - 并发重连控制
 - 重连到不同地址
 
@@ -594,7 +555,7 @@ export enum ErrorCode {
 
 ### 阶段 2: 请求重试
 1. 实现 inflight 请求跟踪
-2. 实现 pending 请求队列
+2. 实现重连期间请求阻塞等待
 3. 实现请求重放逻辑
 4. Action 过滤机制
 

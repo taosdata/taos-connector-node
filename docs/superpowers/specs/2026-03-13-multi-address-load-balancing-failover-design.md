@@ -177,24 +177,47 @@ private async _onerror(err: Error) {
 
 #### 3.3.2 重连逻辑（带并发控制）
 
+**并发问题分析**：
+在异步场景下，`_onerror` 和 `_onclose` 可能几乎同时触发，导致以下竞态条件：
+- 第一个调用者检查 `_isReconnecting` 为 false
+- 在设置 `_isReconnecting = true` 之前，第二个调用者也完成了检查
+- 结果：创建多个重连Promise，浪费资源且可能导致状态混乱
+
+**解决方案**：
+使用 `_reconnectLock` Promise 实现原子性的重连控制，利用 Promise 的单次 resolve 特性作为轻量级锁。
+
 ```typescript
+class WebSocketConnector {
+    private _isReconnecting: boolean = false;
+    private _reconnectLock: Promise<void> | null = null;  // 重连锁
+    // ... 其他属性
+}
+
 // 触发重连（带并发控制）
 private async triggerReconnect(): Promise<void> {
-    if (this._isReconnecting) {
-        // 如果已经在重连中，等待现有的重连完成
-        if (this._reconnectPromise) {
-            await this._reconnectPromise;
-        }
-        return;
+    // 原子性地获取或创建重连Promise
+    if (!this._reconnectLock) {
+        this._reconnectLock = this._doReconnect();
     }
 
-    this._isReconnecting = true;
-    this._reconnectPromise = this.attemptReconnect();
-
     try {
-        await this._reconnectPromise;
+        await this._reconnectLock;
     } finally {
-        this._reconnectPromise = null;
+        // 只有当前Promise完成时才清空
+        if (this._reconnectLock === this._reconnectLock) {
+            this._reconnectLock = null;
+        }
+    }
+}
+
+// 执行实际的重连逻辑
+private async _doReconnect(): Promise<void> {
+    this._isReconnecting = true;
+    try {
+        await this.attemptReconnect();
+        await this.replayRequests();
+    } finally {
+        this._isReconnecting = false;
     }
 }
 
@@ -211,9 +234,8 @@ private async attemptReconnect(): Promise<void> {
 
                 await this.reconnectToCurrentAddress();
 
-                // 重连成功
-                this._isReconnecting = false;
-                await this.replayRequests();
+                // 重连成功，返回（状态更新在 _doReconnect 的 finally 中）
+                logger.info(`Reconnection successful to ${this.getCurrentAddress()}`);
                 return;
 
             } catch (err) {
@@ -235,13 +257,20 @@ private async attemptReconnect(): Promise<void> {
     }
 
     // 所有地址都尝试失败
-    this._isReconnecting = false;
-    this.failAllInflightRequests(new TDWebSocketClientError(
+    const error = new TDWebSocketClientError(
         ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
         'Failed to reconnect to any available address'
-    ));
+    );
+    this.failAllInflightRequests(error);
+    throw error;
 }
 ```
+
+**关键改进点**：
+1. **原子性保证**：使用 `_reconnectLock` Promise 作为锁，确保只有一个重连流程在执行
+2. **状态管理**：将状态更新集中在 `_doReconnect()` 的 try-finally 中，确保状态一致性
+3. **错误处理**：重连失败时抛出错误，由 `_doReconnect()` 的 finally 块确保 `_isReconnecting` 被正确重置
+4. **请求重放时机**：先完成重连，再重放请求，最后才更新状态为非重连中
 
 ### 3.4 请求重试机制
 

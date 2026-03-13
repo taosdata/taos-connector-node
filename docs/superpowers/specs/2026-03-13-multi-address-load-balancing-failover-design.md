@@ -200,11 +200,13 @@ private async triggerReconnect(): Promise<void> {
         this._reconnectLock = this._doReconnect();
     }
 
+    const currentLock = this._reconnectLock;  // 保存当前锁的引用
+
     try {
-        await this._reconnectLock;
+        await currentLock;
     } finally {
-        // 只有当前Promise完成时才清空
-        if (this._reconnectLock === this._reconnectLock) {
+        // 只有当锁没有被新的重连替换时才清空
+        if (this._reconnectLock === currentLock) {
             this._reconnectLock = null;
         }
     }

@@ -295,68 +295,81 @@ private isRetriableBinaryAction(action: bigint): boolean {
 }
 ```
 
-#### 3.4.2 发送消息时记录 inflight 请求
+#### 3.4.2 发送消息时记录 inflight 请求（乐观发送策略）
+
+**TOCTOU问题分析**：
+在等待重连成功后和调用 `send()` 之间存在时间窗口，连接可能在此期间断开。这是WebSocket的固有特性，无法完全消除。
+
+**解决方案**：
+采用"乐观发送 + 重连兜底"策略：
+- 可重试请求：先加入 `_inflightRequests`，发送失败后由重连机制重放
+- 不可重试请求：发送失败立即拒绝Promise
 
 ```typescript
 async sendMsg(message: string, register: Boolean = true) {
     let msg = JSON.parse(message);
 
-    // 如果正在重连，阻塞等待重连完成
-    if (this._isReconnecting && this._reconnectPromise) {
-        try {
-            await this._reconnectPromise;
-        } catch (err) {
-            // 重连失败，直接抛出错误
-            throw new WebSocketQueryError(
-                ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `Failed to reconnect: ${err.message}`
-            );
-        }
+    // 等待重连完成
+    if (this._reconnectLock) {
+        await this._reconnectLock;
     }
 
     return new Promise((resolve, reject) => {
-        if (this._wsConn && this._wsConn.readyState === w3cwebsocket.OPEN) {
-            if (register) {
-                const reqId = msg.args.req_id;
+        const reqId = msg.args.req_id;
 
-                // 只有可重试的 action 才记录到 inflight
-                if (this.isRetriableAction(msg.action)) {
-                    this._inflightRequests.set(reqId, {
-                        reqId,
-                        message,
-                        resolve,
-                        reject
-                    });
+        // 可重试的请求先注册到 inflight
+        if (this.isRetriableAction(msg.action)) {
+            this._inflightRequests.set(reqId, {
+                reqId,
+                message,
+                resolve,
+                reject
+            });
+        }
+
+        // 注册回调
+        if (register) {
+            WsEventCallback.instance().registerCallback(
+                {
+                    action: msg.action,
+                    req_id: msg.args.req_id,
+                    timeout: this._timeout,
+                    id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id),
+                },
+                (result) => {
+                    this._inflightRequests.delete(reqId);
+                    resolve(result);
+                },
+                (error) => {
+                    this._inflightRequests.delete(reqId);
+                    reject(error);
                 }
+            );
+        }
 
-                WsEventCallback.instance().registerCallback(
-                    {
-                        action: msg.action,
-                        req_id: msg.args.req_id,
-                        timeout: this._timeout,
-                        id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id),
-                    },
-                    (result) => {
-                        this._inflightRequests.delete(reqId);
-                        resolve(result);
-                    },
-                    (error) => {
-                        this._inflightRequests.delete(reqId);
-                        reject(error);
-                    }
-                );
-            }
-
+        // 乐观发送，失败由 catch 处理
+        try {
             this._wsConn.send(message);
-        } else {
-            reject(new WebSocketQueryError(
-                ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
-            ));
+        } catch (err) {
+            // 发送失败，如果不可重试则立即拒绝
+            if (!this.isRetriableAction(msg.action)) {
+                this._inflightRequests.delete(reqId);
+                if (register) {
+                    WsEventCallback.instance().unregisterCallback(reqId);
+                }
+                reject(err);
+            }
+            // 可重试的请求保留在 inflight，等待重连后重放
         }
     });
 }
 ```
+
+**关键改进点**：
+1. **先注册后发送**：可重试请求先加入 `_inflightRequests`，确保重连时能重放
+2. **乐观发送**：直接调用 `send()`，失败由 catch 捕获
+3. **分类处理**：可重试请求依赖重连机制，不可重试请求立即失败
+4. **接受现实**：承认TOCTOU无法完全避免，通过重连机制保证最终一致性
 
 #### 3.4.3 重连成功后重放请求
 

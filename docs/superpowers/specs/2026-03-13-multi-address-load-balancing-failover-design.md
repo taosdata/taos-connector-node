@@ -438,6 +438,36 @@ class WebSocketConnectionPool {
 }
 ```
 
+#### 3.5.2 并发控制
+
+**现有实现**：
+连接池已使用 `async-mutex` 保护并发访问，确保：
+1. 多个并发请求不会创建重复连接
+2. 连接的获取、释放、清理都是线程安全的
+3. 使用 `Atomics` 进行原子引用计数
+
+```typescript
+import { Mutex } from "async-mutex";
+
+const mutex = new Mutex();
+
+async getConnection(url: URL, timeout: number | undefined | null): Promise<WebSocketConnector> {
+    const unlock = await mutex.acquire();
+    try {
+        // 检查连接池
+        // 创建新连接
+        // 更新引用计数
+    } finally {
+        unlock();
+    }
+}
+```
+
+**多地址改造注意事项**：
+- 保持现有的 `Mutex` 并发控制机制
+- Pool key 从单个 URL 改为规范化的地址列表
+- 连接复用逻辑保持不变
+
 ### 3.6 上层集成改动
 
 #### 3.6.1 WsClient 改动

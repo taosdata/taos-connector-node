@@ -32,7 +32,7 @@
     ↓
 WsSql / WsTmq (不变)
     ↓
-WsClient (轻微改动：传递 DSN 字符串)
+WsClient (中等改动：从 URL 链路迁移到 DSN 链路)
     ↓
 WebSocketConnectionPool (改动：DSN 解析，逻辑端点 key)
     ↓
@@ -47,7 +47,7 @@ w3cwebsocket (底层 WebSocket)
 2. **重试配置**: 支持 `retries`（每个地址重试次数）、`retry_backoff_ms`（初始退避延迟）、`retry_backoff_max_ms`（最大退避延迟）
 3. **连接池 key**: 基于规范化的地址列表（排序后的字符串）
 4. **请求重试**:
-   - Inflight 请求：根据 action 类型过滤（`insert`、`query`、`CheckServerStatus`、`OptionsConnection`，二进制 action 4/5/6/10）
+    - Inflight 请求：根据 action 类型过滤（`insert`、`options_connection`，二进制 action 4/5/6/10）
    - 重连期间新请求：阻塞等待重连完成或失败
 5. **作用域**: 本期只处理 SQL 操作
 
@@ -135,7 +135,7 @@ constructor(dsn: Dsn, timeout?: number) {
     // 使用当前地址创建 WebSocket 连接
     const url = this.buildWebSocketUrl('ws'); // SQL 使用 'ws' 路径
     this._wsURL = new URL(url);
-    // ... 创建连接
+    // ... 创建连接（如果创建连接失败也需要重试）
 }
 
 private buildWebSocketUrl(path: string): string {
@@ -283,9 +283,7 @@ private async attemptReconnect(): Promise<void> {
 private isRetriableAction(action: string): boolean {
     const retriableActions = [
         'insert',
-        'query',
-        'CheckServerStatus',
-        'OptionsConnection'
+        'options_connection'
     ];
     return retriableActions.includes(action);
 }
@@ -402,6 +400,122 @@ private failAllInflightRequests(error: Error): void {
 }
 ```
 
+#### 3.4.5 二进制请求覆盖与统一状态机（修复主路径遗漏）
+
+当前 SQL 主路径主要走二进制协议，必须与字符串请求共享同一套 inflight/重连等待/重放机制，避免仅修复 `sendMsg()` 而遗漏 `sendBinaryMsg()`。
+
+```typescript
+async sendBinaryMsg(reqId: bigint, action: string, message: ArrayBuffer, register: Boolean = true) {
+    if (this._reconnectLock) {
+        await this._reconnectLock;
+    }
+
+    return new Promise((resolve, reject) => {
+        // 二进制消息头中的 opCode 用于可重试判断（如 4/5/6/10）
+        const opCode = this.extractBinaryAction(message);
+
+        if (this.isRetriableBinaryAction(opCode)) {
+            this._inflightRequests.set(reqId, {
+                reqId,
+                message,
+                resolve,
+                reject,
+            });
+        }
+
+        if (register) {
+            WsEventCallback.instance().registerCallback(
+                {
+                    action,
+                    req_id: reqId,
+                    timeout: this._timeout,
+                    id: reqId,
+                },
+                (result) => {
+                    this._inflightRequests.delete(reqId);
+                    resolve(result);
+                },
+                (error) => {
+                    this._inflightRequests.delete(reqId);
+                    reject(error);
+                }
+            );
+        }
+
+        try {
+            this._wsConn.send(message);
+        } catch (err) {
+            if (!this.isRetriableBinaryAction(opCode)) {
+                this._inflightRequests.delete(reqId);
+                reject(err);
+            }
+        }
+    });
+}
+```
+
+**修复要点**：
+1. `sendMsg()` 和 `sendBinaryMsg()` 共享同一故障转移状态机。
+2. 二进制重试白名单以协议 action 常量为准（本期覆盖 4/5/6/10）。
+3. 新增 action 时必须通过常量和测试同步更新，避免硬编码漂移。
+
+#### 3.4.4 回调生命周期管理（修复超时竞态）
+
+为避免请求已经命中回调后，超时定时器仍然触发造成“先成功后超时”的竞态，需要在回调命中时清理定时器。
+
+```typescript
+class WsEventCallback {
+    private static _msgActionRegister: Map<MessageId, MessageAction> = new Map();
+
+    async handleEventCallback(msg: MessageId, messageType: OnMessageType, data: any) {
+        let action: MessageAction | undefined = undefined;
+        let keyToDelete: MessageId | undefined = undefined;
+
+        const release = await eventMutex.acquire();
+        try {
+            for (const [k, v] of WsEventCallback._msgActionRegister) {
+                if (this.isMatched(k, msg, messageType)) {
+                    action = v;
+                    keyToDelete = k;
+                    break;
+                }
+            }
+
+            if (action && keyToDelete) {
+                clearTimeout(action.timer); // 关键：命中回调后立即停止超时计时器
+                WsEventCallback._msgActionRegister.delete(keyToDelete);
+            }
+        } finally {
+            release();
+        }
+
+        if (action) {
+            action.resolve({ msg: data });
+        }
+    }
+
+    async unregisterCallback(reqId: bigint): Promise<void> {
+        const release = await eventMutex.acquire();
+        try {
+            for (const [k, v] of WsEventCallback._msgActionRegister) {
+                if (k.req_id === reqId || k.id === reqId) {
+                    clearTimeout(v.timer);
+                    WsEventCallback._msgActionRegister.delete(k);
+                    break;
+                }
+            }
+        } finally {
+            release();
+        }
+    }
+}
+```
+
+**修复要点**：
+1. 命中回调时必须 `clearTimeout(action.timer)`，避免幽灵超时。
+2. 在 `unregisterCallback` 中也必须清理 timer，避免内存和事件循环负担累积。
+3. 删除注册项与清理 timer 要在同一临界区内完成，保证并发一致性。
+
 ### 3.5 连接池改动
 
 #### 3.5.1 连接池 key 生成
@@ -416,10 +530,13 @@ class WebSocketConnectionPool {
             .map(addr => `${addr.host}:${addr.port}`)
             .join(',');
 
-        // 包含 scheme, 地址列表, database, 关键参数
+        // 包含 scheme, 地址列表, database, 关键参数 + 认证身份指纹
         const params = new URLSearchParams();
         if (dsn.params.has('token')) {
             params.set('token', dsn.params.get('token')!);
+        }
+        if (dsn.params.has('bearer_token')) {
+            params.set('bearer_token', dsn.params.get('bearer_token')!);
         }
         if (dsn.params.has('timezone')) {
             params.set('timezone', dsn.params.get('timezone')!);
@@ -427,8 +544,17 @@ class WebSocketConnectionPool {
 
         const db = dsn.database || '';
         const paramStr = params.toString();
+        const authScope = this.buildAuthScope(dsn); // 用户名/token/bearer_token 的稳定指纹
 
-        return `${dsn.scheme}://${sortedAddrs}/${db}${paramStr ? '?' + paramStr : ''}`;
+        return `${dsn.scheme}://${sortedAddrs}/${db}${paramStr ? '?' + paramStr : ''}#auth=${authScope}`;
+    }
+
+    private buildAuthScope(dsn: Dsn): string {
+        // 不直接拼接明文密码，使用稳定摘要确保跨身份不复用连接
+        const token = dsn.params.get('token') || '';
+        const bearerToken = dsn.params.get('bearer_token') || '';
+        const raw = `${dsn.username}:${dsn.password}:${token}:${bearerToken}`;
+        return stableHash(raw);
     }
 
     async getConnection(dsn: Dsn, timeout: number | undefined | null): Promise<WebSocketConnector> {
@@ -439,6 +565,17 @@ class WebSocketConnectionPool {
     }
 }
 ```
+
+#### 3.5.3 认证隔离约束（修复跨身份复用风险）
+
+连接池复用必须满足以下条件，否则视为不同连接作用域：
+
+1. 地址集合（排序后）一致。
+2. 数据库名一致。
+3. 认证身份一致（username/password 或 token 或 bearer_token 的指纹一致）。
+4. 关键连接参数一致（如 timezone）。
+
+这样可以避免不同身份的请求误复用同一已认证连接。
 
 #### 3.5.2 并发控制
 
@@ -524,6 +661,19 @@ class WsClient {
 }
 ```
 
+#### 3.6.2 迁移方案（修复“改动范围低估”）
+
+为避免一次性切换导致回归风险，迁移按 3 个阶段执行：
+
+1. **阶段 A（兼容层）**：保留 `getUrl(wsConfig)` 产物给旧路径，同时新增 `parse(wsConfig.getUrl())` 的 DSN 入口；单地址场景双路径输出应一致。
+2. **阶段 B（主路径切换）**：`WsClient` 与 `WebSocketConnectionPool` 主路径改为 `Dsn`；URL 仅作为兼容输入，不再作为连接池 key 来源。
+3. **阶段 C（收敛）**：`WebSocketConnector` 内部只保留多地址语义字段（scheme/addresses/params），统一由 DSN 构建运行时连接 URL。
+
+**边界约束**：
+1. 对外 API（`WSConfig`、`WsSql.open`）不变。
+2. 单地址 DSN 行为必须与现有版本一致。
+3. URL 兼容分支保留一个小版本周期后再评估下线。
+
 ## 4. 错误处理
 
 ### 4.1 新增错误码
@@ -580,9 +730,9 @@ export enum ErrorCode {
 - 重连到不同地址
 
 #### 请求重试场景
-- 可重试 action（insert、query 等）
+- 可重试字符串 action（insert、options_connection）
 - 不可重试 action 立即失败
-- 二进制请求重试
+- 二进制请求重试（4/5/6/10）
 - 混合可重试和不可重试请求
 
 #### 负载均衡场景

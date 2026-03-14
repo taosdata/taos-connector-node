@@ -12,7 +12,7 @@ import { maskSensitiveForLog, maskUrlForLog } from "../common/utils";
 export class WebSocketConnector {
     private _wsConn: w3cwebsocket;
     private _wsURL: URL;
-    _timeout = 5000;
+    _timeout = 60000;
 
     constructor(url: URL, timeout: number | undefined | null) {
         if (url) {

@@ -31,6 +31,8 @@ export class WsClient {
     private static readonly _minVersion = "3.3.2.0";
     private _version?: string | undefined | null;
     private _bearerToken?: string | undefined | null;
+    private _connectedDatabase: string | null = null;
+    private _connectionOptions: Map<TSDB_OPTION_CONNECTION, string | null> = new Map();
 
     constructor(urlOrDsn: URL | Dsn, timeout?: number | undefined | null) {
         if (urlOrDsn instanceof URL) {
@@ -54,6 +56,9 @@ export class WsClient {
         }
         if (this._dsn.params.has("bearer_token")) {
             this._bearerToken = this._dsn.params.get("bearer_token") || undefined;
+        }
+        if (this._dsn.database.length > 0) {
+            this._connectedDatabase = this._dsn.database;
         }
     }
 
@@ -103,8 +108,8 @@ export class WsClient {
         return maskUrlForLog(this.buildLogUrl());
     }
 
-    async connect(database?: string | undefined | null): Promise<void> {
-        let connMsg = {
+    private buildConnMessage(database?: string | undefined | null) {
+        return {
             action: "conn",
             args: {
                 req_id: ReqId.getReqID(),
@@ -116,6 +121,56 @@ export class WsClient {
                 ...(this._bearerToken && { bearer_token: this._bearerToken }),
             },
         };
+    }
+
+    private assertSuccessResponse(result: any, action: string): void {
+        if (result && result.msg && result.msg.code == 0) {
+            return;
+        }
+        const code = result?.msg?.code ?? ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL;
+        const message = result?.msg?.message || `${action} failed`;
+        throw new WebSocketQueryError(code, message);
+    }
+
+    private bindReconnectRecoveryHook(): void {
+        if (!this._wsConnector) {
+            return;
+        }
+        this._wsConnector.setSessionRecoveryHook(async () => {
+            if (!this._wsConnector) {
+                return;
+            }
+            const connMsg = this.buildConnMessage(this._connectedDatabase);
+            const connResp = await this._wsConnector.sendMsgDirect(
+                JSON.stringify(connMsg)
+            );
+            this.assertSuccessResponse(connResp, "conn");
+
+            if (this._connectionOptions.size > 0) {
+                const options = Array.from(this._connectionOptions.entries()).map(
+                    ([option, value]) => ({
+                        option,
+                        value,
+                    })
+                );
+                const optionsMsg = {
+                    action: "options_connection",
+                    args: {
+                        req_id: ReqId.getReqID(),
+                        options,
+                    },
+                };
+                const optionsResp = await this._wsConnector.sendMsgDirect(
+                    JSONBig.stringify(optionsMsg)
+                );
+                this.assertSuccessResponse(optionsResp, "options_connection");
+            }
+        });
+    }
+
+    async connect(database?: string | undefined | null): Promise<void> {
+        const targetDatabase = database ?? (this._dsn.database.length > 0 ? this._dsn.database : undefined);
+        const connMsg = this.buildConnMessage(targetDatabase);
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg, (key, value) =>
                 (key === "password" || key === "bearer_token") ? "[REDACTED]" : value
@@ -126,13 +181,16 @@ export class WsClient {
             this._wsPath,
             this._timeout
         );
+        this.bindReconnectRecoveryHook();
         if (this._wsConnector.readyState() === w3cwebsocket.OPEN) {
+            this._connectedDatabase = targetDatabase ?? null;
             return;
         }
         try {
             await this._wsConnector.ready();
             let result: any = await this._wsConnector.sendMsg(JSON.stringify(connMsg));
             if (result.msg.code == 0) {
+                this._connectedDatabase = targetDatabase ?? null;
                 return;
             }
             await this.close();
@@ -164,6 +222,7 @@ export class WsClient {
         };
         try {
             await this.exec(JSONBig.stringify(connMsg), false);
+            this._connectionOptions.set(option, value);
         } catch (e: any) {
             logger.error("[wsClient.setOptionConnection] failed: " + e.message);
             throw e;
@@ -288,6 +347,7 @@ export class WsClient {
                 this._wsPath,
                 this._timeout
             );
+            this.bindReconnectRecoveryHook();
             if (this._wsConnector.readyState() !== w3cwebsocket.OPEN) {
                 await this._wsConnector.ready();
             }
@@ -403,6 +463,7 @@ export class WsClient {
 
     async close(): Promise<void> {
         if (this._wsConnector) {
+            this._wsConnector.setSessionRecoveryHook(null);
             await WebSocketConnectionPool.instance().releaseConnection(
                 this._wsConnector
             );

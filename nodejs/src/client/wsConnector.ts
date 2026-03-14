@@ -17,6 +17,8 @@ interface InflightRequest {
     reject: (error: unknown) => void;
 }
 
+type SessionRecoveryHook = () => Promise<void>;
+
 export class WebSocketConnector {
     private _wsConn!: w3cwebsocket;
     private _wsURL!: URL;
@@ -33,6 +35,7 @@ export class WebSocketConnector {
     private _isReconnecting = false;
     private _allowReconnect = true;
     private _connectionReadyPromise: Promise<void> = Promise.resolve();
+    private _sessionRecoveryHook: SessionRecoveryHook | null = null;
     _timeout = 60000;
 
     constructor(
@@ -190,7 +193,10 @@ export class WebSocketConnector {
         if (this.shouldSkipReconnect(wsConn) || this._isReconnecting) {
             return;
         }
-        void this.triggerReconnect();
+        void this.triggerReconnect().catch((err: unknown) => {
+            const message = err instanceof Error ? err.message : String(err);
+            logger.error(`Reconnect failed after websocket error: ${message}`);
+        });
     }
 
     private async handleConnectionClose(
@@ -203,7 +209,10 @@ export class WebSocketConnector {
         if (e.code === 1000 || e.code === 1001) {
             return;
         }
-        await this.triggerReconnect();
+        await this.triggerReconnect().catch((err: unknown) => {
+            const message = err instanceof Error ? err.message : String(err);
+            logger.error(`Reconnect failed after websocket close: ${message}`);
+        });
     }
 
     private extractReqId(reqId: unknown): bigint | null {
@@ -281,6 +290,7 @@ export class WebSocketConnector {
         this._isReconnecting = true;
         try {
             await this.attemptReconnect();
+            await this.recoverSessionContext();
             await this.replayRequests();
         } catch (err: unknown) {
             const reconnectError = err instanceof Error
@@ -376,6 +386,59 @@ export class WebSocketConnector {
 
     readyState(): number {
         return this._wsConn.readyState;
+    }
+
+    public setSessionRecoveryHook(
+        hook: SessionRecoveryHook | undefined | null
+    ): void {
+        this._sessionRecoveryHook = hook || null;
+    }
+
+    private async recoverSessionContext(): Promise<void> {
+        if (!this._sessionRecoveryHook) {
+            return;
+        }
+        await this._sessionRecoveryHook();
+    }
+
+    public async sendMsgDirect(message: string): Promise<any> {
+        if (logger.isDebugEnabled()) {
+            logger.debug("[wsClient.sendMsgDirect()]===>" + maskSensitiveForLog(message));
+        }
+        if (!this._wsConn || this._wsConn.readyState !== w3cwebsocket.OPEN) {
+            throw new WebSocketQueryError(
+                ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
+                `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
+            );
+        }
+
+        const msg = JSON.parse(message);
+        const reqId = this.extractReqId(msg?.args?.req_id) ?? BigInt(0);
+
+        return new Promise(async (resolve, reject) => {
+            try {
+                await WsEventCallback.instance().registerCallback(
+                    {
+                        action: msg.action,
+                        req_id: reqId,
+                        timeout: this._timeout,
+                        id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id),
+                    },
+                    resolve,
+                    reject
+                );
+            } catch (err) {
+                reject(err);
+                return;
+            }
+
+            try {
+                this._wsConn.send(message);
+            } catch (err) {
+                await WsEventCallback.instance().unregisterCallback(reqId);
+                reject(err);
+            }
+        });
     }
 
     async sendMsgNoResp(message: string): Promise<void> {

@@ -472,15 +472,15 @@ export class WebSocketConnector {
         }
 
         return new Promise((resolve, reject) => {
-            if (!this._wsConn || this._wsConn.readyState !== w3cwebsocket.OPEN) {
-                reject(
-                    new WebSocketQueryError(
-                        ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                        `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
-                    )
-                );
-                return;
-            }
+            // if (!this._wsConn || this._wsConn.readyState !== w3cwebsocket.OPEN) {
+            //     reject(
+            //         new WebSocketQueryError(
+            //             ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
+            //             `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
+            //         )
+            //     );
+            //     return;
+            // }
 
             const reqId = this.extractReqId(msg?.args?.req_id);
             const retriable = this.isRetriableAction(msg.action);

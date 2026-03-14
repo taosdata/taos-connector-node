@@ -293,7 +293,7 @@ export class WsStmt2 implements WsStmt {
             this._toBeBindTagCount,
             this._toBeBindColCount
         );
-        await this.sendBinaryMsg(reqId, "stmt2_bind", new Uint8Array(bytes));
+        await this.sendBinaryMsg(reqId, "stmt2_bind", bytes);
 
         let execMsg = {
             action: "stmt2_exec",

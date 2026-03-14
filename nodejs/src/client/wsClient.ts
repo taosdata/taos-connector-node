@@ -1,6 +1,7 @@
 import JSONBig from "json-bigint";
 import { WebSocketConnector } from "./wsConnector";
 import { WebSocketConnectionPool } from "./wsConnectorPool";
+import { Dsn } from "../common/dsn";
 import {
     ErrorCode,
     TDWebSocketClientError,
@@ -10,30 +11,96 @@ import {
 import { WSVersionResponse, WSQueryResponse } from "./wsResponse";
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
-import { safeDecodeURIComponent, compareVersions, maskSensitiveForLog, maskUrlForLog } from "../common/utils";
+import {
+    safeDecodeURIComponent,
+    compareVersions,
+    maskSensitiveForLog,
+    maskUrlForLog,
+} from "../common/utils";
 import { w3cwebsocket } from "websocket";
 import { ConnectorInfo, TSDB_OPTION_CONNECTION } from "../common/constant";
+
+const DEFAULT_PORT = 6041;
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
     private _timeout?: number | undefined | null;
     private _timezone?: string | undefined | null;
-    private readonly _url: URL;
+    private readonly _dsn: Dsn;
+    private readonly _wsPath: string;
     private static readonly _minVersion = "3.3.2.0";
     private _version?: string | undefined | null;
     private _bearerToken?: string | undefined | null;
 
-    constructor(url: URL, timeout?: number | undefined | null) {
-        this.checkURL(url);
-        this._url = url;
+    constructor(urlOrDsn: URL | Dsn, timeout?: number | undefined | null) {
+        if (urlOrDsn instanceof URL) {
+            this._dsn = this.convertUrlToDsn(urlOrDsn);
+            this._wsPath = this.normalizePath(urlOrDsn.pathname);
+        } else {
+            this._dsn = {
+                scheme: urlOrDsn.scheme,
+                username: urlOrDsn.username,
+                password: urlOrDsn.password,
+                addresses: [...urlOrDsn.addresses],
+                database: urlOrDsn.database,
+                params: new Map(urlOrDsn.params),
+            };
+            this._wsPath = "ws";
+        }
+        this.checkAuth();
         this._timeout = timeout;
-        if (this._url.searchParams.has("timezone")) {
-            this._timezone = this._url.searchParams.get("timezone") || undefined;
-            this._url.searchParams.delete("timezone");
+        if (this._dsn.params.has("timezone")) {
+            this._timezone = this._dsn.params.get("timezone") || undefined;
         }
-        if (this._url.searchParams.has("bearer_token")) {
-            this._bearerToken = this._url.searchParams.get("bearer_token") || undefined;
+        if (this._dsn.params.has("bearer_token")) {
+            this._bearerToken = this._dsn.params.get("bearer_token") || undefined;
         }
+    }
+
+    private normalizePath(path: string): string {
+        const normalized = path.trim().replace(/^\/+/, "");
+        return normalized.length > 0 ? normalized : "ws";
+    }
+
+    private convertUrlToDsn(url: URL): Dsn {
+        const scheme = url.protocol.replace(":", "");
+        const host = url.hostname;
+        const port = url.port.length > 0 ? Number.parseInt(url.port, 10) : DEFAULT_PORT;
+        const params = new Map<string, string>();
+        url.searchParams.forEach((value, key) => {
+            params.set(key, value);
+        });
+        return {
+            scheme,
+            username: url.username,
+            password: url.password,
+            addresses: [{ host, port }],
+            database: "",
+            params,
+        };
+    }
+
+    private buildLogUrl(): URL {
+        const addr = this._dsn.addresses[0];
+        const url = new URL(`${this._dsn.scheme}://${addr.host}:${addr.port}/${this._wsPath}`);
+        url.username = this._dsn.username;
+        url.password = this._dsn.password;
+        const skipParams = new Set([
+            "retries",
+            "retry_backoff_ms",
+            "retry_backoff_max_ms",
+            "timezone",
+        ]);
+        for (const [key, value] of this._dsn.params) {
+            if (!skipParams.has(key)) {
+                url.searchParams.set(key, value);
+            }
+        }
+        return url;
+    }
+
+    private maskedLogUrl(): string {
+        return maskUrlForLog(this.buildLogUrl());
     }
 
     async connect(database?: string | undefined | null): Promise<void> {
@@ -41,8 +108,8 @@ export class WsClient {
             action: "conn",
             args: {
                 req_id: ReqId.getReqID(),
-                user: safeDecodeURIComponent(this._url.username),
-                password: safeDecodeURIComponent(this._url.password),
+                user: safeDecodeURIComponent(this._dsn.username),
+                password: safeDecodeURIComponent(this._dsn.password),
                 db: database,
                 connector: ConnectorInfo,
                 ...(this._timezone && { tz: this._timezone }),
@@ -55,7 +122,8 @@ export class WsClient {
             ));
         }
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
-            this._url,
+            this._dsn,
+            this._wsPath,
             this._timeout
         );
         if (this._wsConnector.readyState() === w3cwebsocket.OPEN) {
@@ -71,7 +139,7 @@ export class WsClient {
             throw new WebSocketQueryError(result.msg.code, result.msg.message);
         } catch (e: any) {
             await this.close();
-            const maskedUrl = maskUrlForLog(this._url);
+            const maskedUrl = this.maskedLogUrl();
             logger.error(`connection creation failed, url: ${maskedUrl}, code:${e.code}, msg:${e.message}`);
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
@@ -117,7 +185,6 @@ export class WsClient {
         );
     }
 
-    // Need to construct Response
     async exec(queryMsg: string, bSqlQuery: boolean = true): Promise<any> {
         return new Promise((resolve, reject) => {
             if (logger.isDebugEnabled()) {
@@ -159,7 +226,6 @@ export class WsClient {
         });
     }
 
-    // need to construct Response.
     async sendBinaryMsg(
         reqId: bigint,
         action: string,
@@ -218,18 +284,19 @@ export class WsClient {
     async ready(): Promise<void> {
         try {
             this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
-                this._url,
+                this._dsn,
+                this._wsPath,
                 this._timeout
             );
             if (this._wsConnector.readyState() !== w3cwebsocket.OPEN) {
                 await this._wsConnector.ready();
             }
             if (logger.isDebugEnabled()) {
-                logger.debug("ready status ", maskUrlForLog(this._url), this._wsConnector.readyState());
+                logger.debug("ready status ", this.maskedLogUrl(), this._wsConnector.readyState());
             }
             return;
         } catch (e: any) {
-            const maskedUrl = maskUrlForLog(this._url);
+            const maskedUrl = this.maskedLogUrl();
             logger.error(
                 `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
             );
@@ -321,7 +388,7 @@ export class WsClient {
                 }
                 throw new WebSocketInterfaceError(result.msg.code, result.msg.message);
             } catch (e: any) {
-                const maskedUrl = maskUrlForLog(this._url);
+                const maskedUrl = this.maskedLogUrl();
                 logger.error(
                     `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
                 );
@@ -343,10 +410,10 @@ export class WsClient {
         }
     }
 
-    checkURL(url: URL) {
-        // Assert token or bearer_token exists, otherwise username and password must exist.
-        if (!url.searchParams.get("token") && !url.searchParams.get("bearer_token")) {
-            if (!(url.username || url.password)) {
+    private checkAuth() {
+        const hasToken = this._dsn.params.has("token") || this._dsn.params.has("bearer_token");
+        if (!hasToken) {
+            if (!(this._dsn.username || this._dsn.password)) {
                 throw new WebSocketInterfaceError(
                     ErrorCode.ERR_INVALID_AUTHENTICATION,
                     `invalid url, provide non-empty "token" or "bearer_token", or provide username/password`

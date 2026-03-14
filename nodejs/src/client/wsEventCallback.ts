@@ -50,20 +50,26 @@ export class WsEventCallback {
     ) {
         let release = await eventMutex.acquire();
         try {
+            const timer = setTimeout(async () => {
+                const timeoutRelease = await eventMutex.acquire();
+                try {
+                    WsEventCallback._msgActionRegister.delete(id);
+                } finally {
+                    timeoutRelease();
+                }
+                rej(
+                    new WebSocketQueryError(
+                        ErrorCode.ERR_WEBSOCKET_QUERY_TIMEOUT,
+                        `action:${id.action},req_id:${id.req_id} timeout with ${id.timeout} milliseconds`
+                    )
+                );
+            }, id.timeout);
+
             WsEventCallback._msgActionRegister.set(id, {
                 sendTime: new Date().getTime(),
                 reject: rej,
                 resolve: res,
-                timer: setTimeout(
-                    () =>
-                        rej(
-                            new WebSocketQueryError(
-                                ErrorCode.ERR_WEBSOCKET_QUERY_TIMEOUT,
-                                `action:${id.action},req_id:${id.req_id} timeout with ${id.timeout} milliseconds`
-                            )
-                        ),
-                    id.timeout
-                ),
+                timer,
             });
         } finally {
             release();
@@ -75,7 +81,8 @@ export class WsEventCallback {
         messageType: OnMessageType,
         data: any
     ) {
-        let action: MessageAction | any = undefined;
+        let action: MessageAction | undefined = undefined;
+        let keyToDelete: MessageId | undefined = undefined;
         let release = await eventMutex.acquire();
         logger.debug(`HandleEventCallback get lock msg=${msg}, ${messageType}`);
         logger.debug(WsEventCallback._msgActionRegister);
@@ -84,19 +91,19 @@ export class WsEventCallback {
                 if (messageType == OnMessageType.MESSAGE_TYPE_ARRAYBUFFER) {
                     if (k.id == msg.id || k.req_id == msg.id) {
                         action = v;
-                        WsEventCallback._msgActionRegister.delete(k);
+                        keyToDelete = k;
                         break;
                     }
                 } else if (messageType == OnMessageType.MESSAGE_TYPE_BLOB) {
                     if (k.id == msg.id || k.req_id == msg.id) {
                         action = v;
-                        WsEventCallback._msgActionRegister.delete(k);
+                        keyToDelete = k;
                         break;
                     }
                 } else if (messageType == OnMessageType.MESSAGE_TYPE_STRING) {
                     if (k.req_id == msg.req_id && k.action == msg.action) {
                         action = v;
-                        WsEventCallback._msgActionRegister.delete(k);
+                        keyToDelete = k;
                         break;
                     }
                 } else if (
@@ -104,10 +111,15 @@ export class WsEventCallback {
                 ) {
                     if (k.req_id == msg.req_id && k.action == msg.action) {
                         action = v;
-                        WsEventCallback._msgActionRegister.delete(k);
+                        keyToDelete = k;
                         break;
                     }
                 }
+            }
+
+            if (action && keyToDelete) {
+                clearTimeout(action.timer);
+                WsEventCallback._msgActionRegister.delete(keyToDelete);
             }
         } finally {
             release();
@@ -129,6 +141,21 @@ export class WsEventCallback {
                 " action" +
                 msg.action
             );
+        }
+    }
+
+    async unregisterCallback(reqId: bigint): Promise<void> {
+        const release = await eventMutex.acquire();
+        try {
+            for (let [k, v] of WsEventCallback._msgActionRegister) {
+                if (k.req_id === reqId || k.id === reqId) {
+                    clearTimeout(v.timer);
+                    WsEventCallback._msgActionRegister.delete(k);
+                    break;
+                }
+            }
+        } finally {
+            release();
         }
     }
 }

@@ -472,7 +472,7 @@ export class WsClient {
     }
 
     private checkAuth() {
-        const hasToken = this._dsn.params.has("token") || this._dsn.params.has("bearer_token");
+        const hasToken = this._dsn.params.get("token") || this._dsn.params.get("bearer_token");
         if (!hasToken) {
             if (!(this._dsn.username || this._dsn.password)) {
                 throw new WebSocketInterfaceError(

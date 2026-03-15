@@ -106,6 +106,19 @@ export function parse(url: string): Dsn {
 }
 
 const DEFAULT_PORT = 6041;
+const CLOUD_DEFAULT_PORT = 443;
+
+function isCloudServiceHost(host: string): boolean {
+    const normalizedHost = host.toLowerCase();
+    return (
+        normalizedHost.includes("cloud.tdengine.com") ||
+        normalizedHost.includes("cloud.taosdata.com")
+    );
+}
+
+function getDefaultPortForHost(host: string): number {
+    return isCloudServiceHost(host) ? CLOUD_DEFAULT_PORT : DEFAULT_PORT;
+}
 
 /**
  * Parse comma-separated host list. Supports IPv6 in brackets.
@@ -136,14 +149,14 @@ function parseHostList(hostStr: string): Address[] {
                 );
             }
             const ipv6Host = hostStr.slice(i + 1, closeBracket);
-            let port = DEFAULT_PORT;
+            let port = getDefaultPortForHost(ipv6Host);
             let next = closeBracket + 1;
             if (next < hostStr.length && hostStr[next] === ":") {
                 const portEnd = hostStr.indexOf(",", next);
                 const portStr = portEnd === -1
                     ? hostStr.slice(next + 1)
                     : hostStr.slice(next + 1, portEnd);
-                port = parsePort(portStr, hostStr);
+                port = parsePort(portStr, hostStr, ipv6Host);
                 i = portEnd === -1 ? hostStr.length : portEnd;
             } else {
                 i = next;
@@ -159,10 +172,10 @@ function parseHostList(hostStr: string): Address[] {
             const lastColon = segment.lastIndexOf(":");
             if (lastColon !== -1) {
                 const host = segment.slice(0, lastColon);
-                const port = parsePort(segment.slice(lastColon + 1), hostStr);
+                const port = parsePort(segment.slice(lastColon + 1), hostStr, host);
                 hosts.push({ host, port });
             } else {
-                hosts.push({ host: segment, port: DEFAULT_PORT });
+                hosts.push({ host: segment, port: getDefaultPortForHost(segment) });
             }
             i = commaIndex === -1 ? hostStr.length : commaIndex;
         }
@@ -171,9 +184,12 @@ function parseHostList(hostStr: string): Address[] {
     return hosts;
 }
 
-function parsePort(portStr: string, context: string): number {
+function parsePort(portStr: string, context: string, hostForDefault?: string): number {
     // If port string is empty, use default port
     if (portStr.length === 0) {
+        if (hostForDefault) {
+            return getDefaultPortForHost(hostForDefault);
+        }
         return DEFAULT_PORT;
     }
     // Validate that port string contains only digits

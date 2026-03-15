@@ -21,6 +21,7 @@ import { w3cwebsocket } from "websocket";
 import { ConnectorInfo, TSDB_OPTION_CONNECTION } from "../common/constant";
 
 const DEFAULT_PORT = 6041;
+const CLOUD_DEFAULT_PORT = 443;
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
@@ -67,10 +68,22 @@ export class WsClient {
         return normalized.length > 0 ? normalized : "ws";
     }
 
+    private isCloudServiceHost(host: string): boolean {
+        const normalizedHost = host.toLowerCase();
+        return (
+            normalizedHost.includes("cloud.tdengine.com") ||
+            normalizedHost.includes("cloud.taosdata.com")
+        );
+    }
+
+    private getDefaultPortForHost(host: string): number {
+        return this.isCloudServiceHost(host) ? CLOUD_DEFAULT_PORT : DEFAULT_PORT;
+    }
+
     private convertUrlToDsn(url: URL): Dsn {
         const scheme = url.protocol.replace(":", "");
         const host = url.hostname;
-        const port = url.port.length > 0 ? Number.parseInt(url.port, 10) : DEFAULT_PORT;
+        const port = url.port.length > 0 ? Number.parseInt(url.port, 10) : this.getDefaultPortForHost(host);
         const params = new Map<string, string>();
         url.searchParams.forEach((value, key) => {
             params.set(key, value);

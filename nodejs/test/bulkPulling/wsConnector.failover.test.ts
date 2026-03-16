@@ -12,6 +12,7 @@ function createBareConnector(): any {
     connector._reconnectLock = null;
     connector._isReconnecting = false;
     connector._inflightRequests = new Map();
+    connector._inflightRequestOrder = [];
     connector._conn = {
         readyState: 1,
         send: jest.fn(),
@@ -156,5 +157,100 @@ describe("WebSocketConnector failover and retry", () => {
             connector.sendBinaryMsg(202n, "fetch", message, false)
         ).rejects.toThrow("send failed");
         expect(connector._inflightRequests.has(202n)).toBe(false);
+    });
+
+    test("replays inflight string requests in put order when req_id is reinserted", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => {
+            throw new Error("send failed");
+        });
+
+        const req1Initial = connector.sendMsg(
+            JSON.stringify({
+                action: "insert",
+                args: {
+                    req_id: 301,
+                    data: "insert into t values(now, 1)",
+                },
+            }),
+            false
+        );
+        const req2 = connector.sendMsg(
+            JSON.stringify({
+                action: "insert",
+                args: {
+                    req_id: 302,
+                    data: "insert into t values(now, 2)",
+                },
+            }),
+            false
+        );
+        const req1Reinserted = connector.sendMsg(
+            JSON.stringify({
+                action: "insert",
+                args: {
+                    req_id: 301,
+                    data: "insert into t values(now, 3)",
+                },
+            }),
+            false
+        );
+        void req1Initial.catch(() => { });
+        void req2.catch(() => { });
+        void req1Reinserted.catch(() => { });
+
+        await delay(20);
+
+        const replaySend = jest.fn();
+        connector._conn.send = replaySend;
+
+        await connector.replayRequests();
+
+        const replayedReqIds = replaySend.mock.calls.map(([payload]: [string]) => {
+            const parsed = JSON.parse(payload);
+            return BigInt(parsed.args.req_id);
+        });
+
+        expect(replayedReqIds).toEqual([302n, 301n]);
+        connector.failAllInflightRequests(new Error("cleanup"));
+    });
+
+    test("replays inflight requests in the same put order", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => {
+            throw new Error("send failed");
+        });
+
+        const reqIds = [101, 102, 103, 104];
+        for (const reqId of reqIds) {
+            const pending = connector.sendMsg(
+                JSON.stringify({
+                    action: "insert",
+                    args: {
+                        req_id: reqId,
+                        data: `insert into t values(now, ${reqId})`,
+                    },
+                }),
+                false
+            );
+            void pending.catch(() => { });
+        }
+
+        await delay(20);
+
+        const replaySend = jest.fn();
+        connector._conn.send = replaySend;
+
+        await connector.replayRequests();
+
+        const replayedReqIds = replaySend.mock.calls.map(([payload]: [string]) => {
+            const parsed = JSON.parse(payload);
+            return parsed.args.req_id;
+        });
+
+        expect(replayedReqIds).toEqual([101, 102, 103, 104]);
+        connector.failAllInflightRequests(new Error("cleanup"));
     });
 });

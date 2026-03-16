@@ -103,6 +103,7 @@ export class WebSocketConnector {
     private readonly _path: string;
     private readonly _params: Map<string, string>;
     private readonly _inflightRequests: Map<bigint, InflightRequest> = new Map();
+    private readonly _inflightRequestOrder: bigint[] = [];
     private readonly _suppressedSockets: WeakSet<w3cwebsocket> = new WeakSet();
     private _reconnectLock: Promise<void> | null = null;
     private _isReconnecting = false;
@@ -317,14 +318,43 @@ export class WebSocketConnector {
                 id: req.id,
             },
             (result) => {
-                this._inflightRequests.delete(req.reqId);
+                this.removeInflightRequest(req.reqId);
                 req.resolve(result);
             },
             (error) => {
-                this._inflightRequests.delete(req.reqId);
+                this.removeInflightRequest(req.reqId);
                 req.reject(error);
             }
         );
+    }
+
+    private insertInflightRequest(req: InflightRequest): void {
+        this._inflightRequests.set(req.reqId, req);
+        this._inflightRequestOrder.push(req.reqId);
+    }
+
+    private removeInflightRequest(reqId: bigint): void {
+        this._inflightRequests.delete(reqId);
+        const index = this._inflightRequestOrder.indexOf(reqId);
+        if (index >= 0) {
+            this._inflightRequestOrder.splice(index, 1);
+        }
+    }
+
+    private getInflightRequests(): InflightRequest[] {
+        const requests: InflightRequest[] = [];
+        for (const reqId of this._inflightRequestOrder) {
+            const req = this._inflightRequests.get(reqId);
+            if (req) {
+                requests.push(req);
+            }
+        }
+        return requests;
+    }
+
+    private clearInflightRequests(): void {
+        this._inflightRequests.clear();
+        this._inflightRequestOrder.length = 0;
     }
 
     async ready() {
@@ -429,7 +459,7 @@ export class WebSocketConnector {
 
     private async replayRequests(): Promise<void> {
         logger.info("Replaying requests after reconnection");
-        const inflightRequests = Array.from(this._inflightRequests.values());
+        const inflightRequests = this.getInflightRequests();
         for (const req of inflightRequests) {
             try {
                 if (req.registerCallback) {
@@ -441,18 +471,18 @@ export class WebSocketConnector {
             } catch (err: any) {
                 logger.error(`Failed to replay inflight request: ${err.message}`);
                 req.reject(err);
-                this._inflightRequests.delete(req.reqId);
+                this.removeInflightRequest(req.reqId);
                 void WsEventCallback.instance().unregisterCallback(req.reqId);
             }
         }
     }
 
     private failAllInflightRequests(error: Error): void {
-        for (const req of this._inflightRequests.values()) {
+        for (const req of this.getInflightRequests()) {
             req.reject(error);
             void WsEventCallback.instance().unregisterCallback(req.reqId);
         }
-        this._inflightRequests.clear();
+        this.clearInflightRequests();
     }
 
     close() {
@@ -556,7 +586,7 @@ export class WebSocketConnector {
             const retriable = this.isRetriableAction(msg.action);
 
             if (retriable && reqId !== null) {
-                this._inflightRequests.set(reqId, {
+                this.insertInflightRequest({
                     reqId,
                     action: msg.action,
                     id: requestId !== undefined ? BigInt(requestId) : undefined,
@@ -577,19 +607,19 @@ export class WebSocketConnector {
                     },
                     (result) => {
                         if (reqId !== null) {
-                            this._inflightRequests.delete(reqId);
+                            this.removeInflightRequest(reqId);
                         }
                         resolve(result);
                     },
                     (error) => {
                         if (reqId !== null) {
-                            this._inflightRequests.delete(reqId);
+                            this.removeInflightRequest(reqId);
                         }
                         reject(error);
                     }
                 ).catch((error) => {
                     if (reqId !== null) {
-                        this._inflightRequests.delete(reqId);
+                        this.removeInflightRequest(reqId);
                     }
                     reject(error);
                 });
@@ -604,7 +634,7 @@ export class WebSocketConnector {
                 }
 
                 if (reqId !== null) {
-                    this._inflightRequests.delete(reqId);
+                    this.removeInflightRequest(reqId);
                     if (register) {
                         void WsEventCallback.instance().unregisterCallback(reqId);
                     }
@@ -639,7 +669,7 @@ export class WebSocketConnector {
             const retriable = this.isRetriableBinaryAction(opCode);
 
             if (retriable) {
-                this._inflightRequests.set(reqId, {
+                this.insertInflightRequest({
                     reqId,
                     action,
                     id: reqId,
@@ -659,15 +689,15 @@ export class WebSocketConnector {
                         id: reqId,
                     },
                     (result) => {
-                        this._inflightRequests.delete(reqId);
+                        this.removeInflightRequest(reqId);
                         resolve(result);
                     },
                     (error) => {
-                        this._inflightRequests.delete(reqId);
+                        this.removeInflightRequest(reqId);
                         reject(error);
                     }
                 ).catch((error) => {
-                    this._inflightRequests.delete(reqId);
+                    this.removeInflightRequest(reqId);
                     reject(error);
                 });
             }
@@ -679,7 +709,7 @@ export class WebSocketConnector {
                     this.triggerReconnectInBackground("retriable binary request send failure");
                     return;
                 }
-                this._inflightRequests.delete(reqId);
+                this.removeInflightRequest(reqId);
                 if (register) {
                     void WsEventCallback.instance().unregisterCallback(reqId);
                 }

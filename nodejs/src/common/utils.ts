@@ -96,7 +96,7 @@ export function isEmpty(value: any): boolean {
     return false;
 }
 
-export function normalizeWsPath(path: string): string {
+export function normalizePath(path: string): string {
     const normalized = path.trim().replace(/^\/+/, "");
     return normalized.length > 0 ? normalized : "ws";
 }

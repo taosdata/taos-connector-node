@@ -16,7 +16,7 @@ import {
     compareVersions,
     maskSensitiveForLog,
     maskUrlForLog,
-    normalizeWsPath,
+    normalizePath,
 } from "../common/utils";
 import { w3cwebsocket } from "websocket";
 import { ConnectorInfo, TSDB_OPTION_CONNECTION } from "../common/constant";
@@ -26,7 +26,7 @@ export class WsClient {
     private _timeout?: number | undefined | null;
     private _timezone?: string | undefined | null;
     private readonly _dsn: Dsn;
-    private readonly _wsPath: string;
+    private readonly _path: string;
     private static readonly _minVersion = "3.3.2.0";
     private _version?: string | undefined | null;
     private _bearerToken?: string | undefined | null;
@@ -36,7 +36,7 @@ export class WsClient {
     constructor(urlOrDsn: URL | Dsn, timeout?: number | undefined | null) {
         if (urlOrDsn instanceof URL) {
             this._dsn = this.convertUrlToDsn(urlOrDsn);
-            this._wsPath = normalizeWsPath(urlOrDsn.pathname);
+            this._path = normalizePath(urlOrDsn.pathname);
         } else {
             this._dsn = {
                 scheme: urlOrDsn.scheme,
@@ -46,7 +46,7 @@ export class WsClient {
                 database: urlOrDsn.database,
                 params: new Map(urlOrDsn.params),
             };
-            this._wsPath = "ws";
+            this._path = "ws";
         }
         this.checkAuth();
         this._timeout = timeout;
@@ -81,7 +81,7 @@ export class WsClient {
 
     private buildLogUrl(): URL {
         const addr = this._dsn.addresses[0];
-        const url = new URL(`${this._dsn.scheme}://${addr.host}:${addr.port}/${this._wsPath}`);
+        const url = new URL(`${this._dsn.scheme}://${addr.host}:${addr.port}/${this._path}`);
         url.username = this._dsn.username;
         url.password = this._dsn.password;
         const skipParams = new Set([
@@ -172,7 +172,7 @@ export class WsClient {
         }
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
             this._dsn,
-            this._wsPath,
+            this._path,
             this._timeout
         );
         this.bindReconnectRecoveryHook();
@@ -338,7 +338,7 @@ export class WsClient {
         try {
             this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
                 this._dsn,
-                this._wsPath,
+                this._path,
                 this._timeout
             );
             this.bindReconnectRecoveryHook();

@@ -7,7 +7,7 @@ import {
 } from "../common/wsError";
 import { OnMessageType, WsEventCallback } from "./wsEventCallback";
 import logger from "../common/log";
-import { maskSensitiveForLog, maskUrlForLog, normalizeWsPath } from "../common/utils";
+import { maskSensitiveForLog, maskUrlForLog, normalizePath } from "../common/utils";
 
 interface InflightRequest {
     reqId: bigint;
@@ -93,8 +93,8 @@ export class RetryConfig {
 }
 
 export class WebSocketConnector {
-    private _wsConn!: w3cwebsocket;
-    private _wsURL!: URL;
+    private _conn!: w3cwebsocket;
+    private _url!: URL;
     private readonly _poolKey: string;
     private readonly _addresses: Address[];
     private _currentAddressIndex: number;
@@ -107,13 +107,13 @@ export class WebSocketConnector {
     private _reconnectLock: Promise<void> | null = null;
     private _isReconnecting = false;
     private _allowReconnect = true;
-    private _connectionReadyPromise: Promise<void> = Promise.resolve();
+    private _connectionReady: Promise<void> = Promise.resolve();
     private _sessionRecoveryHook: SessionRecoveryHook | null = null;
     private _timeout = 60000;
 
     constructor(
         dsn: Dsn,
-        wsPath: string,
+        path: string,
         poolKey: string,
         timeout: number | undefined | null
     ) {
@@ -128,13 +128,13 @@ export class WebSocketConnector {
         this._currentAddressIndex = this.selectRandomIndex();
         this._retryConfig = RetryConfig.fromDsn(dsn);
         this._scheme = dsn.scheme;
-        this._path = normalizeWsPath(wsPath);
+        this._path = normalizePath(path);
         this._params = new Map(dsn.params);
         if (timeout) {
             this._timeout = timeout;
         }
         logger.info(
-            `Initial websocket address selected: ${this.getCurrentAddress()} (index ${this._currentAddressIndex + 1}/${this._addresses.length})`
+            `Initial websocket address selected: ${this.getCurrentAddress()}`
         );
         this.createConnection();
     }
@@ -146,7 +146,7 @@ export class WebSocketConnector {
         return Math.floor(Math.random() * this._addresses.length);
     }
 
-    private buildWebSocketUrl(index: number): string {
+    private buildUrl(index: number): string {
         const addr = this._addresses[index];
         const url = new URL(`${this._scheme}://${addr.host}:${addr.port}/${this._path}`);
         const forwardedParams = ["token", "bearer_token"];
@@ -160,9 +160,9 @@ export class WebSocketConnector {
     }
 
     private createConnection(): void {
-        const url = this.buildWebSocketUrl(this._currentAddressIndex);
-        this._wsURL = new URL(url);
-        const wsConn = new w3cwebsocket(
+        const url = this.buildUrl(this._currentAddressIndex);
+        this._url = new URL(url);
+        const conn = new w3cwebsocket(
             url,
             undefined,
             undefined,
@@ -173,9 +173,9 @@ export class WebSocketConnector {
                 maxReceivedMessageSize: 0x60000000,
             }
         );
-        wsConn._binaryType = "arraybuffer";
-        wsConn.onmessage = this._onmessage;
-        this._connectionReadyPromise = new Promise((resolve, reject) => {
+        conn._binaryType = "arraybuffer";
+        conn.onmessage = this._onmessage;
+        this._connectionReady = new Promise((resolve, reject) => {
             let settled = false;
             const settle = (handler: () => void) => {
                 if (settled) {
@@ -196,22 +196,22 @@ export class WebSocketConnector {
                 });
             }, this._timeout);
 
-            wsConn.onopen = () => {
+            conn.onopen = () => {
                 logger.debug("websocket connection opened");
                 settle(resolve);
             };
-            wsConn.onerror = (err: Error) => {
+            conn.onerror = (err: Error) => {
                 logger.error(
-                    `webSocket connection failed, url: ${maskUrlForLog(new URL(wsConn.url))}, error: ${err.message}`
+                    `webSocket connection failed, url: ${maskUrlForLog(new URL(conn.url))}, error: ${err.message}`
                 );
-                if (wsConn.readyState !== w3cwebsocket.OPEN) {
+                if (conn.readyState !== w3cwebsocket.OPEN) {
                     settle(() => reject(err));
                 }
-                this.handleConnectionError(wsConn);
+                this.handleConnectionError(conn);
             };
-            wsConn.onclose = (e: ICloseEvent) => {
+            conn.onclose = (e: ICloseEvent) => {
                 logger.info("websocket connection closed");
-                if (wsConn.readyState !== w3cwebsocket.OPEN) {
+                if (conn.readyState !== w3cwebsocket.OPEN) {
                     settle(() => {
                         reject(
                             new WebSocketQueryError(
@@ -221,13 +221,13 @@ export class WebSocketConnector {
                         );
                     });
                 }
-                void this.handleConnectionClose(wsConn, e);
+                void this.handleConnectionClose(conn, e);
             };
         });
-        this._wsConn = wsConn;
+        this._conn = conn;
     }
 
-    private _onmessage = (event: any) => {
+    private _onmessage(event: any) {
         let data = event.data;
         logger.debug("wsClient._onMessage()====" + Object.prototype.toString.call(data));
         if (Object.prototype.toString.call(data) === "[object ArrayBuffer]") {
@@ -253,15 +253,15 @@ export class WebSocketConnector {
         }
     };
 
-    private shouldSkipReconnect(wsConn: w3cwebsocket): boolean {
+    private shouldSkipReconnect(conn: w3cwebsocket): boolean {
         if (!this._allowReconnect) {
             return true;
         }
-        return this._suppressedSockets.has(wsConn);
+        return this._suppressedSockets.has(conn);
     }
 
-    private handleConnectionError(wsConn: w3cwebsocket): void {
-        if (this.shouldSkipReconnect(wsConn) || this._isReconnecting) {
+    private handleConnectionError(conn: w3cwebsocket): void {
+        if (this.shouldSkipReconnect(conn) || this._isReconnecting) {
             return;
         }
         void this.triggerReconnect().catch((err: unknown) => {
@@ -341,7 +341,7 @@ export class WebSocketConnector {
     }
 
     async ready() {
-        if (this._wsConn && this._wsConn.readyState === w3cwebsocket.OPEN) {
+        if (this._conn && this._conn.readyState === w3cwebsocket.OPEN) {
             return;
         }
         if (this._reconnectLock) {
@@ -349,7 +349,7 @@ export class WebSocketConnector {
             return;
         }
         try {
-            await this._connectionReadyPromise;
+            await this._connectionReady;
         } catch (err) {
             if (this._reconnectLock) {
                 await this._reconnectLock;
@@ -373,11 +373,11 @@ export class WebSocketConnector {
             this._reconnectLock = this._doReconnect();
         }
 
-        const currentLock = this._reconnectLock;
+        const lock = this._reconnectLock;
         try {
-            await currentLock;
+            await lock;
         } finally {
-            if (this._reconnectLock === currentLock) {
+            if (this._reconnectLock === lock) {
                 this._reconnectLock = null;
             }
         }
@@ -401,12 +401,12 @@ export class WebSocketConnector {
     }
 
     private async reconnectToCurrentAddress(): Promise<void> {
-        if (this._wsConn) {
-            this._suppressedSockets.add(this._wsConn);
-            this._wsConn.close();
+        if (this._conn) {
+            this._suppressedSockets.add(this._conn);
+            this._conn.close();
         }
         this.createConnection();
-        await this._connectionReadyPromise;
+        await this._connectionReady;
     }
 
     private async attemptReconnect(): Promise<void> {
@@ -453,7 +453,7 @@ export class WebSocketConnector {
                     await WsEventCallback.instance().unregisterCallback(req.reqId);
                     await this.registerInflightCallback(req);
                 }
-                this._wsConn.send(req.message);
+                this._conn.send(req.message);
                 logger.debug("Replayed inflight request");
             } catch (err: any) {
                 logger.error(`Failed to replay inflight request: ${err.message}`);
@@ -473,10 +473,10 @@ export class WebSocketConnector {
     }
 
     close() {
-        if (this._wsConn) {
+        if (this._conn) {
             this._allowReconnect = false;
-            this._suppressedSockets.add(this._wsConn);
-            this._wsConn.close();
+            this._suppressedSockets.add(this._conn);
+            this._conn.close();
         } else {
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
@@ -486,7 +486,7 @@ export class WebSocketConnector {
     }
 
     readyState(): number {
-        return this._wsConn.readyState;
+        return this._conn.readyState;
     }
 
     public setSessionRecoveryHook(
@@ -506,10 +506,10 @@ export class WebSocketConnector {
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.sendMsgDirect()]===>" + maskSensitiveForLog(message));
         }
-        if (!this._wsConn || this._wsConn.readyState !== w3cwebsocket.OPEN) {
+        if (!this._conn || this._conn.readyState !== w3cwebsocket.OPEN) {
             throw new WebSocketQueryError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
+                `WebSocket connection is not ready, status: ${this._conn?.readyState}`
             );
         }
 
@@ -535,7 +535,7 @@ export class WebSocketConnector {
         );
 
         try {
-            this._wsConn.send(message);
+            this._conn.send(message);
             return await responsePromise;
         } catch (err) {
             await WsEventCallback.instance().unregisterCallback(reqId);
@@ -550,14 +550,14 @@ export class WebSocketConnector {
         }
 
         return new Promise((resolve, reject) => {
-            if (this._wsConn && this._wsConn.readyState === w3cwebsocket.OPEN) {
-                this._wsConn.send(message);
+            if (this._conn && this._conn.readyState === w3cwebsocket.OPEN) {
+                this._conn.send(message);
                 resolve();
             } else {
                 reject(
                     new WebSocketQueryError(
                         ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                        `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
+                        `WebSocket connection is not ready, status: ${this._conn?.readyState}`
                     )
                 );
             }
@@ -629,7 +629,7 @@ export class WebSocketConnector {
             }
 
             try {
-                this._wsConn.send(message);
+                this._conn.send(message);
             } catch (err) {
                 if (retriable && reqId !== null) {
                     this.triggerReconnectInBackground("retriable string request send failure");
@@ -658,11 +658,11 @@ export class WebSocketConnector {
         }
 
         return new Promise((resolve, reject) => {
-            if (!this._wsConn || this._wsConn.readyState !== w3cwebsocket.OPEN) {
+            if (!this._conn || this._conn.readyState !== w3cwebsocket.OPEN) {
                 reject(
                     new WebSocketQueryError(
                         ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                        `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
+                        `WebSocket connection is not ready, status: ${this._conn?.readyState}`
                     )
                 );
                 return;
@@ -706,7 +706,7 @@ export class WebSocketConnector {
             }
 
             try {
-                this._wsConn.send(message);
+                this._conn.send(message);
             } catch (err) {
                 if (retriable) {
                     this.triggerReconnectInBackground("retriable binary request send failure");
@@ -722,7 +722,7 @@ export class WebSocketConnector {
     }
 
     public getWsURL(): URL {
-        return this._wsURL;
+        return this._url;
     }
 
     public getPoolKey(): string {

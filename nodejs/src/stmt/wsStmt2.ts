@@ -293,7 +293,7 @@ export class WsStmt2 implements WsStmt {
             this._toBeBindTagCount,
             this._toBeBindColCount
         );
-        await this.sendBinaryMsg(reqId, "stmt2_bind", new Uint8Array(bytes));
+        await this.sendBinaryMsg(reqId, "stmt2_bind", bytes);
 
         let execMsg = {
             action: "stmt2_exec",
@@ -347,7 +347,7 @@ export class WsStmt2 implements WsStmt {
 
     private async execute(
         stmtMsg: StmtMessageInfo | ArrayBuffer,
-        register: Boolean = true
+        register: boolean = true
     ): Promise<WsStmtQueryResponse | void> {
         try {
             if (this._wsClient.getState() <= 0) {

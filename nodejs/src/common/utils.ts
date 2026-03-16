@@ -1,6 +1,48 @@
 import { TmqConfig } from "../tmq/config";
 import { WSConfig } from "./config";
+import { Dsn, parse } from "./dsn";
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
+
+export function getDsn(wsConfig: WSConfig): Dsn {
+    const dsn = parse(wsConfig.getUrl());
+
+    if (wsConfig.getUser()) {
+        dsn.username = wsConfig.getUser() || "";
+    }
+    if (wsConfig.getPwd()) {
+        dsn.password = wsConfig.getPwd() || "";
+    }
+
+    const token = wsConfig.getToken();
+    if (token) {
+        dsn.params.set("token", token);
+    } else if (dsn.params.has("token")) {
+        wsConfig.setToken(dsn.params.get("token") || "");
+    }
+
+    const timezone = wsConfig.getTimezone();
+    if (timezone) {
+        dsn.params.set("timezone", timezone);
+    } else if (dsn.params.has("timezone")) {
+        wsConfig.setTimezone(dsn.params.get("timezone") || "");
+    }
+
+    const bearerToken = wsConfig.getBearerToken();
+    if (bearerToken) {
+        dsn.params.set("bearer_token", bearerToken);
+    } else if (dsn.params.has("bearer_token")) {
+        wsConfig.setBearerToken(dsn.params.get("bearer_token") || "");
+    }
+
+    const db = wsConfig.getDb();
+    if (db && db.length > 0) {
+        dsn.database = db;
+    } else if (dsn.database.length > 0) {
+        wsConfig.setDb(dsn.database);
+    }
+
+    return dsn;
+}
 
 export function getUrl(wsConfig: WSConfig): URL {
     let url = new URL(wsConfig.getUrl());
@@ -49,6 +91,11 @@ export function isEmpty(value: any): boolean {
     if (value === null || value === undefined) return true;
     if (Array.isArray(value) && value.length === 0) return true;
     return false;
+}
+
+export function normalizeWsPath(path: string): string {
+    const normalized = path.trim().replace(/^\/+/, "");
+    return normalized.length > 0 ? normalized : "ws";
 }
 
 export function getBinarySql(

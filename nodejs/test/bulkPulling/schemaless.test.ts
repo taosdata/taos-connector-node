@@ -47,7 +47,7 @@ describe("TDWebSocket.WsSchemaless()", () => {
             let conf: WSConfig = new WSConfig(dns);
             conf.setUser(testUsername());
             conf.setPwd(testPassword());
-            conf.setDb("jest");
+            conf.setDb("test_1773532557");
             wsSchemaless = await WsSql.open(conf);
         } catch (e: any) {
             console.log(e);

@@ -198,7 +198,7 @@ export class WsStmt1 implements WsStmt {
 
     private async execute(
         queryMsg: StmtMessageInfo,
-        register: Boolean = true
+        register: boolean = true
     ): Promise<void> {
         try {
             if (this._wsClient.getState() <= 0) {

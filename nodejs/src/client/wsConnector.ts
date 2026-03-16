@@ -133,9 +133,7 @@ export class WebSocketConnector {
         if (timeout) {
             this._timeout = timeout;
         }
-        logger.info(
-            `Initial websocket address selected: ${this.getCurrentAddress()}`
-        );
+        logger.info(`Initial websocket address selected: ${this.getCurrentAddress()}`);
         this.createConnection();
     }
 
@@ -207,7 +205,7 @@ export class WebSocketConnector {
                 if (conn.readyState !== w3cwebsocket.OPEN) {
                     settle(() => reject(err));
                 }
-                this.handleConnectionError(conn);
+                void this.handleDisconnect(conn);
             };
             conn.onclose = (e: ICloseEvent) => {
                 logger.info("websocket connection closed");
@@ -221,7 +219,7 @@ export class WebSocketConnector {
                         );
                     });
                 }
-                void this.handleConnectionClose(conn, e);
+                void this.handleDisconnect(conn, e);
             };
         });
         this._conn = conn;
@@ -260,31 +258,20 @@ export class WebSocketConnector {
         return this._suppressedSockets.has(conn);
     }
 
-    private handleConnectionError(conn: w3cwebsocket): void {
+    private async handleDisconnect(conn: w3cwebsocket, event?: ICloseEvent): Promise<void> {
         if (this.shouldSkipReconnect(conn) || this._isReconnecting) {
             return;
         }
-        void this.triggerReconnect().catch((err: unknown) => {
-            const message = err instanceof Error ? err.message : String(err);
-            logger.error(`Reconnect failed after websocket error: ${message}`);
-        });
-    }
-
-    private async handleConnectionClose(
-        wsConn: w3cwebsocket,
-        e: ICloseEvent
-    ): Promise<void> {
-        if (this.shouldSkipReconnect(wsConn) || this._isReconnecting) {
-            return;
-        }
-        if (e.code === 1000 || e.code === 1001) {
+        if (event && event.code === 1000) {
+            logger.info("Websocket closed normally, skipping reconnect.");
             return;
         }
         try {
             await this.triggerReconnect();
         } catch (err: unknown) {
+            const type = event ? 'close' : 'error';
             const message = err instanceof Error ? err.message : String(err);
-            logger.error(`Reconnect failed after websocket close: ${message}`);
+            logger.error(`Reconnect failed after websocket ${type}: ${message}`);
         }
     }
 
@@ -575,16 +562,6 @@ export class WebSocketConnector {
         }
 
         return new Promise((resolve, reject) => {
-            // if (!this._wsConn || this._wsConn.readyState !== w3cwebsocket.OPEN) {
-            //     reject(
-            //         new WebSocketQueryError(
-            //             ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-            //             `WebSocket connection is not ready, status: ${this._wsConn?.readyState}`
-            //         )
-            //     );
-            //     return;
-            // }
-
             const reqId = this.extractReqId(msg?.args?.req_id);
             const retriable = this.isRetriableAction(msg.action);
 

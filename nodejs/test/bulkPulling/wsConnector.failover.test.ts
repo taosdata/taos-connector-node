@@ -12,7 +12,7 @@ function createBareConnector(): any {
     connector._reconnectLock = null;
     connector._isReconnecting = false;
     connector._inflightRequests = new Map();
-    connector._wsConn = {
+    connector._conn = {
         readyState: 1,
         send: jest.fn(),
         close: jest.fn(),
@@ -78,7 +78,7 @@ describe("WebSocketConnector failover and retry", () => {
     test("triggers reconnect and keeps retriable string request inflight when send throws", async () => {
         const connector = createBareConnector();
         connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
-        connector._wsConn.send = jest.fn(() => {
+        connector._conn.send = jest.fn(() => {
             throw new Error("send failed");
         });
 
@@ -106,7 +106,7 @@ describe("WebSocketConnector failover and retry", () => {
 
     test("rejects non-retriable string request immediately when send throws", async () => {
         const connector = createBareConnector();
-        connector._wsConn.send = jest.fn(() => {
+        connector._conn.send = jest.fn(() => {
             throw new Error("send failed");
         });
 
@@ -127,7 +127,7 @@ describe("WebSocketConnector failover and retry", () => {
     test("triggers reconnect and keeps retriable binary request inflight when send throws", async () => {
         const connector = createBareConnector();
         connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
-        connector._wsConn.send = jest.fn(() => {
+        connector._conn.send = jest.fn(() => {
             throw new Error("send failed");
         });
         const message = buildBinaryMessage(6n);
@@ -148,7 +148,7 @@ describe("WebSocketConnector failover and retry", () => {
 
     test("rejects non-retriable binary request immediately when send throws", async () => {
         const connector = createBareConnector();
-        connector._wsConn.send = jest.fn(() => {
+        connector._conn.send = jest.fn(() => {
             throw new Error("send failed");
         });
         const message = buildBinaryMessage(7n);

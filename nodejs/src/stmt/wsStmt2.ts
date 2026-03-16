@@ -347,7 +347,7 @@ export class WsStmt2 implements WsStmt {
 
     private async execute(
         stmtMsg: StmtMessageInfo | ArrayBuffer,
-        register: Boolean = true
+        register: boolean = true
     ): Promise<WsStmtQueryResponse | void> {
         try {
             if (this._wsClient.getState() <= 0) {

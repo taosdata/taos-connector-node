@@ -7,17 +7,24 @@ import {
 } from "../common/wsError";
 import { OnMessageType, WsEventCallback } from "./wsEventCallback";
 import logger from "../common/log";
-import { maskSensitiveForLog, maskUrlForLog } from "../common/utils";
+import { maskSensitiveForLog, maskUrlForLog, normalizeWsPath } from "../common/utils";
 import { RetryConfig } from "./retryConfig";
 
 interface InflightRequest {
     reqId: bigint;
+    action: string;
+    id?: bigint;
+    registerCallback: boolean;
     message: string | ArrayBuffer;
     resolve: (value: unknown) => void;
     reject: (error: unknown) => void;
 }
 
 type SessionRecoveryHook = () => Promise<void>;
+
+const RETRIABLE_ACTIONS = new Set(["insert", "options_connection"]);
+// TDengine websocket binary op codes that are safe to replay after reconnect.
+const BINARY_RETRIABLE_ACTIONS = new Set<bigint>([4n, 5n, 6n, 10n]);
 
 export class WebSocketConnector {
     private _wsConn!: w3cwebsocket;
@@ -36,7 +43,7 @@ export class WebSocketConnector {
     private _allowReconnect = true;
     private _connectionReadyPromise: Promise<void> = Promise.resolve();
     private _sessionRecoveryHook: SessionRecoveryHook | null = null;
-    _timeout = 60000;
+    private _timeout = 60000;
 
     constructor(
         dsn: Dsn,
@@ -55,17 +62,15 @@ export class WebSocketConnector {
         this._currentAddressIndex = this.selectRandomIndex();
         this._retryConfig = RetryConfig.fromDsn(dsn);
         this._scheme = dsn.scheme;
-        this._path = this.normalizePath(wsPath);
+        this._path = normalizeWsPath(wsPath);
         this._params = new Map(dsn.params);
         if (timeout) {
             this._timeout = timeout;
         }
+        logger.info(
+            `Initial websocket address selected: ${this.getCurrentAddress()} (index ${this._currentAddressIndex + 1}/${this._addresses.length})`
+        );
         this.createConnection();
-    }
-
-    private normalizePath(path: string): string {
-        const normalized = path.trim().replace(/^\/+/, "");
-        return normalized.length > 0 ? normalized : "ws";
     }
 
     private selectRandomIndex(): number {
@@ -209,10 +214,12 @@ export class WebSocketConnector {
         if (e.code === 1000 || e.code === 1001) {
             return;
         }
-        await this.triggerReconnect().catch((err: unknown) => {
+        try {
+            await this.triggerReconnect();
+        } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
             logger.error(`Reconnect failed after websocket close: ${message}`);
-        });
+        }
     }
 
     private extractReqId(reqId: unknown): bigint | null {
@@ -227,8 +234,7 @@ export class WebSocketConnector {
     }
 
     private isRetriableAction(action: string): boolean {
-        const retriableActions = ["insert", "options_connection"];
-        return retriableActions.includes(action);
+        return RETRIABLE_ACTIONS.has(action);
     }
 
     private extractBinaryAction(message: ArrayBuffer): bigint {
@@ -239,8 +245,33 @@ export class WebSocketConnector {
     }
 
     private isRetriableBinaryAction(action: bigint): boolean {
-        const retriableActions = [4n, 5n, 6n, 10n];
-        return retriableActions.includes(action);
+        return BINARY_RETRIABLE_ACTIONS.has(action);
+    }
+
+    private triggerReconnectInBackground(context: string): void {
+        void this.triggerReconnect().catch((err: unknown) => {
+            const message = err instanceof Error ? err.message : String(err);
+            logger.error(`Reconnect trigger failed (${context}): ${message}`);
+        });
+    }
+
+    private registerInflightCallback(req: InflightRequest): Promise<void> {
+        return WsEventCallback.instance().registerCallback(
+            {
+                action: req.action,
+                req_id: req.reqId,
+                timeout: this._timeout,
+                id: req.id,
+            },
+            (result) => {
+                this._inflightRequests.delete(req.reqId);
+                req.resolve(result);
+            },
+            (error) => {
+                this._inflightRequests.delete(req.reqId);
+                req.reject(error);
+            }
+        );
     }
 
     async ready() {
@@ -352,6 +383,10 @@ export class WebSocketConnector {
         const inflightRequests = Array.from(this._inflightRequests.values());
         for (const req of inflightRequests) {
             try {
+                if (req.registerCallback) {
+                    await WsEventCallback.instance().unregisterCallback(req.reqId);
+                    await this.registerInflightCallback(req);
+                }
                 this._wsConn.send(req.message);
                 logger.debug("Replayed inflight request");
             } catch (err: any) {
@@ -414,31 +449,32 @@ export class WebSocketConnector {
 
         const msg = JSON.parse(message);
         const reqId = this.extractReqId(msg?.args?.req_id) ?? BigInt(0);
-
-        return new Promise(async (resolve, reject) => {
-            try {
-                await WsEventCallback.instance().registerCallback(
-                    {
-                        action: msg.action,
-                        req_id: reqId,
-                        timeout: this._timeout,
-                        id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id),
-                    },
-                    resolve,
-                    reject
-                );
-            } catch (err) {
-                reject(err);
-                return;
-            }
-
-            try {
-                this._wsConn.send(message);
-            } catch (err) {
-                await WsEventCallback.instance().unregisterCallback(reqId);
-                reject(err);
-            }
+        const requestId = msg?.args?.id;
+        let resolveResponse: (value: unknown) => void = () => {};
+        let rejectResponse: (error: unknown) => void = () => {};
+        const responsePromise = new Promise((resolve, reject) => {
+            resolveResponse = resolve;
+            rejectResponse = reject;
         });
+
+        await WsEventCallback.instance().registerCallback(
+            {
+                action: msg.action,
+                req_id: reqId,
+                timeout: this._timeout,
+                id: requestId !== undefined ? BigInt(requestId) : undefined,
+            },
+            resolveResponse,
+            rejectResponse
+        );
+
+        try {
+            this._wsConn.send(message);
+            return await responsePromise;
+        } catch (err) {
+            await WsEventCallback.instance().unregisterCallback(reqId);
+            throw err;
+        }
     }
 
     async sendMsgNoResp(message: string): Promise<void> {
@@ -462,11 +498,12 @@ export class WebSocketConnector {
         });
     }
 
-    async sendMsg(message: string, register: Boolean = true) {
+    async sendMsg(message: string, register: boolean = true) {
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.sendMessage()]===>" + maskSensitiveForLog(message));
         }
         const msg = JSON.parse(message);
+        const requestId = msg?.args?.id;
         if (this._reconnectLock) {
             await this._reconnectLock;
         }
@@ -488,6 +525,9 @@ export class WebSocketConnector {
             if (retriable && reqId !== null) {
                 this._inflightRequests.set(reqId, {
                     reqId,
+                    action: msg.action,
+                    id: requestId !== undefined ? BigInt(requestId) : undefined,
+                    registerCallback: register,
                     message,
                     resolve,
                     reject,
@@ -500,7 +540,7 @@ export class WebSocketConnector {
                         action: msg.action,
                         req_id: reqId ?? BigInt(0),
                         timeout: this._timeout,
-                        id: msg.args.id === undefined ? msg.args.id : BigInt(msg.args.id),
+                        id: requestId !== undefined ? BigInt(requestId) : undefined,
                     },
                     (result) => {
                         if (reqId !== null) {
@@ -514,21 +554,29 @@ export class WebSocketConnector {
                         }
                         reject(error);
                     }
-                );
+                ).catch((error) => {
+                    if (reqId !== null) {
+                        this._inflightRequests.delete(reqId);
+                    }
+                    reject(error);
+                });
             }
 
             try {
                 this._wsConn.send(message);
             } catch (err) {
-                if (!retriable) {
-                    if (reqId !== null) {
-                        this._inflightRequests.delete(reqId);
-                        if (register) {
-                            void WsEventCallback.instance().unregisterCallback(reqId);
-                        }
-                    }
-                    reject(err);
+                if (retriable && reqId !== null) {
+                    this.triggerReconnectInBackground("retriable string request send failure");
+                    return;
                 }
+
+                if (reqId !== null) {
+                    this._inflightRequests.delete(reqId);
+                    if (register) {
+                        void WsEventCallback.instance().unregisterCallback(reqId);
+                    }
+                }
+                reject(err);
             }
         });
     }
@@ -537,7 +585,7 @@ export class WebSocketConnector {
         reqId: bigint,
         action: string,
         message: ArrayBuffer,
-        register: Boolean = true
+        register: boolean = true
     ) {
         if (this._reconnectLock) {
             await this._reconnectLock;
@@ -560,6 +608,9 @@ export class WebSocketConnector {
             if (retriable) {
                 this._inflightRequests.set(reqId, {
                     reqId,
+                    action,
+                    id: reqId,
+                    registerCallback: register,
                     message,
                     resolve,
                     reject,
@@ -582,19 +633,24 @@ export class WebSocketConnector {
                         this._inflightRequests.delete(reqId);
                         reject(error);
                     }
-                );
+                ).catch((error) => {
+                    this._inflightRequests.delete(reqId);
+                    reject(error);
+                });
             }
 
             try {
                 this._wsConn.send(message);
             } catch (err) {
-                if (!retriable) {
-                    this._inflightRequests.delete(reqId);
-                    if (register) {
-                        void WsEventCallback.instance().unregisterCallback(reqId);
-                    }
-                    reject(err);
+                if (retriable) {
+                    this.triggerReconnectInBackground("retriable binary request send failure");
+                    return;
                 }
+                this._inflightRequests.delete(reqId);
+                if (register) {
+                    void WsEventCallback.instance().unregisterCallback(reqId);
+                }
+                reject(err);
             }
         });
     }

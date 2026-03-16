@@ -76,8 +76,9 @@ describe("WebSocketConnector failover and retry", () => {
         expect(connector._currentAddressIndex).toBe(1);
     });
 
-    test("keeps retriable string request inflight when send throws", async () => {
+    test("triggers reconnect and keeps retriable string request inflight when send throws", async () => {
         const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
         connector._wsConn.send = jest.fn(() => {
             throw new Error("send failed");
         });
@@ -99,6 +100,7 @@ describe("WebSocketConnector failover and retry", () => {
         ]);
 
         expect(state).toBe("pending");
+        expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
         expect(connector._inflightRequests.has(101n)).toBe(true);
         connector.failAllInflightRequests(new Error("cleanup"));
     });
@@ -123,8 +125,9 @@ describe("WebSocketConnector failover and retry", () => {
         expect(connector._inflightRequests.has(102n)).toBe(false);
     });
 
-    test("keeps retriable binary request inflight when send throws", async () => {
+    test("triggers reconnect and keeps retriable binary request inflight when send throws", async () => {
         const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
         connector._wsConn.send = jest.fn(() => {
             throw new Error("send failed");
         });
@@ -139,6 +142,7 @@ describe("WebSocketConnector failover and retry", () => {
         ]);
 
         expect(state).toBe("pending");
+        expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
         expect(connector._inflightRequests.has(201n)).toBe(true);
         connector.failAllInflightRequests(new Error("cleanup"));
     });

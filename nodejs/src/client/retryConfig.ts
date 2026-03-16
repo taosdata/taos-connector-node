@@ -1,8 +1,8 @@
 import { Dsn } from "../common/dsn";
 
-const DEFAULT_RETRIES = 3;
-const DEFAULT_BACKOFF_MS = 100;
-const DEFAULT_BACKOFF_MAX_MS = 10000;
+const DEFAULT_RETRIES = 5;
+const DEFAULT_BACKOFF_MS = 200;
+const DEFAULT_BACKOFF_MAX_MS = 2000;
 
 function parseNonNegativeInt(
     value: string | undefined | null,

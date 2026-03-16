@@ -105,10 +105,10 @@ export function parse(url: string): Dsn {
     };
 }
 
-const DEFAULT_PORT = 6041;
-const CLOUD_DEFAULT_PORT = 443;
+export const DEFAULT_PORT = 6041;
+export const CLOUD_DEFAULT_PORT = 443;
 
-function isCloudServiceHost(host: string): boolean {
+export function isCloudServiceHost(host: string): boolean {
     const normalizedHost = host.toLowerCase();
     return (
         normalizedHost.includes("cloud.tdengine.com") ||
@@ -116,7 +116,7 @@ function isCloudServiceHost(host: string): boolean {
     );
 }
 
-function getDefaultPortForHost(host: string): number {
+export function getDefaultPortForHost(host: string): number {
     return isCloudServiceHost(host) ? CLOUD_DEFAULT_PORT : DEFAULT_PORT;
 }
 

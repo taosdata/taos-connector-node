@@ -5,6 +5,7 @@ import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
 import { w3cwebsocket } from "websocket";
 import { WebSocketConnector } from "./wsConnector";
+import { normalizeWsPath } from "../common/utils";
 
 const mutex = new Mutex();
 
@@ -29,9 +30,8 @@ export class WebSocketConnectionPool {
         return WebSocketConnectionPool._instance;
     }
 
-    private normalizePath(wsPath: string): string {
-        const normalized = wsPath.trim().replace(/^\/+/, "");
-        return normalized.length > 0 ? normalized : "ws";
+    private maskPoolKeyForLog(poolKey: string): string {
+        return poolKey.replace(/#auth=[^#]+/, "#auth=[REDACTED]");
     }
 
     private buildAuthScope(dsn: Dsn): string {
@@ -46,7 +46,7 @@ export class WebSocketConnectionPool {
             .sort((a, b) => `${a.host}:${a.port}`.localeCompare(`${b.host}:${b.port}`))
             .map((addr) => `${addr.host}:${addr.port}`)
             .join(",");
-        const normalizedPath = this.normalizePath(wsPath);
+        const normalizedPath = normalizeWsPath(wsPath);
         const db = dsn.database || "";
         const params = new URLSearchParams();
         const keyParams = ["token", "bearer_token", "timezone"];
@@ -66,6 +66,7 @@ export class WebSocketConnectionPool {
         timeout: number | undefined | null
     ): Promise<WebSocketConnector> {
         const poolKey = this.getPoolKey(dsn, wsPath);
+        const poolKeyForLog = this.maskPoolKeyForLog(poolKey);
         let connector: WebSocketConnector | undefined;
         const unlock = await mutex.acquire();
         try {
@@ -82,7 +83,7 @@ export class WebSocketConnectionPool {
                     }
                     Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
                     candidate.close();
-                    logger.error("getConnection, current connection status fail, poolKey: " + poolKey);
+                    logger.error("getConnection, current connection status fail, poolKey: " + poolKeyForLog);
                 }
             }
 
@@ -111,7 +112,7 @@ export class WebSocketConnectionPool {
                     "getConnection, new connection count:" +
                     Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
                     ", poolKey:" +
-                    poolKey
+                    poolKeyForLog
                 );
             }
             return new WebSocketConnector(dsn, wsPath, poolKey, timeout);

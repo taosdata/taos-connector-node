@@ -489,16 +489,10 @@ export class WebSocketConnector {
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.sendMsgDirect()]===>" + maskSensitiveForLog(message));
         }
-        if (!this._conn || this._conn.readyState !== w3cwebsocket.OPEN) {
-            throw new WebSocketQueryError(
-                ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `WebSocket connection is not ready, status: ${this._conn?.readyState}`
-            );
-        }
 
         const msg = JSON.parse(message);
         const reqId = this.extractReqId(msg?.args?.req_id) ?? BigInt(0);
-        const requestId = msg?.args?.id;
+        const id = msg?.args?.id;
         let resolveResponse: (value: unknown) => void = () => { };
         let rejectResponse: (error: unknown) => void = () => { };
         const responsePromise = new Promise((resolve, reject) => {
@@ -511,7 +505,7 @@ export class WebSocketConnector {
                 action: msg.action,
                 req_id: reqId,
                 timeout: this._timeout,
-                id: requestId !== undefined ? BigInt(requestId) : undefined,
+                id: id !== undefined ? BigInt(id) : undefined,
             },
             resolveResponse,
             rejectResponse

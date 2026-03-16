@@ -1,5 +1,5 @@
 import { parse } from "../../src/common/dsn";
-import { RetryConfig } from "../../src/client/retryConfig";
+import { RetryConfig } from "../../src/client/wsConnector";
 
 describe("RetryConfig", () => {
     test("uses defaults when retry params are not provided", () => {
@@ -7,9 +7,9 @@ describe("RetryConfig", () => {
 
         const config = RetryConfig.fromDsn(dsn);
 
-        expect(config.retries).toBe(3);
-        expect(config.retryBackoffMs).toBe(100);
-        expect(config.retryBackoffMaxMs).toBe(10000);
+        expect(config.retries).toBe(5);
+        expect(config.retryBackoffMs).toBe(200);
+        expect(config.retryBackoffMaxMs).toBe(2000);
     });
 
     test("reads retry params from dsn", () => {
@@ -31,9 +31,9 @@ describe("RetryConfig", () => {
 
         const config = RetryConfig.fromDsn(dsn);
 
-        expect(config.retries).toBe(3);
-        expect(config.retryBackoffMs).toBe(100);
-        expect(config.retryBackoffMaxMs).toBe(10000);
+        expect(config.retries).toBe(5);
+        expect(config.retryBackoffMs).toBe(200);
+        expect(config.retryBackoffMaxMs).toBe(2000);
     });
 
     test("computes exponential backoff and caps at max", () => {

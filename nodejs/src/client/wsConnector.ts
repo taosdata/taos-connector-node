@@ -8,7 +8,6 @@ import {
 import { OnMessageType, WsEventCallback } from "./wsEventCallback";
 import logger from "../common/log";
 import { maskSensitiveForLog, maskUrlForLog, normalizeWsPath } from "../common/utils";
-import { RetryConfig } from "./retryConfig";
 
 interface InflightRequest {
     reqId: bigint;
@@ -25,6 +24,73 @@ type SessionRecoveryHook = () => Promise<void>;
 const RETRIABLE_ACTIONS = new Set(["insert", "options_connection"]);
 // TDengine websocket binary op codes that are safe to replay after reconnect.
 const BINARY_RETRIABLE_ACTIONS = new Set<bigint>([4n, 5n, 6n, 10n]);
+
+const DEFAULT_RETRIES = 5;
+const DEFAULT_BACKOFF_MS = 200;
+const DEFAULT_BACKOFF_MAX_MS = 2000;
+
+function parseNonNegativeInt(
+    value: string | undefined | null,
+    fallback: number
+): number {
+    if (value === undefined || value === null || value.length === 0) {
+        return fallback;
+    }
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || Number.isNaN(parsed) || parsed < 0) {
+        return fallback;
+    }
+    return parsed;
+}
+
+function parsePositiveInt(
+    value: string | undefined | null,
+    fallback: number
+): number {
+    if (value === undefined || value === null || value.length === 0) {
+        return fallback;
+    }
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || Number.isNaN(parsed) || parsed <= 0) {
+        return fallback;
+    }
+    return parsed;
+}
+
+export class RetryConfig {
+    readonly retries: number;
+    readonly retryBackoffMs: number;
+    readonly retryBackoffMaxMs: number;
+
+    constructor(retries: number, retryBackoffMs: number, retryBackoffMaxMs: number) {
+        this.retries = retries;
+        this.retryBackoffMs = retryBackoffMs;
+        this.retryBackoffMaxMs = Math.max(retryBackoffMs, retryBackoffMaxMs);
+    }
+
+    getBackoffDelay(attempt: number): number {
+        const safeAttempt = Math.max(0, attempt);
+        const rawDelay = this.retryBackoffMs * Math.pow(2, safeAttempt);
+        const finiteDelay = Number.isFinite(rawDelay) ? rawDelay : this.retryBackoffMaxMs;
+        return Math.min(finiteDelay, this.retryBackoffMaxMs);
+    }
+
+    static fromDsn(dsn: Dsn): RetryConfig {
+        const retries = parseNonNegativeInt(
+            dsn.params.get("retries"),
+            DEFAULT_RETRIES
+        );
+        const retryBackoffMs = parsePositiveInt(
+            dsn.params.get("retry_backoff_ms"),
+            DEFAULT_BACKOFF_MS
+        );
+        const retryBackoffMaxMs = parsePositiveInt(
+            dsn.params.get("retry_backoff_max_ms"),
+            DEFAULT_BACKOFF_MAX_MS
+        );
+        return new RetryConfig(retries, retryBackoffMs, retryBackoffMaxMs);
+    }
+}
 
 export class WebSocketConnector {
     private _wsConn!: w3cwebsocket;
@@ -450,8 +516,8 @@ export class WebSocketConnector {
         const msg = JSON.parse(message);
         const reqId = this.extractReqId(msg?.args?.req_id) ?? BigInt(0);
         const requestId = msg?.args?.id;
-        let resolveResponse: (value: unknown) => void = () => {};
-        let rejectResponse: (error: unknown) => void = () => {};
+        let resolveResponse: (value: unknown) => void = () => { };
+        let rejectResponse: (error: unknown) => void = () => { };
         const responsePromise = new Promise((resolve, reject) => {
             resolveResponse = resolve;
             rejectResponse = reject;

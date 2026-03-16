@@ -1,5 +1,4 @@
-import { RetryConfig } from "../../src/client/retryConfig";
-import { WebSocketConnector } from "../../src/client/wsConnector";
+import { RetryConfig, WebSocketConnector } from "../../src/client/wsConnector";
 
 function createBareConnector(): any {
     const connector = Object.create(WebSocketConnector.prototype) as any;

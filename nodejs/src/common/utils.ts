@@ -6,11 +6,14 @@ import { ErrorCode, TDWebSocketClientError } from "./wsError";
 export function getDsn(wsConfig: WSConfig): Dsn {
     const dsn = parse(wsConfig.getUrl());
 
-    if (wsConfig.getUser()) {
-        dsn.username = wsConfig.getUser() || "";
+    const user = wsConfig.getUser();
+    if (user) {
+        dsn.username = user;
     }
-    if (wsConfig.getPwd()) {
-        dsn.password = wsConfig.getPwd() || "";
+
+    const password = wsConfig.getPwd();
+    if (password) {
+        dsn.password = password;
     }
 
     const token = wsConfig.getToken();
@@ -20,18 +23,18 @@ export function getDsn(wsConfig: WSConfig): Dsn {
         wsConfig.setToken(dsn.params.get("token") || "");
     }
 
-    const timezone = wsConfig.getTimezone();
-    if (timezone) {
-        dsn.params.set("timezone", timezone);
-    } else if (dsn.params.has("timezone")) {
-        wsConfig.setTimezone(dsn.params.get("timezone") || "");
-    }
-
     const bearerToken = wsConfig.getBearerToken();
     if (bearerToken) {
         dsn.params.set("bearer_token", bearerToken);
     } else if (dsn.params.has("bearer_token")) {
         wsConfig.setBearerToken(dsn.params.get("bearer_token") || "");
+    }
+
+    const timezone = wsConfig.getTimezone();
+    if (timezone) {
+        dsn.params.set("timezone", timezone);
+    } else if (dsn.params.has("timezone")) {
+        wsConfig.setTimezone(dsn.params.get("timezone") || "");
     }
 
     const db = wsConfig.getDb();

@@ -387,7 +387,7 @@ export class WebSocketConnector {
         }
     }
 
-    private async reconnectToCurrentAddress(): Promise<void> {
+    private async reconnect(): Promise<void> {
         if (this._conn) {
             this._suppressedSockets.add(this._conn);
             this._conn.close();
@@ -400,15 +400,11 @@ export class WebSocketConnector {
         const totalAddresses = this._addresses.length;
 
         for (let i = 0; i < totalAddresses; i++) {
-            for (let retry = 0; retry <= this._retryConfig.retries; retry++) {
+            for (let retry = 0; retry < this._retryConfig.retries; retry++) {
                 try {
-                    logger.info(
-                        `Reconnecting to ${this.getCurrentAddress()}, attempt ${retry + 1}`
-                    );
-                    await this.reconnectToCurrentAddress();
-                    logger.info(
-                        `Reconnection successful to ${this.getCurrentAddress()}`
-                    );
+                    logger.info(`Reconnecting to ${this.getCurrentAddress()}, attempt ${retry + 1}`);
+                    await this.reconnect();
+                    logger.info(`Reconnection successful to ${this.getCurrentAddress()}`);
                     return;
                 } catch (err: any) {
                     logger.warn(`Reconnect failed: ${err.message}`);

@@ -163,8 +163,7 @@ export class WsClient {
     }
 
     async connect(database?: string | undefined | null): Promise<void> {
-        const targetDatabase = database ?? (this._dsn.database.length > 0 ? this._dsn.database : undefined);
-        const connMsg = this.buildConnMessage(targetDatabase);
+        const connMsg = this.buildConnMessage(database);
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg, (key, value) =>
                 (key === "password" || key === "bearer_token") ? "[REDACTED]" : value
@@ -177,14 +176,14 @@ export class WsClient {
         );
         this.bindReconnectRecoveryHook();
         if (this._wsConnector.readyState() === w3cwebsocket.OPEN) {
-            this._connectedDatabase = targetDatabase ?? null;
+            this._connectedDatabase = database ?? null;
             return;
         }
         try {
             await this._wsConnector.ready();
             let result: any = await this._wsConnector.sendMsg(JSON.stringify(connMsg));
             if (result.msg.code == 0) {
-                this._connectedDatabase = targetDatabase ?? null;
+                this._connectedDatabase = database ?? null;
                 return;
             }
             await this.close();
@@ -192,10 +191,10 @@ export class WsClient {
         } catch (e: any) {
             await this.close();
             const maskedUrl = this.maskedLogUrl();
-            logger.error(`connection creation failed, url: ${maskedUrl}, code:${e.code}, msg:${e.message}`);
+            logger.error(`connection creation failed, url:${maskedUrl}, code:${e.code}, msg:${e.message}`);
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `connection creation failed, url: ${maskedUrl}, code:${e.code}, msg:${e.message}`
+                `connection creation failed, url:${maskedUrl}, code:${e.code}, msg:${e.message}`
             );
         }
     }

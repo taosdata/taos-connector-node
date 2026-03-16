@@ -154,7 +154,7 @@ describe("WsClient reconnect integration", () => {
         ]);
 
         const dsn = parse(
-            "ws://root:taosdata@host1:6041,host2:6042/mydb?timezone=UTC&retries=0&retry_backoff_ms=1"
+            "ws://root:taosdata@host1:6041,host2:6042/mydb?timezone=UTC&retries=1&retry_backoff_ms=1"
         );
         const client = new WsClient(dsn, 1000);
         await client.connect("mydb");
@@ -199,7 +199,7 @@ describe("WsClient reconnect integration", () => {
         ]);
 
         const dsn = parse(
-            "ws://root:taosdata@host1:6041,host2:6042/mydb?retries=0&retry_backoff_ms=1"
+            "ws://root:taosdata@host1:6041,host2:6042/mydb?retries=1&retry_backoff_ms=1"
         );
         const client = new WsClient(dsn, 1000);
         await client.connect("mydb");

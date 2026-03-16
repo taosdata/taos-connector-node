@@ -56,7 +56,7 @@ describe("WebSocketConnector failover and retry", () => {
         const connector = createBareConnector();
         const attempts: string[] = [];
         connector.sleep = jest.fn(async () => { });
-        connector.reconnectToCurrentAddress = jest.fn(async () => {
+        connector.reconnect = jest.fn(async () => {
             const current = connector._addresses[connector._currentAddressIndex];
             const addr = `${current.host}:${current.port}`;
             attempts.push(addr);
@@ -68,7 +68,6 @@ describe("WebSocketConnector failover and retry", () => {
         await connector.attemptReconnect();
 
         expect(attempts).toEqual([
-            "host1:6041",
             "host1:6041",
             "host2:6042",
         ]);

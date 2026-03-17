@@ -5,7 +5,6 @@ import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
 import { w3cwebsocket } from "websocket";
 import { WebSocketConnector } from "./wsConnector";
-import { normalizePath } from "../common/utils";
 
 const mutex = new Mutex();
 
@@ -31,10 +30,10 @@ export class WebSocketConnectionPool {
     }
 
     private maskPoolKeyForLog(poolKey: string): string {
-        return poolKey.replace(/#auth=[^#]+/, "#auth=[REDACTED]");
+        return poolKey.replace(/#auth=[^#]*/, "#auth=[REDACTED]");
     }
 
-    private buildAuthScope(dsn: Dsn): string {
+    private buildAuth(dsn: Dsn): string {
         const token = dsn.params.get("token") || "";
         const bearerToken = dsn.params.get("bearer_token") || "";
         const raw = `${dsn.username}:${dsn.password}:${token}:${bearerToken}`;
@@ -42,22 +41,12 @@ export class WebSocketConnectionPool {
     }
 
     private getPoolKey(dsn: Dsn, path: string): string {
-        const sortedAddrs = [...dsn.addresses]
+        const addrs = [...dsn.addresses]
             .sort((a, b) => `${a.host}:${a.port}`.localeCompare(`${b.host}:${b.port}`))
             .map((addr) => `${addr.host}:${addr.port}`)
             .join(",");
-        const normalizedPath = normalizePath(path);
-        const db = dsn.database || "";
-        const params = new URLSearchParams();
-        const keyParams = ["token", "bearer_token", "timezone"];
-        for (const key of keyParams) {
-            if (dsn.params.has(key)) {
-                params.set(key, dsn.params.get(key) || "");
-            }
-        }
-        const paramStr = params.toString();
-        const authScope = this.buildAuthScope(dsn);
-        return `${dsn.scheme}://${sortedAddrs}/${db}#path=${normalizedPath}${paramStr ? "?" + paramStr : ""}#auth=${authScope}`;
+        const auth = this.buildAuth(dsn);
+        return `${dsn.scheme}://${addrs}/${path}#auth=${auth}`;
     }
 
     async getConnection(

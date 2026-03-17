@@ -410,8 +410,6 @@ export class WebSocketConnector {
         this._isReconnecting = true;
         try {
             await this.attemptReconnect();
-            await this.recoverSessionContext();
-            await this.replayRequests();
         } catch (err: unknown) {
             const reconnectError = err instanceof Error
                 ? err
@@ -440,11 +438,13 @@ export class WebSocketConnector {
                 try {
                     logger.info(`Reconnecting to ${this.getCurrentAddress()}, attempt ${retry + 1}`);
                     await this.reconnect();
+                    await this.recoverSessionContext();
+                    await this.replayRequests();
                     logger.info(`Reconnection successful to ${this.getCurrentAddress()}`);
                     return;
                 } catch (err: any) {
                     logger.warn(`Reconnect failed: ${err.message}`);
-                    if (retry < this._retryConfig.retries) {
+                    if (retry < this._retryConfig.retries - 1) {
                         const delay = this._retryConfig.getBackoffDelay(retry);
                         await this.sleep(delay);
                     }

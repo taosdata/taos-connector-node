@@ -1,5 +1,38 @@
 import { RetryConfig, WebSocketConnector } from "../../src/client/wsConnector";
 
+function createInflightStore(): any {
+    let nextMsgId = 1n;
+    const reqIdToMsgId = new Map<bigint, bigint>();
+    const msgIdToRequest = new Map<bigint, any>();
+
+    return {
+        insert(req: any) {
+            const msgId = nextMsgId;
+            nextMsgId += 1n;
+            reqIdToMsgId.set(req.reqId, msgId);
+            msgIdToRequest.set(msgId, req);
+        },
+        remove(reqId: bigint) {
+            const msgId = reqIdToMsgId.get(reqId);
+            if (msgId === undefined) {
+                return;
+            }
+            reqIdToMsgId.delete(reqId);
+            msgIdToRequest.delete(msgId);
+        },
+        getRequests() {
+            return Array.from(msgIdToRequest.entries())
+                .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+                .map(([, req]) => req);
+        },
+        clear() {
+            nextMsgId = 1n;
+            reqIdToMsgId.clear();
+            msgIdToRequest.clear();
+        },
+    };
+}
+
 function createBareConnector(): any {
     const connector = Object.create(WebSocketConnector.prototype) as any;
     connector._timeout = 5000;
@@ -11,8 +44,7 @@ function createBareConnector(): any {
     connector._retryConfig = new RetryConfig(1, 1, 8);
     connector._reconnectLock = null;
     connector._isReconnecting = false;
-    connector._inflightRequests = new Map();
-    connector._inflightRequestOrder = [];
+    connector._inflightStore = createInflightStore();
     connector._conn = {
         readyState: 1,
         send: jest.fn(),
@@ -30,6 +62,20 @@ function buildBinaryMessage(action: bigint): ArrayBuffer {
 
 function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function hasInflightRequest(connector: any, reqId: bigint): boolean {
+    return connector
+        ._inflightStore
+        .getRequests()
+        .some((req: any) => req.reqId === reqId);
+}
+
+function listInflightReqIds(connector: any): bigint[] {
+    return connector
+        ._inflightStore
+        .getRequests()
+        .map((req: any) => req.reqId as bigint);
 }
 
 describe("WebSocketConnector failover and retry", () => {
@@ -100,7 +146,7 @@ describe("WebSocketConnector failover and retry", () => {
 
         expect(state).toBe("pending");
         expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
-        expect(connector._inflightRequests.has(101n)).toBe(true);
+        expect(hasInflightRequest(connector, 101n)).toBe(true);
         connector.failAllInflightRequests(new Error("cleanup"));
     });
 
@@ -121,7 +167,7 @@ describe("WebSocketConnector failover and retry", () => {
                 false
             )
         ).rejects.toThrow("send failed");
-        expect(connector._inflightRequests.has(102n)).toBe(false);
+        expect(hasInflightRequest(connector, 102n)).toBe(false);
     });
 
     test("triggers reconnect and keeps retriable binary request inflight when send throws", async () => {
@@ -142,7 +188,7 @@ describe("WebSocketConnector failover and retry", () => {
 
         expect(state).toBe("pending");
         expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
-        expect(connector._inflightRequests.has(201n)).toBe(true);
+        expect(hasInflightRequest(connector, 201n)).toBe(true);
         connector.failAllInflightRequests(new Error("cleanup"));
     });
 
@@ -156,63 +202,39 @@ describe("WebSocketConnector failover and retry", () => {
         await expect(
             connector.sendBinaryMsg(202n, "fetch", message, false)
         ).rejects.toThrow("send failed");
-        expect(connector._inflightRequests.has(202n)).toBe(false);
+        expect(hasInflightRequest(connector, 202n)).toBe(false);
     });
 
-    test("replays inflight string requests in put order when req_id is reinserted", async () => {
+    test("keeps inflight store consistent when retriable requests are enqueued concurrently", async () => {
         const connector = createBareConnector();
         connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
         connector._conn.send = jest.fn(() => {
             throw new Error("send failed");
         });
 
-        const req1Initial = connector.sendMsg(
-            JSON.stringify({
-                action: "insert",
-                args: {
-                    req_id: 301,
-                    data: "insert into t values(now, 1)",
-                },
-            }),
-            false
+        const reqIds = [301, 302, 303, 304];
+        await Promise.all(
+            reqIds.map(async (reqId) => {
+                const pending = connector.sendMsg(
+                    JSON.stringify({
+                        action: "insert",
+                        args: {
+                            req_id: reqId,
+                            data: `insert into t values(now, ${reqId})`,
+                        },
+                    }),
+                    false
+                );
+                void pending.catch(() => { });
+            })
         );
-        const req2 = connector.sendMsg(
-            JSON.stringify({
-                action: "insert",
-                args: {
-                    req_id: 302,
-                    data: "insert into t values(now, 2)",
-                },
-            }),
-            false
-        );
-        const req1Reinserted = connector.sendMsg(
-            JSON.stringify({
-                action: "insert",
-                args: {
-                    req_id: 301,
-                    data: "insert into t values(now, 3)",
-                },
-            }),
-            false
-        );
-        void req1Initial.catch(() => { });
-        void req2.catch(() => { });
-        void req1Reinserted.catch(() => { });
 
         await delay(20);
 
-        const replaySend = jest.fn();
-        connector._conn.send = replaySend;
-
-        await connector.replayRequests();
-
-        const replayedReqIds = replaySend.mock.calls.map(([payload]: [string]) => {
-            const parsed = JSON.parse(payload);
-            return BigInt(parsed.args.req_id);
-        });
-
-        expect(replayedReqIds).toEqual([302n, 301n]);
+        expect(listInflightReqIds(connector)).toEqual([301n, 302n, 303n, 304n]);
+        for (const reqId of reqIds) {
+            expect(hasInflightRequest(connector, BigInt(reqId))).toBe(true);
+        }
         connector.failAllInflightRequests(new Error("cleanup"));
     });
 

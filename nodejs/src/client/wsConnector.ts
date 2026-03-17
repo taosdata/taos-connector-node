@@ -19,6 +19,41 @@ interface InflightRequest {
     reject: (error: unknown) => void;
 }
 
+class InflightRequestStore {
+    private nextMsgId = 1n;
+    private readonly reqIdToMsgId: Map<bigint, bigint> = new Map();
+    private readonly msgIdToRequest: Map<bigint, InflightRequest> = new Map();
+
+    insert(req: InflightRequest): void {
+        const msgId = this.nextMsgId;
+        this.nextMsgId += 1n;
+        this.reqIdToMsgId.set(req.reqId, msgId);
+        this.msgIdToRequest.set(msgId, req);
+    }
+
+    remove(reqId: bigint): void {
+        const msgId = this.reqIdToMsgId.get(reqId);
+        if (msgId === undefined) {
+            return;
+        }
+
+        this.reqIdToMsgId.delete(reqId);
+        this.msgIdToRequest.delete(msgId);
+    }
+
+    getRequests(): InflightRequest[] {
+        return Array.from(this.msgIdToRequest.entries())
+            .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+            .map(([, req]) => req);
+    }
+
+    clear(): void {
+        this.nextMsgId = 1n;
+        this.reqIdToMsgId.clear();
+        this.msgIdToRequest.clear();
+    }
+}
+
 type SessionRecoveryHook = () => Promise<void>;
 
 const RETRIABLE_ACTIONS = new Set(["insert", "options_connection"]);
@@ -102,8 +137,7 @@ export class WebSocketConnector {
     private readonly _scheme: string;
     private readonly _path: string;
     private readonly _params: Map<string, string>;
-    private readonly _inflightRequests: Map<bigint, InflightRequest> = new Map();
-    private readonly _inflightRequestOrder: bigint[] = [];
+    private _inflightStore: InflightRequestStore;
     private readonly _suppressedSockets: WeakSet<w3cwebsocket> = new WeakSet();
     private _reconnectLock: Promise<void> | null = null;
     private _isReconnecting = false;
@@ -131,6 +165,7 @@ export class WebSocketConnector {
         this._scheme = dsn.scheme;
         this._path = normalizePath(path);
         this._params = new Map(dsn.params);
+        this._inflightStore = new InflightRequestStore();
         if (timeout) {
             this._timeout = timeout;
         }
@@ -318,43 +353,14 @@ export class WebSocketConnector {
                 id: req.id,
             },
             (result) => {
-                this.removeInflightRequest(req.reqId);
+                this._inflightStore.remove(req.reqId);
                 req.resolve(result);
             },
             (error) => {
-                this.removeInflightRequest(req.reqId);
+                this._inflightStore.remove(req.reqId);
                 req.reject(error);
             }
         );
-    }
-
-    private insertInflightRequest(req: InflightRequest): void {
-        this._inflightRequests.set(req.reqId, req);
-        this._inflightRequestOrder.push(req.reqId);
-    }
-
-    private removeInflightRequest(reqId: bigint): void {
-        this._inflightRequests.delete(reqId);
-        const index = this._inflightRequestOrder.indexOf(reqId);
-        if (index >= 0) {
-            this._inflightRequestOrder.splice(index, 1);
-        }
-    }
-
-    private getInflightRequests(): InflightRequest[] {
-        const requests: InflightRequest[] = [];
-        for (const reqId of this._inflightRequestOrder) {
-            const req = this._inflightRequests.get(reqId);
-            if (req) {
-                requests.push(req);
-            }
-        }
-        return requests;
-    }
-
-    private clearInflightRequests(): void {
-        this._inflightRequests.clear();
-        this._inflightRequestOrder.length = 0;
     }
 
     async ready() {
@@ -459,8 +465,8 @@ export class WebSocketConnector {
 
     private async replayRequests(): Promise<void> {
         logger.info("Replaying requests after reconnection");
-        const inflightRequests = this.getInflightRequests();
-        for (const req of inflightRequests) {
+        const requests = this._inflightStore.getRequests();
+        for (const req of requests) {
             try {
                 if (req.registerCallback) {
                     await WsEventCallback.instance().unregisterCallback(req.reqId);
@@ -471,18 +477,18 @@ export class WebSocketConnector {
             } catch (err: any) {
                 logger.error(`Failed to replay inflight request: ${err.message}`);
                 req.reject(err);
-                this.removeInflightRequest(req.reqId);
+                this._inflightStore.remove(req.reqId);
                 void WsEventCallback.instance().unregisterCallback(req.reqId);
             }
         }
     }
 
     private failAllInflightRequests(error: Error): void {
-        for (const req of this.getInflightRequests()) {
+        for (const req of this._inflightStore.getRequests()) {
             req.reject(error);
             void WsEventCallback.instance().unregisterCallback(req.reqId);
         }
-        this.clearInflightRequests();
+        this._inflightStore.clear();
     }
 
     close() {
@@ -586,7 +592,7 @@ export class WebSocketConnector {
             const retriable = this.isRetriableAction(msg.action);
 
             if (retriable && reqId !== null) {
-                this.insertInflightRequest({
+                this._inflightStore.insert({
                     reqId,
                     action: msg.action,
                     id: requestId !== undefined ? BigInt(requestId) : undefined,
@@ -607,19 +613,19 @@ export class WebSocketConnector {
                     },
                     (result) => {
                         if (reqId !== null) {
-                            this.removeInflightRequest(reqId);
+                            this._inflightStore.remove(reqId);
                         }
                         resolve(result);
                     },
                     (error) => {
                         if (reqId !== null) {
-                            this.removeInflightRequest(reqId);
+                            this._inflightStore.remove(reqId);
                         }
                         reject(error);
                     }
                 ).catch((error) => {
                     if (reqId !== null) {
-                        this.removeInflightRequest(reqId);
+                        this._inflightStore.remove(reqId);
                     }
                     reject(error);
                 });
@@ -634,7 +640,7 @@ export class WebSocketConnector {
                 }
 
                 if (reqId !== null) {
-                    this.removeInflightRequest(reqId);
+                    this._inflightStore.remove(reqId);
                     if (register) {
                         void WsEventCallback.instance().unregisterCallback(reqId);
                     }
@@ -669,7 +675,7 @@ export class WebSocketConnector {
             const retriable = this.isRetriableBinaryAction(opCode);
 
             if (retriable) {
-                this.insertInflightRequest({
+                this._inflightStore.insert({
                     reqId,
                     action,
                     id: reqId,
@@ -689,15 +695,15 @@ export class WebSocketConnector {
                         id: reqId,
                     },
                     (result) => {
-                        this.removeInflightRequest(reqId);
+                        this._inflightStore.remove(reqId);
                         resolve(result);
                     },
                     (error) => {
-                        this.removeInflightRequest(reqId);
+                        this._inflightStore.remove(reqId);
                         reject(error);
                     }
                 ).catch((error) => {
-                    this.removeInflightRequest(reqId);
+                    this._inflightStore.remove(reqId);
                     reject(error);
                 });
             }
@@ -709,7 +715,7 @@ export class WebSocketConnector {
                     this.triggerReconnectInBackground("retriable binary request send failure");
                     return;
                 }
-                this.removeInflightRequest(reqId);
+                this._inflightStore.remove(reqId);
                 if (register) {
                     void WsEventCallback.instance().unregisterCallback(reqId);
                 }

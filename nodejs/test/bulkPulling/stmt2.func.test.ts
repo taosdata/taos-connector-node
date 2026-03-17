@@ -20,19 +20,17 @@ beforeAll(async () => {
     );
     await wsSql.close();
 });
+
 describe("TDWebSocket.Stmt()", () => {
     jest.setTimeout(20 * 1000);
     let tags = ["California", 3];
     let multi = [
-        // [1709183268567],
-        // [10.2],
-        // [292],
-        // [0.32],
         [1709183268567, 1709183268568, 1709183268569],
         [10.2, 10.3, 10.4],
         [292, 293, 294],
         [0.32, 0.33, 0.34],
     ];
+
     test("normal connect", async () => {
         let conf = new WSConfig(dns);
         conf.setUser(testUsername());

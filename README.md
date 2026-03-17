@@ -1,7 +1,7 @@
 <!-- omit in toc -->
 # TDengine Node.js Connector
 
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-node/build.yaml)](https://github.com/taosdata/taos-connector-node/actions/workflows/build.yaml)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-node/build.yml)](https://github.com/taosdata/taos-connector-node/actions/workflows/build.yml)
 [![codecov](https://codecov.io/gh/taosdata/taos-connector-node/graph/badge.svg?token=5379a80b-063f-48c2-ab56-09564e7ca777)](https://codecov.io/gh/taosdata/taos-connector-node)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/taosdata/taos-connector-node)
 ![GitHub License](https://img.shields.io/github/license/taosdata/taos-connector-node)
@@ -80,7 +80,7 @@ Performance testing is in progress.
 
 ## 6. CI/CD
 
-- [Build Workflow](https://github.com/taosdata/taos-connector-node/actions/workflows/build.yaml)
+- [Build Workflow](https://github.com/taosdata/taos-connector-node/actions/workflows/build.yml)
 - [Code Coverage](https://app.codecov.io/gh/taosdata/taos-connector-node)
 
 ## 7. Submitting Issues

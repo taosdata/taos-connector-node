@@ -473,7 +473,6 @@ export class WebSocketConnector {
                     await this.registerInflightCallback(req);
                 }
                 this._conn.send(req.message);
-                logger.debug("Replayed inflight request");
             } catch (err: any) {
                 logger.error(`Failed to replay inflight request: ${err.message}`);
                 req.reject(err);

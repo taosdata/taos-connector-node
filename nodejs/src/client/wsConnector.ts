@@ -13,7 +13,6 @@ interface InflightRequest {
     reqId: bigint;
     action: string;
     id?: bigint;
-    registerCallback: boolean;
     message: string | ArrayBuffer;
     resolve: (value: unknown) => void;
     reject: (error: unknown) => void;
@@ -398,25 +397,6 @@ export class WebSocketConnector {
         }
     }
 
-    private registerInflightCallback(req: InflightRequest): Promise<void> {
-        return WsEventCallback.instance().registerCallback(
-            {
-                action: req.action,
-                req_id: req.reqId,
-                timeout: this._timeout,
-                id: req.id,
-            },
-            (result) => {
-                this._inflightStore.remove(req.reqId);
-                req.resolve(result);
-            },
-            (error) => {
-                this._inflightStore.remove(req.reqId);
-                req.reject(error);
-            }
-        );
-    }
-
     async ready() {
         if (this._conn && this._conn.readyState === w3cwebsocket.OPEN) {
             return;
@@ -519,13 +499,8 @@ export class WebSocketConnector {
 
     private async replayRequests(): Promise<void> {
         logger.info("Replaying requests after reconnection");
-        const requests = this._inflightStore.getRequests();
-        for (const req of requests) {
+        for (const req of this._inflightStore.getRequests()) {
             try {
-                if (req.registerCallback) {
-                    await WsEventCallback.instance().unregisterCallback(req.reqId);
-                    await this.registerInflightCallback(req);
-                }
                 this.send(req.message, false);
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : String(err);
@@ -533,11 +508,8 @@ export class WebSocketConnector {
                     logger.warn(`Network error while replaying inflight request, stopping current replay round: ${message}`);
                     throw err;
                 }
-
                 logger.error(`Failed to replay inflight request: ${req}, error: ${message}`);
                 req.reject(err);
-                this._inflightStore.remove(req.reqId);
-                void WsEventCallback.instance().unregisterCallback(req.reqId);
             }
         }
     }
@@ -545,7 +517,6 @@ export class WebSocketConnector {
     private failAllInflightRequests(error: Error): void {
         for (const req of this._inflightStore.getRequests()) {
             req.reject(error);
-            void WsEventCallback.instance().unregisterCallback(req.reqId);
         }
         this._inflightStore.clear();
     }
@@ -587,12 +558,12 @@ export class WebSocketConnector {
 
         const msg = JSON.parse(message);
         const reqId = this.extractReqId(msg?.args?.req_id) ?? BigInt(0);
-        const id = msg?.args?.id;
-        let resolveResponse: (value: unknown) => void = () => { };
-        let rejectResponse: (error: unknown) => void = () => { };
+
+        let resolveResp: (value: unknown) => void = () => { };
+        let rejectResp: (error: unknown) => void = () => { };
         const responsePromise = new Promise((resolve, reject) => {
-            resolveResponse = resolve;
-            rejectResponse = reject;
+            resolveResp = resolve;
+            rejectResp = reject;
         });
 
         await WsEventCallback.instance().registerCallback(
@@ -600,14 +571,13 @@ export class WebSocketConnector {
                 action: msg.action,
                 req_id: reqId,
                 timeout: this._timeout,
-                id: id !== undefined ? BigInt(id) : undefined,
             },
-            resolveResponse,
-            rejectResponse
+            resolveResp,
+            rejectResp
         );
 
         try {
-            this.send(message);
+            this.send(message, false);
             return await responsePromise;
         } catch (err) {
             await WsEventCallback.instance().unregisterCallback(reqId);
@@ -615,176 +585,104 @@ export class WebSocketConnector {
         }
     }
 
-    async sendMsgNoResp(message: string): Promise<void> {
-        logger.debug("[wsClient.sendMsgNoResp()]===>" + maskSensitiveForLog(message));
-        if (this._reconnectLock) {
-            await this._reconnectLock;
-        }
-
-        return new Promise((resolve, reject) => {
-            if (this._conn && this._conn.readyState === w3cwebsocket.OPEN) {
-                this.send(message);
-                resolve();
-            } else {
-                reject(
-                    new WebSocketQueryError(
-                        ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                        `WebSocket connection is not ready, status: ${this._conn?.readyState}`
-                    )
-                );
-            }
-        });
-    }
-
-    async sendMsg(message: string, register: boolean = true) {
+    async sendMsg(message: string) {
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.sendMessage()]===>" + maskSensitiveForLog(message));
         }
         const msg = JSON.parse(message);
-        const requestId = msg?.args?.id;
-        if (this._reconnectLock) {
-            await this._reconnectLock;
-        }
+        const id = msg?.args?.id !== undefined ? BigInt(msg.args.id) : undefined;
+        const reqId = this.extractReqId(msg?.args?.req_id) ?? BigInt(0);
 
-        return new Promise((resolve, reject) => {
-            const reqId = this.extractReqId(msg?.args?.req_id);
-            const retriable = this.isRetriableAction(msg.action);
-
-            if (retriable && reqId !== null) {
-                this._inflightStore.insert({
-                    reqId,
-                    action: msg.action,
-                    id: requestId !== undefined ? BigInt(requestId) : undefined,
-                    registerCallback: register,
-                    message,
-                    resolve,
-                    reject,
-                });
-            }
-
-            if (register) {
-                void WsEventCallback.instance().registerCallback(
-                    {
-                        action: msg.action,
-                        req_id: reqId ?? BigInt(0),
-                        timeout: this._timeout,
-                        id: requestId !== undefined ? BigInt(requestId) : undefined,
-                    },
-                    (result) => {
-                        if (reqId !== null) {
-                            this._inflightStore.remove(reqId);
-                        }
-                        resolve(result);
-                    },
-                    (error) => {
-                        if (reqId !== null) {
-                            this._inflightStore.remove(reqId);
-                        }
-                        reject(error);
-                    }
-                ).catch((error) => {
-                    if (reqId !== null) {
-                        this._inflightStore.remove(reqId);
-                    }
-                    reject(error);
-                });
-            }
-
-            try {
-                this.send(message,);
-            } catch (err) {
-                const networkSendError = this.isNetworkError(err);
-                if (retriable && reqId !== null && networkSendError) {
-                    return;
-                }
-
-                if (reqId !== null) {
-                    this._inflightStore.remove(reqId);
-                    if (register) {
-                        void WsEventCallback.instance().unregisterCallback(reqId);
-                    }
-                }
-                reject(err);
-            }
-        });
+        return this.sendAndTrackResponse(
+            reqId,
+            msg.action,
+            message,
+            this.isRetriableAction(msg.action),
+            id,
+        );
     }
 
     async sendBinaryMsg(
         reqId: bigint,
         action: string,
         message: ArrayBuffer,
-        register: boolean = true
+    ) {
+        return this.sendAndTrackResponse(
+            reqId,
+            action,
+            message,
+            this.isRetriableBinaryAction(this.extractBinaryAction(message)),
+            reqId,
+        );
+    }
+
+    private async sendAndTrackResponse(
+        reqId: bigint,
+        action: string,
+        message: string | ArrayBuffer,
+        retriable: boolean,
+        callbackId?: bigint,
     ) {
         if (this._reconnectLock) {
             await this._reconnectLock;
         }
 
         return new Promise((resolve, reject) => {
-            if (!this._conn || this._conn.readyState !== w3cwebsocket.OPEN) {
-                reject(
-                    new WebSocketQueryError(
-                        ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                        `WebSocket connection is not ready, status: ${this._conn?.readyState}`
-                    )
-                );
-                return;
-            }
-
-            const opCode = this.extractBinaryAction(message);
-            const retriable = this.isRetriableBinaryAction(opCode);
+            let settled = false;
+            const safeResolve = (result: unknown) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                this._inflightStore.remove(reqId);
+                resolve(result);
+            };
+            const safeReject = (error: unknown) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                this._inflightStore.remove(reqId);
+                void WsEventCallback.instance().unregisterCallback(reqId);
+                reject(error);
+            };
 
             if (retriable) {
                 this._inflightStore.insert({
                     reqId,
                     action,
-                    id: reqId,
-                    registerCallback: register,
+                    id: callbackId,
                     message,
-                    resolve,
-                    reject,
+                    resolve: safeResolve,
+                    reject: safeReject,
                 });
             }
 
-            if (register) {
-                void WsEventCallback.instance().registerCallback(
+            void WsEventCallback.instance()
+                .registerCallback(
                     {
                         action,
                         req_id: reqId,
                         timeout: this._timeout,
-                        id: reqId,
+                        id: callbackId,
                     },
-                    (result) => {
-                        this._inflightStore.remove(reqId);
-                        resolve(result);
-                    },
-                    (error) => {
-                        this._inflightStore.remove(reqId);
-                        reject(error);
+                    safeResolve,
+                    safeReject
+                )
+                .then(() => {
+                    try {
+                        this.send(message);
+                    } catch (err) {
+                        if (retriable && this.isNetworkError(err)) {
+                            return;
+                        }
+                        safeReject(err);
                     }
-                ).catch((error) => {
-                    this._inflightStore.remove(reqId);
-                    reject(error);
+                })
+                .catch((error) => {
+                    safeReject(error);
                 });
-            }
-
-            try {
-                this.send(message);
-            } catch (err) {
-                const networkSendError = this.isNetworkError(err);
-                if (retriable && networkSendError) {
-                    return;
-                }
-                this._inflightStore.remove(reqId);
-                if (register) {
-                    void WsEventCallback.instance().unregisterCallback(reqId);
-                }
-                reject(err);
-            }
         });
-    }
-
-    public getWsURL(): URL {
-        return this._url;
     }
 
     public getPoolKey(): string {

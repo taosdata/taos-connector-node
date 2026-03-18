@@ -222,18 +222,15 @@ export class WsClient {
         }
     }
 
-    async execNoResp(queryMsg: string): Promise<void> {
-        logger.debug("[wsQueryInterface.query.queryMsg]===>" + queryMsg);
-        if (
-            this._wsConnector &&
-            this._wsConnector.readyState() === w3cwebsocket.OPEN
-        ) {
-            await this._wsConnector.sendMsgNoResp(queryMsg);
+    async execNoResp(message: string): Promise<void> {
+        logger.debug("[wsClient.execNoResp]===>" + message);
+        if (this._wsConnector) {
+            await this._wsConnector.sendMsg(message);
             return;
         }
         throw new TDWebSocketClientError(
             ErrorCode.ERR_CONNECTION_CLOSED,
-            "invalid websocket connect"
+            "invalid websocket connection"
         );
     }
 
@@ -402,7 +399,7 @@ export class WsClient {
                 this._wsConnector.readyState() === w3cwebsocket.OPEN
             ) {
                 this._wsConnector
-                    .sendMsgNoResp(jsonStr)
+                    .sendMsg(jsonStr)
                     .then((e: any) => {
                         resolve(e);
                     })

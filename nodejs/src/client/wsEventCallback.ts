@@ -106,9 +106,7 @@ export class WsEventCallback {
                         keyToDelete = k;
                         break;
                     }
-                } else if (
-                    messageType == OnMessageType.MESSAGE_TYPE_CONNECTION
-                ) {
+                } else if (messageType == OnMessageType.MESSAGE_TYPE_CONNECTION) {
                     if (k.req_id == msg.req_id && k.action == msg.action) {
                         action = v;
                         keyToDelete = k;
@@ -133,12 +131,12 @@ export class WsEventCallback {
             };
             action.resolve(resp);
         } else {
-            logger.error("no find callback msg:=", msg);
+            logger.error("no find callback msg: ", msg);
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WS_NO_CALLBACK,
-                "no callback registered for fetch_block with req_id=" +
+                "no callback registered with req_id: " +
                 msg.req_id +
-                " action" +
+                ", action: " +
                 msg.action
             );
         }

@@ -585,6 +585,28 @@ export class WebSocketConnector {
         }
     }
 
+    async sendMsgNoResp(message: string): Promise<void> {
+        logger.debug("[wsClient.sendMsgNoResp()]===>" + message);
+        let msg = JSON.parse(message);
+        if (msg.args.id !== undefined) {
+            msg.args.id = BigInt(msg.args.id);
+        }
+
+        return new Promise((resolve, reject) => {
+            if (this._conn && this._conn.readyState === w3cwebsocket.OPEN) {
+                this._conn.send(message);
+                resolve();
+            } else {
+                reject(
+                    new WebSocketQueryError(
+                        ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
+                        `WebSocket connection is not ready, status: ${this._conn?.readyState}`
+                    )
+                );
+            }
+        });
+    }
+
     async sendMsg(message: string) {
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.sendMessage()]===>" + maskSensitiveForLog(message));

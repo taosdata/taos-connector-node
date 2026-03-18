@@ -225,7 +225,7 @@ export class WsClient {
     async execNoResp(message: string): Promise<void> {
         logger.debug("[wsClient.execNoResp]===>" + message);
         if (this._wsConnector) {
-            await this._wsConnector.sendMsg(message);
+            await this._wsConnector.sendMsgNoResp(message);
             return;
         }
         throw new TDWebSocketClientError(
@@ -391,15 +391,10 @@ export class WsClient {
         };
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(freeResultMsg);
-            logger.debug(
-                "[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr
-            );
-            if (
-                this._wsConnector &&
-                this._wsConnector.readyState() === w3cwebsocket.OPEN
-            ) {
+            logger.debug("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr);
+            if (this._wsConnector) {
                 this._wsConnector
-                    .sendMsg(jsonStr)
+                    .sendMsgNoResp(jsonStr)
                     .then((e: any) => {
                         resolve(e);
                     })

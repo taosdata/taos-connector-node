@@ -1,4 +1,5 @@
 import { RetryConfig, WebSocketConnector } from "../../src/client/wsConnector";
+import { WsEventCallback } from "../../src/client/wsEventCallback";
 
 function createInflightStore(): any {
     let nextMsgId = 1n;
@@ -125,7 +126,7 @@ describe("WebSocketConnector failover and retry", () => {
         const connector = createBareConnector();
         connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
         connector._conn.send = jest.fn(() => {
-            throw new Error("send failed");
+            throw new Error("cannot call send() while not connected");
         });
 
         const pending = connector.sendMsg(
@@ -170,11 +171,61 @@ describe("WebSocketConnector failover and retry", () => {
         expect(hasInflightRequest(connector, 102n)).toBe(false);
     });
 
+    test("rejects retriable string request immediately when send throws with non-network error", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => {
+            throw new Error("serialize failed");
+        });
+
+        const pending = connector.sendMsg(
+            JSON.stringify({
+                action: "insert",
+                args: {
+                    req_id: 111,
+                },
+            }),
+            false
+        );
+        void pending.catch(() => { });
+
+        const state = await Promise.race([
+            pending.then(() => "resolved").catch(() => "rejected"),
+            delay(20).then(() => "pending"),
+        ]);
+
+        expect(state).toBe("rejected");
+        expect(connector.triggerReconnect).not.toHaveBeenCalled();
+        expect(hasInflightRequest(connector, 111n)).toBe(false);
+    });
+
+    test("triggers reconnect and rejects non-retriable string request on network send error", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => {
+            throw new Error("cannot call send() while not connected");
+        });
+
+        await expect(
+            connector.sendMsg(
+                JSON.stringify({
+                    action: "query",
+                    args: {
+                        req_id: 112,
+                    },
+                }),
+                false
+            )
+        ).rejects.toThrow("cannot call send() while not connected");
+        expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
+        expect(hasInflightRequest(connector, 112n)).toBe(false);
+    });
+
     test("triggers reconnect and keeps retriable binary request inflight when send throws", async () => {
         const connector = createBareConnector();
         connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
         connector._conn.send = jest.fn(() => {
-            throw new Error("send failed");
+            throw new Error("cannot call send() while not connected");
         });
         const message = buildBinaryMessage(6n);
 
@@ -205,11 +256,61 @@ describe("WebSocketConnector failover and retry", () => {
         expect(hasInflightRequest(connector, 202n)).toBe(false);
     });
 
+    test("sendMsgDirect triggers reconnect and unregisters callback on network send error", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => {
+            throw new Error("cannot call send() while not connected");
+        });
+
+        const registerSpy = jest
+            .spyOn(WsEventCallback.instance(), "registerCallback")
+            .mockResolvedValue();
+        const unregisterSpy = jest
+            .spyOn(WsEventCallback.instance(), "unregisterCallback")
+            .mockResolvedValue();
+
+        await expect(
+            connector.sendMsgDirect(
+                JSON.stringify({
+                    action: "conn",
+                    args: {
+                        req_id: 3001,
+                    },
+                })
+            )
+        ).rejects.toThrow("cannot call send() while not connected");
+
+        expect(registerSpy).toHaveBeenCalledTimes(1);
+        expect(unregisterSpy).toHaveBeenCalledWith(3001n);
+        expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
+    });
+
+    test("sendMsgNoResp triggers reconnect and rejects on network send error", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => {
+            throw new Error("cannot call send() while not connected");
+        });
+
+        await expect(
+            connector.sendMsgNoResp(
+                JSON.stringify({
+                    action: "query",
+                    args: {
+                        req_id: 3002,
+                    },
+                })
+            )
+        ).rejects.toThrow("cannot call send() while not connected");
+        expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
+    });
+
     test("keeps inflight store consistent when retriable requests are enqueued concurrently", async () => {
         const connector = createBareConnector();
         connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
         connector._conn.send = jest.fn(() => {
-            throw new Error("send failed");
+            throw new Error("cannot call send() while not connected");
         });
 
         const reqIds = [301, 302, 303, 304];
@@ -242,7 +343,7 @@ describe("WebSocketConnector failover and retry", () => {
         const connector = createBareConnector();
         connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
         connector._conn.send = jest.fn(() => {
-            throw new Error("send failed");
+            throw new Error("cannot call send() while not connected");
         });
 
         const reqIds = [101, 102, 103, 104];
@@ -274,5 +375,53 @@ describe("WebSocketConnector failover and retry", () => {
 
         expect(replayedReqIds).toEqual([101, 102, 103, 104]);
         connector.failAllInflightRequests(new Error("cleanup"));
+    });
+
+    test("replayRequests stops current round and keeps inflight when network send error happens", async () => {
+        const connector = createBareConnector();
+        const reject1 = jest.fn();
+        const reject2 = jest.fn();
+
+        connector._inflightStore.insert({
+            reqId: 501n,
+            action: "insert",
+            registerCallback: false,
+            message: JSON.stringify({
+                action: "insert",
+                args: {
+                    req_id: 501,
+                },
+            }),
+            resolve: jest.fn(),
+            reject: reject1,
+        });
+
+        connector._inflightStore.insert({
+            reqId: 502n,
+            action: "insert",
+            registerCallback: false,
+            message: JSON.stringify({
+                action: "insert",
+                args: {
+                    req_id: 502,
+                },
+            }),
+            resolve: jest.fn(),
+            reject: reject2,
+        });
+
+        connector._conn.readyState = 3;
+        connector._conn.send = jest.fn(() => {
+            throw new Error("cannot call send() while not connected");
+        });
+
+        await expect(connector.replayRequests()).rejects.toThrow(
+            "cannot call send() while not connected"
+        );
+
+        expect(hasInflightRequest(connector, 501n)).toBe(true);
+        expect(hasInflightRequest(connector, 502n)).toBe(true);
+        expect(reject1).not.toHaveBeenCalled();
+        expect(reject2).not.toHaveBeenCalled();
     });
 });

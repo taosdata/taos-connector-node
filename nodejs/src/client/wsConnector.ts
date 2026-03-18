@@ -64,6 +64,31 @@ const DEFAULT_RETRIES = 5;
 const DEFAULT_BACKOFF_MS = 200;
 const DEFAULT_BACKOFF_MAX_MS = 2000;
 
+const NETWORK_ERROR_CODES = new Set([
+    "econnreset",
+    "econnrefused",
+    "ehostunreach",
+    "enotfound",
+    "eai_again",
+    "epipe",
+    "etimedout",
+    "err_socket_closed",
+    "err_stream_write_after_end",
+]);
+const NETWORK_ERROR_MESSAGE_PATTERNS = [
+    "not connected",
+    "socket",
+    "network",
+    "econnreset",
+    "econnrefused",
+    "epipe",
+    "etimedout",
+    "write after end",
+    "broken pipe",
+    "connection reset",
+    "connection closed",
+];
+
 function parseNonNegativeInt(
     value: string | undefined | null,
     fallback: number
@@ -337,11 +362,40 @@ export class WebSocketConnector {
         return BINARY_RETRIABLE_ACTIONS.has(action);
     }
 
-    private triggerReconnectInBackground(context: string): void {
-        void this.triggerReconnect().catch((err: unknown) => {
-            const message = err instanceof Error ? err.message : String(err);
-            logger.error(`Reconnect trigger failed (${context}): ${message}`);
-        });
+    private isNetworkError(err: unknown): boolean {
+        if (!this._conn || this._conn.readyState !== w3cwebsocket.OPEN) {
+            return true;
+        }
+
+        const errObj = err as { code?: unknown; message?: unknown };
+        const code = typeof errObj?.code === "string" ? errObj.code.toLowerCase() : "";
+        if (code.length > 0 && NETWORK_ERROR_CODES.has(code)) {
+            return true;
+        }
+
+        const message = err instanceof Error
+            ? err.message
+            : typeof errObj?.message === "string"
+                ? errObj.message
+                : String(err);
+        const lowered = message.toLowerCase();
+        return NETWORK_ERROR_MESSAGE_PATTERNS.some((pattern) =>
+            lowered.includes(pattern)
+        );
+    }
+
+    private send(message: string | ArrayBuffer, triggerReconnect: boolean = true): void {
+        try {
+            this._conn.send(message);
+        } catch (err) {
+            if (triggerReconnect && this.isNetworkError(err)) {
+                void this.triggerReconnect().catch((err: unknown) => {
+                    const message = err instanceof Error ? err.message : String(err);
+                    logger.error(`Reconnect trigger failed: ${message}`);
+                });
+            }
+            throw err;
+        }
     }
 
     private registerInflightCallback(req: InflightRequest): Promise<void> {
@@ -472,9 +526,15 @@ export class WebSocketConnector {
                     await WsEventCallback.instance().unregisterCallback(req.reqId);
                     await this.registerInflightCallback(req);
                 }
-                this._conn.send(req.message);
-            } catch (err: any) {
-                logger.error(`Failed to replay inflight request: ${err.message}`);
+                this.send(req.message, false);
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : String(err);
+                if (this.isNetworkError(err)) {
+                    logger.warn(`Network error while replaying inflight request, stopping current replay round: ${message}`);
+                    throw err;
+                }
+
+                logger.error(`Failed to replay inflight request: ${req}, error: ${message}`);
                 req.reject(err);
                 this._inflightStore.remove(req.reqId);
                 void WsEventCallback.instance().unregisterCallback(req.reqId);
@@ -547,7 +607,7 @@ export class WebSocketConnector {
         );
 
         try {
-            this._conn.send(message);
+            this.send(message);
             return await responsePromise;
         } catch (err) {
             await WsEventCallback.instance().unregisterCallback(reqId);
@@ -563,7 +623,7 @@ export class WebSocketConnector {
 
         return new Promise((resolve, reject) => {
             if (this._conn && this._conn.readyState === w3cwebsocket.OPEN) {
-                this._conn.send(message);
+                this.send(message);
                 resolve();
             } else {
                 reject(
@@ -631,10 +691,10 @@ export class WebSocketConnector {
             }
 
             try {
-                this._conn.send(message);
+                this.send(message,);
             } catch (err) {
-                if (retriable && reqId !== null) {
-                    this.triggerReconnectInBackground("retriable string request send failure");
+                const networkSendError = this.isNetworkError(err);
+                if (retriable && reqId !== null && networkSendError) {
                     return;
                 }
 
@@ -708,10 +768,10 @@ export class WebSocketConnector {
             }
 
             try {
-                this._conn.send(message);
+                this.send(message);
             } catch (err) {
-                if (retriable) {
-                    this.triggerReconnectInBackground("retriable binary request send failure");
+                const networkSendError = this.isNetworkError(err);
+                if (retriable && networkSendError) {
                     return;
                 }
                 this._inflightStore.remove(reqId);

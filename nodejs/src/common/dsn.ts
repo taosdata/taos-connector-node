@@ -234,13 +234,10 @@ function parseHostList(hostStr: string): Address[] {
     return hosts;
 }
 
-function parsePort(portStr: string, context: string, hostForDefault?: string): number {
+function parsePort(portStr: string, context: string, host: string): number {
     // If port string is empty, use default port
     if (portStr.length === 0) {
-        if (hostForDefault) {
-            return getDefaultPortForHost(hostForDefault);
-        }
-        return DEFAULT_PORT;
+        return getDefaultPortForHost(host);
     }
     // Validate that port string contains only digits
     if (!/^\d+$/.test(portStr)) {

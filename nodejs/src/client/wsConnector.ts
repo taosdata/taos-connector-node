@@ -131,11 +131,11 @@ export class RetryConfig {
 
 export class WebSocketConnector {
     private _conn!: w3cwebsocket;
-    private _url!: URL;
     private readonly _poolKey: string;
     private readonly _addresses: Address[];
     private _currentAddressIndex: number;
     private readonly _retryConfig: RetryConfig;
+    // TODO: use Dsn replacement to simplify the constructor parameters
     private readonly _scheme: string;
     private readonly _path: string;
     private readonly _params: Map<string, string>;
@@ -196,10 +196,8 @@ export class WebSocketConnector {
     }
 
     private createConnection(): void {
-        const url = this.buildUrl(this._currentAddressIndex);
-        this._url = new URL(url);
         const conn = new w3cwebsocket(
-            url,
+            this.buildUrl(this._currentAddressIndex),
             undefined,
             undefined,
             undefined,
@@ -375,7 +373,7 @@ export class WebSocketConnector {
         }
     }
 
-    async ready() {
+    async ready(): Promise<void> {
         if (this._conn && this._conn.readyState === w3cwebsocket.OPEN) {
             return;
         }
@@ -507,7 +505,7 @@ export class WebSocketConnector {
         } else {
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                "WebSocket connection is undefined."
+                "WebSocket connection is undefined"
             );
         }
     }
@@ -531,7 +529,7 @@ export class WebSocketConnector {
 
     public async sendMsgDirect(message: string): Promise<any> {
         if (logger.isDebugEnabled()) {
-            logger.debug("[wsClient.sendMsgDirect()]===>" + maskSensitiveForLog(message));
+            logger.debug("[wsClient.sendMsgDirect]===>" + maskSensitiveForLog(message));
         }
 
         const msg = JSON.parse(message);
@@ -578,7 +576,6 @@ export class WebSocketConnector {
         const msg = JSON.parse(message);
         const id = msg?.args?.id !== undefined ? BigInt(msg.args.id) : undefined;
         const reqId = this.extractReqId(msg?.args?.req_id) ?? BigInt(0);
-
         return this.sendAndTrackResponse(
             reqId,
             msg.action,
@@ -620,7 +617,9 @@ export class WebSocketConnector {
                     return;
                 }
                 settled = true;
-                this._inflightStore.remove(reqId);
+                if (retriable) {
+                    this._inflightStore.remove(reqId);
+                }
                 resolve(result);
             };
             const safeReject = (error: unknown) => {
@@ -628,7 +627,9 @@ export class WebSocketConnector {
                     return;
                 }
                 settled = true;
-                this._inflightStore.remove(reqId);
+                if (retriable) {
+                    this._inflightStore.remove(reqId);
+                }
                 void WsEventCallback.instance().unregisterCallback(reqId);
                 reject(error);
             };

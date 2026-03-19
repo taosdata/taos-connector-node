@@ -595,7 +595,7 @@ export class WebSocketConnector {
 
     async sendMsg(message: string) {
         if (logger.isDebugEnabled()) {
-            logger.debug("[wsClient.sendMessage()]===>" + maskSensitiveForLog(message));
+            logger.debug("[wsConnector.sendMsg]===>" + maskSensitiveForLog(message));
         }
         const msg = JSON.parse(message);
         const id = msg?.args?.id !== undefined ? BigInt(msg.args.id) : undefined;

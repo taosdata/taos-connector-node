@@ -199,41 +199,26 @@ export class WsClient {
 
     async execNoResp(message: string): Promise<void> {
         logger.debug("[wsClient.execNoResp]===>" + message);
-        const connector = this.getWsConnector();
-        await connector.sendMsgNoResp(message);
+        await this.getWsConnector().sendMsgNoResp(message);
     }
 
-    async exec(queryMsg: string, bSqlQuery: boolean = true): Promise<any> {
-        return new Promise((resolve, reject) => {
-            if (logger.isDebugEnabled()) {
-                logger.debug("[wsQueryInterface.query.queryMsg]===>" + maskSensitiveForLog(queryMsg));
+    async exec(message: string, bSqlQuery: boolean = true): Promise<any> {
+        if (logger.isDebugEnabled()) {
+            logger.debug("[wsClient.exec]===>" + maskSensitiveForLog(message));
+        }
+
+        const resp: any = await this.getWsConnector().sendMsg(message);
+        if (resp.msg.code == 0) {
+            if (bSqlQuery) {
+                return new WSQueryResponse(resp);
             }
-            try {
-                this.getWsConnector()
-                    .sendMsg(queryMsg)
-                    .then((e: any) => {
-                        if (e.msg.code == 0) {
-                            if (bSqlQuery) {
-                                resolve(new WSQueryResponse(e));
-                            } else {
-                                resolve(e);
-                            }
-                        } else {
-                            reject(
-                                new WebSocketInterfaceError(
-                                    e.msg.code,
-                                    e.msg.message
-                                )
-                            );
-                        }
-                    })
-                    .catch((e) => {
-                        reject(e);
-                    });
-            } catch (e) {
-                reject(e);
-            }
-        });
+            return resp;
+        }
+
+        throw new WebSocketInterfaceError(
+            resp.msg.code,
+            resp.msg.message
+        );
     }
 
     async sendBinaryMsg(
@@ -243,37 +228,22 @@ export class WsClient {
         bSqlQuery: boolean = true,
         bResultBinary: boolean = false
     ): Promise<any> {
-        return new Promise((resolve, reject) => {
-            try {
-                this.getWsConnector()
-                    .sendBinaryMsg(reqId, action, message)
-                    .then((e: any) => {
-                        if (bResultBinary) {
-                            resolve(e);
-                        }
+        const resp: any = await this.getWsConnector().sendBinaryMsg(reqId, action, message);
+        if (bResultBinary) {
+            return resp;
+        }
 
-                        if (e.msg.code == 0) {
-                            if (bSqlQuery) {
-                                resolve(new WSQueryResponse(e));
-                            } else {
-                                resolve(e);
-                            }
-                        } else {
-                            reject(
-                                new WebSocketInterfaceError(
-                                    e.msg.code,
-                                    e.msg.message
-                                )
-                            );
-                        }
-                    })
-                    .catch((e) => {
-                        reject(e);
-                    });
-            } catch (e) {
-                reject(e);
+        if (resp.msg.code == 0) {
+            if (bSqlQuery) {
+                return new WSQueryResponse(resp);
             }
-        });
+            return resp;
+        }
+
+        throw new WebSocketInterfaceError(
+            resp.msg.code,
+            resp.msg.message
+        );
     }
 
     getState() {
@@ -311,44 +281,22 @@ export class WsClient {
         }
     }
 
-    async sendMsg(msg: string): Promise<any> {
-        return new Promise((resolve, reject) => {
-            logger.debug("[wsClient.sendMsg]===>" + msg);
-            try {
-                this.getWsConnector()
-                    .sendMsg(msg)
-                    .then((e: any) => {
-                        resolve(e);
-                    })
-                    .catch((e) => reject(e));
-            } catch (e) {
-                reject(e);
-            }
-        });
+    async sendMsg(message: string): Promise<any> {
+        logger.debug("[wsClient.sendMsg]===>" + message);
+        return this.getWsConnector().sendMsg(message);
     }
 
-    async freeResult(res: WSQueryResponse) {
-        let freeResultMsg = {
+    async freeResult(res: WSQueryResponse): Promise<void> {
+        const freeResultMsg = {
             action: "free_result",
             args: {
                 req_id: ReqId.getReqID(),
                 id: res.id,
             },
         };
-        return new Promise((resolve, reject) => {
-            let jsonStr = JSONBig.stringify(freeResultMsg);
-            logger.debug("[wsClient.freeResult]===>" + jsonStr);
-            try {
-                this.getWsConnector()
-                    .sendMsgNoResp(jsonStr)
-                    .then((e: any) => {
-                        resolve(e);
-                    })
-                    .catch((e) => reject(e));
-            } catch (e) {
-                reject(e);
-            }
-        });
+        const jsonStr = JSONBig.stringify(freeResultMsg);
+        logger.debug("[wsClient.freeResult]===>" + jsonStr);
+        await this.getWsConnector().sendMsgNoResp(jsonStr);
     }
 
     async version(): Promise<string> {

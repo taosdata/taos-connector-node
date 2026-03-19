@@ -149,10 +149,8 @@ export class WebSocketConnectionPool {
             }
         }
         logger.info(
-            "destroyed connect:" +
-            Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
-            " current count:" +
-            num
+            "destroyed connect: " + Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
+            ", current count:" + num
         );
         Atomics.store(WebSocketConnectionPool.sharedArray, 0, 0);
         this.pool = new Map();

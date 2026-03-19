@@ -8,7 +8,6 @@ describe("WSConfig to Dsn conversion", () => {
         );
 
         const dsn = getDsn(conf);
-
         expect(dsn.scheme).toBe("ws");
         expect(dsn.addresses).toEqual([
             { host: "host1", port: 6041 },
@@ -33,7 +32,6 @@ describe("WSConfig to Dsn conversion", () => {
         conf.setDb("override_db");
 
         const dsn = getDsn(conf);
-
         expect(dsn.username).toBe("admin");
         expect(dsn.password).toBe("secret");
         expect(dsn.database).toBe("override_db");

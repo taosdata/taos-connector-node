@@ -26,10 +26,8 @@ describe("WebSocketConnectionPool key generation", () => {
         const dsnB = parse(
             "ws://root:taosdata@host1:6041,host2:6042/mydb?token=abc&timezone=UTC"
         );
-
         const keyA = (pool as any).getPoolKey(dsnA, "ws");
         const keyB = (pool as any).getPoolKey(dsnB, "ws");
-
         expect(keyA).toBe(keyB);
     });
 
@@ -37,10 +35,8 @@ describe("WebSocketConnectionPool key generation", () => {
         const pool = WebSocketConnectionPool.instance();
         const dsnUserA = parse("ws://root:taosdata@host1:6041/mydb");
         const dsnUserB = parse("ws://admin:taosdata@host1:6041/mydb");
-
         const keyA = (pool as any).getPoolKey(dsnUserA, "ws");
         const keyB = (pool as any).getPoolKey(dsnUserB, "ws");
-
         expect(keyA).not.toBe(keyB);
     });
 
@@ -48,20 +44,16 @@ describe("WebSocketConnectionPool key generation", () => {
         const pool = WebSocketConnectionPool.instance();
         const dsnA = parse("ws://host1:6041/mydb?token=token-a");
         const dsnB = parse("ws://host1:6041/mydb?token=token-b");
-
         const keyA = (pool as any).getPoolKey(dsnA, "ws");
         const keyB = (pool as any).getPoolKey(dsnB, "ws");
-
         expect(keyA).not.toBe(keyB);
     });
 
     test("includes websocket path in the pool key scope", () => {
         const pool = WebSocketConnectionPool.instance();
         const dsn = parse("ws://root:taosdata@host1:6041/mydb");
-
         const sqlKey = (pool as any).getPoolKey(dsn, "ws");
         const tmqKey = (pool as any).getPoolKey(dsn, "rest/tmq");
-
         expect(sqlKey).not.toBe(tmqKey);
     });
 });

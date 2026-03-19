@@ -290,3 +290,26 @@ export function maskTmqConfigForLog(config: TmqConfig): string {
         }
     });
 }
+
+export function parseNonNegativeInt(value: string | undefined | null, fallback: number): number {
+    return parseInt(value, fallback, (parsed) => parsed >= 0);
+}
+
+export function parsePositiveInt(value: string | undefined | null, fallback: number): number {
+    return parseInt(value, fallback, (parsed) => parsed > 0);
+}
+
+function parseInt(
+    value: string | undefined | null,
+    fallback: number,
+    isValid: (parsed: number) => boolean
+): number {
+    if (value === undefined || value === null || value.length === 0) {
+        return fallback;
+    }
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isNaN(parsed) || !isValid(parsed)) {
+        return fallback;
+    }
+    return parsed;
+}

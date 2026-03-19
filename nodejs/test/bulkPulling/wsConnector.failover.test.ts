@@ -256,7 +256,7 @@ describe("WebSocketConnector failover and retry", () => {
         expect(hasInflightRequest(connector, 202n)).toBe(false);
     });
 
-    test("sendMsgDirect triggers reconnect and unregisters callback on network send error", async () => {
+    test("sendMsgDirect unregisters callback on network send error without reconnect", async () => {
         const connector = createBareConnector();
         connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
         connector._conn.send = jest.fn(() => {
@@ -283,10 +283,10 @@ describe("WebSocketConnector failover and retry", () => {
 
         expect(registerSpy).toHaveBeenCalledTimes(1);
         expect(unregisterSpy).toHaveBeenCalledWith(3001n);
-        expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
+        expect(connector.triggerReconnect).not.toHaveBeenCalled();
     });
 
-    test("sendMsgNoResp triggers reconnect and rejects on network send error", async () => {
+    test("sendMsgNoResp rejects on network send error and triggers reconnect", async () => {
         const connector = createBareConnector();
         connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
         connector._conn.send = jest.fn(() => {

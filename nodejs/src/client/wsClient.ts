@@ -239,10 +239,7 @@ export class WsClient {
             if (logger.isDebugEnabled()) {
                 logger.debug("[wsQueryInterface.query.queryMsg]===>" + maskSensitiveForLog(queryMsg));
             }
-            if (
-                this._wsConnector &&
-                this._wsConnector.readyState() === w3cwebsocket.OPEN
-            ) {
+            if (this._wsConnector) {
                 this._wsConnector
                     .sendMsg(queryMsg)
                     .then((e: any) => {
@@ -359,11 +356,8 @@ export class WsClient {
 
     async sendMsg(msg: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            logger.debug("[wsQueryInterface.sendMsg]===>" + msg);
-            if (
-                this._wsConnector &&
-                this._wsConnector.readyState() === w3cwebsocket.OPEN
-            ) {
+            logger.debug("[wsClient.sendMsg]===>" + msg);
+            if (this._wsConnector) {
                 this._wsConnector
                     .sendMsg(msg)
                     .then((e: any) => {
@@ -391,7 +385,7 @@ export class WsClient {
         };
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(freeResultMsg);
-            logger.debug("[wsQueryInterface.freeResult.freeResultMsg]===>" + jsonStr);
+            logger.debug("[wsClient.freeResult]===>" + jsonStr);
             if (this._wsConnector) {
                 this._wsConnector
                     .sendMsgNoResp(jsonStr)
@@ -403,7 +397,7 @@ export class WsClient {
                 reject(
                     new TDWebSocketClientError(
                         ErrorCode.ERR_CONNECTION_CLOSED,
-                        "invalid websocket connect"
+                        "invalid websocket connection"
                     )
                 );
             }

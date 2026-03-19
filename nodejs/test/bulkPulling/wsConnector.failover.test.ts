@@ -136,8 +136,7 @@ describe("WebSocketConnector failover and retry", () => {
                 args: {
                     req_id: 101,
                 },
-            }),
-            false
+            })
         );
         void pending.catch(() => { });
 
@@ -165,8 +164,7 @@ describe("WebSocketConnector failover and retry", () => {
                     args: {
                         req_id: 102,
                     },
-                }),
-                false
+                })
             )
         ).rejects.toThrow("send failed");
         expect(hasInflightRequest(connector, 102n)).toBe(false);
@@ -185,8 +183,7 @@ describe("WebSocketConnector failover and retry", () => {
                 args: {
                     req_id: 111,
                 },
-            }),
-            false
+            })
         );
         void pending.catch(() => { });
 
@@ -214,8 +211,7 @@ describe("WebSocketConnector failover and retry", () => {
                     args: {
                         req_id: 112,
                     },
-                }),
-                false
+                })
             )
         ).rejects.toThrow("cannot call send() while not connected");
         expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
@@ -228,9 +224,9 @@ describe("WebSocketConnector failover and retry", () => {
         connector._conn.send = jest.fn(() => {
             throw new Error("cannot call send() while not connected");
         });
-        const message = buildBinaryMessage(6n);
 
-        const pending = connector.sendBinaryMsg(201n, "binary_query", message, false);
+        const message = buildBinaryMessage(6n);
+        const pending = connector.sendBinaryMsg(201n, "binary_query", message);
         void pending.catch(() => { });
 
         const state = await Promise.race([
@@ -249,10 +245,10 @@ describe("WebSocketConnector failover and retry", () => {
         connector._conn.send = jest.fn(() => {
             throw new Error("send failed");
         });
-        const message = buildBinaryMessage(7n);
 
+        const message = buildBinaryMessage(7n);
         await expect(
-            connector.sendBinaryMsg(202n, "fetch", message, false)
+            connector.sendBinaryMsg(202n, "fetch", message)
         ).rejects.toThrow("send failed");
         expect(hasInflightRequest(connector, 202n)).toBe(false);
     });
@@ -324,8 +320,7 @@ describe("WebSocketConnector failover and retry", () => {
                             req_id: reqId,
                             data: `insert into t values(now, ${reqId})`,
                         },
-                    }),
-                    false
+                    })
                 );
                 void pending.catch(() => { });
             })
@@ -356,8 +351,7 @@ describe("WebSocketConnector failover and retry", () => {
                         req_id: reqId,
                         data: `insert into t values(now, ${reqId})`,
                     },
-                }),
-                false
+                })
             );
             void pending.catch(() => { });
         }

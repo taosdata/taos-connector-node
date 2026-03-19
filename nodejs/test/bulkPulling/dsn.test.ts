@@ -448,4 +448,33 @@ describe("dsn", () => {
             ).toThrow("Unclosed bracket");
         });
     });
+
+    describe("toString", () => {
+        test("masks password and sensitive params", () => {
+            const dsn = parse(
+                "ws://root:taosdata@localhost:6041/mydb?token=t1&bearer_token=b1&td.connect.token=c1&timezone=UTC"
+            );
+
+            const masked = JSON.parse(dsn.toString());
+
+            expect(masked.password).toBe("[REDACTED]");
+            expect(masked.params.token).toBe("[REDACTED]");
+            expect(masked.params.bearer_token).toBe("[REDACTED]");
+            expect(masked.params["td.connect.token"]).toBe("[REDACTED]");
+            expect(masked.params.timezone).toBe("UTC");
+        });
+
+        test("treats sensitive param keys as case-insensitive", () => {
+            const dsn = parse(
+                "ws://root:taosdata@localhost:6041?Token=t1&Bearer_Token=b1&TD.CONNECT.TOKEN=c1"
+            );
+
+            const masked = JSON.parse(dsn.toString());
+            console.log(masked);
+
+            expect(masked.params.Token).toBe("[REDACTED]");
+            expect(masked.params.Bearer_Token).toBe("[REDACTED]");
+            expect(masked.params["TD.CONNECT.TOKEN"]).toBe("[REDACTED]");
+        });
+    });
 });

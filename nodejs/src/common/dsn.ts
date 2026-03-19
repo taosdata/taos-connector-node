@@ -1,17 +1,67 @@
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
 
-export interface Address {
+export class Address {
     host: string;
     port: number;
+
+    constructor(host: string, port: number) {
+        this.host = host;
+        this.port = port;
+    }
 }
 
-export interface Dsn {
+const REDACTED = "[REDACTED]";
+const SENSITIVE_PARAM_KEYS = new Set([
+    "token",
+    "bearer_token",
+    "td.connect.token",
+]);
+
+function shouldMaskParam(key: string): boolean {
+    return SENSITIVE_PARAM_KEYS.has(key.toLowerCase());
+}
+
+export class Dsn {
     scheme: string;
     username: string;
     password: string;
     addresses: Address[];
     database: string;
     params: Map<string, string>;
+
+    constructor(
+        scheme: string,
+        username: string,
+        password: string,
+        addresses: Address[],
+        database: string,
+        params: Map<string, string>,
+    ) {
+        this.scheme = scheme;
+        this.username = username;
+        this.password = password;
+        this.addresses = addresses.map((address) =>
+            new Address(address.host, address.port)
+        );
+        this.database = database;
+        this.params = new Map(params);
+    }
+
+    toString(): string {
+        const params: Record<string, string> = {};
+        for (const [key, value] of this.params.entries()) {
+            params[key] = shouldMaskParam(key) ? REDACTED : value;
+        }
+
+        return JSON.stringify({
+            scheme: this.scheme,
+            username: this.username,
+            password: this.password.length > 0 ? REDACTED : this.password,
+            addresses: this.addresses,
+            database: this.database,
+            params,
+        });
+    }
 }
 
 /**
@@ -95,14 +145,14 @@ export function parse(url: string): Dsn {
         }
     }
 
-    return {
-        addresses: dedupedHosts,
+    return new Dsn(
         scheme,
         username,
         password,
+        dedupedHosts,
         database,
         params,
-    };
+    );
 }
 
 export const DEFAULT_PORT = 6041;
@@ -161,7 +211,7 @@ function parseHostList(hostStr: string): Address[] {
             } else {
                 i = next;
             }
-            hosts.push({ host: `[${ipv6Host}]`, port });
+            hosts.push(new Address(`[${ipv6Host}]`, port));
         } else {
             // Regular host or IPv4
             const commaIndex = hostStr.indexOf(",", i);
@@ -173,9 +223,9 @@ function parseHostList(hostStr: string): Address[] {
             if (lastColon !== -1) {
                 const host = segment.slice(0, lastColon);
                 const port = parsePort(segment.slice(lastColon + 1), hostStr, host);
-                hosts.push({ host, port });
+                hosts.push(new Address(host, port));
             } else {
-                hosts.push({ host: segment, port: getDefaultPortForHost(segment) });
+                hosts.push(new Address(segment, getDefaultPortForHost(segment)));
             }
             i = commaIndex === -1 ? hostStr.length : commaIndex;
         }

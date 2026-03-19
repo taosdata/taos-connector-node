@@ -1,7 +1,7 @@
 import JSONBig from "json-bigint";
 import { WebSocketConnector } from "./wsConnector";
 import { WebSocketConnectionPool } from "./wsConnectorPool";
-import { Dsn, getDefaultPortForHost } from "../common/dsn";
+import { Address, Dsn, getDefaultPortForHost } from "../common/dsn";
 import {
     ErrorCode,
     TDWebSocketClientError,
@@ -15,8 +15,6 @@ import {
     safeDecodeURIComponent,
     compareVersions,
     maskSensitiveForLog,
-    maskUrlForLog,
-    normalizePath,
 } from "../common/utils";
 import { w3cwebsocket } from "websocket";
 import { ConnectorInfo, TSDB_OPTION_CONNECTION } from "../common/constant";
@@ -36,16 +34,10 @@ export class WsClient {
     constructor(urlOrDsn: URL | Dsn, timeout?: number | undefined | null) {
         if (urlOrDsn instanceof URL) {
             this._dsn = this.convertUrlToDsn(urlOrDsn);
-            this._path = normalizePath(urlOrDsn.pathname);
+            this._path = urlOrDsn.pathname;
         } else {
-            this._dsn = {
-                scheme: urlOrDsn.scheme,
-                username: urlOrDsn.username,
-                password: urlOrDsn.password,
-                addresses: [...urlOrDsn.addresses],
-                database: urlOrDsn.database,
-                params: new Map(urlOrDsn.params),
-            };
+            this._dsn = urlOrDsn;
+            // TODO: support tmq path
             this._path = "ws";
         }
         this.checkAuth();
@@ -55,9 +47,6 @@ export class WsClient {
         }
         if (this._dsn.params.has("bearer_token")) {
             this._bearerToken = this._dsn.params.get("bearer_token") || undefined;
-        }
-        if (this._dsn.database.length > 0) {
-            this._connectedDatabase = this._dsn.database;
         }
     }
 
@@ -69,37 +58,14 @@ export class WsClient {
         url.searchParams.forEach((value, key) => {
             params.set(key, value);
         });
-        return {
+        return new Dsn(
             scheme,
-            username: url.username,
-            password: url.password,
-            addresses: [{ host, port }],
-            database: "",
+            url.username,
+            url.password,
+            [new Address(host, port)],
+            "",
             params,
-        };
-    }
-
-    private buildLogUrl(): URL {
-        const addr = this._dsn.addresses[0];
-        const url = new URL(`${this._dsn.scheme}://${addr.host}:${addr.port}/${this._path}`);
-        url.username = this._dsn.username;
-        url.password = this._dsn.password;
-        const skipParams = new Set([
-            "retries",
-            "retry_backoff_ms",
-            "retry_backoff_max_ms",
-            "timezone",
-        ]);
-        for (const [key, value] of this._dsn.params) {
-            if (!skipParams.has(key)) {
-                url.searchParams.set(key, value);
-            }
-        }
-        return url;
-    }
-
-    private maskedLogUrl(): string {
-        return maskUrlForLog(this.buildLogUrl());
+        );
     }
 
     private buildConnMessage(database?: string | undefined | null) {
@@ -190,11 +156,10 @@ export class WsClient {
             throw new WebSocketQueryError(result.msg.code, result.msg.message);
         } catch (e: any) {
             await this.close();
-            const maskedUrl = this.maskedLogUrl();
-            logger.error(`connection creation failed, url:${maskedUrl}, code:${e.code}, msg:${e.message}`);
+            logger.error(`connection creation failed, url:${this._dsn}, code:${e.code}, msg:${e.message}`);
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `connection creation failed, url:${maskedUrl}, code:${e.code}, msg:${e.message}`
+                `connection creation failed, url:${this._dsn}, code:${e.code}, msg:${e.message}`
             );
         }
     }
@@ -265,7 +230,7 @@ export class WsClient {
                 reject(
                     new TDWebSocketClientError(
                         ErrorCode.ERR_CONNECTION_CLOSED,
-                        "invalid websocket connect"
+                        "invalid websocket connection"
                     )
                 );
             }
@@ -313,7 +278,7 @@ export class WsClient {
                 reject(
                     new TDWebSocketClientError(
                         ErrorCode.ERR_CONNECTION_CLOSED,
-                        "invalid websocket connect"
+                        "invalid websocket connection"
                     )
                 );
             }
@@ -339,17 +304,18 @@ export class WsClient {
                 await this._wsConnector.ready();
             }
             if (logger.isDebugEnabled()) {
-                logger.debug("ready status ", this.maskedLogUrl(), this._wsConnector.readyState());
+                logger.debug(
+                    `ready status, dsn: ${this._dsn}, state: ${this._wsConnector.readyState()}`
+                );
             }
             return;
         } catch (e: any) {
-            const maskedUrl = this.maskedLogUrl();
             logger.error(
-                `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
+                `connection creation failed, url: ${this._dsn}, code: ${e.code}, message: ${e.message}`
             );
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
+                `connection creation failed, url: ${this._dsn}, code: ${e.code}, message: ${e.message}`
             );
         }
     }
@@ -368,7 +334,7 @@ export class WsClient {
                 reject(
                     new TDWebSocketClientError(
                         ErrorCode.ERR_CONNECTION_CLOSED,
-                        "invalid websocket connect"
+                        "invalid websocket connection"
                     )
                 );
             }
@@ -427,13 +393,12 @@ export class WsClient {
                 }
                 throw new WebSocketInterfaceError(result.msg.code, result.msg.message);
             } catch (e: any) {
-                const maskedUrl = this.maskedLogUrl();
                 logger.error(
-                    `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
+                    `connection creation failed, url: ${this._dsn}, code: ${e.code}, message: ${e.message}`
                 );
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                    `connection creation failed, url: ${maskedUrl}, code: ${e.code}, message: ${e.message}`
+                    `connection creation failed, url: ${this._dsn}, code: ${e.code}, message: ${e.message}`
                 );
             }
         }

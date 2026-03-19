@@ -46,6 +46,10 @@ function createBareConnector(): any {
     connector._retryConfig = new RetryConfig(1, 1, 8);
     connector._reconnectLock = null;
     connector._isReconnecting = false;
+    connector._allowReconnect = true;
+    connector._connectionReady = Promise.resolve();
+    connector._suppressedSockets = new WeakSet();
+    connector._sessionRecoveryHook = null;
     connector._inflightStore = createInflightStore();
     connector._conn = {
         readyState: 1,
@@ -121,6 +125,85 @@ describe("WebSocketConnector failover and retry", () => {
             "host2:6042",
         ]);
         expect(connector._currentAddressIndex).toBe(1);
+    });
+
+    test("attemptReconnect throws after all addresses and retries are exhausted", async () => {
+        const connector = createBareConnector();
+        connector.sleep = jest.fn(async () => { });
+        connector.reconnect = jest.fn(async () => {
+            throw new Error("all down");
+        });
+
+        await expect(connector.attemptReconnect()).rejects.toThrow(
+            "Failed to reconnect to any available address"
+        );
+        expect(connector.reconnect).toHaveBeenCalledTimes(2);
+        expect(connector._currentAddressIndex).toBe(1);
+    });
+
+    test("handleDisconnect skips reconnect when reconnect is disabled", async () => {
+        const connector = createBareConnector();
+        connector._allowReconnect = false;
+        connector.triggerReconnect = jest.fn();
+
+        await connector.handleDisconnect(connector._conn);
+        expect(connector.triggerReconnect).not.toHaveBeenCalled();
+    });
+
+    test("handleDisconnect skips reconnect on normal close", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn();
+
+        await connector.handleDisconnect(
+            connector._conn,
+            { code: 1000, reason: "normal close" }
+        );
+        expect(connector.triggerReconnect).not.toHaveBeenCalled();
+    });
+
+    test("handleDisconnect swallows reconnect failure", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(async () => {
+            throw new Error("reconnect failed");
+        });
+
+        await expect(
+            connector.handleDisconnect(
+                connector._conn,
+                { code: 1006, reason: "abnormal close" }
+            )
+        ).resolves.toBeUndefined();
+        expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
+    });
+
+    test("_doReconnect fails all inflight requests when reconnect fails", async () => {
+        const connector = createBareConnector();
+        const rejectSpy = jest.fn();
+        connector.attemptReconnect = jest.fn(async () => {
+            throw new Error("reconnect failed");
+        });
+        connector._inflightStore.insert({
+            reqId: 901n,
+            action: "insert",
+            message: JSON.stringify({
+                action: "insert",
+                args: { req_id: 901 },
+            }),
+            resolve: jest.fn(),
+            reject: rejectSpy,
+        });
+
+        await expect(connector._doReconnect()).rejects.toThrow("reconnect failed");
+        expect(rejectSpy).toHaveBeenCalledTimes(1);
+        expect(hasInflightRequest(connector, 901n)).toBe(false);
+    });
+
+    test("close disables reconnect and closes current socket", () => {
+        const connector = createBareConnector();
+        connector.close();
+        expect(connector._allowReconnect).toBe(false);
+        expect(connector._conn.close).toHaveBeenCalledTimes(1);
+        expect(connector._suppressedSockets.has(connector._conn)).toBe(true);
     });
 
     test("triggers reconnect and keeps retriable string request inflight when send throws", async () => {

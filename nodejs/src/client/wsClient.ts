@@ -92,6 +92,16 @@ export class WsClient {
         throw new WebSocketQueryError(code, message);
     }
 
+    private getWsConnector(): WebSocketConnector {
+        if (!this._wsConnector) {
+            throw new TDWebSocketClientError(
+                ErrorCode.ERR_CONNECTION_CLOSED,
+                "Invalid websocket connection"
+            );
+        }
+        return this._wsConnector;
+    }
+
     private bindReconnectRecoveryHook(): void {
         if (!this._wsConnector) {
             return;
@@ -156,10 +166,10 @@ export class WsClient {
             throw new WebSocketQueryError(result.msg.code, result.msg.message);
         } catch (e: any) {
             await this.close();
-            logger.error(`connection creation failed, url:${this._dsn}, code:${e.code}, msg:${e.message}`);
+            logger.error(`connection creation failed, dsn:${this._dsn}, code:${e.code}, msg:${e.message}`);
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `connection creation failed, url:${this._dsn}, code:${e.code}, msg:${e.message}`
+                `connection creation failed, dsn:${this._dsn}, code:${e.code}, msg:${e.message}`
             );
         }
     }
@@ -189,14 +199,8 @@ export class WsClient {
 
     async execNoResp(message: string): Promise<void> {
         logger.debug("[wsClient.execNoResp]===>" + message);
-        if (this._wsConnector) {
-            await this._wsConnector.sendMsgNoResp(message);
-            return;
-        }
-        throw new TDWebSocketClientError(
-            ErrorCode.ERR_CONNECTION_CLOSED,
-            "invalid websocket connection"
-        );
+        const connector = this.getWsConnector();
+        await connector.sendMsgNoResp(message);
     }
 
     async exec(queryMsg: string, bSqlQuery: boolean = true): Promise<any> {
@@ -204,8 +208,8 @@ export class WsClient {
             if (logger.isDebugEnabled()) {
                 logger.debug("[wsQueryInterface.query.queryMsg]===>" + maskSensitiveForLog(queryMsg));
             }
-            if (this._wsConnector) {
-                this._wsConnector
+            try {
+                this.getWsConnector()
                     .sendMsg(queryMsg)
                     .then((e: any) => {
                         if (e.msg.code == 0) {
@@ -226,13 +230,8 @@ export class WsClient {
                     .catch((e) => {
                         reject(e);
                     });
-            } else {
-                reject(
-                    new TDWebSocketClientError(
-                        ErrorCode.ERR_CONNECTION_CLOSED,
-                        "invalid websocket connection"
-                    )
-                );
+            } catch (e) {
+                reject(e);
             }
         });
     }
@@ -245,11 +244,8 @@ export class WsClient {
         bResultBinary: boolean = false
     ): Promise<any> {
         return new Promise((resolve, reject) => {
-            if (
-                this._wsConnector &&
-                this._wsConnector.readyState() === w3cwebsocket.OPEN
-            ) {
-                this._wsConnector
+            try {
+                this.getWsConnector()
                     .sendBinaryMsg(reqId, action, message)
                     .then((e: any) => {
                         if (bResultBinary) {
@@ -274,13 +270,8 @@ export class WsClient {
                     .catch((e) => {
                         reject(e);
                     });
-            } else {
-                reject(
-                    new TDWebSocketClientError(
-                        ErrorCode.ERR_CONNECTION_CLOSED,
-                        "invalid websocket connection"
-                    )
-                );
+            } catch (e) {
+                reject(e);
             }
         });
     }
@@ -311,11 +302,11 @@ export class WsClient {
             return;
         } catch (e: any) {
             logger.error(
-                `connection creation failed, url: ${this._dsn}, code: ${e.code}, message: ${e.message}`
+                `connection creation failed, dsn: ${this._dsn}, code: ${e.code}, message: ${e.message}`
             );
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                `connection creation failed, url: ${this._dsn}, code: ${e.code}, message: ${e.message}`
+                `connection creation failed, dsn: ${this._dsn}, code: ${e.code}, message: ${e.message}`
             );
         }
     }
@@ -323,20 +314,15 @@ export class WsClient {
     async sendMsg(msg: string): Promise<any> {
         return new Promise((resolve, reject) => {
             logger.debug("[wsClient.sendMsg]===>" + msg);
-            if (this._wsConnector) {
-                this._wsConnector
+            try {
+                this.getWsConnector()
                     .sendMsg(msg)
                     .then((e: any) => {
                         resolve(e);
                     })
                     .catch((e) => reject(e));
-            } else {
-                reject(
-                    new TDWebSocketClientError(
-                        ErrorCode.ERR_CONNECTION_CLOSED,
-                        "invalid websocket connection"
-                    )
-                );
+            } catch (e) {
+                reject(e);
             }
         });
     }
@@ -352,20 +338,15 @@ export class WsClient {
         return new Promise((resolve, reject) => {
             let jsonStr = JSONBig.stringify(freeResultMsg);
             logger.debug("[wsClient.freeResult]===>" + jsonStr);
-            if (this._wsConnector) {
-                this._wsConnector
+            try {
+                this.getWsConnector()
                     .sendMsgNoResp(jsonStr)
                     .then((e: any) => {
                         resolve(e);
                     })
                     .catch((e) => reject(e));
-            } else {
-                reject(
-                    new TDWebSocketClientError(
-                        ErrorCode.ERR_CONNECTION_CLOSED,
-                        "invalid websocket connection"
-                    )
-                );
+            } catch (e) {
+                reject(e);
             }
         });
     }
@@ -382,30 +363,25 @@ export class WsClient {
             },
         };
 
-        if (this._wsConnector) {
-            try {
-                if (this._wsConnector.readyState() !== w3cwebsocket.OPEN) {
-                    await this._wsConnector.ready();
-                }
-                let result: any = await this._wsConnector.sendMsg(JSONBig.stringify(versionMsg));
-                if (result.msg.code == 0) {
-                    return new WSVersionResponse(result).version;
-                }
-                throw new WebSocketInterfaceError(result.msg.code, result.msg.message);
-            } catch (e: any) {
-                logger.error(
-                    `connection creation failed, url: ${this._dsn}, code: ${e.code}, message: ${e.message}`
-                );
-                throw new TDWebSocketClientError(
-                    ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                    `connection creation failed, url: ${this._dsn}, code: ${e.code}, message: ${e.message}`
-                );
+        try {
+            const connector = this.getWsConnector();
+            if (connector.readyState() !== w3cwebsocket.OPEN) {
+                await connector.ready();
             }
+            let result: any = await connector.sendMsg(JSONBig.stringify(versionMsg));
+            if (result.msg.code == 0) {
+                return new WSVersionResponse(result).version;
+            }
+            throw new WebSocketInterfaceError(result.msg.code, result.msg.message);
+        } catch (e: any) {
+            logger.error(
+                `connection creation failed, dsn: ${this._dsn}, code: ${e.code}, message: ${e.message}`
+            );
+            throw new TDWebSocketClientError(
+                ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
+                `connection creation failed, dsn: ${this._dsn}, code: ${e.code}, message: ${e.message}`
+            );
         }
-        throw new TDWebSocketClientError(
-            ErrorCode.ERR_CONNECTION_CLOSED,
-            "invalid websocket connect"
-        );
     }
 
     async close(): Promise<void> {

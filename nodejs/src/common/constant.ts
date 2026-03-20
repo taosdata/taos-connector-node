@@ -12,9 +12,17 @@ export interface NumberIndexable {
     [index: number]: number;
 }
 
-export const ConnectorInfo = `nodejs-ws-v${pkg.version}-ncid000`;
+export type WebSocketEndpoint = "sql" | "tmq";
+export const WS_SQL_ENDPOINT: WebSocketEndpoint = "sql";
+export const WS_TMQ_ENDPOINT: WebSocketEndpoint = "tmq";
+
 export const WS_SQL_PATH = "ws";
 export const WS_TMQ_PATH = "rest/tmq";
+export function endpointToPath(endpoint: WebSocketEndpoint): string {
+    return endpoint === WS_TMQ_ENDPOINT ? WS_TMQ_PATH : WS_SQL_PATH;
+}
+
+export const ConnectorInfo = `nodejs-ws-v${pkg.version}-ncid000`;
 export const BinaryQueryMessage: bigint = BigInt(6);
 export const FetchRawBlockMessage: bigint = BigInt(7);
 export const MinStmt2Version: string = "3.3.6.0";

@@ -1,4 +1,5 @@
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
+import { WebSocketEndpoint, WS_SQL_ENDPOINT } from "./constant";
 
 export class Address {
     host: string;
@@ -28,6 +29,7 @@ export class Dsn {
     addresses: Address[];
     database: string;
     params: Map<string, string>;
+    endpoint: WebSocketEndpoint;
 
     constructor(
         scheme: string,
@@ -36,6 +38,7 @@ export class Dsn {
         addresses: Address[],
         database: string,
         params: Map<string, string>,
+        endpoint: WebSocketEndpoint = WS_SQL_ENDPOINT,
     ) {
         this.scheme = scheme;
         this.username = username;
@@ -45,6 +48,7 @@ export class Dsn {
         );
         this.database = database;
         this.params = new Map(params);
+        this.endpoint = endpoint;
     }
 
     toString(): string {
@@ -60,6 +64,7 @@ export class Dsn {
             addresses: this.addresses,
             database: this.database,
             params,
+            endpoint: this.endpoint,
         });
     }
 }

@@ -7,10 +7,10 @@ import {
 } from "../common/wsError";
 import { OnMessageType, WsEventCallback } from "./wsEventCallback";
 import logger from "../common/log";
+import { endpointToPath } from "../common/constant";
 import {
     maskSensitiveForLog,
     maskUrlForLog,
-    normalizePath,
     parseNonNegativeInt,
     parsePositiveInt
 } from "../common/utils";
@@ -135,7 +135,6 @@ export class WebSocketConnector {
     private readonly _addresses: Address[];
     private _currentAddressIndex: number;
     private readonly _retryConfig: RetryConfig;
-    // TODO: use Dsn replacement to simplify the constructor parameters
     private readonly _scheme: string;
     private readonly _path: string;
     private readonly _params: Map<string, string>;
@@ -150,7 +149,6 @@ export class WebSocketConnector {
 
     constructor(
         dsn: Dsn,
-        path: string,
         poolKey: string,
         timeout: number | undefined | null
     ) {
@@ -165,7 +163,7 @@ export class WebSocketConnector {
         this._currentAddressIndex = this.selectRandomIndex();
         this._retryConfig = RetryConfig.fromDsn(dsn);
         this._scheme = dsn.scheme;
-        this._path = normalizePath(path);
+        this._path = endpointToPath(dsn.endpoint);
         this._params = new Map(dsn.params);
         this._inflightStore = new InflightRequestStore();
         if (timeout) {

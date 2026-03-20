@@ -2,6 +2,7 @@ import { w3cwebsocket } from "websocket";
 import { WsClient } from "../../src/client/wsClient";
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { parse } from "../../src/common/dsn";
+import { WS_TMQ_ENDPOINT } from "../../src/common/constant";
 
 function createMockConnector() {
     return {
@@ -21,28 +22,30 @@ describe("WsClient recovery hook", () => {
         jest.restoreAllMocks();
     });
 
-    test("passes normalized custom path when using dsn", async () => {
+    test("uses dsn endpoint when creating connection", async () => {
         const dsn = parse("ws://root:taosdata@localhost:6041");
+        dsn.endpoint = WS_TMQ_ENDPOINT;
         const connector = createMockConnector();
         const getConnectionSpy = jest
             .spyOn(WebSocketConnectionPool.instance(), "getConnection")
             .mockResolvedValue(connector as any);
 
-        const client = new WsClient(dsn, 4321, "/rest/tmq");
+        const client = new WsClient(dsn, 4321);
         await client.ready();
 
-        expect(getConnectionSpy).toHaveBeenCalledWith(dsn, "rest/tmq", 4321);
+        expect(getConnectionSpy).toHaveBeenCalledWith(dsn, 4321);
     });
 
     test("runs custom recovery hook without sql conn recovery on tmq path", async () => {
         const dsn = parse("ws://root:taosdata@localhost:6041");
+        dsn.endpoint = WS_TMQ_ENDPOINT;
         const connector = createMockConnector();
         jest
             .spyOn(WebSocketConnectionPool.instance(), "getConnection")
             .mockResolvedValue(connector as any);
 
         const customRecoveryHook = jest.fn(async () => { });
-        const client = new WsClient(dsn, 5000, "/rest/tmq");
+        const client = new WsClient(dsn, 5000);
         client.setSessionRecoveryHook(customRecoveryHook);
         await client.ready();
 
@@ -55,7 +58,7 @@ describe("WsClient recovery hook", () => {
         expect(customRecoveryHook).toHaveBeenCalledTimes(1);
     });
 
-    test("keeps sql conn recovery and then runs custom recovery on /ws path", async () => {
+    test("keeps sql conn recovery and then runs custom recovery on sql endpoint", async () => {
         const dsn = parse("ws://root:taosdata@localhost:6041");
         const connector = createMockConnector();
         const callOrder: string[] = [];
@@ -68,7 +71,7 @@ describe("WsClient recovery hook", () => {
             .spyOn(WebSocketConnectionPool.instance(), "getConnection")
             .mockResolvedValue(connector as any);
 
-        const client = new WsClient(dsn, 5000, "/ws");
+        const client = new WsClient(dsn, 5000);
         (client as any)._connectedDatabase = "db_recovery";
         client.setSessionRecoveryHook(async () => {
             callOrder.push("custom");

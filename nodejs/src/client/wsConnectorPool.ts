@@ -5,6 +5,7 @@ import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
 import { w3cwebsocket } from "websocket";
 import { WebSocketConnector } from "./wsConnector";
+import { endpointToPath } from "../common/constant";
 
 const mutex = new Mutex();
 
@@ -40,21 +41,21 @@ export class WebSocketConnectionPool {
         return createHash("sha256").update(raw).digest("hex");
     }
 
-    private getPoolKey(dsn: Dsn, path: string): string {
+    private getPoolKey(dsn: Dsn): string {
         const addrs = [...dsn.addresses]
             .sort((a, b) => `${a.host}:${a.port}`.localeCompare(`${b.host}:${b.port}`))
             .map((addr) => `${addr.host}:${addr.port}`)
             .join(",");
         const auth = this.buildAuth(dsn);
+        const path = endpointToPath(dsn.endpoint);
         return `${dsn.scheme}://${addrs}/${path}#auth=${auth}`;
     }
 
     async getConnection(
         dsn: Dsn,
-        path: string,
         timeout: number | undefined | null
     ): Promise<WebSocketConnector> {
-        const poolKey = this.getPoolKey(dsn, path);
+        const poolKey = this.getPoolKey(dsn);
         const poolKeyForLog = this.maskPoolKeyForLog(poolKey);
         let connector: WebSocketConnector | undefined;
         const unlock = await mutex.acquire();
@@ -104,7 +105,7 @@ export class WebSocketConnectionPool {
                     poolKeyForLog
                 );
             }
-            return new WebSocketConnector(dsn, path, poolKey, timeout);
+            return new WebSocketConnector(dsn, poolKey, timeout);
         } finally {
             unlock();
         }

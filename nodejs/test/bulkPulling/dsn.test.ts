@@ -1,4 +1,5 @@
 import { parse } from "../../src/common/dsn";
+import { WS_SQL_ENDPOINT } from "../../src/common/constant";
 
 describe("dsn", () => {
     describe("parse", () => {
@@ -10,6 +11,7 @@ describe("dsn", () => {
             expect(result.addresses).toEqual([{ host: "localhost", port: 6041 }]);
             expect(result.database).toBe("");
             expect(result.params.size).toBe(0);
+            expect(result.endpoint).toBe(WS_SQL_ENDPOINT);
         });
 
         test("single host with database", () => {

@@ -23,11 +23,7 @@ import { ReqId } from "../common/reqid";
 import logger from "../common/log";
 import { WSFetchBlockResponse } from "../client/wsResponse";
 import { maskTmqConfigForLog } from "../common/utils";
-import {
-    ConnectorInfo,
-    WS_SQL_PATH,
-    WS_TMQ_PATH,
-} from "../common/constant";
+import { ConnectorInfo } from "../common/constant";
 
 export class WsConsumer {
     private _wsClient: WsClient;
@@ -47,11 +43,7 @@ export class WsConsumer {
                 "invalid url, password or username needed."
             );
         }
-        this._wsClient = new WsClient(
-            this._wsConfig.dsn,
-            this._wsConfig.timeout,
-            WS_TMQ_PATH
-        );
+        this._wsClient = new WsClient(this._wsConfig.dsn, this._wsConfig.timeout);
         this.bindSessionRecoveryHook();
         this._lastMessageID = BigInt(0);
     }
@@ -60,11 +52,7 @@ export class WsConsumer {
         let wsSql = null;
         try {
             if (this._wsConfig.sqlDsn) {
-                wsSql = new WsClient(
-                    this._wsConfig.sqlDsn,
-                    this._wsConfig.timeout,
-                    WS_SQL_PATH
-                );
+                wsSql = new WsClient(this._wsConfig.sqlDsn, this._wsConfig.timeout);
                 await wsSql.connect();
                 await wsSql.checkVersion();
                 await this._wsClient.ready();

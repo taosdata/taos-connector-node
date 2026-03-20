@@ -1,6 +1,7 @@
 import { TmqConfig } from "../../src/tmq/config";
 import { TMQConstants } from "../../src/tmq/constant";
 import { testPassword, testUsername } from "../helpers/utils";
+import { WS_SQL_ENDPOINT, WS_TMQ_ENDPOINT } from "../../src/common/constant";
 
 describe("TmqConfig with dsn", () => {
     const baseDsn = "ws://localhost:6041";
@@ -50,6 +51,8 @@ describe("TmqConfig with dsn", () => {
             { host: "host1", port: 6041 },
             { host: "host2", port: 6042 },
         ]);
+        expect(cfg.dsn?.endpoint).toBe(WS_TMQ_ENDPOINT);
+        expect(cfg.sqlDsn?.endpoint).toBe(WS_SQL_ENDPOINT);
         expect(cfg.dsn?.params.get("retries")).toBe("5");
         expect(cfg.dsn?.params.get("retry_backoff_ms")).toBe("120");
     });

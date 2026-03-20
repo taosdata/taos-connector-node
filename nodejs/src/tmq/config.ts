@@ -1,4 +1,5 @@
 import { Dsn, parse } from "../common/dsn";
+import { WS_TMQ_ENDPOINT } from "../common/constant";
 import { TMQConstants } from "./constant";
 
 export class TmqConfig {
@@ -22,6 +23,7 @@ export class TmqConfig {
             switch (key) {
                 case TMQConstants.WS_URL:
                     this.dsn = parse(value);
+                    this.dsn.endpoint = WS_TMQ_ENDPOINT;
                     break;
                 case TMQConstants.CONNECT_USER:
                     this.user = value;
@@ -81,18 +83,14 @@ export class TmqConfig {
                 }
             }
 
-            this.sqlDsn = this.cloneDsn(this.dsn);
+            this.sqlDsn = new Dsn(
+                this.dsn.scheme,
+                this.dsn.username,
+                this.dsn.password,
+                this.dsn.addresses,
+                this.dsn.database,
+                this.dsn.params
+            )
         }
-    }
-
-    private cloneDsn(dsn: Dsn): Dsn {
-        return new Dsn(
-            dsn.scheme,
-            dsn.username,
-            dsn.password,
-            dsn.addresses,
-            dsn.database,
-            dsn.params
-        );
     }
 }

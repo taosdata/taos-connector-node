@@ -15,13 +15,12 @@ import {
     safeDecodeURIComponent,
     compareVersions,
     maskSensitiveForLog,
-    normalizePath,
 } from "../common/utils";
 import { w3cwebsocket } from "websocket";
 import {
     ConnectorInfo,
     TSDB_OPTION_CONNECTION,
-    WS_SQL_PATH,
+    WS_SQL_ENDPOINT,
 } from "../common/constant";
 
 type SessionRecoveryHook = () => Promise<void>;
@@ -31,7 +30,6 @@ export class WsClient {
     private _timeout?: number | undefined | null;
     private _timezone?: string | undefined | null;
     private readonly _dsn: Dsn;
-    private readonly _path: string;
     private static readonly _minVersion = "3.3.2.0";
     private _version?: string | undefined | null;
     private _bearerToken?: string | undefined | null;
@@ -41,15 +39,12 @@ export class WsClient {
 
     constructor(
         urlOrDsn: URL | Dsn,
-        timeout?: number | undefined | null,
-        path?: string
+        timeout?: number | undefined | null
     ) {
         if (urlOrDsn instanceof URL) {
             this._dsn = this.convertUrlToDsn(urlOrDsn);
-            this._path = normalizePath(path ?? urlOrDsn.pathname);
         } else {
             this._dsn = urlOrDsn;
-            this._path = normalizePath(path ?? WS_SQL_PATH);
         }
         this.checkAuth();
         this._timeout = timeout;
@@ -129,7 +124,7 @@ export class WsClient {
     }
 
     private isSqlPath(): boolean {
-        return this._path === WS_SQL_PATH;
+        return this._dsn.endpoint === WS_SQL_ENDPOINT;
     }
 
     private async recoverSqlSessionContext(): Promise<void> {
@@ -181,7 +176,6 @@ export class WsClient {
         }
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
             this._dsn,
-            this._path,
             this._timeout
         );
         this.bindReconnectRecoveryHook();
@@ -314,7 +308,6 @@ export class WsClient {
         try {
             this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
                 this._dsn,
-                this._path,
                 this._timeout
             );
             this.bindReconnectRecoveryHook();

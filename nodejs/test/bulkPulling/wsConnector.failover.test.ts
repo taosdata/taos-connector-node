@@ -264,6 +264,35 @@ describe("WebSocketConnector failover and retry", () => {
         connector.failAllInflightRequests(new Error("cleanup"));
     });
 
+    test("triggers reconnect and keeps retriable subscribe request inflight when send throws", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => {
+            throw new Error("cannot call send() while not connected");
+        });
+
+        const pending = connector.sendMsg(
+            JSON.stringify({
+                action: "subscribe",
+                args: {
+                    req_id: 110,
+                    topics: ["topic_a"],
+                },
+            })
+        );
+        void pending.catch(() => { });
+
+        const state = await Promise.race([
+            pending.then(() => "resolved").catch(() => "rejected"),
+            delay(20).then(() => "pending"),
+        ]);
+
+        expect(state).toBe("pending");
+        expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
+        expect(hasInflightRequest(connector, 110n)).toBe(true);
+        connector.failAllInflightRequests(new Error("cleanup"));
+    });
+
     test("rejects non-retriable string request immediately when send throws", async () => {
         const connector = createBareConnector();
         connector._conn.send = jest.fn(() => {
@@ -308,6 +337,34 @@ describe("WebSocketConnector failover and retry", () => {
         expect(state).toBe("rejected");
         expect(connector.triggerReconnect).not.toHaveBeenCalled();
         expect(hasInflightRequest(connector, 111n)).toBe(false);
+    });
+
+    test("rejects retriable subscribe request immediately when send throws with non-network error", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => {
+            throw new Error("serialize failed");
+        });
+
+        const pending = connector.sendMsg(
+            JSON.stringify({
+                action: "subscribe",
+                args: {
+                    req_id: 113,
+                    topics: ["topic_a"],
+                },
+            })
+        );
+        void pending.catch(() => { });
+
+        const state = await Promise.race([
+            pending.then(() => "resolved").catch(() => "rejected"),
+            delay(20).then(() => "pending"),
+        ]);
+
+        expect(state).toBe("rejected");
+        expect(connector.triggerReconnect).not.toHaveBeenCalled();
+        expect(hasInflightRequest(connector, 113n)).toBe(false);
     });
 
     test("triggers reconnect and rejects non-retriable string request on network send error", async () => {

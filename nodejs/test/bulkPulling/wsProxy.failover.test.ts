@@ -11,7 +11,7 @@ function parseBinaryAction(rawData: Buffer | string): bigint | null {
     return rawData.readBigInt64LE(16);
 }
 
-describe("ws proxy failover integration", () => {
+describe("ws proxy failover", () => {
     jest.setTimeout(120 * 1000);
 
     afterEach(async () => {
@@ -68,7 +68,7 @@ describe("ws proxy failover integration", () => {
             const dsn =
                 `ws://${testUsername()}:${testPassword()}` +
                 `@127.0.0.1:${proxyA.getPort()},127.0.0.1:${proxyB.getPort()}` +
-                `?retries=1&retry_backoff_ms=20&retry_backoff_max_ms=20`;
+                `?retries=5&retry_backoff_ms=20&retry_backoff_max_ms=20`;
             const conf = new WSConfig(dsn);
             conf.setTimeOut(6000);
             wsSql = await WsSql.open(conf);

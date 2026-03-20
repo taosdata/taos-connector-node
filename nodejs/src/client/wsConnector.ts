@@ -244,7 +244,7 @@ export class WebSocketConnector {
                 void this.handleDisconnect(conn);
             };
             conn.onclose = (e: ICloseEvent) => {
-                logger.info("websocket connection closed");
+                logger.info(`websocket connection closed, code: ${e.code}, reason: ${e.reason}`);
                 if (conn.readyState !== w3cwebsocket.OPEN) {
                     settle(() => {
                         reject(

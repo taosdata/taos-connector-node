@@ -234,6 +234,36 @@ describe("WebSocketConnector failover and retry", () => {
         connector.failAllInflightRequests(new Error("cleanup"));
     });
 
+    test("triggers reconnect and keeps retriable poll request inflight when send throws", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => {
+            throw new Error("cannot call send() while not connected");
+        });
+
+        const pending = connector.sendMsg(
+            JSON.stringify({
+                action: "poll",
+                args: {
+                    req_id: 109,
+                    blocking_time: 500,
+                    message_id: 0,
+                },
+            })
+        );
+        void pending.catch(() => { });
+
+        const state = await Promise.race([
+            pending.then(() => "resolved").catch(() => "rejected"),
+            delay(20).then(() => "pending"),
+        ]);
+
+        expect(state).toBe("pending");
+        expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
+        expect(hasInflightRequest(connector, 109n)).toBe(true);
+        connector.failAllInflightRequests(new Error("cleanup"));
+    });
+
     test("rejects non-retriable string request immediately when send throws", async () => {
         const connector = createBareConnector();
         connector._conn.send = jest.fn(() => {

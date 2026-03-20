@@ -277,9 +277,9 @@ export function maskTmqConfigForLog(config: TmqConfig): string {
     };
     return JSON.stringify(masked, (key, value) => {
         switch (key) {
-            case 'url':
-            case 'sql_url':
-                return maskUrlForLog(value);
+            case 'dsn':
+            case 'sqlDsn':
+                return value ? value.toString() : value;
             case 'token':
             case 'password':
             case 'bearer_token':

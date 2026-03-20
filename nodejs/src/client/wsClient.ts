@@ -15,9 +15,12 @@ import {
     safeDecodeURIComponent,
     compareVersions,
     maskSensitiveForLog,
+    normalizePath,
 } from "../common/utils";
 import { w3cwebsocket } from "websocket";
 import { ConnectorInfo, TSDB_OPTION_CONNECTION } from "../common/constant";
+
+type SessionRecoveryHook = () => Promise<void>;
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
@@ -30,15 +33,19 @@ export class WsClient {
     private _bearerToken?: string | undefined | null;
     private _connectedDatabase: string | null = null;
     private _connectionOptions: Map<TSDB_OPTION_CONNECTION, string | null> = new Map();
+    private _customRecoveryHook: SessionRecoveryHook | null = null;
 
-    constructor(urlOrDsn: URL | Dsn, timeout?: number | undefined | null) {
+    constructor(
+        urlOrDsn: URL | Dsn,
+        timeout?: number | undefined | null,
+        path?: string
+    ) {
         if (urlOrDsn instanceof URL) {
             this._dsn = this.convertUrlToDsn(urlOrDsn);
-            this._path = urlOrDsn.pathname;
+            this._path = normalizePath(path ?? urlOrDsn.pathname);
         } else {
             this._dsn = urlOrDsn;
-            // TODO: support tmq path
-            this._path = "ws";
+            this._path = normalizePath(path ?? "ws");
         }
         this.checkAuth();
         this._timeout = timeout;
@@ -107,35 +114,58 @@ export class WsClient {
             return;
         }
         this._wsConnector.setSessionRecoveryHook(async () => {
-            if (!this._wsConnector) {
-                return;
+            if (this.isSqlPath()) {
+                await this.recoverSqlSessionContext();
             }
-            const connMsg = this.buildConnMessage(this._connectedDatabase);
-            const connResp = await this._wsConnector.sendMsgDirect(
-                JSON.stringify(connMsg)
-            );
-            this.assertSuccessResponse(connResp, "conn");
 
-            if (this._connectionOptions.size > 0) {
-                const options = Array.from(this._connectionOptions.entries()).map(
-                    ([option, value]) => ({
-                        option,
-                        value,
-                    })
-                );
-                const optionsMsg = {
-                    action: "options_connection",
-                    args: {
-                        req_id: ReqId.getReqID(),
-                        options,
-                    },
-                };
-                const optionsResp = await this._wsConnector.sendMsgDirect(
-                    JSONBig.stringify(optionsMsg)
-                );
-                this.assertSuccessResponse(optionsResp, "options_connection");
+            if (this._customRecoveryHook) {
+                await this._customRecoveryHook();
             }
         });
+    }
+
+    private isSqlPath(): boolean {
+        return normalizePath(this._path) === "ws";
+    }
+
+    private async recoverSqlSessionContext(): Promise<void> {
+        if (!this._wsConnector) {
+            return;
+        }
+        const connMsg = this.buildConnMessage(this._connectedDatabase);
+        const connResp = await this._wsConnector.sendMsgDirect(
+            JSON.stringify(connMsg)
+        );
+        this.assertSuccessResponse(connResp, "conn");
+
+        if (this._connectionOptions.size <= 0) {
+            return;
+        }
+
+        const options = Array.from(this._connectionOptions.entries()).map(
+            ([option, value]) => ({
+                option,
+                value,
+            })
+        );
+        const optionsMsg = {
+            action: "options_connection",
+            args: {
+                req_id: ReqId.getReqID(),
+                options,
+            },
+        };
+        const optionsResp = await this._wsConnector.sendMsgDirect(
+            JSONBig.stringify(optionsMsg)
+        );
+        this.assertSuccessResponse(optionsResp, "options_connection");
+    }
+
+    public setSessionRecoveryHook(
+        hook: SessionRecoveryHook | null | undefined
+    ): void {
+        this._customRecoveryHook = hook || null;
+        this.bindReconnectRecoveryHook();
     }
 
     async connect(database?: string | undefined | null): Promise<void> {
@@ -208,6 +238,25 @@ export class WsClient {
         }
 
         const resp: any = await this.getWsConnector().sendMsg(message);
+        if (resp.msg.code == 0) {
+            if (bSqlQuery) {
+                return new WSQueryResponse(resp);
+            }
+            return resp;
+        }
+
+        throw new WebSocketInterfaceError(
+            resp.msg.code,
+            resp.msg.message
+        );
+    }
+
+    async execDirect(message: string, bSqlQuery: boolean = true): Promise<any> {
+        if (logger.isDebugEnabled()) {
+            logger.debug("[wsClient.execDirect]===>" + maskSensitiveForLog(message));
+        }
+
+        const resp: any = await this.getWsConnector().sendMsgDirect(message);
         if (resp.msg.code == 0) {
             if (bSqlQuery) {
                 return new WSQueryResponse(resp);
@@ -340,6 +389,7 @@ export class WsClient {
             );
             this._wsConnector = undefined;
         }
+        this._customRecoveryHook = null;
     }
 
     private checkAuth() {

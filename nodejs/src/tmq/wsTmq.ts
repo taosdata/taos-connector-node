@@ -22,7 +22,7 @@ import {
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
 import { WSFetchBlockResponse } from "../client/wsResponse";
-import { maskTmqConfigForLog, maskUrlForLog } from "../common/utils";
+import { maskTmqConfigForLog } from "../common/utils";
 import { ConnectorInfo } from "../common/constant";
 
 export class WsConsumer {
@@ -37,26 +37,29 @@ export class WsConsumer {
         if (logger.isDebugEnabled()) {
             logger.debug("WsConsumer config: " + maskTmqConfigForLog(this._wsConfig));
         }
-        if (wsConfig.size == 0 || !this._wsConfig.url) {
+        if (wsConfig.size == 0 || !this._wsConfig.dsn) {
             throw new WebSocketInterfaceError(
                 ErrorCode.ERR_INVALID_URL,
                 "invalid url, password or username needed."
             );
         }
         this._wsClient = new WsClient(
-            this._wsConfig.url,
-            this._wsConfig.timeout
+            this._wsConfig.dsn,
+            this._wsConfig.timeout,
+            "/rest/tmq"
         );
+        this.bindSessionRecoveryHook();
         this._lastMessageID = BigInt(0);
     }
 
     private async init(): Promise<WsConsumer> {
         let wsSql = null;
         try {
-            if (this._wsConfig.sql_url) {
+            if (this._wsConfig.sqlDsn) {
                 wsSql = new WsClient(
-                    this._wsConfig.sql_url,
-                    this._wsConfig.timeout
+                    this._wsConfig.sqlDsn,
+                    this._wsConfig.timeout,
+                    "/ws"
                 );
                 await wsSql.connect();
                 await wsSql.checkVersion();
@@ -64,7 +67,7 @@ export class WsConsumer {
             } else {
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                    `connection creation failed, url: ${maskUrlForLog(this._wsConfig.url)}`
+                    `connection creation failed, dsn: ${this._wsConfig.dsn}`
                 );
             }
         } catch (e: any) {
@@ -89,15 +92,14 @@ export class WsConsumer {
         return await wsConsumer.init();
     }
 
-    async subscribe(topics: Array<string>, reqId?: number): Promise<void> {
-        if (!topics || topics.length == 0) {
-            throw new TaosResultError(
-                ErrorCode.ERR_INVALID_PARAMS,
-                "WsTmq Subscribe params is error!"
-            );
-        }
+    private bindSessionRecoveryHook(): void {
+        this._wsClient.setSessionRecoveryHook(async () => {
+            await this.recoverSessionContext();
+        });
+    }
 
-        let queryMsg = {
+    private buildSubscribeMessage(topics: Array<string>, reqId?: number) {
+        return {
             action: TMQMessageType.Subscribe,
             args: {
                 req_id: ReqId.getReqID(reqId),
@@ -113,8 +115,29 @@ export class WsConsumer {
                 connector: ConnectorInfo,
             },
         };
-        this._topics = topics;
-        return await this._wsClient.exec(JSON.stringify(queryMsg));
+    }
+
+    private async recoverSessionContext(): Promise<void> {
+        if (!this._topics || this._topics.length === 0) {
+            return;
+        }
+        await this._wsClient.execDirect(
+            JSON.stringify(this.buildSubscribeMessage(this._topics)),
+            false
+        );
+    }
+
+    async subscribe(topics: Array<string>, reqId?: number): Promise<void> {
+        if (!topics || topics.length == 0) {
+            throw new TaosResultError(
+                ErrorCode.ERR_INVALID_PARAMS,
+                "WsTmq Subscribe params is error!"
+            );
+        }
+
+        let queryMsg = this.buildSubscribeMessage(topics, reqId);
+        await this._wsClient.exec(JSON.stringify(queryMsg));
+        this._topics = [...topics];
     }
 
     async unsubscribe(reqId?: number): Promise<void> {
@@ -124,7 +147,8 @@ export class WsConsumer {
                 req_id: ReqId.getReqID(reqId),
             },
         };
-        return await this._wsClient.exec(JSON.stringify(queryMsg));
+        await this._wsClient.exec(JSON.stringify(queryMsg));
+        this._topics = undefined;
     }
 
     async poll(timeoutMs: number, reqId?: number): Promise<Map<string, TaosResult>> {

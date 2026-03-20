@@ -7,8 +7,8 @@ import {
     server as WebSocketServer,
 } from "websocket";
 
-const UPSTREAM_WS_URL = "ws://localhost:6041/ws";
-const SUPPORTED_PATH = "/ws";
+const DEFAULT_UPSTREAM_BASE_URL = "ws://localhost:6041";
+const DEFAULT_SUPPORTED_PATH = "/ws";
 
 type WsProxyDirection = "client_to_upstream" | "upstream_to_client";
 type WsProxyEventType =
@@ -100,6 +100,8 @@ export type WsProxyEventHandler = (
 export interface WsProxyOptions {
     host: string;
     port: number;
+    upstreamBaseUrl?: string;
+    supportedPaths?: string[];
     onEvent?: WsProxyEventHandler;
 }
 
@@ -110,6 +112,7 @@ interface PendingFrame {
 
 interface ProxyTunnel {
     id: number;
+    path: string;
     closed: boolean;
     messageSeq: number;
     clientConn: WebSocketConnection;
@@ -121,6 +124,9 @@ interface ProxyTunnel {
 export class WsProxy {
     private readonly _listenHost: string;
     private readonly _requestedPort: number;
+    private readonly _upstreamBaseUrl: URL;
+    private readonly _supportedPaths: Set<string>;
+    private readonly _primaryPath: string;
     private _lockedPort: number | null = null;
     private readonly _onEvent?: WsProxyEventHandler;
     private readonly _control: WsProxyControl;
@@ -148,6 +154,14 @@ export class WsProxy {
         }
         this._listenHost = options.host;
         this._requestedPort = options.port;
+        this._upstreamBaseUrl = this.parseUpstreamBaseUrl(
+            options.upstreamBaseUrl || DEFAULT_UPSTREAM_BASE_URL
+        );
+        const normalizedPaths = this.normalizeSupportedPaths(
+            options.supportedPaths
+        );
+        this._supportedPaths = new Set(normalizedPaths);
+        this._primaryPath = normalizedPaths[0];
         this._onEvent = options.onEvent;
         this._control = {
             restart: async (opts?: { downtimeMs?: number; reason?: string }) => {
@@ -206,7 +220,7 @@ export class WsProxy {
     }
 
     getUrl(): string {
-        return `ws://${this._listenHost}:${this.getPort()}${SUPPORTED_PATH}`;
+        return `ws://${this._listenHost}:${this.getPort()}${this._primaryPath}`;
     }
 
     getEventLog(): WsProxyEvent[] {
@@ -328,7 +342,7 @@ export class WsProxy {
         }
 
         const path = request.resourceURL?.pathname || request.resource;
-        if (path !== SUPPORTED_PATH) {
+        if (!this._supportedPaths.has(path)) {
             request.reject(404, `unsupported path: ${path}`);
             return;
         }
@@ -339,6 +353,7 @@ export class WsProxy {
 
         const tunnel: ProxyTunnel = {
             id: connectionId,
+            path,
             closed: false,
             messageSeq: 0,
             clientConn,
@@ -379,6 +394,7 @@ export class WsProxy {
     private connectUpstream(tunnel: ProxyTunnel): void {
         const upstreamClient = new WebSocketClient();
         tunnel.upstreamClient = upstreamClient;
+        const upstreamUrl = this.buildUpstreamUrl(tunnel.path);
 
         upstreamClient.on("connect", (upstreamConn: WebSocketConnection) => {
             if (tunnel.closed) {
@@ -391,7 +407,7 @@ export class WsProxy {
                 type: "upstream_connected",
                 timestamp: Date.now(),
                 connectionId: tunnel.id,
-                upstreamUrl: UPSTREAM_WS_URL,
+                upstreamUrl,
             });
 
             upstreamConn.on("message", (message: WsMessage) => {
@@ -425,7 +441,41 @@ export class WsProxy {
             );
         });
 
-        upstreamClient.connect(UPSTREAM_WS_URL);
+        upstreamClient.connect(upstreamUrl);
+    }
+
+    private parseUpstreamBaseUrl(rawUrl: string): URL {
+        const parsed = new URL(rawUrl);
+        if (parsed.protocol !== "ws:" && parsed.protocol !== "wss:") {
+            throw new Error(`invalid upstream protocol: ${parsed.protocol}`);
+        }
+        parsed.pathname = "/";
+        parsed.search = "";
+        parsed.hash = "";
+        return parsed;
+    }
+
+    private normalizeSupportedPaths(paths: string[] | undefined): string[] {
+        const source = paths && paths.length > 0 ? paths : [DEFAULT_SUPPORTED_PATH];
+        const normalized: string[] = [];
+        const seen = new Set<string>();
+        for (const rawPath of source) {
+            const path = normalizePath(rawPath);
+            if (!seen.has(path)) {
+                seen.add(path);
+                normalized.push(path);
+            }
+        }
+        if (normalized.length === 0) {
+            throw new Error("supported paths must not be empty");
+        }
+        return normalized;
+    }
+
+    private buildUpstreamUrl(path: string): string {
+        const upstream = new URL(this._upstreamBaseUrl.toString());
+        upstream.pathname = path;
+        return upstream.toString();
     }
 
     private handleClientMessage(tunnel: ProxyTunnel, message: WsMessage): void {
@@ -608,6 +658,14 @@ function normalizeError(error: unknown): Error {
         return error;
     }
     return new Error(String(error));
+}
+
+function normalizePath(path: string): string {
+    if (!path || path.trim().length === 0) {
+        throw new Error("proxy supported path must not be empty");
+    }
+    const trimmed = path.trim();
+    return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
 function sleep(ms: number): Promise<void> {

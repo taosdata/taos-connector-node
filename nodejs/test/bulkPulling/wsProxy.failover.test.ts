@@ -1,6 +1,8 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
+import { TMQConstants } from "../../src/tmq/constant";
+import { WsConsumer } from "../../src/tmq/wsTmq";
 import { testPassword, testUsername } from "../helpers/utils";
 import { WsProxy, WsProxyEvent } from "../helpers/wsProxy";
 
@@ -9,6 +11,18 @@ function parseBinaryAction(rawData: Buffer | string): bigint | null {
         return null;
     }
     return rawData.readBigInt64LE(16);
+}
+
+function parseJsonAction(rawData: Buffer | string): string | null {
+    if (typeof rawData !== "string") {
+        return null;
+    }
+    try {
+        const parsed = JSON.parse(rawData);
+        return typeof parsed.action === "string" ? parsed.action : null;
+    } catch (_err) {
+        return null;
+    }
 }
 
 describe("ws proxy failover", () => {
@@ -391,4 +405,130 @@ describe("ws proxy failover", () => {
         },
         300 * 1000
     );
+
+    test("tmq failover recovers subscribe context and replays inflight poll", async () => {
+        const dbName = `test_tmq_failover_${Date.now()}`;
+        const tableName = "st";
+        const topicName = `topic_${Date.now()}`;
+        const localDsn = `ws://${testUsername()}:${testPassword()}@127.0.0.1:6041`;
+        let setupSql: WsSql | null = null;
+        let cleanupSql: WsSql | null = null;
+        let consumer: WsConsumer | null = null;
+        let restartTriggered = false;
+        let proxyBHadActivity = false;
+
+        setupSql = await WsSql.open(new WSConfig(localDsn));
+        try {
+            await setupSql.exec(`drop topic if exists ${topicName}`);
+            await setupSql.exec(`drop database if exists ${dbName}`);
+            await setupSql.exec(`create database if not exists ${dbName}`);
+            await setupSql.exec(`create table ${dbName}.${tableName}(ts timestamp, c1 int)`);
+            await setupSql.exec(
+                `insert into ${dbName}.${tableName} values(now - 1s, 1) (now, 2)`
+            );
+            await setupSql.exec(
+                `create topic if not exists ${topicName} as select * from ${dbName}.${tableName}`
+            );
+        } finally {
+            await setupSql.close();
+            setupSql = null;
+        }
+
+        const proxyA = await WsProxy.create({
+            host: "127.0.0.1",
+            port: 0,
+            supportedPaths: ["/ws", "/rest/tmq"],
+            onEvent: (event, control) => {
+                if (event.type !== "message") {
+                    return;
+                }
+                if (event.direction !== "client_to_upstream") {
+                    return;
+                }
+                const action = parseJsonAction(event.rawData);
+                if (action === "poll" && !restartTriggered) {
+                    restartTriggered = true;
+                    void control.restart({
+                        downtimeMs: 350,
+                        reason: "trigger tmq poll failover",
+                    });
+                }
+            },
+        });
+
+        const proxyB = await WsProxy.create({
+            host: "127.0.0.1",
+            port: 0,
+            supportedPaths: ["/ws", "/rest/tmq"],
+            onEvent: (event: WsProxyEvent) => {
+                if (event.type === "client_connected") {
+                    proxyBHadActivity = true;
+                    return;
+                }
+                if (
+                    event.type === "message" &&
+                    event.direction === "client_to_upstream"
+                ) {
+                    proxyBHadActivity = true;
+                }
+            },
+        });
+
+        const tmqConf = new Map<string, any>([
+            [TMQConstants.GROUP_ID, `g_${Date.now()}`],
+            [TMQConstants.CLIENT_ID, `c_${Date.now()}`],
+            [TMQConstants.CONNECT_USER, testUsername()],
+            [TMQConstants.CONNECT_PASS, testPassword()],
+            [TMQConstants.AUTO_OFFSET_RESET, "earliest"],
+            [TMQConstants.ENABLE_AUTO_COMMIT, false],
+            [TMQConstants.AUTO_COMMIT_INTERVAL_MS, 1000],
+            [TMQConstants.WS_URL,
+                `ws://${testUsername()}:${testPassword()}` +
+                `@127.0.0.1:${proxyA.getPort()},127.0.0.1:${proxyB.getPort()}` +
+                `?retries=6&retry_backoff_ms=20&retry_backoff_max_ms=60`
+            ],
+        ]);
+        const randomSpy = jest.spyOn(Math, "random").mockReturnValue(0);
+
+        try {
+            consumer = await WsConsumer.newConsumer(tmqConf);
+            await consumer.subscribe([topicName]);
+
+            let rows = 0;
+            for (let i = 0; i < 8 && rows === 0; i++) {
+                const res = await consumer.poll(800);
+                for (const [, value] of res) {
+                    const data = value.getData();
+                    rows += data?.length || 0;
+                }
+            }
+
+            expect(restartTriggered).toBe(true);
+            expect(proxyBHadActivity).toBe(true);
+            expect(rows).toBeGreaterThan(0);
+        } finally {
+            if (consumer) {
+                try {
+                    await consumer.unsubscribe();
+                } catch (_err) {
+                    // ignore cleanup error
+                }
+                await consumer.close();
+            }
+            await Promise.all([
+                proxyA.stop("test cleanup"),
+                proxyB.stop("test cleanup"),
+            ]);
+            randomSpy.mockRestore();
+
+            cleanupSql = await WsSql.open(new WSConfig(localDsn));
+            try {
+                await cleanupSql.exec(`drop topic if exists ${topicName}`);
+                await cleanupSql.exec(`drop database if exists ${dbName}`);
+            } finally {
+                await cleanupSql.close();
+                cleanupSql = null;
+            }
+        }
+    }, 180 * 1000);
 });

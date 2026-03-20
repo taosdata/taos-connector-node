@@ -13,6 +13,8 @@ export interface NumberIndexable {
 }
 
 export const ConnectorInfo = `nodejs-ws-v${pkg.version}-ncid000`;
+export const WS_SQL_PATH = "ws";
+export const WS_TMQ_PATH = "rest/tmq";
 export const BinaryQueryMessage: bigint = BigInt(6);
 export const FetchRawBlockMessage: bigint = BigInt(7);
 export const MinStmt2Version: string = "3.3.6.0";

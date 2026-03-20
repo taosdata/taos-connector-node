@@ -18,7 +18,11 @@ import {
     normalizePath,
 } from "../common/utils";
 import { w3cwebsocket } from "websocket";
-import { ConnectorInfo, TSDB_OPTION_CONNECTION } from "../common/constant";
+import {
+    ConnectorInfo,
+    TSDB_OPTION_CONNECTION,
+    WS_SQL_PATH,
+} from "../common/constant";
 
 type SessionRecoveryHook = () => Promise<void>;
 
@@ -45,7 +49,7 @@ export class WsClient {
             this._path = normalizePath(path ?? urlOrDsn.pathname);
         } else {
             this._dsn = urlOrDsn;
-            this._path = normalizePath(path ?? "ws");
+            this._path = normalizePath(path ?? WS_SQL_PATH);
         }
         this.checkAuth();
         this._timeout = timeout;
@@ -125,7 +129,7 @@ export class WsClient {
     }
 
     private isSqlPath(): boolean {
-        return normalizePath(this._path) === "ws";
+        return this._path === WS_SQL_PATH;
     }
 
     private async recoverSqlSessionContext(): Promise<void> {
@@ -251,6 +255,10 @@ export class WsClient {
         );
     }
 
+    /**
+     * Execute a message directly via sendMsgDirect, bypassing inflight tracking.
+     * Used by session recovery hooks to avoid replaying recovery messages.
+     */
     async execDirect(message: string, bSqlQuery: boolean = true): Promise<any> {
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.execDirect]===>" + maskSensitiveForLog(message));

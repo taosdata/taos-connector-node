@@ -97,6 +97,8 @@ export function isEmpty(value: any): boolean {
 }
 
 export function normalizePath(path: string): string {
+    // Normalize websocket endpoint for connector internals:
+    // remove leading slashes and fallback to SQL path ("ws") when empty.
     const normalized = path.trim().replace(/^\/+/, "");
     return normalized.length > 0 ? normalized : "ws";
 }

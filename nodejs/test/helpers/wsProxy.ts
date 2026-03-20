@@ -460,7 +460,7 @@ export class WsProxy {
         const normalized: string[] = [];
         const seen = new Set<string>();
         for (const rawPath of source) {
-            const path = normalizePath(rawPath);
+            const path = ensureLeadingSlash(rawPath);
             if (!seen.has(path)) {
                 seen.add(path);
                 normalized.push(path);
@@ -660,7 +660,7 @@ function normalizeError(error: unknown): Error {
     return new Error(String(error));
 }
 
-function normalizePath(path: string): string {
+function ensureLeadingSlash(path: string): string {
     if (!path || path.trim().length === 0) {
         throw new Error("proxy supported path must not be empty");
     }

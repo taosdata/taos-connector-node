@@ -23,7 +23,11 @@ import { ReqId } from "../common/reqid";
 import logger from "../common/log";
 import { WSFetchBlockResponse } from "../client/wsResponse";
 import { maskTmqConfigForLog } from "../common/utils";
-import { ConnectorInfo } from "../common/constant";
+import {
+    ConnectorInfo,
+    WS_SQL_PATH,
+    WS_TMQ_PATH,
+} from "../common/constant";
 
 export class WsConsumer {
     private _wsClient: WsClient;
@@ -46,7 +50,7 @@ export class WsConsumer {
         this._wsClient = new WsClient(
             this._wsConfig.dsn,
             this._wsConfig.timeout,
-            "/rest/tmq"
+            WS_TMQ_PATH
         );
         this.bindSessionRecoveryHook();
         this._lastMessageID = BigInt(0);
@@ -59,7 +63,7 @@ export class WsConsumer {
                 wsSql = new WsClient(
                     this._wsConfig.sqlDsn,
                     this._wsConfig.timeout,
-                    "/ws"
+                    WS_SQL_PATH
                 );
                 await wsSql.connect();
                 await wsSql.checkVersion();
@@ -121,6 +125,9 @@ export class WsConsumer {
         if (!this._topics || this._topics.length === 0) {
             return;
         }
+        logger.info(
+            `Recovering TMQ session context, re-subscribing ${this._topics.length} topic(s).`
+        );
         await this._wsClient.execDirect(
             JSON.stringify(this.buildSubscribeMessage(this._topics)),
             false

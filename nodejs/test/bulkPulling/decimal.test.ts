@@ -1,7 +1,7 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { Sleep, testPassword, testUsername } from "../utils";
+import { Sleep, testPassword, testUsername } from "../helpers/utils";
 import { setLevel } from "../../src/common/log";
 import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";

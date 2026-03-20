@@ -9,7 +9,7 @@ import {
     getInsertBind,
     testPassword,
     testUsername,
-} from "../utils";
+} from "../helpers/utils";
 
 const stable = "ws_stmt_stb";
 const table = "stmt_001";

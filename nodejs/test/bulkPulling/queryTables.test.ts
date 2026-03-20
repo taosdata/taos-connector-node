@@ -15,7 +15,7 @@ import {
     tagMeta,
     testPassword,
     testUsername,
-} from "../utils";
+} from "../helpers/utils";
 
 let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
 let conf: WSConfig = new WSConfig(dsn);

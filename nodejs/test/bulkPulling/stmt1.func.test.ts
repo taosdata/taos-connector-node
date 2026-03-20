@@ -3,7 +3,7 @@ import { WSConfig } from "../../src/common/config";
 import { setLevel } from "../../src/common/log";
 import { WsSql } from "../../src/sql/wsSql";
 import { WsStmt1 } from "../../src/stmt/wsStmt1";
-import { testPassword, testUsername } from "../utils";
+import { testPassword, testUsername } from "../helpers/utils";
 
 let dns = "ws://localhost:6041";
 setLevel("debug");

@@ -2,7 +2,7 @@ import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { createSTable, insertStable, testPassword, testUsername, Sleep, testEnterprise, testNon3360 } from "../utils";
+import { createSTable, insertStable, testPassword, testUsername, Sleep, testEnterprise, testNon3360 } from "../helpers/utils";
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { setLevel } from "../../src/common/log";
 

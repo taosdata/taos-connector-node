@@ -4,7 +4,7 @@ import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { setLevel } from "../../src/common/log";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { testPassword, testUsername } from "../utils";
+import { testPassword, testUsername } from "../helpers/utils";
 
 beforeAll(async () => {
     const url = `wss://${process.env.TDENGINE_CLOUD_URL}?token=${process.env.TDENGINE_CLOUD_TOKEN}`;

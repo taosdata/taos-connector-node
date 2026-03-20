@@ -4,7 +4,7 @@ import { ReqId } from "../../src/common/reqid";
 import { WsSql } from "../../src/sql/wsSql";
 import { TMQConstants } from "../../src/tmq/constant";
 import { WsConsumer } from "../../src/tmq/wsTmq";
-import { Sleep, testPassword, testUsername } from "../utils";
+import { Sleep, testPassword, testUsername } from "../helpers/utils";
 import { setLevel } from "../../src/common/log";
 import { WsStmt1 } from "../../src/stmt/wsStmt1";
 

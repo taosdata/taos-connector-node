@@ -1,6 +1,6 @@
 import { TmqConfig } from "../../src/tmq/config";
 import { TMQConstants } from "../../src/tmq/constant";
-import { testPassword, testUsername } from "../utils";
+import { testPassword, testUsername } from "../helpers/utils";
 
 describe("TmqConfig - td.connect.token", () => {
     const baseUrl = "ws://localhost:6041";

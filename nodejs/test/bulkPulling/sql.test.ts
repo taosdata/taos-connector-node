@@ -1,7 +1,7 @@
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
-import { Sleep, testPassword, testUsername, testEnterprise, testNon3360 } from "../utils";
+import { Sleep, testPassword, testUsername, testEnterprise, testNon3360 } from "../helpers/utils";
 import { setLevel } from "../../src/common/log";
 
 let dsn = "ws://localhost:6041";

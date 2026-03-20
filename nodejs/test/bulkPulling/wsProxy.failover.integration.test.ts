@@ -2,7 +2,7 @@ import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { WSConfig } from "../../src/common/config";
 import { WsSql } from "../../src/sql/wsSql";
 import { testPassword, testUsername } from "../utils";
-import { WsFailoverProxy, WsProxyEvent } from "../helpers/wsFailoverProxy";
+import { WsProxy, WsProxyEvent } from "../helpers/wsProxy";
 
 function parseBinaryAction(rawData: Buffer | string): bigint | null {
     if (typeof rawData === "string" || rawData.byteLength < 24) {
@@ -24,7 +24,7 @@ describe("ws proxy failover integration", () => {
         let proxyBHadActivity = false;
         let wsSql: WsSql | null = null;
 
-        const proxyA = await WsFailoverProxy.create({
+        const proxyA = await WsProxy.create({
             host: "127.0.0.1",
             port: 0,
             onEvent: (event, control) => {
@@ -46,7 +46,7 @@ describe("ws proxy failover integration", () => {
             },
         });
 
-        const proxyB = await WsFailoverProxy.create({
+        const proxyB = await WsProxy.create({
             host: "127.0.0.1",
             port: 0,
             onEvent: (event: WsProxyEvent) => {
@@ -91,7 +91,7 @@ describe("ws proxy failover integration", () => {
         let restartCount = 0;
         let wsSql: WsSql | null = null;
 
-        const proxy = await WsFailoverProxy.create({
+        const proxy = await WsProxy.create({
             host: "127.0.0.1",
             port: 0,
             onEvent: (event, control) => {

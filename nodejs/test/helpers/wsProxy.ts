@@ -97,7 +97,7 @@ export type WsProxyEventHandler = (
     control: WsProxyControl
 ) => void | Promise<void>;
 
-export interface WsFailoverProxyOptions {
+export interface WsProxyOptions {
     host: string;
     port: number;
     onEvent?: WsProxyEventHandler;
@@ -118,7 +118,7 @@ interface ProxyTunnel {
     pendingFrames: PendingFrame[];
 }
 
-export class WsFailoverProxy {
+export class WsProxy {
     private readonly _listenHost: string;
     private readonly _requestedPort: number;
     private _lockedPort: number | null = null;
@@ -133,7 +133,7 @@ export class WsFailoverProxy {
     private readonly _tunnels: Map<number, ProxyTunnel> = new Map();
     private readonly _eventLog: WsProxyEvent[] = [];
 
-    constructor(options: WsFailoverProxyOptions) {
+    constructor(options: WsProxyOptions) {
         if (!options.host || options.host.trim().length === 0) {
             throw new Error("listen host must not be empty");
         }
@@ -160,8 +160,8 @@ export class WsFailoverProxy {
         };
     }
 
-    static async create(options: WsFailoverProxyOptions): Promise<WsFailoverProxy> {
-        const proxy = new WsFailoverProxy(options);
+    static async create(options: WsProxyOptions): Promise<WsProxy> {
+        const proxy = new WsProxy(options);
         await proxy.start("initial start");
         return proxy;
     }

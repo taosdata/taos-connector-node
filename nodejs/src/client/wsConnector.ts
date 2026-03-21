@@ -7,7 +7,6 @@ import {
 } from "../common/wsError";
 import { OnMessageType, WsEventCallback } from "./wsEventCallback";
 import logger from "../common/log";
-import { endpointToPath } from "../common/constant";
 import {
     maskSensitiveForLog,
     maskUrlForLog,
@@ -176,7 +175,7 @@ export class WebSocketConnector {
 
     private buildUrl(index: number): string {
         const addr = this._dsn.addresses[index];
-        const path = endpointToPath(this._dsn.endpoint);
+        const path = this._dsn.path();
         const url = new URL(`${this._dsn.scheme}://${addr.host}:${addr.port}/${path}`);
         const forwardedParams = ["token", "bearer_token"];
         for (const key of forwardedParams) {

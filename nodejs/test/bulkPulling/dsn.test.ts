@@ -1,5 +1,4 @@
-import { parse } from "../../src/common/dsn";
-import { WS_SQL_ENDPOINT } from "../../src/common/constant";
+import { parse, WS_SQL_ENDPOINT } from "../../src/common/dsn";
 
 describe("dsn", () => {
     describe("parse", () => {

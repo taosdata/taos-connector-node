@@ -1,5 +1,11 @@
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
-import { WebSocketEndpoint, WS_SQL_ENDPOINT } from "./constant";
+
+export type WebSocketEndpoint = "sql" | "tmq";
+export const WS_SQL_ENDPOINT: WebSocketEndpoint = "sql";
+export const WS_TMQ_ENDPOINT: WebSocketEndpoint = "tmq";
+
+const WS_SQL_PATH = "ws";
+const WS_TMQ_PATH = "rest/tmq";
 
 export class Address {
     host: string;
@@ -66,6 +72,10 @@ export class Dsn {
             params,
             endpoint: this.endpoint,
         });
+    }
+
+    path(): string {
+        return this.endpoint === WS_TMQ_ENDPOINT ? WS_TMQ_PATH : WS_SQL_PATH;
     }
 }
 

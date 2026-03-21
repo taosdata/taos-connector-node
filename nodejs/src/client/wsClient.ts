@@ -1,7 +1,7 @@
 import JSONBig from "json-bigint";
 import { WebSocketConnector } from "./wsConnector";
 import { WebSocketConnectionPool } from "./wsConnectorPool";
-import { Dsn } from "../common/dsn";
+import { Dsn, WS_SQL_ENDPOINT } from "../common/dsn";
 import {
     ErrorCode,
     TDWebSocketClientError,
@@ -20,7 +20,6 @@ import { w3cwebsocket } from "websocket";
 import {
     ConnectorInfo,
     TSDB_OPTION_CONNECTION,
-    WS_SQL_ENDPOINT,
 } from "../common/constant";
 
 type SessionRecoveryHook = () => Promise<void>;
@@ -37,10 +36,7 @@ export class WsClient {
     private _connectionOptions: Map<TSDB_OPTION_CONNECTION, string | null> = new Map();
     private _customRecoveryHook: SessionRecoveryHook | null = null;
 
-    constructor(
-        dsn: Dsn,
-        timeout?: number | undefined | null
-    ) {
+    constructor(dsn: Dsn, timeout?: number | undefined | null) {
         this._dsn = dsn;
         this.checkAuth();
         this._timeout = timeout;

@@ -5,7 +5,6 @@ import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
 import { w3cwebsocket } from "websocket";
 import { WebSocketConnector } from "./wsConnector";
-import { endpointToPath } from "../common/constant";
 
 const mutex = new Mutex();
 
@@ -47,7 +46,7 @@ export class WebSocketConnectionPool {
             .map((addr) => `${addr.host}:${addr.port}`)
             .join(",");
         const auth = this.buildAuth(dsn);
-        const path = endpointToPath(dsn.endpoint);
+        const path = dsn.path();
         return `${dsn.scheme}://${addrs}/${path}#auth=${auth}`;
     }
 

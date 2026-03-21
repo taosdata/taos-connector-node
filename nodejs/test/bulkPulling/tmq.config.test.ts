@@ -1,7 +1,7 @@
 import { TmqConfig } from "../../src/tmq/config";
 import { TMQConstants } from "../../src/tmq/constant";
 import { testPassword, testUsername } from "../helpers/utils";
-import { WS_SQL_ENDPOINT, WS_TMQ_ENDPOINT } from "../../src/common/constant";
+import { WS_SQL_ENDPOINT, WS_TMQ_ENDPOINT } from "../../src/common/dsn";
 
 describe("TmqConfig with dsn", () => {
     const baseDsn = "ws://localhost:6041";

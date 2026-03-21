@@ -1,5 +1,4 @@
-import { Dsn, parse } from "../common/dsn";
-import { WS_TMQ_ENDPOINT } from "../common/constant";
+import { Dsn, parse, WS_TMQ_ENDPOINT } from "../common/dsn";
 import { TMQConstants } from "./constant";
 
 export class TmqConfig {

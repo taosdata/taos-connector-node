@@ -407,9 +407,9 @@ describe("ws proxy failover", () => {
     );
 
     test("tmq failover recovers subscribe context and replays inflight poll", async () => {
-        const dbName = `test_tmq_failover_${Date.now()}`;
-        const tableName = "st";
-        const topicName = `topic_${Date.now()}`;
+        const dbName = "test_1774096925";
+        const tableName = "t0";
+        const topicName = "topic_1774096925";
         const localDsn = `ws://${testUsername()}:${testPassword()}@127.0.0.1:6041`;
         let setupSql: WsSql | null = null;
         let cleanupSql: WsSql | null = null;
@@ -421,14 +421,10 @@ describe("ws proxy failover", () => {
         try {
             await setupSql.exec(`drop topic if exists ${topicName}`);
             await setupSql.exec(`drop database if exists ${dbName}`);
-            await setupSql.exec(`create database if not exists ${dbName}`);
+            await setupSql.exec(`create database ${dbName}`);
             await setupSql.exec(`create table ${dbName}.${tableName}(ts timestamp, c1 int)`);
-            await setupSql.exec(
-                `insert into ${dbName}.${tableName} values(now - 1s, 1) (now, 2)`
-            );
-            await setupSql.exec(
-                `create topic if not exists ${topicName} as select * from ${dbName}.${tableName}`
-            );
+            await setupSql.exec(`insert into ${dbName}.${tableName} values(now - 1s, 1) (now, 2)`);
+            await setupSql.exec(`create topic ${topicName} as select * from ${dbName}.${tableName}`);
         } finally {
             await setupSql.close();
             setupSql = null;
@@ -483,9 +479,9 @@ describe("ws proxy failover", () => {
             [TMQConstants.ENABLE_AUTO_COMMIT, false],
             [TMQConstants.AUTO_COMMIT_INTERVAL_MS, 1000],
             [TMQConstants.WS_URL,
-                `ws://${testUsername()}:${testPassword()}` +
-                `@127.0.0.1:${proxyA.getPort()},127.0.0.1:${proxyB.getPort()}` +
-                `?retries=6&retry_backoff_ms=20&retry_backoff_max_ms=60`
+            `ws://${testUsername()}:${testPassword()}` +
+            `@127.0.0.1:${proxyA.getPort()},127.0.0.1:${proxyB.getPort()}` +
+            `?retries=6&retry_backoff_ms=20&retry_backoff_max_ms=60`
             ],
         ]);
         const randomSpy = jest.spyOn(Math, "random").mockReturnValue(0);

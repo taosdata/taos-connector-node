@@ -27,23 +27,23 @@ import { ConnectorInfo } from "../common/constant";
 
 export class WsConsumer {
     private _wsClient: WsClient;
-    private _wsConfig: TmqConfig;
+    private _config: TmqConfig;
     private _topics?: string[];
     private _commitTime?: number;
     private _lastMessageID?: bigint;
 
     private constructor(wsConfig: Map<string, any>) {
-        this._wsConfig = new TmqConfig(wsConfig);
+        this._config = new TmqConfig(wsConfig);
         if (logger.isDebugEnabled()) {
-            logger.debug("WsConsumer config: " + maskTmqConfigForLog(this._wsConfig));
+            logger.debug("WsConsumer config: " + maskTmqConfigForLog(this._config));
         }
-        if (wsConfig.size == 0 || !this._wsConfig.dsn) {
+        if (wsConfig.size == 0 || !this._config.dsn) {
             throw new WebSocketInterfaceError(
                 ErrorCode.ERR_INVALID_URL,
                 "invalid url, password or username needed."
             );
         }
-        this._wsClient = new WsClient(this._wsConfig.dsn, this._wsConfig.timeout);
+        this._wsClient = new WsClient(this._config.dsn, this._config.timeout);
         this.bindSessionRecoveryHook();
         this._lastMessageID = BigInt(0);
     }
@@ -51,15 +51,15 @@ export class WsConsumer {
     private async init(): Promise<WsConsumer> {
         let wsSql = null;
         try {
-            if (this._wsConfig.sqlDsn) {
-                wsSql = new WsClient(this._wsConfig.sqlDsn, this._wsConfig.timeout);
+            if (this._config.sqlDsn) {
+                wsSql = new WsClient(this._config.sqlDsn, this._config.timeout);
                 await wsSql.connect();
                 await wsSql.checkVersion();
                 await this._wsClient.ready();
             } else {
                 throw new TDWebSocketClientError(
                     ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                    `connection creation failed, dsn: ${this._wsConfig.dsn}`
+                    `connection creation failed, dsn: ${this._config.dsn}`
                 );
             }
         } catch (e: any) {
@@ -80,7 +80,7 @@ export class WsConsumer {
                 "invalid url, password or username needed."
             );
         }
-        let wsConsumer = new WsConsumer(wsConfig);
+        const wsConsumer = new WsConsumer(wsConfig);
         return await wsConsumer.init();
     }
 
@@ -95,15 +95,15 @@ export class WsConsumer {
             action: TMQMessageType.Subscribe,
             args: {
                 req_id: ReqId.getReqID(reqId),
-                user: this._wsConfig.user,
-                password: this._wsConfig.password,
-                group_id: this._wsConfig.group_id,
-                client_id: this._wsConfig.client_id,
+                user: this._config.user,
+                password: this._config.password,
+                group_id: this._config.group_id,
+                client_id: this._config.client_id,
                 topics: topics,
-                offset_rest: this._wsConfig.offset_rest,
-                auto_commit: String(this._wsConfig.auto_commit),
-                auto_commit_interval_ms: String(this._wsConfig.auto_commit_interval_ms),
-                config: Object.fromEntries(this._wsConfig.otherConfigs),
+                offset_rest: this._config.offset_rest,
+                auto_commit: String(this._config.auto_commit),
+                auto_commit_interval_ms: String(this._config.auto_commit_interval_ms),
+                config: Object.fromEntries(this._config.otherConfigs),
                 connector: ConnectorInfo,
             },
         };
@@ -147,11 +147,11 @@ export class WsConsumer {
     }
 
     async poll(timeoutMs: number, reqId?: number): Promise<Map<string, TaosResult>> {
-        if (this._wsConfig.auto_commit) {
+        if (this._config.auto_commit) {
             if (this._commitTime) {
                 let currTime = new Date().getTime();
                 let diff = Math.abs(currTime - this._commitTime);
-                if (diff >= this._wsConfig.auto_commit_interval_ms) {
+                if (diff >= this._config.auto_commit_interval_ms) {
                     await this.doCommit();
                     this._commitTime = new Date().getTime();
                 }

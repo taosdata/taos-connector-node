@@ -1,5 +1,6 @@
 import { WSConfig } from "../../src/common/config";
 import { getDsn } from "../../src/common/utils";
+import { WS_SQL_ENDPOINT } from "../../src/common/dsn";
 
 describe("WSConfig to Dsn conversion", () => {
     test("parses multi-address dsn and keeps connector-level params", () => {
@@ -14,6 +15,7 @@ describe("WSConfig to Dsn conversion", () => {
             { host: "host2", port: 6042 },
         ]);
         expect(dsn.database).toBe("mydb");
+        expect(dsn.endpoint).toBe(WS_SQL_ENDPOINT);
         expect(dsn.params.get("retries")).toBe("5");
         expect(dsn.params.get("retry_backoff_ms")).toBe("120");
         expect(dsn.params.get("timezone")).toBe("UTC");

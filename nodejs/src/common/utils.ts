@@ -97,6 +97,8 @@ export function isEmpty(value: any): boolean {
 }
 
 export function normalizePath(path: string): string {
+    // Normalize websocket endpoint for connector internals:
+    // remove leading slashes and fallback to SQL path ("ws") when empty.
     const normalized = path.trim().replace(/^\/+/, "");
     return normalized.length > 0 ? normalized : "ws";
 }
@@ -277,9 +279,9 @@ export function maskTmqConfigForLog(config: TmqConfig): string {
     };
     return JSON.stringify(masked, (key, value) => {
         switch (key) {
-            case 'url':
-            case 'sql_url':
-                return maskUrlForLog(value);
+            case 'dsn':
+            case 'sqlDsn':
+                return value ? value.toString() : value;
             case 'token':
             case 'password':
             case 'bearer_token':

@@ -7,8 +7,7 @@ import {
     server as WebSocketServer,
 } from "websocket";
 
-const UPSTREAM_WS_URL = "ws://localhost:6041/ws";
-const SUPPORTED_PATH = "/ws";
+const DEFAULT_UPSTREAM_BASE_URL = "ws://localhost:6041";
 
 type WsProxyDirection = "client_to_upstream" | "upstream_to_client";
 type WsProxyEventType =
@@ -110,6 +109,7 @@ interface PendingFrame {
 
 interface ProxyTunnel {
     id: number;
+    path: string;
     closed: boolean;
     messageSeq: number;
     clientConn: WebSocketConnection;
@@ -206,7 +206,7 @@ export class WsProxy {
     }
 
     getUrl(): string {
-        return `ws://${this._listenHost}:${this.getPort()}${SUPPORTED_PATH}`;
+        return `ws://${this._listenHost}:${this.getPort()}`;
     }
 
     getEventLog(): WsProxyEvent[] {
@@ -328,10 +328,6 @@ export class WsProxy {
         }
 
         const path = request.resourceURL?.pathname || request.resource;
-        if (path !== SUPPORTED_PATH) {
-            request.reject(404, `unsupported path: ${path}`);
-            return;
-        }
 
         const clientConn = request.accept(undefined, request.origin);
         const connectionId = this._nextConnectionId;
@@ -339,6 +335,7 @@ export class WsProxy {
 
         const tunnel: ProxyTunnel = {
             id: connectionId,
+            path,
             closed: false,
             messageSeq: 0,
             clientConn,
@@ -379,6 +376,7 @@ export class WsProxy {
     private connectUpstream(tunnel: ProxyTunnel): void {
         const upstreamClient = new WebSocketClient();
         tunnel.upstreamClient = upstreamClient;
+        const upstreamUrl = this.buildUpstreamUrl(tunnel.path);
 
         upstreamClient.on("connect", (upstreamConn: WebSocketConnection) => {
             if (tunnel.closed) {
@@ -391,7 +389,7 @@ export class WsProxy {
                 type: "upstream_connected",
                 timestamp: Date.now(),
                 connectionId: tunnel.id,
-                upstreamUrl: UPSTREAM_WS_URL,
+                upstreamUrl,
             });
 
             upstreamConn.on("message", (message: WsMessage) => {
@@ -425,7 +423,13 @@ export class WsProxy {
             );
         });
 
-        upstreamClient.connect(UPSTREAM_WS_URL);
+        upstreamClient.connect(upstreamUrl);
+    }
+
+    private buildUpstreamUrl(path: string): string {
+        const upstream = new URL(DEFAULT_UPSTREAM_BASE_URL);
+        upstream.pathname = ensureLeadingSlash(path);
+        return upstream.toString();
     }
 
     private handleClientMessage(tunnel: ProxyTunnel, message: WsMessage): void {
@@ -608,6 +612,14 @@ function normalizeError(error: unknown): Error {
         return error;
     }
     return new Error(String(error));
+}
+
+function ensureLeadingSlash(path: string): string {
+    if (!path || path.trim().length === 0) {
+        throw new Error("proxy supported path must not be empty");
+    }
+    const trimmed = path.trim();
+    return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
 function sleep(ms: number): Promise<void> {

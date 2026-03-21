@@ -1,7 +1,7 @@
 import JSONBig from "json-bigint";
 import { WebSocketConnector } from "./wsConnector";
 import { WebSocketConnectionPool } from "./wsConnectorPool";
-import { Address, Dsn, getDefaultPortForHost } from "../common/dsn";
+import { Dsn, WS_SQL_ENDPOINT } from "../common/dsn";
 import {
     ErrorCode,
     TDWebSocketClientError,
@@ -17,29 +17,27 @@ import {
     maskSensitiveForLog,
 } from "../common/utils";
 import { w3cwebsocket } from "websocket";
-import { ConnectorInfo, TSDB_OPTION_CONNECTION } from "../common/constant";
+import {
+    ConnectorInfo,
+    TSDB_OPTION_CONNECTION,
+} from "../common/constant";
+
+type SessionRecoveryHook = () => Promise<void>;
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;
     private _timeout?: number | undefined | null;
     private _timezone?: string | undefined | null;
     private readonly _dsn: Dsn;
-    private readonly _path: string;
     private static readonly _minVersion = "3.3.2.0";
     private _version?: string | undefined | null;
     private _bearerToken?: string | undefined | null;
     private _connectedDatabase: string | null = null;
     private _connectionOptions: Map<TSDB_OPTION_CONNECTION, string | null> = new Map();
+    private _customRecoveryHook: SessionRecoveryHook | null = null;
 
-    constructor(urlOrDsn: URL | Dsn, timeout?: number | undefined | null) {
-        if (urlOrDsn instanceof URL) {
-            this._dsn = this.convertUrlToDsn(urlOrDsn);
-            this._path = urlOrDsn.pathname;
-        } else {
-            this._dsn = urlOrDsn;
-            // TODO: support tmq path
-            this._path = "ws";
-        }
+    constructor(dsn: Dsn, timeout?: number | undefined | null) {
+        this._dsn = dsn;
         this.checkAuth();
         this._timeout = timeout;
         if (this._dsn.params.has("timezone")) {
@@ -48,24 +46,6 @@ export class WsClient {
         if (this._dsn.params.has("bearer_token")) {
             this._bearerToken = this._dsn.params.get("bearer_token") || undefined;
         }
-    }
-
-    private convertUrlToDsn(url: URL): Dsn {
-        const scheme = url.protocol.replace(":", "");
-        const host = url.hostname;
-        const port = url.port.length > 0 ? Number.parseInt(url.port, 10) : getDefaultPortForHost(host);
-        const params = new Map<string, string>();
-        url.searchParams.forEach((value, key) => {
-            params.set(key, value);
-        });
-        return new Dsn(
-            scheme,
-            url.username,
-            url.password,
-            [new Address(host, port)],
-            "",
-            params,
-        );
     }
 
     private buildConnMessage(database?: string | undefined | null) {
@@ -107,35 +87,58 @@ export class WsClient {
             return;
         }
         this._wsConnector.setSessionRecoveryHook(async () => {
-            if (!this._wsConnector) {
-                return;
+            if (this.isSqlPath()) {
+                await this.recoverSqlSessionContext();
             }
-            const connMsg = this.buildConnMessage(this._connectedDatabase);
-            const connResp = await this._wsConnector.sendMsgDirect(
-                JSON.stringify(connMsg)
-            );
-            this.assertSuccessResponse(connResp, "conn");
 
-            if (this._connectionOptions.size > 0) {
-                const options = Array.from(this._connectionOptions.entries()).map(
-                    ([option, value]) => ({
-                        option,
-                        value,
-                    })
-                );
-                const optionsMsg = {
-                    action: "options_connection",
-                    args: {
-                        req_id: ReqId.getReqID(),
-                        options,
-                    },
-                };
-                const optionsResp = await this._wsConnector.sendMsgDirect(
-                    JSONBig.stringify(optionsMsg)
-                );
-                this.assertSuccessResponse(optionsResp, "options_connection");
+            if (this._customRecoveryHook) {
+                await this._customRecoveryHook();
             }
         });
+    }
+
+    private isSqlPath(): boolean {
+        return this._dsn.endpoint === WS_SQL_ENDPOINT;
+    }
+
+    private async recoverSqlSessionContext(): Promise<void> {
+        if (!this._wsConnector) {
+            return;
+        }
+        const connMsg = this.buildConnMessage(this._connectedDatabase);
+        const connResp = await this._wsConnector.sendMsgDirect(
+            JSON.stringify(connMsg)
+        );
+        this.assertSuccessResponse(connResp, "conn");
+
+        if (this._connectionOptions.size <= 0) {
+            return;
+        }
+
+        const options = Array.from(this._connectionOptions.entries()).map(
+            ([option, value]) => ({
+                option,
+                value,
+            })
+        );
+        const optionsMsg = {
+            action: "options_connection",
+            args: {
+                req_id: ReqId.getReqID(),
+                options,
+            },
+        };
+        const optionsResp = await this._wsConnector.sendMsgDirect(
+            JSONBig.stringify(optionsMsg)
+        );
+        this.assertSuccessResponse(optionsResp, "options_connection");
+    }
+
+    public setSessionRecoveryHook(
+        hook: SessionRecoveryHook | null | undefined
+    ): void {
+        this._customRecoveryHook = hook || null;
+        this.bindReconnectRecoveryHook();
     }
 
     async connect(database?: string | undefined | null): Promise<void> {
@@ -147,7 +150,6 @@ export class WsClient {
         }
         this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
             this._dsn,
-            this._path,
             this._timeout
         );
         this.bindReconnectRecoveryHook();
@@ -221,6 +223,29 @@ export class WsClient {
         );
     }
 
+    /**
+     * Execute a message directly via sendMsgDirect, bypassing inflight tracking.
+     * Used by session recovery hooks to avoid replaying recovery messages.
+     */
+    async execDirect(message: string, bSqlQuery: boolean = true): Promise<any> {
+        if (logger.isDebugEnabled()) {
+            logger.debug("[wsClient.execDirect]===>" + maskSensitiveForLog(message));
+        }
+
+        const resp: any = await this.getWsConnector().sendMsgDirect(message);
+        if (resp.msg.code == 0) {
+            if (bSqlQuery) {
+                return new WSQueryResponse(resp);
+            }
+            return resp;
+        }
+
+        throw new WebSocketInterfaceError(
+            resp.msg.code,
+            resp.msg.message
+        );
+    }
+
     async sendBinaryMsg(
         reqId: bigint,
         action: string,
@@ -257,7 +282,6 @@ export class WsClient {
         try {
             this._wsConnector = await WebSocketConnectionPool.instance().getConnection(
                 this._dsn,
-                this._path,
                 this._timeout
             );
             this.bindReconnectRecoveryHook();
@@ -340,6 +364,7 @@ export class WsClient {
             );
             this._wsConnector = undefined;
         }
+        this._customRecoveryHook = null;
     }
 
     private checkAuth() {

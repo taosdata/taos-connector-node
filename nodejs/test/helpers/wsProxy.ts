@@ -121,7 +121,6 @@ interface ProxyTunnel {
 export class WsProxy {
     private readonly _listenHost: string;
     private readonly _requestedPort: number;
-    private readonly _upstreamBaseUrl: URL;
     private _lockedPort: number | null = null;
     private readonly _onEvent?: WsProxyEventHandler;
     private readonly _control: WsProxyControl;
@@ -149,7 +148,6 @@ export class WsProxy {
         }
         this._listenHost = options.host;
         this._requestedPort = options.port;
-        this._upstreamBaseUrl = this.parseUpstreamBaseUrl(DEFAULT_UPSTREAM_BASE_URL);
         this._onEvent = options.onEvent;
         this._control = {
             restart: async (opts?: { downtimeMs?: number; reason?: string }) => {
@@ -428,19 +426,8 @@ export class WsProxy {
         upstreamClient.connect(upstreamUrl);
     }
 
-    private parseUpstreamBaseUrl(rawUrl: string): URL {
-        const parsed = new URL(rawUrl);
-        if (parsed.protocol !== "ws:" && parsed.protocol !== "wss:") {
-            throw new Error(`invalid upstream protocol: ${parsed.protocol}`);
-        }
-        parsed.pathname = "/";
-        parsed.search = "";
-        parsed.hash = "";
-        return parsed;
-    }
-
     private buildUpstreamUrl(path: string): string {
-        const upstream = new URL(this._upstreamBaseUrl.toString());
+        const upstream = new URL(DEFAULT_UPSTREAM_BASE_URL);
         upstream.pathname = ensureLeadingSlash(path);
         return upstream.toString();
     }

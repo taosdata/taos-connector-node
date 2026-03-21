@@ -1,7 +1,7 @@
 import JSONBig from "json-bigint";
 import { WebSocketConnector } from "./wsConnector";
 import { WebSocketConnectionPool } from "./wsConnectorPool";
-import { Address, Dsn, getDefaultPortForHost } from "../common/dsn";
+import { Dsn } from "../common/dsn";
 import {
     ErrorCode,
     TDWebSocketClientError,
@@ -38,14 +38,10 @@ export class WsClient {
     private _customRecoveryHook: SessionRecoveryHook | null = null;
 
     constructor(
-        urlOrDsn: URL | Dsn,
+        dsn: Dsn,
         timeout?: number | undefined | null
     ) {
-        if (urlOrDsn instanceof URL) {
-            this._dsn = this.convertUrlToDsn(urlOrDsn);
-        } else {
-            this._dsn = urlOrDsn;
-        }
+        this._dsn = dsn;
         this.checkAuth();
         this._timeout = timeout;
         if (this._dsn.params.has("timezone")) {
@@ -54,24 +50,6 @@ export class WsClient {
         if (this._dsn.params.has("bearer_token")) {
             this._bearerToken = this._dsn.params.get("bearer_token") || undefined;
         }
-    }
-
-    private convertUrlToDsn(url: URL): Dsn {
-        const scheme = url.protocol.replace(":", "");
-        const host = url.hostname;
-        const port = url.port.length > 0 ? Number.parseInt(url.port, 10) : getDefaultPortForHost(host);
-        const params = new Map<string, string>();
-        url.searchParams.forEach((value, key) => {
-            params.set(key, value);
-        });
-        return new Dsn(
-            scheme,
-            url.username,
-            url.password,
-            [new Address(host, port)],
-            "",
-            params,
-        );
     }
 
     private buildConnMessage(database?: string | undefined | null) {

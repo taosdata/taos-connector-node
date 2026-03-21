@@ -433,7 +433,6 @@ describe("ws proxy failover", () => {
         const proxyA = await WsProxy.create({
             host: "127.0.0.1",
             port: 0,
-            supportedPaths: ["/ws", "/rest/tmq"],
             onEvent: (event, control) => {
                 if (event.type !== "message") {
                     return;
@@ -455,7 +454,6 @@ describe("ws proxy failover", () => {
         const proxyB = await WsProxy.create({
             host: "127.0.0.1",
             port: 0,
-            supportedPaths: ["/ws", "/rest/tmq"],
             onEvent: (event: WsProxyEvent) => {
                 if (event.type === "client_connected") {
                     proxyBHadActivity = true;

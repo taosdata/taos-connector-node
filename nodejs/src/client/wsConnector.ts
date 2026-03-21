@@ -1,5 +1,5 @@
 import { ICloseEvent, w3cwebsocket } from "websocket";
-import { Address, Dsn } from "../common/dsn";
+import { Dsn } from "../common/dsn";
 import {
     ErrorCode,
     TDWebSocketClientError,
@@ -132,12 +132,9 @@ export class RetryConfig {
 export class WebSocketConnector {
     private _conn!: w3cwebsocket;
     private readonly _poolKey: string;
-    private readonly _addresses: Address[];
+    private readonly _dsn: Dsn;
     private _currentAddressIndex: number;
     private readonly _retryConfig: RetryConfig;
-    private readonly _scheme: string;
-    private readonly _path: string;
-    private readonly _params: Map<string, string>;
     private _inflightStore: InflightRequestStore;
     private readonly _suppressedSockets: WeakSet<w3cwebsocket> = new WeakSet();
     private _reconnectLock: Promise<void> | null = null;
@@ -159,12 +156,9 @@ export class WebSocketConnector {
             );
         }
         this._poolKey = poolKey;
-        this._addresses = dsn.addresses;
+        this._dsn = dsn;
         this._currentAddressIndex = this.selectRandomIndex();
         this._retryConfig = RetryConfig.fromDsn(dsn);
-        this._scheme = dsn.scheme;
-        this._path = endpointToPath(dsn.endpoint);
-        this._params = new Map(dsn.params);
         this._inflightStore = new InflightRequestStore();
         if (timeout) {
             this._timeout = timeout;
@@ -174,18 +168,19 @@ export class WebSocketConnector {
     }
 
     private selectRandomIndex(): number {
-        if (this._addresses.length <= 1) {
+        if (this._dsn.addresses.length <= 1) {
             return 0;
         }
-        return Math.floor(Math.random() * this._addresses.length);
+        return Math.floor(Math.random() * this._dsn.addresses.length);
     }
 
     private buildUrl(index: number): string {
-        const addr = this._addresses[index];
-        const url = new URL(`${this._scheme}://${addr.host}:${addr.port}/${this._path}`);
+        const addr = this._dsn.addresses[index];
+        const path = endpointToPath(this._dsn.endpoint);
+        const url = new URL(`${this._dsn.scheme}://${addr.host}:${addr.port}/${path}`);
         const forwardedParams = ["token", "bearer_token"];
         for (const key of forwardedParams) {
-            const value = this._params.get(key);
+            const value = this._dsn.params.get(key);
             if (value !== undefined) {
                 url.searchParams.set(key, value);
             }
@@ -391,7 +386,7 @@ export class WebSocketConnector {
     }
 
     private getCurrentAddress(): string {
-        const current = this._addresses[this._currentAddressIndex];
+        const current = this._dsn.addresses[this._currentAddressIndex];
         return `${current.host}:${current.port}`;
     }
 
@@ -439,7 +434,7 @@ export class WebSocketConnector {
     }
 
     private async attemptReconnect(): Promise<void> {
-        const totalAddresses = this._addresses.length;
+        const totalAddresses = this._dsn.addresses.length;
 
         for (let i = 0; i < totalAddresses; i++) {
             for (let retry = 0; retry < this._retryConfig.retries; retry++) {

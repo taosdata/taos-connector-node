@@ -38,10 +38,7 @@ function createInflightStore(): any {
 function createBareConnector(): any {
     const connector = Object.create(WebSocketConnector.prototype) as any;
     connector._timeout = 5000;
-    connector._addresses = [
-        { host: "host1", port: 6041 },
-        { host: "host2", port: 6042 },
-    ];
+    connector._dsn = parse("ws://root:taosdata@host1:6041,host2:6042");
     connector._currentAddressIndex = 0;
     connector._retryConfig = new RetryConfig(1, 1, 8);
     connector._reconnectLock = null;
@@ -110,7 +107,7 @@ describe("WebSocketConnector failover and retry", () => {
         const attempts: string[] = [];
         connector.sleep = jest.fn(async () => { });
         connector.reconnect = jest.fn(async () => {
-            const current = connector._addresses[connector._currentAddressIndex];
+            const current = connector._dsn.addresses[connector._currentAddressIndex];
             const addr = `${current.host}:${current.port}`;
             attempts.push(addr);
             if (addr === "host1:6041") {

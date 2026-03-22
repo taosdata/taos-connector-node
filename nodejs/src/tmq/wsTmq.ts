@@ -116,7 +116,7 @@ export class WsConsumer {
         logger.info(
             `Recovering TMQ session context, re-subscribing ${this._topics.length} topic(s).`
         );
-        await this._wsClient.execDirect(
+        await this._wsClient.sendMsgDirect(
             JSON.stringify(this.buildSubscribeMessage(this._topics)),
             false
         );

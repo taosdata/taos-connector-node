@@ -63,15 +63,6 @@ export class WsClient {
         };
     }
 
-    private assertSuccessResponse(result: any, action: string): void {
-        if (result && result.msg && result.msg.code == 0) {
-            return;
-        }
-        const code = result?.msg?.code ?? ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL;
-        const message = result?.msg?.message || `${action} failed`;
-        throw new WebSocketQueryError(code, message);
-    }
-
     private getWsConnector(): WebSocketConnector {
         if (!this._wsConnector) {
             throw new TDWebSocketClientError(
@@ -106,10 +97,7 @@ export class WsClient {
             return;
         }
         const connMsg = this.buildConnMessage(this._connectedDatabase);
-        const connResp = await this._wsConnector.sendMsgDirect(
-            JSON.stringify(connMsg)
-        );
-        this.assertSuccessResponse(connResp, "conn");
+        await this.sendMsgDirect(JSON.stringify(connMsg), false);
 
         if (this._connectionOptions.size <= 0) {
             return;
@@ -128,10 +116,7 @@ export class WsClient {
                 options,
             },
         };
-        const optionsResp = await this._wsConnector.sendMsgDirect(
-            JSONBig.stringify(optionsMsg)
-        );
-        this.assertSuccessResponse(optionsResp, "options_connection");
+        await this.sendMsgDirect(JSONBig.stringify(optionsMsg), false);
     }
 
     public setSessionRecoveryHook(
@@ -227,9 +212,9 @@ export class WsClient {
      * Execute a message directly via sendMsgDirect, bypassing inflight tracking.
      * Used by session recovery hooks to avoid replaying recovery messages.
      */
-    async execDirect(message: string, bSqlQuery: boolean = true): Promise<any> {
+    async sendMsgDirect(message: string, bSqlQuery: boolean = true): Promise<any> {
         if (logger.isDebugEnabled()) {
-            logger.debug("[wsClient.execDirect]===>" + maskSensitiveForLog(message));
+            logger.debug("[wsClient.sendMsgDirect]===>" + maskSensitiveForLog(message));
         }
 
         const resp: any = await this.getWsConnector().sendMsgDirect(message);
@@ -240,7 +225,7 @@ export class WsClient {
             return resp;
         }
 
-        throw new WebSocketInterfaceError(
+        throw new WebSocketQueryError(
             resp.msg.code,
             resp.msg.message
         );

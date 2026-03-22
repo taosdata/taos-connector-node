@@ -2,6 +2,7 @@ import { w3cwebsocket } from "websocket";
 import { WsClient } from "../../src/client/wsClient";
 import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
 import { parse, WS_TMQ_ENDPOINT } from "../../src/common/dsn";
+import { WebSocketQueryError } from "../../src/common/wsError";
 
 function createMockConnector() {
     return {
@@ -88,5 +89,30 @@ describe("WsClient recovery hook", () => {
         expect(connMsg.action).toBe("conn");
         expect(connMsg.args.db).toBe("db_recovery");
         expect(callOrder).toEqual(["conn", "custom"]);
+    });
+
+    test("throws WebSocketQueryError when sql recovery direct call fails", async () => {
+        const dsn = parse("ws://root:taosdata@localhost:6041");
+        const connector = createMockConnector();
+        connector.sendMsgDirect.mockResolvedValue({
+            msg: {
+                code: 9001,
+                message: "conn failed",
+            },
+        });
+        jest
+            .spyOn(WebSocketConnectionPool.instance(), "getConnection")
+            .mockResolvedValue(connector as any);
+
+        const customRecoveryHook = jest.fn(async () => { });
+        const client = new WsClient(dsn, 5000);
+        client.setSessionRecoveryHook(customRecoveryHook);
+        await client.ready();
+
+        const hookCalls = connector.setSessionRecoveryHook.mock.calls;
+        const hook = hookCalls[hookCalls.length - 1]?.[0];
+        expect(hook).toBeTruthy();
+        await expect(hook()).rejects.toBeInstanceOf(WebSocketQueryError);
+        expect(customRecoveryHook).not.toHaveBeenCalled();
     });
 });

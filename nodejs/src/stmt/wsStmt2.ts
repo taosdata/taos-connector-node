@@ -25,7 +25,6 @@ import { FieldBindParams } from "./FieldBindParams";
 export class WsStmt2 implements WsStmt {
     private _wsClient: WsClient;
     private _stmt_id: bigint | undefined | null;
-    private _query_id: bigint | undefined | null;
     private _precision: number = PrecisionLength["ms"];
     private fields?: Array<StmtFieldInfo> | undefined | null;
     private lastAffected: number | undefined | null;
@@ -36,6 +35,7 @@ export class WsStmt2 implements WsStmt {
     private _toBeBindColCount: number;
     private _toBeBindTableNameIndex: number | undefined | null;
     private _isInsert: boolean = false;
+
     private constructor(wsClient: WsClient, precision?: number) {
         this._wsClient = wsClient;
         if (precision) {
@@ -54,7 +54,7 @@ export class WsStmt2 implements WsStmt {
         reqId?: number
     ): Promise<WsStmt> {
         try {
-            let wsStmt = new WsStmt2(wsClient, precision);
+            const wsStmt = new WsStmt2(wsClient, precision);
             return await wsStmt.init(reqId);
         } catch (e: any) {
             logger.error(`WsStmt init is failed, ${e.code}, ${e.message}`);
@@ -69,7 +69,7 @@ export class WsStmt2 implements WsStmt {
                     await this._wsClient.connect();
                     await this._wsClient.checkVersion();
                 }
-                let queryMsg = {
+                const msg = {
                     action: "stmt2_init",
                     args: {
                         req_id: ReqId.getReqID(reqId),
@@ -77,7 +77,7 @@ export class WsStmt2 implements WsStmt {
                         single_table_bind_once: true,
                     },
                 };
-                await this.execute(queryMsg);
+                await this.execute(msg);
                 return this;
             } catch (e: any) {
                 logger.error(`stmt init filed, ${e.code}, ${e.message}`);
@@ -95,7 +95,7 @@ export class WsStmt2 implements WsStmt {
     }
 
     async prepare(sql: string): Promise<void> {
-        let queryMsg = {
+        const msg = {
             action: "stmt2_prepare",
             args: {
                 req_id: ReqId.getReqID(),
@@ -104,7 +104,7 @@ export class WsStmt2 implements WsStmt {
                 get_fields: true,
             },
         };
-        let resp = await this.execute(queryMsg);
+        const resp = await this.execute(msg);
         if (this._isInsert && this.fields) {
             this._precision = this.fields[0].precision
                 ? this.fields[0].precision
@@ -140,7 +140,7 @@ export class WsStmt2 implements WsStmt {
                 "Table name cannot be empty"
             );
         }
-        let tableInfo = this._stmtTableInfo.get(tableName);
+        const tableInfo = this._stmtTableInfo.get(tableName);
         if (!tableInfo) {
             this._currentTableInfo = new TableInfo(tableName);
             this._stmtTableInfo.set(tableName, this._currentTableInfo);
@@ -208,17 +208,14 @@ export class WsStmt2 implements WsStmt {
 
             const paramsCount = paramsArray._fieldParams[0].params.length;
             for (let i = 0; i < paramsCount; i++) {
-                let tableName =
-                    paramsArray._fieldParams[tableNameIndex].params[i];
+                const tableName = paramsArray._fieldParams[tableNameIndex].params[i];
                 await this.setTableName(tableName);
                 for (let j = 0; j < paramsArray._fieldParams.length; j++) {
                     if (j == tableNameIndex) {
                         continue;
                     }
-                    let fieldParam = paramsArray._fieldParams[j];
-                    if (
-                        this.fields[j].bind_type == FieldBindType.TAOS_FIELD_TAG
-                    ) {
+                    const fieldParam = paramsArray._fieldParams[j];
+                    if (this.fields[j].bind_type == FieldBindType.TAOS_FIELD_TAG) {
                         if (!this._currentTableInfo.tags) {
                             this._currentTableInfo.tags = new Stmt2BindParams(
                                 this._toBeBindTagCount,
@@ -235,9 +232,7 @@ export class WsStmt2 implements WsStmt {
                                 fieldParam.bindType
                             )
                         );
-                    } else if (
-                        this.fields[j].bind_type == FieldBindType.TAOS_FIELD_COL
-                    ) {
+                    } else if (this.fields[j].bind_type == FieldBindType.TAOS_FIELD_COL) {
                         if (!this._currentTableInfo.params) {
                             this._currentTableInfo.params = new Stmt2BindParams(
                                 this._toBeBindColCount,
@@ -275,8 +270,8 @@ export class WsStmt2 implements WsStmt {
                 "table info is empty!"
             );
         }
-        let params = this._currentTableInfo.getParams();
 
+        const params = this._currentTableInfo.getParams();
         if (!params) {
             throw new TaosResultError(
                 ErrorCode.ERR_INVALID_PARAMS,
@@ -284,8 +279,8 @@ export class WsStmt2 implements WsStmt {
             );
         }
 
-        let reqId = BigInt(ReqId.getReqID());
-        let bytes = stmt2BinaryBlockEncode(
+        const reqId = BigInt(ReqId.getReqID());
+        const bytes = stmt2BinaryBlockEncode(
             reqId,
             this._stmtTableInfoList,
             this._stmt_id,
@@ -295,7 +290,7 @@ export class WsStmt2 implements WsStmt {
         );
         await this.sendBinaryMsg(reqId, "stmt2_bind", bytes);
 
-        let execMsg = {
+        const execMsg = {
             action: "stmt2_exec",
             args: {
                 req_id: ReqId.getReqID(),
@@ -317,14 +312,14 @@ export class WsStmt2 implements WsStmt {
     }
 
     async resultSet(): Promise<WSRows> {
-        let execMsg = {
+        const msg = {
             action: "stmt2_result",
             args: {
                 req_id: ReqId.getReqID(),
                 stmt_id: this._stmt_id,
             },
         };
-        let resp = await this.execute(execMsg);
+        const resp = await this.execute(msg);
         if (!resp) {
             throw new TaosResultError(
                 ErrorCode.ERR_INVALID_PARAMS,
@@ -357,27 +352,23 @@ export class WsStmt2 implements WsStmt {
                 );
             }
 
-            let reqMsg = JSONBig.stringify(stmtMsg);
+            const reqMsg = JSONBig.stringify(stmtMsg);
 
             if (register) {
-                let result = await this._wsClient.exec(reqMsg, false);
-                let resp = new WsStmtQueryResponse(result);
+                const result = await this._wsClient.exec(reqMsg, false);
+                const resp = new WsStmtQueryResponse(result);
                 if (resp.stmt_id) {
                     this._stmt_id = resp.stmt_id;
                 }
-
                 if (resp.affected) {
                     this.lastAffected = resp.affected;
                 }
-
                 if (resp.fields) {
                     this.fields = resp.fields;
                 }
-
                 if (resp.is_insert) {
                     this._isInsert = resp.is_insert;
                 }
-
                 return resp;
             }
 
@@ -400,17 +391,17 @@ export class WsStmt2 implements WsStmt {
                 "websocket connect has closed!"
             );
         }
-        let result = await this._wsClient.sendBinaryMsg(
+
+        const result = await this._wsClient.sendBinaryMsg(
             reqId,
             action,
             message,
             false
         );
-        let resp = new WsStmtQueryResponse(result);
+        const resp = new WsStmtQueryResponse(result);
         if (resp.stmt_id) {
             this._stmt_id = resp.stmt_id;
         }
-
         if (resp.affected) {
             this.lastAffected = resp.affected;
         }

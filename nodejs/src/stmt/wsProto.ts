@@ -1,4 +1,3 @@
-import exp from "constants";
 import { WSQueryResponse } from "../client/wsResponse";
 import { TDengineTypeCode, TDengineTypeLength } from "../common/constant";
 import { MessageResp } from "../common/taosResult";
@@ -6,6 +5,7 @@ import { StmtBindParams } from "./wsParamsBase";
 import { ColumnInfo } from "./wsColumnInfo";
 import { ErrorCode, TaosResultError } from "../common/wsError";
 import { TableInfo } from "./wsTableInfo";
+
 export interface StmtMessageInfo {
     action: string;
     args: StmtParamsInfo;
@@ -34,6 +34,7 @@ export class WsStmtQueryResponse extends WSQueryResponse {
     stmt_id?: bigint | undefined | null;
     is_insert?: boolean | undefined | null;
     fields?: Array<StmtFieldInfo> | undefined | null;
+
     constructor(resp: MessageResp) {
         super(resp);
         this.stmt_id = BigInt(resp.msg.stmt_id);
@@ -55,7 +56,7 @@ export function binaryBlockEncode(
     reqId: bigint,
     row: number
 ): ArrayBuffer {
-    //Computing the length of data
+    // Computing the length of data
     let columns = bindParams.getParams().length;
     let length = TDengineTypeLength[TDengineTypeCode.BIGINT] * 4;
     length += TDengineTypeLength[TDengineTypeCode.INT] * 5;
@@ -68,44 +69,44 @@ export function binaryBlockEncode(
     arrayView.setBigUint64(0, reqId, true);
     arrayView.setBigUint64(8, stmtId, true);
     arrayView.setBigUint64(16, BigInt(bindType), true);
-    //version int32
+    // version int32
     arrayView.setUint32(24, 1, true);
-    //data length int32
+    // data length int32
     arrayView.setUint32(28, arrayBuffer.byteLength, true);
-    //rows int32
+    // rows int32
     arrayView.setUint32(32, row, true);
-    //columns int32
+    // columns int32
     arrayView.setUint32(36, columns, true);
-    //flagSegment int32
+    // flagSegment int32
     arrayView.setUint32(40, 0, true);
-    //groupID uint64
+    // groupID uint64
     arrayView.setBigUint64(44, BigInt(0), true);
-    //head length
+    // head length
     let offset = 52;
-    //type data range
+    // type data range
     let typeView = new DataView(arrayBuffer, offset);
-    //length data range
+    // length data range
     let lenView = new DataView(arrayBuffer, offset + columns * 5);
-    //data range offset
+    // data range offset
     let dataOffset = offset + columns * 5 + columns * 4;
     let headOffset = 0;
     let columnsData = bindParams.getParams();
     for (let i = 0; i < columnsData.length; i++) {
-        //set column data type
+        // set column data type
         typeView.setUint8(headOffset, columnsData[i].type);
-        //set column type length
+        // set column type length
         typeView.setUint32(headOffset + 1, columnsData[i].typeLen, true);
-        //set column data length
+        // set column data length
         lenView.setUint32(i * 4, columnsData[i].length, true);
         if (columnsData[i].data) {
-            //get encode column data
+            // get encode column data
             const sourceView = new Uint8Array(columnsData[i].data);
             const destView = new Uint8Array(
                 arrayBuffer,
                 dataOffset,
                 columnsData[i].data.byteLength
             );
-            //splicing data
+            // splicing data
             destView.set(sourceView);
             dataOffset += columnsData[i].data.byteLength;
         }

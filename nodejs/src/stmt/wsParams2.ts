@@ -15,6 +15,7 @@ import { StmtFieldInfo } from "./wsProto";
 export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
     private _fields: Array<StmtFieldInfo>;
     protected paramIndex: number = 0;
+
     constructor(
         paramsCount?: number,
         precision?: number,
@@ -196,7 +197,6 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                     dataLengths.push(length);
                     bytes.push(...encoder);
                 } else if (params[i] instanceof ArrayBuffer) {
-                    //input arraybuffer, save not need encode
                     let value: ArrayBuffer = params[i];
                     totalLength += value.byteLength;
                     dataLengths.push(value.byteLength);
@@ -292,8 +292,6 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                 let timeStamp: bigint = BigInt(0);
                 if (params[i] instanceof Date) {
                     let date: Date = params[i];
-                    //node only support milliseconds, need fill 0
-
                     if (this.precisionLength == PrecisionLength["us"]) {
                         timeStamp = BigInt(date.getTime() * 1000);
                     } else if (this.precisionLength == PrecisionLength["ns"]) {
@@ -313,7 +311,6 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                 }
                 timeStamps.push(timeStamp);
             } else {
-                //set bitmap bit is null
                 timeStamps.push(null);
             }
         }

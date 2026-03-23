@@ -24,8 +24,8 @@ export class WsStmt1 implements WsStmt {
     private _wsClient: WsClient;
     private _stmt_id: bigint | undefined | null;
     private _precision: number = PrecisionLength["ms"];
-
     private lastAffected: number | undefined | null;
+
     private constructor(wsClient: WsClient, precision?: number) {
         this._wsClient = wsClient;
         if (precision) {

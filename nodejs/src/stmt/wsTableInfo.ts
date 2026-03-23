@@ -1,6 +1,5 @@
 import { ErrorCode, TaosError } from "../common/wsError";
 import { StmtBindParams } from "./wsParamsBase";
-import JSONBig from "json-bigint";
 
 export class TableInfo {
     name: Uint8Array | undefined | null;
@@ -8,6 +7,7 @@ export class TableInfo {
     params?: StmtBindParams;
     length: number = 0;
     textEncoder = new TextEncoder();
+
     constructor(name?: string) {
         if (name && name.length > 0) {
             this.name = this.textEncoder.encode(name);
@@ -42,6 +42,7 @@ export class TableInfo {
             );
         }
     }
+
     async setTags(paramsArray: StmtBindParams): Promise<void> {
         if (paramsArray) {
             this.tags = paramsArray;
@@ -52,6 +53,7 @@ export class TableInfo {
             );
         }
     }
+
     async setParams(bindParams: StmtBindParams): Promise<void> {
         if (!this.params) {
             this.params = bindParams;

@@ -208,10 +208,6 @@ export class WsClient {
         );
     }
 
-    /**
-     * Execute a message directly via sendMsgDirect, bypassing inflight tracking.
-     * Used by session recovery hooks to avoid replaying recovery messages.
-     */
     async sendMsgDirect(message: string, bSqlQuery: boolean = true): Promise<any> {
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.sendMsgDirect]===>" + maskSensitiveForLog(message));

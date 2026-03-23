@@ -286,6 +286,14 @@ export class WsClient {
         }
     }
 
+    async waitForReady(): Promise<void> {
+        await this.getWsConnector().ready();
+    }
+
+    isNetworkError(err: unknown): boolean {
+        return this.getWsConnector().isNetworkError(err);
+    }
+
     async sendMsg(message: string): Promise<any> {
         logger.debug("[wsClient.sendMsg]===>" + message);
         return this.getWsConnector().sendMsg(message);

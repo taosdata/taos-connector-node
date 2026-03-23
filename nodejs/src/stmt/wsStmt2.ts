@@ -22,6 +22,14 @@ import { TableInfo } from "./wsTableInfo";
 import { WSRows } from "../sql/wsRows";
 import { FieldBindParams } from "./FieldBindParams";
 
+enum StmtStep {
+    INIT,
+    PREPARE,
+    BIND,
+    EXEC,
+    RESULT,
+}
+
 export class WsStmt2 implements WsStmt {
     private _wsClient: WsClient;
     private _stmt_id: bigint | undefined | null;
@@ -35,6 +43,8 @@ export class WsStmt2 implements WsStmt {
     private _toBeBindColCount: number;
     private _toBeBindTableNameIndex: number | undefined | null;
     private _isInsert: boolean = false;
+    private _savedSql: string | undefined;
+    private _savedBindBytes: ArrayBuffer | undefined;
 
     private constructor(wsClient: WsClient, precision?: number) {
         this._wsClient = wsClient;
@@ -69,17 +79,13 @@ export class WsStmt2 implements WsStmt {
                     await this._wsClient.connect();
                     await this._wsClient.checkVersion();
                 }
-                const msg = {
-                    action: "stmt2_init",
-                    args: {
-                        req_id: ReqId.getReqID(reqId),
-                        single_stb_insert: true,
-                        single_table_bind_once: true,
-                    },
-                };
-                await this.execute(msg);
+                await this.doInit(reqId);
                 return this;
             } catch (e: any) {
+                if (this._wsClient.isNetworkError(e)) {
+                    await this.rebuildContext(StmtStep.INIT);
+                    return this;
+                }
                 logger.error(`stmt init filed, ${e.code}, ${e.message}`);
                 throw e;
             }
@@ -95,41 +101,12 @@ export class WsStmt2 implements WsStmt {
     }
 
     async prepare(sql: string): Promise<void> {
-        const msg = {
-            action: "stmt2_prepare",
-            args: {
-                req_id: ReqId.getReqID(),
-                sql: sql,
-                stmt_id: this._stmt_id,
-                get_fields: true,
-            },
-        };
-        const resp = await this.execute(msg);
-        if (this._isInsert && this.fields) {
-            this._precision = this.fields[0].precision
-                ? this.fields[0].precision
-                : 0;
-            this._toBeBindColCount = 0;
-            this._toBeBindTagCount = 0;
-            this.fields?.forEach((field, index) => {
-                if (field.bind_type == FieldBindType.TAOS_FIELD_TBNAME) {
-                    this._toBeBindTableNameIndex = index;
-                } else if (field.bind_type == FieldBindType.TAOS_FIELD_TAG) {
-                    this._toBeBindTagCount++;
-                } else if (field.bind_type == FieldBindType.TAOS_FIELD_COL) {
-                    this._toBeBindColCount++;
-                }
-            });
-        } else {
-            if (resp && resp.fields_count && resp.fields_count > 0) {
-                this._stmtTableInfoList = [this._currentTableInfo];
-                this._toBeBindColCount = resp.fields_count;
-            } else {
-                throw new TaosResultError(
-                    ErrorCode.ERR_INVALID_PARAMS,
-                    "prepare No columns to bind!"
-                );
-            }
+        this._savedSql = sql;
+        try {
+            await this.doPrepare(sql);
+        } catch (err: any) {
+            if (!this._wsClient.isNetworkError(err)) throw err;
+            await this.rebuildContext(StmtStep.PREPARE);
         }
     }
 
@@ -288,8 +265,114 @@ export class WsStmt2 implements WsStmt {
             this._toBeBindTagCount,
             this._toBeBindColCount
         );
-        await this.sendBinaryMsg(reqId, "stmt2_bind", bytes);
+        this._savedBindBytes = bytes;
+        try {
+            await this.doSendBindBytes(bytes);
+            await this.doExec();
+        } catch (err: any) {
+            if (!this._wsClient.isNetworkError(err)) throw err;
+            await this.rebuildContext(StmtStep.EXEC);
+        }
+        if (this._isInsert) this.cleanup();
+    }
 
+    private cleanup() {
+        this._stmtTableInfo.clear();
+        this._stmtTableInfoList = [];
+        this._currentTableInfo = new TableInfo();
+        this._savedSql = undefined;
+        this._savedBindBytes = undefined;
+    }
+
+    getLastAffected(): number | null | undefined {
+        return this.lastAffected;
+    }
+
+    async resultSet(): Promise<WSRows> {
+        try {
+            return await this.doResult();
+        } catch (err: any) {
+            if (!this._wsClient.isNetworkError(err)) throw err;
+            return await this.rebuildContext(StmtStep.RESULT) as WSRows;
+        } finally {
+            this.cleanup();
+        }
+    }
+
+    async close(): Promise<void> {
+        let queryMsg = {
+            action: "stmt2_close",
+            args: {
+                req_id: ReqId.getReqID(),
+                stmt_id: this._stmt_id,
+            },
+        };
+        try {
+            await this.execute(queryMsg);
+        } catch (_e) {
+            // close failures are ignored per design
+        }
+    }
+
+    // --- Internal send methods (no retry logic) ---
+
+    private async doInit(reqId?: number): Promise<void> {
+        const msg = {
+            action: "stmt2_init",
+            args: {
+                req_id: ReqId.getReqID(reqId),
+                single_stb_insert: true,
+                single_table_bind_once: true,
+            },
+        };
+        await this.execute(msg);
+    }
+
+    private async doPrepare(sql: string): Promise<void> {
+        const msg = {
+            action: "stmt2_prepare",
+            args: {
+                req_id: ReqId.getReqID(),
+                sql: sql,
+                stmt_id: this._stmt_id,
+                get_fields: true,
+            },
+        };
+        const resp = await this.execute(msg);
+        if (this._isInsert && this.fields) {
+            this._precision = this.fields[0].precision
+                ? this.fields[0].precision
+                : 0;
+            this._toBeBindColCount = 0;
+            this._toBeBindTagCount = 0;
+            this.fields?.forEach((field, index) => {
+                if (field.bind_type == FieldBindType.TAOS_FIELD_TBNAME) {
+                    this._toBeBindTableNameIndex = index;
+                } else if (field.bind_type == FieldBindType.TAOS_FIELD_TAG) {
+                    this._toBeBindTagCount++;
+                } else if (field.bind_type == FieldBindType.TAOS_FIELD_COL) {
+                    this._toBeBindColCount++;
+                }
+            });
+        } else {
+            if (resp && resp.fields_count && resp.fields_count > 0) {
+                this._stmtTableInfoList = [this._currentTableInfo];
+                this._toBeBindColCount = resp.fields_count;
+            } else {
+                throw new TaosResultError(
+                    ErrorCode.ERR_INVALID_PARAMS,
+                    "prepare No columns to bind!"
+                );
+            }
+        }
+    }
+
+    private async doSendBindBytes(bytes: ArrayBuffer): Promise<void> {
+        const reqId = BigInt(ReqId.getReqID());
+        await this.sendBinaryMsg(reqId, "stmt2_bind", bytes);
+    }
+
+    private async doExec(): Promise<void> {
         const execMsg = {
             action: "stmt2_exec",
             args: {
@@ -298,20 +381,9 @@ export class WsStmt2 implements WsStmt {
             },
         };
         await this.execute(execMsg);
-        this.cleanup();
     }
 
-    private cleanup() {
-        this._stmtTableInfo.clear();
-        this._stmtTableInfoList = [];
-        this._currentTableInfo = new TableInfo();
-    }
-
-    getLastAffected(): number | null | undefined {
-        return this.lastAffected;
-    }
-
-    async resultSet(): Promise<WSRows> {
+    private async doResult(): Promise<WSRows> {
         const msg = {
             action: "stmt2_result",
             args: {
@@ -329,16 +401,34 @@ export class WsStmt2 implements WsStmt {
         return new WSRows(this._wsClient, resp);
     }
 
-    async close(): Promise<void> {
-        let queryMsg = {
-            action: "stmt2_close",
-            args: {
-                req_id: ReqId.getReqID(),
-                stmt_id: this._stmt_id,
-            },
-        };
-        await this.execute(queryMsg);
+    // --- Unified rebuild method ---
+
+    private async rebuildContext(failedStep: StmtStep): Promise<any> {
+        while (true) {
+            try {
+                await this._wsClient.waitForReady();
+
+                await this.doInit();
+                if (failedStep === StmtStep.INIT) return;
+
+                await this.doPrepare(this._savedSql!);
+                if (failedStep === StmtStep.PREPARE) return;
+
+                await this.doSendBindBytes(this._savedBindBytes!);
+                if (failedStep === StmtStep.BIND) return;
+
+                await this.doExec();
+                if (failedStep === StmtStep.EXEC) return;
+
+                return await this.doResult();
+            } catch (err: any) {
+                if (!this._wsClient.isNetworkError(err)) throw err;
+                // Network error during rebuild, retry the entire rebuild
+            }
+        }
     }
+
+    // --- Low-level transport ---
 
     private async execute(
         stmtMsg: StmtMessageInfo | ArrayBuffer,

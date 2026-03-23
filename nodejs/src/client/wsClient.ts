@@ -337,6 +337,14 @@ export class WsClient {
         }
     }
 
+    isNetworkError(err: unknown): boolean {
+        return this.getWsConnector().isNetworkError(err);
+    }
+
+    async waitForReady(): Promise<void> {
+        await this.getWsConnector().ready();
+    }
+
     async close(): Promise<void> {
         if (this._wsConnector) {
             this._wsConnector.setSessionRecoveryHook(null);

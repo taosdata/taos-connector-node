@@ -121,7 +121,21 @@ describe("WsStmt2 failover (mock)", () => {
         expect(recoverSpy).toHaveBeenCalledWith(Step.EXEC);
         expect(cleanupSpy).not.toHaveBeenCalled();
     });
+    test("resultSet recovers on network error and cleans up", async () => {
+        const { stmt, wsClient } = createBareStmt();
+        const networkError = new Error("connection reset");
+        const rebuiltRows = { id: "rebuilt" };
+        wsClient.isNetworkError.mockReturnValue(true);
+        jest.spyOn(stmt, "doResult").mockRejectedValueOnce(networkError);
+        const recoverSpy = jest.spyOn(stmt, "recover").mockResolvedValue(rebuiltRows);
+        const cleanupSpy = jest.spyOn(stmt, "cleanup");
 
+        const result = await stmt.resultSet();
+
+        expect(result).toBe(rebuiltRows);
+        expect(recoverSpy).toHaveBeenCalledWith(Step.RESULT);
+        expect(cleanupSpy).toHaveBeenCalledTimes(1);
+    });
     test("exec only cleans up immediately for insert statements", async () => {
         const bindBytes = new Uint8Array([7, 8, 9]).buffer;
 
@@ -164,23 +178,6 @@ describe("WsStmt2 failover (mock)", () => {
         await expect(stmt.exec()).rejects.toThrow("recover failed");
         expect(cleanupSpy).toHaveBeenCalledTimes(1);
     });
-
-    test("resultSet recovers on network error and cleans up", async () => {
-        const { stmt, wsClient } = createBareStmt();
-        const networkError = new Error("connection reset");
-        const rebuiltRows = { id: "rebuilt" };
-        wsClient.isNetworkError.mockReturnValue(true);
-        jest.spyOn(stmt, "doResult").mockRejectedValueOnce(networkError);
-        const recoverSpy = jest.spyOn(stmt, "recover").mockResolvedValue(rebuiltRows);
-        const cleanupSpy = jest.spyOn(stmt, "cleanup");
-
-        const result = await stmt.resultSet();
-
-        expect(result).toBe(rebuiltRows);
-        expect(recoverSpy).toHaveBeenCalledWith(Step.RESULT);
-        expect(cleanupSpy).toHaveBeenCalledTimes(1);
-    });
-
     test("non-network errors are rethrown without recover in prepare", async () => {
         const { stmt, wsClient } = createBareStmt();
         const nonNetworkError = new Error("invalid sql");

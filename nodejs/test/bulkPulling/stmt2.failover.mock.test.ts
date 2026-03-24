@@ -121,6 +121,7 @@ describe("WsStmt2 failover (mock)", () => {
         expect(recoverSpy).toHaveBeenCalledWith(Step.EXEC);
         expect(cleanupSpy).not.toHaveBeenCalled();
     });
+
     test("resultSet recovers on network error and cleans up", async () => {
         const { stmt, wsClient } = createBareStmt();
         const networkError = new Error("connection reset");
@@ -136,6 +137,7 @@ describe("WsStmt2 failover (mock)", () => {
         expect(recoverSpy).toHaveBeenCalledWith(Step.RESULT);
         expect(cleanupSpy).toHaveBeenCalledTimes(1);
     });
+
     test("exec only cleans up immediately for insert statements", async () => {
         const bindBytes = new Uint8Array([7, 8, 9]).buffer;
 
@@ -178,6 +180,7 @@ describe("WsStmt2 failover (mock)", () => {
         await expect(stmt.exec()).rejects.toThrow("recover failed");
         expect(cleanupSpy).toHaveBeenCalledTimes(1);
     });
+
     test("non-network errors are rethrown without recover in prepare", async () => {
         const { stmt, wsClient } = createBareStmt();
         const nonNetworkError = new Error("invalid sql");

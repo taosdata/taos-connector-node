@@ -286,6 +286,20 @@ export class WebSocketConnector {
         return this._suppressedSockets.has(conn);
     }
 
+    private async failNonRetriableCallbacksOnDisconnect(): Promise<void> {
+        const keepReqIds = new Set<bigint>(
+            this._inflightStore.getRequests().map((req) => req.reqId)
+        );
+        await WsEventCallback.instance().rejectCallbacksExceptReqIds(
+            keepReqIds,
+            new TDWebSocketClientError(
+                ErrorCode.ERR_CONNECTION_CLOSED,
+                "websocket connection closed before response was received"
+            ),
+            this._poolKey
+        );
+    }
+
     private async handleDisconnect(conn: w3cwebsocket, event?: ICloseEvent): Promise<void> {
         if (this.shouldSkipReconnect(conn) || this._isReconnecting) {
             return;
@@ -294,6 +308,7 @@ export class WebSocketConnector {
             logger.info("Websocket closed normally, skipping reconnect.");
             return;
         }
+        await this.failNonRetriableCallbacksOnDisconnect();
         try {
             await this.triggerReconnect();
         } catch (err: unknown) {
@@ -335,9 +350,15 @@ export class WebSocketConnector {
         }
 
         const errObj = err as { code?: unknown; message?: unknown };
-        const code = typeof errObj?.code === "string" ? errObj.code.toLowerCase() : "";
-        if (code.length > 0 && NETWORK_ERROR_CODES.has(code)) {
+        const code = errObj?.code;
+        if (typeof code === "number" && code === ErrorCode.ERR_CONNECTION_CLOSED) {
             return true;
+        }
+        if (typeof code === "string") {
+            const loweredCode = code.toLowerCase();
+            if (loweredCode.length > 0 && NETWORK_ERROR_CODES.has(loweredCode)) {
+                return true;
+            }
         }
 
         const message = err instanceof Error
@@ -539,6 +560,7 @@ export class WebSocketConnector {
                 action: msg.action,
                 req_id: reqId,
                 timeout: this._timeout,
+                poolKey: this._poolKey,
             },
             resolveResp,
             rejectResp
@@ -644,6 +666,7 @@ export class WebSocketConnector {
                         req_id: reqId,
                         timeout: this._timeout,
                         id: callbackId,
+                        poolKey: this._poolKey,
                     },
                     safeResolve,
                     safeReject

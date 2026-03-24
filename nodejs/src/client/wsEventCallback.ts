@@ -12,6 +12,7 @@ interface MessageId {
     req_id: bigint;
     id?: bigint;
     timeout?: number;
+    poolKey?: string;
 }
 
 interface MessageAction {
@@ -154,6 +155,36 @@ export class WsEventCallback {
             }
         } finally {
             release();
+        }
+    }
+
+    async rejectCallbacksExceptReqIds(
+        keepReqIds: Set<bigint>,
+        error: Error,
+        poolKey?: string
+    ): Promise<void> {
+        const toReject: Function[] = [];
+        const release = await eventMutex.acquire();
+        try {
+            for (const [k, v] of WsEventCallback._msgActionRegister) {
+                if (poolKey !== undefined && k.poolKey !== poolKey) {
+                    continue;
+                }
+                const keepByReqId = keepReqIds.has(k.req_id);
+                const keepByCallbackId = k.id !== undefined && keepReqIds.has(k.id);
+                if (keepByReqId || keepByCallbackId) {
+                    continue;
+                }
+                clearTimeout(v.timer);
+                WsEventCallback._msgActionRegister.delete(k);
+                toReject.push(v.reject);
+            }
+        } finally {
+            release();
+        }
+
+        for (const reject of toReject) {
+            reject(error);
         }
     }
 }

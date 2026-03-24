@@ -173,6 +173,64 @@ describe("WebSocketConnector failover and retry", () => {
         expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
     });
 
+    test("handleDisconnect rejects non-retriable pending callbacks immediately", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => { });
+
+        const pending = connector.sendMsg(
+            JSON.stringify({
+                action: "query",
+                args: {
+                    req_id: 1201,
+                },
+            })
+        );
+        void connector.handleDisconnect(
+            connector._conn,
+            { code: 1006, reason: "abnormal close" }
+        );
+
+        const state = await Promise.race([
+            pending.then(() => "resolved").catch(() => "rejected"),
+            delay(40).then(() => "pending"),
+        ]);
+
+        expect(state).toBe("rejected");
+        expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
+        expect(hasInflightRequest(connector, 1201n)).toBe(false);
+    });
+
+    test("handleDisconnect keeps retriable pending callbacks for replay", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => { });
+
+        const pending = connector.sendMsg(
+            JSON.stringify({
+                action: "insert",
+                args: {
+                    req_id: 1202,
+                },
+            })
+        );
+        void pending.catch(() => { });
+        void connector.handleDisconnect(
+            connector._conn,
+            { code: 1006, reason: "abnormal close" }
+        );
+
+        const state = await Promise.race([
+            pending.then(() => "resolved").catch(() => "rejected"),
+            delay(40).then(() => "pending"),
+        ]);
+
+        expect(state).toBe("pending");
+        expect(connector.triggerReconnect).toHaveBeenCalledTimes(1);
+        expect(hasInflightRequest(connector, 1202n)).toBe(true);
+        connector.failAllInflightRequests(new Error("cleanup"));
+    });
+
     test("_doReconnect fails all inflight requests when reconnect fails", async () => {
         const connector = createBareConnector();
         const rejectSpy = jest.fn();

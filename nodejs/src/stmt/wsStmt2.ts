@@ -66,7 +66,7 @@ export class WsStmt2 implements WsStmt {
             const wsStmt = new WsStmt2(wsClient, precision);
             return await wsStmt.init(reqId);
         } catch (e: any) {
-            logger.error(`WsStmt init is failed, ${e.code}, ${e.message}`);
+            logger.error(`stmt2 init failed, ${e.code}, ${e.message}`);
             throw e;
         }
     }
@@ -81,18 +81,30 @@ export class WsStmt2 implements WsStmt {
                 await this.doInit(reqId);
                 return this;
             } catch (e: any) {
-                logger.error(`stmt init filed, ${e.code}, ${e.message}`);
+                if (this._wsClient.isNetworkError(e)) {
+                    await this.recover(StmtStep.INIT);
+                    return this;
+                }
+                logger.error(`stmt2 init failed, ${e.code}, ${e.message}`);
                 throw e;
             }
         }
         throw new TDWebSocketClientError(
             ErrorCode.ERR_CONNECTION_CLOSED,
-            "stmt connect closed"
+            "stmt2 connect closed"
         );
     }
 
-    getStmtId(): bigint | undefined | null {
-        return this._stmt_id;
+    private async doInit(reqId?: number): Promise<void> {
+        const msg = {
+            action: "stmt2_init",
+            args: {
+                req_id: ReqId.getReqID(reqId),
+                single_stb_insert: true,
+                single_table_bind_once: true,
+            },
+        };
+        await this.execute(msg);
     }
 
     async prepare(sql: string): Promise<void> {
@@ -103,7 +115,7 @@ export class WsStmt2 implements WsStmt {
             if (!this._wsClient.isNetworkError(err)) {
                 throw err;
             }
-            await this.rebuildContext(StmtStep.PREPARE);
+            await this.recover(StmtStep.PREPARE);
         }
     }
 
@@ -126,9 +138,7 @@ export class WsStmt2 implements WsStmt {
         }
 
         if (this._isInsert && this.fields) {
-            this._precision = this.fields[0].precision
-                ? this.fields[0].precision
-                : 0;
+            this._precision = this.fields[0].precision ? this.fields[0].precision : 0;
             this._toBeBindColCount = 0;
             this._toBeBindTagCount = 0;
             this.fields.forEach((field, index) => {
@@ -178,13 +188,11 @@ export class WsStmt2 implements WsStmt {
                 "SetBinaryTags paramArray is invalid!"
             );
         }
-
         if (!this._currentTableInfo) {
             this._currentTableInfo = new TableInfo();
             this._stmtTableInfoList.push(this._currentTableInfo);
         }
         await this._currentTableInfo.setTags(paramsArray);
-
         return Promise.resolve();
     }
 
@@ -213,11 +221,7 @@ export class WsStmt2 implements WsStmt {
             );
         }
 
-        if (
-            this._isInsert &&
-            this.fields &&
-            paramsArray.getBindCount() == this.fields.length
-        ) {
+        if (this._isInsert && this.fields && paramsArray.getBindCount() == this.fields.length) {
             const tableNameIndex = this._toBeBindTableNameIndex;
             if (tableNameIndex === null || tableNameIndex === undefined) {
                 throw new TaosResultError(
@@ -299,9 +303,8 @@ export class WsStmt2 implements WsStmt {
             );
         }
 
-        const reqId = BigInt(ReqId.getReqID());
         const bytes = stmt2BinaryBlockEncode(
-            reqId,
+            BigInt(ReqId.getReqID()),
             this._stmtTableInfoList,
             this._stmt_id,
             this._toBeBindTableNameIndex,
@@ -317,35 +320,28 @@ export class WsStmt2 implements WsStmt {
             if (!this._wsClient.isNetworkError(err)) {
                 throw err;
             }
-            await this.rebuildContext(StmtStep.EXEC);
-        }
-
-        if (this._isInsert) {
-            this.cleanup();
+            await this.recover(StmtStep.EXEC);
+        } finally {
+            if (this._isInsert) {
+                this.cleanup();
+            }
         }
     }
 
+    private async doSendBindBytes(bytes: ArrayBuffer): Promise<void> {
+        const reqId = new DataView(bytes).getBigUint64(0, true);
+        await this.sendBinaryMsg(reqId, "stmt2_bind", bytes);
+    }
+
     private async doExec(): Promise<void> {
-        const execMsg = {
+        const msg = {
             action: "stmt2_exec",
             args: {
                 req_id: ReqId.getReqID(),
                 stmt_id: this._stmt_id,
             },
         };
-        await this.execute(execMsg);
-    }
-
-    private cleanup() {
-        this._stmtTableInfo.clear();
-        this._stmtTableInfoList = [];
-        this._currentTableInfo = new TableInfo();
-        this._savedSql = undefined;
-        this._savedBindBytes = undefined;
-    }
-
-    getLastAffected(): number | null | undefined {
-        return this.lastAffected;
+        await this.execute(msg);
     }
 
     async resultSet(): Promise<WSRows> {
@@ -355,7 +351,7 @@ export class WsStmt2 implements WsStmt {
             if (!this._wsClient.isNetworkError(err)) {
                 throw err;
             }
-            return await this.rebuildContext(StmtStep.RESULT);
+            return await this.recover(StmtStep.RESULT);
         } finally {
             this.cleanup();
         }
@@ -380,7 +376,7 @@ export class WsStmt2 implements WsStmt {
     }
 
     async close(): Promise<void> {
-        const queryMsg = {
+        const msg = {
             action: "stmt2_close",
             args: {
                 req_id: ReqId.getReqID(),
@@ -388,39 +384,38 @@ export class WsStmt2 implements WsStmt {
             },
         };
         try {
-            await this.execute(queryMsg);
+            await this.execute(msg);
         } catch (err: any) {
-            logger.warn(`stmt2 close failed and ignored: ${err.message}`);
+            logger.warn("stmt2 close failed: " + err.message);
+        } finally {
+            this.cleanup();
         }
     }
 
-    private async doInit(reqId?: number): Promise<void> {
-        const msg = {
-            action: "stmt2_init",
-            args: {
-                req_id: ReqId.getReqID(reqId),
-                single_stb_insert: true,
-                single_table_bind_once: true,
-            },
-        };
-        await this.execute(msg);
+    private cleanup() {
+        this._stmtTableInfo.clear();
+        this._stmtTableInfoList = [];
+        this._currentTableInfo = new TableInfo();
+        this._savedSql = undefined;
+        this._savedBindBytes = undefined;
     }
 
-    private extractReqId(bytes: ArrayBuffer): bigint {
-        if (bytes.byteLength < 8) {
+    private buildBindBytes(): ArrayBuffer {
+        if (this._savedBindBytes === undefined) {
             throw new TaosResultError(
                 ErrorCode.ERR_INVALID_PARAMS,
-                "Invalid stmt2 bind message bytes"
+                "bind bytes are missing for stmt2 rebuild"
             );
         }
-        return new DataView(bytes).getBigUint64(0, true);
+
+        const bytes = this._savedBindBytes.slice(0);
+        const view = new DataView(bytes);
+        view.setBigUint64(0, BigInt(ReqId.getReqID()), true);
+        view.setBigUint64(8, this._stmt_id!, true);
+        return bytes;
     }
 
-    private async doSendBindBytes(bytes: ArrayBuffer): Promise<void> {
-        await this.sendBinaryMsg(this.extractReqId(bytes), "stmt2_bind", bytes);
-    }
-
-    private async rebuildContext(failedStep: StmtStep): Promise<any> {
+    private async recover(failedStep: StmtStep): Promise<any> {
         while (true) {
             try {
                 await this._wsClient.waitForReady();
@@ -441,13 +436,7 @@ export class WsStmt2 implements WsStmt {
                     return;
                 }
 
-                if (this._savedBindBytes === undefined) {
-                    throw new TaosResultError(
-                        ErrorCode.ERR_INVALID_PARAMS,
-                        "bind bytes are missing for stmt2 rebuild"
-                    );
-                }
-                await this.doSendBindBytes(this._savedBindBytes);
+                await this.doSendBindBytes(this.buildBindBytes());
                 if (failedStep === StmtStep.BIND) {
                     return;
                 }
@@ -466,18 +455,19 @@ export class WsStmt2 implements WsStmt {
         }
     }
 
+    getStmtId(): bigint | undefined | null {
+        return this._stmt_id;
+    }
+
+    getLastAffected(): number | null | undefined {
+        return this.lastAffected;
+    }
+
     private async execute(
         stmtMsg: StmtMessageInfo | ArrayBuffer,
         register: boolean = true
     ): Promise<WsStmtQueryResponse | void> {
         try {
-            if (this._wsClient.getState() <= 0) {
-                throw new TDWebSocketClientError(
-                    ErrorCode.ERR_CONNECTION_CLOSED,
-                    "websocket connect has closed!"
-                );
-            }
-
             const reqMsg = JSONBig.stringify(stmtMsg);
 
             if (register) {
@@ -511,13 +501,6 @@ export class WsStmt2 implements WsStmt {
         action: string,
         message: ArrayBuffer
     ): Promise<void> {
-        if (this._wsClient.getState() <= 0) {
-            throw new TDWebSocketClientError(
-                ErrorCode.ERR_CONNECTION_CLOSED,
-                "websocket connect has closed!"
-            );
-        }
-
         const result = await this._wsClient.sendBinaryMsg(
             reqId,
             action,

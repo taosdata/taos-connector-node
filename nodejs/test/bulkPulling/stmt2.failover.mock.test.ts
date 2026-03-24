@@ -62,28 +62,48 @@ function makeExecReady(stmt: any): void {
     stmt._toBeBindTableNameIndex = undefined;
 }
 
-describe("WsStmt2 failover", () => {
+function makeSavedBindBytes(reqId: bigint = 0n, stmtId: bigint = 1n): ArrayBuffer {
+    const bytes = new ArrayBuffer(16);
+    const view = new DataView(bytes);
+    view.setBigUint64(0, reqId, true);
+    view.setBigUint64(8, stmtId, true);
+    return bytes;
+}
+
+describe("WsStmt2 failover (mock)", () => {
     afterEach(() => {
         jest.restoreAllMocks();
     });
 
-    test("prepare caches sql and rebuilds on network error", async () => {
+    test("init triggers context recovery on network error", async () => {
+        const { stmt, wsClient } = createBareStmt();
+        const networkError = new Error("socket closed");
+
+        wsClient.isNetworkError.mockReturnValue(true);
+        jest.spyOn(stmt, "doInit").mockRejectedValueOnce(networkError);
+        const recoverSpy = jest.spyOn(stmt, "recover").mockResolvedValue(undefined);
+
+        const result = await stmt.init(undefined);
+
+        expect(result).toBe(stmt);
+        expect(recoverSpy).toHaveBeenCalledWith(Step.INIT);
+    });
+
+    test("prepare caches sql and recovers on network error", async () => {
         const { stmt, wsClient } = createBareStmt();
         const networkError = new Error("socket closed");
         wsClient.isNetworkError.mockReturnValue(true);
         jest.spyOn(stmt, "doPrepare").mockRejectedValueOnce(networkError);
-        const rebuildSpy = jest
-            .spyOn(stmt, "rebuildContext")
-            .mockResolvedValue(undefined);
+        const recoverSpy = jest.spyOn(stmt, "recover").mockResolvedValue(undefined);
 
         const sql = "select * from meters where ts > ?";
         await stmt.prepare(sql);
 
         expect(stmt._savedSql).toBe(sql);
-        expect(rebuildSpy).toHaveBeenCalledWith(Step.PREPARE);
+        expect(recoverSpy).toHaveBeenCalledWith(Step.PREPARE);
     });
 
-    test("exec caches bind bytes and rebuilds on network error", async () => {
+    test("exec caches bind bytes and recovers on network error", async () => {
         const { stmt, wsClient } = createBareStmt();
         const networkError = new Error("cannot call send() while not connected");
         const bindBytes = new Uint8Array([1, 2, 3]).buffer;
@@ -92,13 +112,13 @@ describe("WsStmt2 failover", () => {
         wsClient.isNetworkError.mockReturnValue(true);
         jest.spyOn(wsProto, "stmt2BinaryBlockEncode").mockReturnValue(bindBytes);
         jest.spyOn(stmt, "doSendBindBytes").mockRejectedValueOnce(networkError);
-        jest.spyOn(stmt, "rebuildContext").mockResolvedValue(undefined);
+        const recoverSpy = jest.spyOn(stmt, "recover").mockResolvedValue(undefined);
         const cleanupSpy = jest.spyOn(stmt, "cleanup");
 
         await stmt.exec();
 
         expect(stmt._savedBindBytes).toBe(bindBytes);
-        expect(stmt.rebuildContext).toHaveBeenCalledWith(Step.EXEC);
+        expect(recoverSpy).toHaveBeenCalledWith(Step.EXEC);
         expect(cleanupSpy).not.toHaveBeenCalled();
     });
 
@@ -128,38 +148,51 @@ describe("WsStmt2 failover", () => {
         expect(queryCleanupSpy).not.toHaveBeenCalled();
     });
 
-    test("resultSet rebuilds on network error and cleans up", async () => {
+    test("exec cleans up insert cache even when recover fails", async () => {
+        const { stmt, wsClient } = createBareStmt();
+        const networkError = new Error("cannot call send() while not connected");
+        const recoverError = new Error("recover failed");
+        const bindBytes = new Uint8Array([1, 2, 3]).buffer;
+        makeExecReady(stmt);
+        stmt._isInsert = true;
+        wsClient.isNetworkError.mockReturnValue(true);
+        jest.spyOn(wsProto, "stmt2BinaryBlockEncode").mockReturnValue(bindBytes);
+        jest.spyOn(stmt, "doSendBindBytes").mockRejectedValueOnce(networkError);
+        jest.spyOn(stmt, "recover").mockRejectedValueOnce(recoverError);
+        const cleanupSpy = jest.spyOn(stmt, "cleanup");
+
+        await expect(stmt.exec()).rejects.toThrow("recover failed");
+        expect(cleanupSpy).toHaveBeenCalledTimes(1);
+    });
+
+    test("resultSet recovers on network error and cleans up", async () => {
         const { stmt, wsClient } = createBareStmt();
         const networkError = new Error("connection reset");
         const rebuiltRows = { id: "rebuilt" };
         wsClient.isNetworkError.mockReturnValue(true);
         jest.spyOn(stmt, "doResult").mockRejectedValueOnce(networkError);
-        const rebuildSpy = jest
-            .spyOn(stmt, "rebuildContext")
-            .mockResolvedValue(rebuiltRows);
+        const recoverSpy = jest.spyOn(stmt, "recover").mockResolvedValue(rebuiltRows);
         const cleanupSpy = jest.spyOn(stmt, "cleanup");
 
         const result = await stmt.resultSet();
 
         expect(result).toBe(rebuiltRows);
-        expect(rebuildSpy).toHaveBeenCalledWith(Step.RESULT);
+        expect(recoverSpy).toHaveBeenCalledWith(Step.RESULT);
         expect(cleanupSpy).toHaveBeenCalledTimes(1);
     });
 
-    test("non-network errors are rethrown without rebuild in prepare", async () => {
+    test("non-network errors are rethrown without recover in prepare", async () => {
         const { stmt, wsClient } = createBareStmt();
         const nonNetworkError = new Error("invalid sql");
         wsClient.isNetworkError.mockReturnValue(false);
         jest.spyOn(stmt, "doPrepare").mockRejectedValueOnce(nonNetworkError);
-        const rebuildSpy = jest
-            .spyOn(stmt, "rebuildContext")
-            .mockResolvedValue(undefined);
+        const recoverSpy = jest.spyOn(stmt, "recover").mockResolvedValue(undefined);
 
         await expect(stmt.prepare("bad sql")).rejects.toThrow("invalid sql");
-        expect(rebuildSpy).not.toHaveBeenCalled();
+        expect(recoverSpy).not.toHaveBeenCalled();
     });
 
-    test("non-network errors are rethrown without rebuild in exec", async () => {
+    test("non-network errors are rethrown without recover in exec", async () => {
         const { stmt, wsClient } = createBareStmt();
         const bindBytes = new Uint8Array([4, 5, 6]).buffer;
         const nonNetworkError = new Error("invalid bind");
@@ -168,32 +201,28 @@ describe("WsStmt2 failover", () => {
         wsClient.isNetworkError.mockReturnValue(false);
         jest.spyOn(wsProto, "stmt2BinaryBlockEncode").mockReturnValue(bindBytes);
         jest.spyOn(stmt, "doSendBindBytes").mockRejectedValueOnce(nonNetworkError);
-        const rebuildSpy = jest
-            .spyOn(stmt, "rebuildContext")
-            .mockResolvedValue(undefined);
+        const recoverSpy = jest.spyOn(stmt, "recover").mockResolvedValue(undefined);
 
         await expect(stmt.exec()).rejects.toThrow("invalid bind");
-        expect(rebuildSpy).not.toHaveBeenCalled();
+        expect(recoverSpy).not.toHaveBeenCalled();
     });
 
-    test("non-network errors are rethrown without rebuild in resultSet", async () => {
+    test("non-network errors are rethrown without recover in resultSet", async () => {
         const { stmt, wsClient } = createBareStmt();
         const nonNetworkError = new Error("result failed");
         wsClient.isNetworkError.mockReturnValue(false);
         jest.spyOn(stmt, "doResult").mockRejectedValueOnce(nonNetworkError);
-        const rebuildSpy = jest
-            .spyOn(stmt, "rebuildContext")
-            .mockResolvedValue(undefined);
+        const recoverSpy = jest.spyOn(stmt, "recover").mockResolvedValue(undefined);
 
         await expect(stmt.resultSet()).rejects.toThrow("result failed");
-        expect(rebuildSpy).not.toHaveBeenCalled();
+        expect(recoverSpy).not.toHaveBeenCalled();
     });
 
-    test("rebuildContext replays steps in order to EXEC", async () => {
+    test("recover replays steps in order to EXEC", async () => {
         const { stmt } = createBareStmt();
         const callOrder: string[] = [];
         stmt._savedSql = "insert into t values(?, ?)";
-        stmt._savedBindBytes = new Uint8Array([1, 3, 5]).buffer;
+        stmt._savedBindBytes = makeSavedBindBytes();
         jest.spyOn(stmt, "doInit").mockImplementation(async () => {
             callOrder.push("init");
         });
@@ -211,32 +240,48 @@ describe("WsStmt2 failover", () => {
             return { rows: 1 };
         });
 
-        await stmt.rebuildContext(Step.EXEC);
+        await stmt.recover(Step.EXEC);
 
         expect(callOrder).toEqual(["init", "prepare", "bind", "exec"]);
     });
 
-    test("rebuildContext can rebuild to RESULT and return rows", async () => {
+    test("recover can rebuild to RESULT and return rows", async () => {
         const { stmt } = createBareStmt();
         const rows = { data: [1, 2, 3] };
         stmt._savedSql = "select * from t where ts > ?";
-        stmt._savedBindBytes = new Uint8Array([8, 8, 8]).buffer;
+        stmt._savedBindBytes = makeSavedBindBytes();
         jest.spyOn(stmt, "doInit").mockResolvedValue(undefined);
         jest.spyOn(stmt, "doPrepare").mockResolvedValue(undefined);
         jest.spyOn(stmt, "doSendBindBytes").mockResolvedValue(undefined);
         jest.spyOn(stmt, "doExec").mockResolvedValue(undefined);
         jest.spyOn(stmt, "doResult").mockResolvedValue(rows);
 
-        const result = await stmt.rebuildContext(Step.RESULT);
+        const result = await stmt.recover(Step.RESULT);
 
         expect(result).toBe(rows);
     });
 
-    test("rebuildContext retries when rebuild gets another network error", async () => {
+    test("buildBindBytes rewrites req_id and stmt_id", () => {
+        const { stmt } = createBareStmt();
+        const originalBytes = makeSavedBindBytes(0n, 5n);
+        stmt._savedBindBytes = originalBytes;
+        stmt._stmt_id = 42n;
+
+        const replayBytes = stmt.buildBindBytes();
+        const originalView = new DataView(originalBytes);
+        const replayView = new DataView(replayBytes);
+
+        expect(replayBytes).not.toBe(originalBytes);
+        expect(originalView.getBigUint64(8, true)).toBe(5n);
+        expect(replayView.getBigUint64(8, true)).toBe(42n);
+        expect(replayView.getBigUint64(0, true)).not.toBe(0n);
+    });
+
+    test("recover retries when another network error occurs", async () => {
         const { stmt, wsClient } = createBareStmt();
         const networkError = new Error("connection reset");
         stmt._savedSql = "select * from t";
-        stmt._savedBindBytes = new Uint8Array([2, 4, 6]).buffer;
+        stmt._savedBindBytes = makeSavedBindBytes();
         wsClient.isNetworkError.mockImplementation(
             (err: unknown) => err === networkError
         );
@@ -246,14 +291,32 @@ describe("WsStmt2 failover", () => {
             .mockResolvedValue(undefined);
         const prepareSpy = jest.spyOn(stmt, "doPrepare").mockResolvedValue(undefined);
 
-        await stmt.rebuildContext(Step.PREPARE);
+        await stmt.recover(Step.PREPARE);
 
         expect(initSpy).toHaveBeenCalledTimes(2);
         expect(prepareSpy).toHaveBeenCalledTimes(1);
         expect(wsClient.waitForReady).toHaveBeenCalledTimes(2);
     });
 
-    test("rebuildContext throws on non-network error", async () => {
+    test("recover keeps retrying network errors and throws on first non-network error", async () => {
+        const { stmt, wsClient } = createBareStmt();
+        const networkError = new Error("connection reset");
+        const fatalError = new Error("permission denied");
+        stmt._savedSql = "select * from t";
+        stmt._savedBindBytes = makeSavedBindBytes();
+        wsClient.isNetworkError.mockImplementation((err: unknown) => err === networkError);
+        const initSpy = jest
+            .spyOn(stmt, "doInit")
+            .mockRejectedValueOnce(networkError)
+            .mockRejectedValueOnce(networkError)
+            .mockRejectedValueOnce(fatalError);
+
+        await expect(stmt.recover(Step.INIT)).rejects.toThrow("permission denied");
+        expect(initSpy).toHaveBeenCalledTimes(3);
+        expect(wsClient.waitForReady).toHaveBeenCalledTimes(3);
+    });
+
+    test("recover throws on non-network error", async () => {
         const { stmt, wsClient } = createBareStmt();
         const nonNetworkError = new Error("permission denied");
         stmt._savedSql = "select * from t";
@@ -261,8 +324,6 @@ describe("WsStmt2 failover", () => {
         wsClient.isNetworkError.mockReturnValue(false);
         jest.spyOn(stmt, "doInit").mockRejectedValueOnce(nonNetworkError);
 
-        await expect(stmt.rebuildContext(Step.INIT)).rejects.toThrow(
-            "permission denied"
-        );
+        await expect(stmt.recover(Step.INIT)).rejects.toThrow("permission denied");
     });
 });

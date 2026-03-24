@@ -13,7 +13,7 @@ export class TmqConfig {
     topics?: Array<string>;
     auto_commit: boolean = true;
     auto_commit_interval_ms: number = 5 * 1000;
-    timeout: number = 5000;
+    timeout: number = 60000;
     otherConfigs: Map<string, any>;
 
     constructor(wsConfig: Map<string, any>) {

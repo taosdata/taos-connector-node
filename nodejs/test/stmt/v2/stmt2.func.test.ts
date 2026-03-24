@@ -1,9 +1,9 @@
-import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import { WSConfig } from "../../src/common/config";
-import { setLevel } from "../../src/common/log";
-import { WsSql } from "../../src/sql/wsSql";
-import { WsStmt2 } from "../../src/stmt/wsStmt2";
-import { testPassword, testUsername } from "../helpers/utils";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { WSConfig } from "@src/common/config";
+import { setLevel } from "@src/common/log";
+import { WsSql } from "@src/sql/wsSql";
+import { WsStmt2 } from "@src/stmt/wsStmt2";
+import { testPassword, testUsername } from "@test-helpers/utils";
 
 let dns = "ws://localhost:6041";
 setLevel("debug");

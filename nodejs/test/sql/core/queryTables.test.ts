@@ -1,6 +1,6 @@
-import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import { WSConfig } from "../../src/common/config";
-import { WsSql } from "../../src/sql/wsSql";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { WSConfig } from "@src/common/config";
+import { WsSql } from "@src/sql/wsSql";
 import {
     compareUint8Arrays,
     createSTable,
@@ -15,7 +15,7 @@ import {
     tagMeta,
     testPassword,
     testUsername,
-} from "../helpers/utils";
+} from "@test-helpers/utils";
 
 let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
 let conf: WSConfig = new WSConfig(dsn);

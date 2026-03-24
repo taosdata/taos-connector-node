@@ -1,5 +1,5 @@
-import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import { parse, WS_TMQ_ENDPOINT } from "../../src/common/dsn";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { parse, WS_TMQ_ENDPOINT } from "@src/common/dsn";
 
 function resetPoolSingleton() {
     const PoolClass = WebSocketConnectionPool as any;

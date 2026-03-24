@@ -58,7 +58,7 @@
 
 ### 5.1 运行测试
 
-在项目的 `nodejs` 目录下，执行 `npm run test` 命令，即可运行 `test/bulkPulling` 目录中的所有测试用例。这些测试用例将连接本地的 `TDengine` 服务器与 `taosAdapter` 进行相关测试。在终端内将实时输出各测试用例的执行结果。待整个测试流程结束，如果所有用例通过，没有 Failures 和 Errors, 并且还会给出相应的覆盖率数据。
+在项目的 `nodejs` 目录下，执行 `npm run test` 命令，即可运行 `test` 目录下的所有测试用例。这些测试用例将连接本地的 `TDengine` 服务器与 `taosAdapter` 进行相关测试。在终端内将实时输出各测试用例的执行结果。待整个测试流程结束，如果所有用例通过，没有 Failures 和 Errors, 并且还会给出相应的覆盖率数据。
 
 ```text
 Test Suites: 8 passed, 8 total
@@ -70,7 +70,7 @@ Ran all test suites.
 
 ### 5.2 添加用例
 
-所有测试在项目的 `nodejs/test/bulkPulling` 目录下，可以新增加测试文件或者在已有的测试文件中添加用例。用例使用 jest 框架，一般在 `beforeAll` 方法中建立连接和创建数据库，在 `afterAll` 方法中删除数据库和释放连接。
+所有测试按功能域组织在 `nodejs/test` 目录下，可以在对应目录新增测试文件或者在已有测试文件中添加用例。用例使用 jest 框架，一般在 `beforeAll` 方法中建立连接和创建数据库，在 `afterAll` 方法中删除数据库和释放连接。
 
 ### 5.3 性能测试
 

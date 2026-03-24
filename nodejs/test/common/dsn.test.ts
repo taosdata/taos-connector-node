@@ -1,4 +1,4 @@
-import { parse, WS_SQL_ENDPOINT } from "../../src/common/dsn";
+import { parse, WS_SQL_ENDPOINT } from "@src/common/dsn";
 
 describe("dsn", () => {
     describe("parse", () => {

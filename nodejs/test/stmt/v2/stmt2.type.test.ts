@@ -1,15 +1,15 @@
-import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import { WSConfig } from "../../src/common/config";
-import { setLevel } from "../../src/common/log";
-import { WsSql } from "../../src/sql/wsSql";
-import { WsStmt2 } from "../../src/stmt/wsStmt2";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { WSConfig } from "@src/common/config";
+import { setLevel } from "@src/common/log";
+import { WsSql } from "@src/sql/wsSql";
+import { WsStmt2 } from "@src/stmt/wsStmt2";
 import {
     createBaseSTable,
     createSTableJSON,
     getInsertBind,
     testPassword,
     testUsername,
-} from "../helpers/utils";
+} from "@test-helpers/utils";
 
 const stable = "ws_stmt_stb";
 const table = "stmt_001";

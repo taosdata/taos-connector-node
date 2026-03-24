@@ -1,5 +1,5 @@
-import { WsStmt2 } from "../../src/stmt/wsStmt2";
-import * as wsProto from "../../src/stmt/wsProto";
+import { WsStmt2 } from "@src/stmt/wsStmt2";
+import * as wsProto from "@src/stmt/wsProto";
 
 const Step = {
     INIT: 0,

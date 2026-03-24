@@ -1,8 +1,8 @@
-import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import { WSConfig } from "../../src/common/config";
-import { Precision, SchemalessProto } from "../../src/sql/wsProto";
-import { WsSql } from "../../src/sql/wsSql";
-import { testPassword, testUsername } from "../helpers/utils";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { WSConfig } from "@src/common/config";
+import { Precision, SchemalessProto } from "@src/sql/wsProto";
+import { WsSql } from "@src/sql/wsSql";
+import { testPassword, testUsername } from "@test-helpers/utils";
 
 let dns = "ws://localhost:6041";
 

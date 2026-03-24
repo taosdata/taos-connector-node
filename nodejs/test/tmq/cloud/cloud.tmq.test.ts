@@ -1,10 +1,10 @@
-import { TMQConstants } from "../../src/tmq/constant";
-import { WsConsumer } from "../../src/tmq/wsTmq";
-import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import { setLevel } from "../../src/common/log";
-import { WSConfig } from "../../src/common/config";
-import { WsSql } from "../../src/sql/wsSql";
-import { testPassword, testUsername } from "../helpers/utils";
+import { TMQConstants } from "@src/tmq/constant";
+import { WsConsumer } from "@src/tmq/wsTmq";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { setLevel } from "@src/common/log";
+import { WSConfig } from "@src/common/config";
+import { WsSql } from "@src/sql/wsSql";
+import { testPassword, testUsername } from "@test-helpers/utils";
 
 beforeAll(async () => {
     const url = `wss://${process.env.TDENGINE_CLOUD_URL}?token=${process.env.TDENGINE_CLOUD_TOKEN}`;

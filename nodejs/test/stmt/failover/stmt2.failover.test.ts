@@ -1,8 +1,8 @@
-import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import { WSConfig } from "../../src/common/config";
-import { WsSql } from "../../src/sql/wsSql";
-import { testPassword, testUsername } from "../helpers/utils";
-import { WsProxy, WsProxyEvent, WsProxyMessageEvent } from "../helpers/wsProxy";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { WSConfig } from "@src/common/config";
+import { WsSql } from "@src/sql/wsSql";
+import { testPassword, testUsername } from "@test-helpers/utils";
+import { WsProxy, WsProxyEvent, WsProxyMessageEvent } from "@test-helpers/wsProxy";
 
 interface StageCase {
     name: string;

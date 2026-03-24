@@ -1,7 +1,7 @@
-import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import { WSConfig } from "../../src/common/config";
-import { WsSql } from "../../src/sql/wsSql";
-import { testPassword, testUsername } from "../helpers/utils";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { WSConfig } from "@src/common/config";
+import { WsSql } from "@src/sql/wsSql";
+import { testPassword, testUsername } from "@test-helpers/utils";
 
 afterAll(() => {
     WebSocketConnectionPool.instance().destroyed();

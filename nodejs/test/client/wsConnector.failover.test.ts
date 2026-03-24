@@ -1,6 +1,6 @@
-import { RetryConfig, WebSocketConnector } from "../../src/client/wsConnector";
-import { WsEventCallback } from "../../src/client/wsEventCallback";
-import { parse } from "../../src/common/dsn";
+import { RetryConfig, WebSocketConnector } from "@src/client/wsConnector";
+import { WsEventCallback } from "@src/client/wsEventCallback";
+import { parse } from "@src/common/dsn";
 
 function createInflightStore(): any {
     let nextMsgId = 1n;

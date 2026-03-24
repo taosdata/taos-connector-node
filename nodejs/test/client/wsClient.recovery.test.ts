@@ -1,8 +1,8 @@
 import { w3cwebsocket } from "websocket";
-import { WsClient } from "../../src/client/wsClient";
-import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import { parse, WS_TMQ_ENDPOINT } from "../../src/common/dsn";
-import { WebSocketQueryError } from "../../src/common/wsError";
+import { WsClient } from "@src/client/wsClient";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { parse, WS_TMQ_ENDPOINT } from "@src/common/dsn";
+import { WebSocketQueryError } from "@src/common/wsError";
 
 function createMockConnector() {
     return {

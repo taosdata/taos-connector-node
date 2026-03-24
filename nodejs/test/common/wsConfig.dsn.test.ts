@@ -1,6 +1,6 @@
-import { WSConfig } from "../../src/common/config";
-import { getDsn } from "../../src/common/utils";
-import { WS_SQL_ENDPOINT } from "../../src/common/dsn";
+import { WSConfig } from "@src/common/config";
+import { getDsn } from "@src/common/utils";
+import { WS_SQL_ENDPOINT } from "@src/common/dsn";
 
 describe("WSConfig to Dsn conversion", () => {
     test("parses multi-address dsn and keeps connector-level params", () => {

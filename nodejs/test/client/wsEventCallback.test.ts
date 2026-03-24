@@ -1,4 +1,4 @@
-import { OnMessageType, WsEventCallback } from "../../src/client/wsEventCallback";
+import { OnMessageType, WsEventCallback } from "@src/client/wsEventCallback";
 
 function resetCallbackRegistry() {
     const CallbackClass = WsEventCallback as any;

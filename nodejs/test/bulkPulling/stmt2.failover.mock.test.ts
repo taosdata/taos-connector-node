@@ -126,6 +126,7 @@ describe("WsStmt2 failover (mock)", () => {
         const { stmt, wsClient } = createBareStmt();
         const networkError = new Error("connection reset");
         const rebuiltRows = { id: "rebuilt" };
+        stmt._savedSql = "select * from t where ts > ?";
         wsClient.isNetworkError.mockReturnValue(true);
         jest.spyOn(stmt, "doResult").mockRejectedValueOnce(networkError);
         const recoverSpy = jest.spyOn(stmt, "recover").mockResolvedValue(rebuiltRows);
@@ -136,6 +137,7 @@ describe("WsStmt2 failover (mock)", () => {
         expect(result).toBe(rebuiltRows);
         expect(recoverSpy).toHaveBeenCalledWith(Step.RESULT);
         expect(cleanupSpy).toHaveBeenCalledTimes(1);
+        expect(stmt._savedSql).toBe("select * from t where ts > ?");
     });
 
     test("exec only cleans up immediately for insert statements", async () => {
@@ -145,12 +147,14 @@ describe("WsStmt2 failover (mock)", () => {
         const insertStmt = insertCtx.stmt;
         makeExecReady(insertStmt);
         insertStmt._isInsert = true;
+        insertStmt._savedSql = "insert into t values(?, ?)";
         jest.spyOn(wsProto, "stmt2BinaryBlockEncode").mockReturnValue(bindBytes);
         jest.spyOn(insertStmt, "doSendBindBytes").mockResolvedValue(undefined);
         jest.spyOn(insertStmt, "doExec").mockResolvedValue(undefined);
         const insertCleanupSpy = jest.spyOn(insertStmt, "cleanup");
         await insertStmt.exec();
         expect(insertCleanupSpy).toHaveBeenCalledTimes(1);
+        expect(insertStmt._savedSql).toBe("insert into t values(?, ?)");
 
         const queryCtx = createBareStmt();
         const queryStmt = queryCtx.stmt;

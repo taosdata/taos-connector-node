@@ -323,7 +323,7 @@ export class WsStmt2 implements WsStmt {
             await this.recover(StmtStep.EXEC);
         } finally {
             if (this._isInsert) {
-                this.cleanup();
+                this.cleanup({ keepSavedSql: true });
             }
         }
     }
@@ -353,7 +353,7 @@ export class WsStmt2 implements WsStmt {
             }
             return await this.recover(StmtStep.RESULT);
         } finally {
-            this.cleanup();
+            this.cleanup({ keepSavedSql: true });
         }
     }
 
@@ -392,11 +392,13 @@ export class WsStmt2 implements WsStmt {
         }
     }
 
-    private cleanup() {
+    private cleanup(opts?: { keepSavedSql?: boolean }) {
         this._stmtTableInfo.clear();
         this._stmtTableInfoList = [];
         this._currentTableInfo = new TableInfo();
-        this._savedSql = undefined;
+        if (!opts?.keepSavedSql) {
+            this._savedSql = undefined;
+        }
         this._savedBindBytes = undefined;
     }
 

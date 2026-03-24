@@ -330,7 +330,7 @@ describe("TDWebSocket.Stmt()", () => {
             "select * from query_meters where ts >= ? and ts <= ?"
         );
         let dataParams = stmt.newStmtParam();
-        dataParams.setTimestamp([1734628365642n]);
+        dataParams.setTimestamp([1734599565642n]);
         dataParams.setTimestamp([1734635567642n]);
         await stmt.bind(dataParams);
         await stmt.exec();
@@ -503,7 +503,6 @@ describe("TDWebSocket.Stmt()", () => {
             "INSERT INTO ? USING meters (location, groupId) TAGS (?, ?) VALUES (?, ?, ?, ?)"
         );
         await stmt.setTableName("d1001");
-        // await stmt.SetTags(tags)
         try {
             let dataParams = stmt.newStmtParam();
             dataParams.setTimestamp(multi[0]);

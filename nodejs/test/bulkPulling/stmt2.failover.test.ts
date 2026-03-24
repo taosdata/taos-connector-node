@@ -149,7 +149,6 @@ describe("stmt2 failover with ws proxy", () => {
                     `?retries=20&retry_backoff_ms=15&retry_backoff_max_ms=80`;
                 const conf = new WSConfig(dsn);
                 conf.setDb(dbName);
-                conf.setTimeOut(10000);
                 wsSql = await WsSql.open(conf);
 
                 stmt = await wsSql.stmtInit();
@@ -205,5 +204,220 @@ describe("stmt2 failover with ws proxy", () => {
                 }
             }
         }
+    );
+
+    test(
+        "single-address random proxy restarts on stmt2 steps still keeps all 5000 inserted rows",
+        async () => {
+            const targetRows = 5000;
+            const batchSize = 50;
+            const baseTs = 1700110000000;
+            const dbName = "test_1774338668";
+            const stableName = "meters";
+            const subTableName = "d0";
+            const fullSubTableName = `${dbName}.${subTableName}`;
+            const localDsn = `ws://${testUsername()}:${testPassword()}@127.0.0.1:6041`;
+            let setupSql: WsSql | null = null;
+            let cleanupSql: WsSql | null = null;
+            let wsSql: WsSql | null = null;
+            let insertStmt: any = null;
+            let countStmt: any = null;
+            let countRows: any = null;
+            let writePhase = false;
+            let verifyPhase = false;
+            let restartInFlight = false;
+            let restartCount = 0;
+            let rowCount = 0;
+            const stepSeenCount: Record<"init" | "prepare" | "bind" | "exec" | "result", number> = {
+                init: 0,
+                prepare: 0,
+                bind: 0,
+                exec: 0,
+                result: 0,
+            };
+
+            setupSql = await WsSql.open(new WSConfig(localDsn));
+            try {
+                await setupSql.exec(`drop database if exists ${dbName}`);
+                await setupSql.exec(`create database ${dbName}`);
+                await setupSql.exec(
+                    `create stable ${dbName}.${stableName}(ts timestamp, c1 int)` +
+                    ` tags(location binary(64), gid int)`
+                );
+            } finally {
+                await setupSql.close();
+                setupSql = null;
+            }
+
+            const proxy = await WsProxy.create({
+                host: "127.0.0.1",
+                port: 0,
+                onEvent: (event, control) => {
+                    const messageEvent = asClientToUpstreamMessage(event);
+                    if (!messageEvent) {
+                        return;
+                    }
+
+                    let step: keyof typeof stepSeenCount | null = null;
+                    if (messageEvent.isBinary) {
+                        const action = parseBinaryAction(messageEvent.rawData);
+                        if (action === 9n) {
+                            step = "bind";
+                        }
+                    } else {
+                        const action = parseJsonAction(messageEvent.rawData);
+                        if (action === "stmt2_init") {
+                            step = "init";
+                        } else if (action === "stmt2_prepare") {
+                            step = "prepare";
+                        } else if (action === "stmt2_exec") {
+                            step = "exec";
+                        } else if (action === "stmt2_result") {
+                            step = "result";
+                        }
+                    }
+
+                    if (!step) {
+                        return;
+                    }
+
+                    stepSeenCount[step] += 1;
+
+                    if (!writePhase && !verifyPhase) {
+                        return;
+                    }
+                    if (restartInFlight) {
+                        return;
+                    }
+
+                    const shouldRestart = Math.random() < 0.05 ||
+                        (restartCount === 0 && step === "bind");
+                    if (!shouldRestart) {
+                        return;
+                    }
+
+                    restartInFlight = true;
+                    restartCount += 1;
+                    const downtimeMs = 20 + Math.floor(Math.random() * 100);
+                    void control.restart({
+                        downtimeMs,
+                        reason: `stmt2 random step restart #${restartCount} (${step})`,
+                    }).finally(() => {
+                        restartInFlight = false;
+                    });
+                },
+            });
+
+            try {
+                const dsn =
+                    `ws://${testUsername()}:${testPassword()}@127.0.0.1:${proxy.getPort()}` +
+                    `?retries=80&retry_backoff_ms=10&retry_backoff_max_ms=50`;
+                const conf = new WSConfig(dsn);
+                conf.setDb(dbName);
+                wsSql = await WsSql.open(conf);
+
+                insertStmt = await wsSql.stmtInit();
+                const insertSql =
+                    `insert into ? using ${stableName} (location, gid) tags (?, ?) values(?, ?)`;
+                await insertStmt.prepare(insertSql);
+
+                writePhase = true;
+                for (let start = 0; start < targetRows; start += batchSize) {
+                    const end = Math.min(start + batchSize, targetRows);
+                    const tsBatch: bigint[] = [];
+                    const c1Batch: number[] = [];
+                    for (let i = start; i < end; i++) {
+                        tsBatch.push(BigInt(baseTs + i));
+                        c1Batch.push(i);
+                    }
+
+                    await insertStmt.setTableName(fullSubTableName);
+                    const tagParams = insertStmt.newStmtParam();
+                    tagParams.setVarchar(["beijing"]);
+                    tagParams.setInt([1]);
+                    await insertStmt.setTags(tagParams);
+
+                    const params = insertStmt.newStmtParam();
+                    params.setTimestamp(tsBatch);
+                    params.setInt(c1Batch);
+                    await insertStmt.bind(params);
+                    await insertStmt.exec();
+                }
+                writePhase = false;
+
+                verifyPhase = true;
+                countStmt = await wsSql.stmtInit();
+                await countStmt.prepare(
+                    `select ts, c1 from ${subTableName} where ts >= ? and ts <= ? order by ts limit 1`
+                );
+                const countParams = countStmt.newStmtParam();
+                countParams.setTimestamp([BigInt(baseTs)]);
+                countParams.setTimestamp([BigInt(baseTs + targetRows - 1)]);
+                await countStmt.bind(countParams);
+                await countStmt.exec();
+                countRows = await countStmt.resultSet();
+                if (await countRows.next()) {
+                    expect(countRows.getData()).toBeTruthy();
+                }
+                verifyPhase = false;
+
+                const countResult = await wsSql.exec(
+                    `select count(*) from ${subTableName}`
+                );
+                const countValue = countResult.getData()?.[0]?.[0];
+                rowCount = typeof countValue === "bigint"
+                    ? Number(countValue)
+                    : Number(countValue || 0);
+
+                expect(rowCount).toBe(targetRows);
+                expect(restartCount).toBeGreaterThan(0);
+                expect(stepSeenCount.init).toBeGreaterThan(0);
+                expect(stepSeenCount.prepare).toBeGreaterThan(0);
+                expect(stepSeenCount.bind).toBeGreaterThan(0);
+                expect(stepSeenCount.exec).toBeGreaterThan(0);
+                expect(stepSeenCount.result).toBeGreaterThan(0);
+            } finally {
+                writePhase = false;
+                verifyPhase = false;
+                if (countRows) {
+                    try {
+                        await countRows.close();
+                    } catch (_err) {
+                        // ignore cleanup error
+                    }
+                    countRows = null;
+                }
+                if (countStmt) {
+                    try {
+                        await countStmt.close();
+                    } catch (_err) {
+                        // ignore cleanup error
+                    }
+                    countStmt = null;
+                }
+                if (insertStmt) {
+                    try {
+                        await insertStmt.close();
+                    } catch (_err) {
+                        // ignore cleanup error
+                    }
+                    insertStmt = null;
+                }
+                if (wsSql) {
+                    await wsSql.close();
+                    wsSql = null;
+                }
+                await proxy.stop("test cleanup");
+
+                cleanupSql = await WsSql.open(new WSConfig(localDsn));
+                try {
+                    await cleanupSql.exec(`drop database if exists ${dbName}`);
+                } finally {
+                    await cleanupSql.close();
+                    cleanupSql = null;
+                }
+            }
+        },
+        300 * 1000
     );
 });

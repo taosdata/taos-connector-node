@@ -329,7 +329,7 @@ export class WebSocketConnector {
         return BINARY_RETRIABLE_ACTIONS.has(action);
     }
 
-    private isNetworkError(err: unknown): boolean {
+    public isNetworkError(err: unknown): boolean {
         if (!this._conn || this._conn.readyState !== w3cwebsocket.OPEN) {
             return true;
         }

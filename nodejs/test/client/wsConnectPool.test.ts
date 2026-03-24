@@ -49,8 +49,6 @@ async function stmtConnect() {
     let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
     let wsConf = new WSConfig(dsn, "100.100.100.100");
     wsConf.setDb(db);
-    // let connector = WsStmtConnect.NewConnector(wsConf)
-    // let stmt = await connector.Init()
     let connector = await WsSql.open(wsConf);
     let stmt = (await connector.stmtInit()) as WsStmt1;
     let id = stmt.getStmtId();

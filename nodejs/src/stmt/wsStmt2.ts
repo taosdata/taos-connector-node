@@ -409,11 +409,17 @@ export class WsStmt2 implements WsStmt {
                 "bind bytes are missing for stmt2 rebuild"
             );
         }
+        if (this._stmt_id === undefined || this._stmt_id === null) {
+            throw new TaosResultError(
+                ErrorCode.ERR_INVALID_PARAMS,
+                "stmt_id is missing for stmt2 rebuild"
+            );
+        }
 
         const bytes = this._savedBindBytes.slice(0);
         const view = new DataView(bytes);
         view.setBigUint64(0, BigInt(ReqId.getReqID()), true);
-        view.setBigUint64(8, this._stmt_id!, true);
+        view.setBigUint64(8, this._stmt_id, true);
         return bytes;
     }
 

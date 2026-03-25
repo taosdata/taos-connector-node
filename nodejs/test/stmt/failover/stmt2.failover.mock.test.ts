@@ -282,6 +282,16 @@ describe("WsStmt2 failover (mock)", () => {
         expect(replayView.getBigUint64(0, true)).not.toBe(0n);
     });
 
+    test("buildBindBytes throws when stmt_id is missing", () => {
+        const { stmt } = createBareStmt();
+        stmt._savedBindBytes = makeSavedBindBytes();
+        stmt._stmt_id = null;
+
+        expect(() => stmt.buildBindBytes()).toThrow(
+            "stmt_id is missing for stmt2 rebuild"
+        );
+    });
+
     test("recover retries when another network error occurs", async () => {
         const { stmt, wsClient } = createBareStmt();
         const networkError = new Error("connection reset");

@@ -1,5 +1,6 @@
 import JSONBig from "json-bigint";
 import { WebSocketConnector } from "./wsConnector";
+import type { SessionRecoveryHook } from "./wsConnector";
 import { WebSocketConnectionPool } from "./wsConnectorPool";
 import { Dsn, WS_SQL_ENDPOINT } from "../common/dsn";
 import {
@@ -21,8 +22,6 @@ import {
     ConnectorInfo,
     TSDB_OPTION_CONNECTION,
 } from "../common/constant";
-
-type SessionRecoveryHook = () => Promise<void>;
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;

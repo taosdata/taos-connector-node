@@ -59,7 +59,7 @@ class InflightRequestStore {
     }
 }
 
-type SessionRecoveryHook = () => Promise<void>;
+export type SessionRecoveryHook = () => Promise<void>;
 
 const RETRIABLE_ACTIONS = new Set(["insert", "options_connection", "poll", "subscribe"]);
 // TDengine websocket binary op codes that are safe to replay after reconnect.

@@ -96,7 +96,7 @@ export function parse(url: string): Dsn {
     if (!schemeMatch) {
         throw new TDWebSocketClientError(
             ErrorCode.ERR_INVALID_URL,
-            `Invalid URL scheme, expected ws:// or wss://, got: ${url}`
+            "Invalid URL scheme, expected ws:// or wss://"
         );
     }
     const scheme = schemeMatch[1].toLowerCase();

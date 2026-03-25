@@ -656,19 +656,19 @@ export class WebSocketConnector {
                 reject(error);
             };
 
-            if (retriable) {
-                this._inflightStore.insert({
-                    reqId,
-                    action,
-                    id: callbackId,
-                    message,
-                    resolve: safeResolve,
-                    reject: safeReject,
-                });
-            }
+            const registerAndSend = async () => {
+                if (retriable) {
+                    this._inflightStore.insert({
+                        reqId,
+                        action,
+                        id: callbackId,
+                        message,
+                        resolve: safeResolve,
+                        reject: safeReject,
+                    });
+                }
 
-            void WsEventCallback.instance()
-                .registerCallback(
+                await WsEventCallback.instance().registerCallback(
                     {
                         action,
                         req_id: reqId,
@@ -678,20 +678,21 @@ export class WebSocketConnector {
                     },
                     safeResolve,
                     safeReject
-                )
-                .then(() => {
-                    try {
-                        this.send(message);
-                    } catch (err) {
-                        if (retriable && this.isNetworkError(err)) {
-                            return;
-                        }
-                        safeReject(err);
+                );
+
+                try {
+                    this.send(message);
+                } catch (err) {
+                    if (retriable && this.isNetworkError(err)) {
+                        return;
                     }
-                })
-                .catch((error) => {
-                    safeReject(error);
-                });
+                    safeReject(err);
+                }
+            };
+
+            void registerAndSend().catch((error) => {
+                safeReject(error);
+            });
         });
     }
 

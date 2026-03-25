@@ -47,60 +47,10 @@ export function getDsn(wsConfig: WSConfig): Dsn {
     return dsn;
 }
 
-export function getUrl(wsConfig: WSConfig): URL {
-    let url = new URL(wsConfig.getUrl());
-    if (wsConfig.getUser()) {
-        url.username = wsConfig.getUser() || "";
-    }
-    if (wsConfig.getPwd()) {
-        url.password = wsConfig.getPwd() || "";
-    }
-
-    let token = wsConfig.getToken();
-    if (token) {
-        url.searchParams.set("token", token);
-    }
-
-    let timezone = wsConfig.getTimezone();
-    if (timezone) {
-        url.searchParams.set("timezone", timezone);
-    }
-
-    if (url.pathname && url.pathname !== "/") {
-        wsConfig.setDb(url.pathname.slice(1));
-    }
-
-    if (url.searchParams.has("timezone")) {
-        wsConfig.setTimezone(url.searchParams.get("timezone") || "");
-    }
-
-    const bearerToken = wsConfig.getBearerToken();
-    if (bearerToken) {
-        url.searchParams.set("bearer_token", bearerToken);
-    } else {
-        const bearerTokenFromUrl = url.searchParams.get("bearer_token");
-        if (bearerTokenFromUrl) {
-            wsConfig.setBearerToken(bearerTokenFromUrl);
-        } else {
-            url.searchParams.delete("bearer_token");
-        }
-    }
-
-    url.pathname = "/ws";
-    return url;
-}
-
 export function isEmpty(value: any): boolean {
     if (value === null || value === undefined) return true;
     if (Array.isArray(value) && value.length === 0) return true;
     return false;
-}
-
-export function normalizePath(path: string): string {
-    // Normalize websocket endpoint for connector internals:
-    // remove leading slashes and fallback to SQL path ("ws") when empty.
-    const normalized = path.trim().replace(/^\/+/, "");
-    return normalized.length > 0 ? normalized : "ws";
 }
 
 export function getBinarySql(

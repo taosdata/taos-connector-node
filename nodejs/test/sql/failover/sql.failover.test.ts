@@ -179,7 +179,7 @@ describe("sql failover", () => {
                     }
 
                     forwardedInsertFrames += 1;
-                    if (Math.random() < 0.003) {
+                    if (Math.random() < 0.003 || restartCount === 0) {
                         restartInFlight = true;
                         restartCount += 1;
                         const downtimeMs = 10 + Math.floor(Math.random() * 60);
@@ -255,6 +255,7 @@ describe("sql failover", () => {
             let setupSql: WsSql | null = null;
             let cleanupSql: WsSql | null = null;
             let writePhase = false;
+            let forcedRestartTriggered = false;
 
             const localDsn = `ws://${testUsername()}:${testPassword()}@127.0.0.1:6041`;
             const setupConf = new WSConfig(localDsn);
@@ -301,10 +302,12 @@ describe("sql failover", () => {
                         if (state.restarting) {
                             return;
                         }
-                        if (Math.random() >= 0.003) {
+                        const shouldRestart = !forcedRestartTriggered || Math.random() < 0.003;
+                        if (!shouldRestart) {
                             return;
                         }
 
+                        forcedRestartTriggered = true;
                         state.restarting = true;
                         state.restarts += 1;
                         const downtimeMs = 80 + Math.floor(Math.random() * 120);

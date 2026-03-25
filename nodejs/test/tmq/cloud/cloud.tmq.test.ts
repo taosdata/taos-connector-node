@@ -4,10 +4,19 @@ import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
 import { setLevel } from "@src/common/log";
 import { WSConfig } from "@src/common/config";
 import { WsSql } from "@src/sql/wsSql";
-import { testPassword, testUsername } from "@test-helpers/utils";
+import {
+    testCloud,
+    testCloudWsUrl,
+    testPassword,
+    testUsername,
+} from "@test-helpers/utils";
+
+const url = testCloudWsUrl();
 
 beforeAll(async () => {
-    const url = `wss://${process.env.TDENGINE_CLOUD_URL}?token=${process.env.TDENGINE_CLOUD_TOKEN}`;
+    if (!url) {
+        return;
+    }
     let wsSql = null;
     try {
         const conf = new WSConfig(url);
@@ -33,8 +42,7 @@ beforeAll(async () => {
 describe("TDWebSocket.Tmq()", () => {
     jest.setTimeout(20 * 1000);
 
-    test("normal connect", async () => {
-        const url = `wss://${process.env.TDENGINE_CLOUD_URL}?token=${process.env.TDENGINE_CLOUD_TOKEN}`;
+    testCloud("normal connect", async () => {
         const topic = "topic_meters";
         const topics = [topic];
         const groupId = "group1";

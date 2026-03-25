@@ -36,8 +36,8 @@ export class WsClient {
     private _customRecoveryHook: SessionRecoveryHook | null = null;
 
     constructor(dsn: Dsn, timeout?: number | undefined | null) {
+        this.checkAuth(dsn);
         this._dsn = dsn;
-        this.checkAuth();
         this._timeout = timeout;
         if (this._dsn.params.has("timezone")) {
             this._timezone = this._dsn.params.get("timezone") || undefined;
@@ -359,10 +359,10 @@ export class WsClient {
         this._customRecoveryHook = null;
     }
 
-    private checkAuth() {
-        const hasToken = this._dsn.params.get("token") || this._dsn.params.get("bearer_token");
+    private checkAuth(dsn: Dsn): void {
+        const hasToken = dsn.params.get("token") || dsn.params.get("bearer_token");
         if (!hasToken) {
-            if (!(this._dsn.username || this._dsn.password)) {
+            if (!(dsn.username || dsn.password)) {
                 throw new WebSocketInterfaceError(
                     ErrorCode.ERR_INVALID_AUTHENTICATION,
                     `invalid url, provide non-empty "token" or "bearer_token", or provide username/password`

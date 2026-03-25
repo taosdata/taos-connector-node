@@ -1,5 +1,5 @@
-import logger from "../../src/common/log";
-import { TDengineMeta } from "../../src/common/taosResult";
+import logger from "@src/common/log";
+import { TDengineMeta } from "@src/common/taosResult";
 
 export function getInsertBind(
     valuesLen: number,

@@ -1,5 +1,6 @@
 import { RetryConfig, WebSocketConnector } from "@src/client/wsConnector";
 import { WsEventCallback } from "@src/client/wsEventCallback";
+import { AddressConnectionTracker } from "@src/common/addressConnectionTracker";
 import { parse } from "@src/common/dsn";
 
 function createInflightStore(): any {
@@ -39,7 +40,7 @@ function createBareConnector(): any {
     const connector = Object.create(WebSocketConnector.prototype) as any;
     connector._timeout = 5000;
     connector._dsn = parse("ws://root:taosdata@host1:6041,host2:6042");
-    connector._currentAddressIndex = 0;
+    connector._currentAddress = connector._dsn.addresses[0];
     connector._retryConfig = new RetryConfig(1, 1, 8);
     connector._reconnectLock = null;
     connector._isReconnecting = false;
@@ -81,9 +82,19 @@ function listInflightReqIds(connector: any): bigint[] {
         .map((req: any) => req.reqId as bigint);
 }
 
+function resetAddressTracker(): void {
+    const tracker = AddressConnectionTracker.instance();
+    (tracker as any)._counts.clear();
+}
+
 describe("WebSocketConnector failover and retry", () => {
+    beforeEach(() => {
+        resetAddressTracker();
+    });
+
     afterEach(() => {
         jest.restoreAllMocks();
+        resetAddressTracker();
     });
 
     test("deduplicates concurrent reconnect triggers with reconnect lock", async () => {
@@ -102,12 +113,15 @@ describe("WebSocketConnector failover and retry", () => {
         expect(reconnectImpl).toHaveBeenCalledTimes(1);
     });
 
-    test("switches to next address after retries are exhausted", async () => {
+    test("switches to least-connected address after retries are exhausted", async () => {
         const connector = createBareConnector();
+        const leastSelector = jest
+            .spyOn(AddressConnectionTracker.instance(), "selectLeastConnected")
+            .mockReturnValue(1);
         const attempts: string[] = [];
         connector.sleep = jest.fn(async () => { });
         connector.reconnect = jest.fn(async () => {
-            const current = connector._dsn.addresses[connector._currentAddressIndex];
+            const current = connector._currentAddress;
             const addr = `${current.host}:${current.port}`;
             attempts.push(addr);
             if (addr === "host1:6041") {
@@ -121,11 +135,16 @@ describe("WebSocketConnector failover and retry", () => {
             "host1:6041",
             "host2:6042",
         ]);
-        expect(connector._currentAddressIndex).toBe(1);
+        expect(leastSelector).toHaveBeenCalledWith(connector._dsn.addresses);
+        expect(`${connector._currentAddress.host}:${connector._currentAddress.port}`)
+            .toBe("host2:6042");
     });
 
     test("attemptReconnect throws after all addresses and retries are exhausted", async () => {
         const connector = createBareConnector();
+        jest
+            .spyOn(AddressConnectionTracker.instance(), "selectLeastConnected")
+            .mockReturnValue(1);
         connector.sleep = jest.fn(async () => { });
         connector.reconnect = jest.fn(async () => {
             throw new Error("all down");
@@ -135,7 +154,8 @@ describe("WebSocketConnector failover and retry", () => {
             "Failed to reconnect to any available address"
         );
         expect(connector.reconnect).toHaveBeenCalledTimes(2);
-        expect(connector._currentAddressIndex).toBe(1);
+        expect(`${connector._currentAddress.host}:${connector._currentAddress.port}`)
+            .toBe("host2:6042");
     });
 
     test("handleDisconnect skips reconnect when reconnect is disabled", async () => {
@@ -255,10 +275,30 @@ describe("WebSocketConnector failover and retry", () => {
 
     test("close disables reconnect and closes current socket", () => {
         const connector = createBareConnector();
+        const decrementSpy = jest
+            .spyOn(AddressConnectionTracker.instance(), "decrement")
+            .mockImplementation(() => { });
         connector.close();
+        expect(decrementSpy).toHaveBeenCalledWith("host1:6041");
         expect(connector._allowReconnect).toBe(false);
         expect(connector._conn.close).toHaveBeenCalledTimes(1);
         expect(connector._suppressedSockets.has(connector._conn)).toBe(true);
+    });
+
+    test("reconnect decrements current address before closing old socket", async () => {
+        const connector = createBareConnector();
+        const decrementSpy = jest
+            .spyOn(AddressConnectionTracker.instance(), "decrement")
+            .mockImplementation(() => { });
+        connector.createConnection = jest.fn(() => {
+            connector._connectionReady = Promise.resolve();
+        });
+
+        await connector.reconnect();
+
+        expect(decrementSpy).toHaveBeenCalledWith("host1:6041");
+        expect(connector._conn.close).toHaveBeenCalledTimes(1);
+        expect(connector.createConnection).toHaveBeenCalledTimes(1);
     });
 
     test("triggers reconnect and keeps retriable string request inflight when send throws", async () => {

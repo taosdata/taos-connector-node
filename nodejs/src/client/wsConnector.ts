@@ -1,5 +1,6 @@
 import { ICloseEvent, w3cwebsocket } from "websocket";
-import { Dsn } from "../common/dsn";
+import { Address, Dsn } from "../common/dsn";
+import { AddressConnectionTracker } from "../common/addressConnectionTracker";
 import {
     ErrorCode,
     TDWebSocketClientError,
@@ -132,7 +133,7 @@ export class WebSocketConnector {
     private _conn!: w3cwebsocket;
     private readonly _poolKey: string;
     private readonly _dsn: Dsn;
-    private _currentAddressIndex: number;
+    private _currentAddress: Address;
     private readonly _retryConfig: RetryConfig;
     private _inflightStore: InflightRequestStore;
     private readonly _suppressedSockets: WeakSet<w3cwebsocket> = new WeakSet();
@@ -156,7 +157,7 @@ export class WebSocketConnector {
         }
         this._poolKey = poolKey;
         this._dsn = dsn;
-        this._currentAddressIndex = this.selectRandomIndex();
+        this._currentAddress = this.selectLeastConnectedAddress();
         this._retryConfig = RetryConfig.fromDsn(dsn);
         this._inflightStore = new InflightRequestStore();
         if (timeout) {
@@ -166,15 +167,7 @@ export class WebSocketConnector {
         this.createConnection();
     }
 
-    private selectRandomIndex(): number {
-        if (this._dsn.addresses.length <= 1) {
-            return 0;
-        }
-        return Math.floor(Math.random() * this._dsn.addresses.length);
-    }
-
-    private buildUrl(index: number): string {
-        const addr = this._dsn.addresses[index];
+    private buildUrl(addr: Address): string {
         const path = this._dsn.path();
         const url = new URL(`${this._dsn.scheme}://${addr.host}:${addr.port}/${path}`);
         const forwardedParams = ["token", "bearer_token"];
@@ -189,7 +182,7 @@ export class WebSocketConnector {
 
     private createConnection(): void {
         const conn = new w3cwebsocket(
-            this.buildUrl(this._currentAddressIndex),
+            this.buildUrl(this._currentAddress),
             undefined,
             undefined,
             undefined,
@@ -224,6 +217,7 @@ export class WebSocketConnector {
 
             conn.onopen = () => {
                 logger.debug("websocket connection opened");
+                AddressConnectionTracker.instance().increment(this.getCurrentAddress());
                 settle(resolve);
             };
             conn.onerror = (err: Error) => {
@@ -406,8 +400,13 @@ export class WebSocketConnector {
     }
 
     private getCurrentAddress(): string {
-        const current = this._dsn.addresses[this._currentAddressIndex];
-        return `${current.host}:${current.port}`;
+        return `${this._currentAddress.host}:${this._currentAddress.port}`;
+    }
+
+    private selectLeastConnectedAddress(): Address {
+        const selectedIndex = AddressConnectionTracker.instance()
+            .selectLeastConnected(this._dsn.addresses);
+        return this._dsn.addresses[selectedIndex];
     }
 
     private async sleep(ms: number): Promise<void> {
@@ -446,6 +445,7 @@ export class WebSocketConnector {
 
     private async reconnect(): Promise<void> {
         if (this._conn) {
+            AddressConnectionTracker.instance().decrement(this.getCurrentAddress());
             this._suppressedSockets.add(this._conn);
             this._conn.close();
         }
@@ -475,8 +475,8 @@ export class WebSocketConnector {
             }
 
             if (i < totalAddresses - 1) {
-                this._currentAddressIndex = (this._currentAddressIndex + 1) % totalAddresses;
-                logger.info(`Switching to next address: ${this.getCurrentAddress()}`);
+                this._currentAddress = this.selectLeastConnectedAddress();
+                logger.info(`Switching to least-connected address: ${this.getCurrentAddress()}`);
             }
         }
 
@@ -513,6 +513,7 @@ export class WebSocketConnector {
     close() {
         if (this._conn) {
             this._allowReconnect = false;
+            AddressConnectionTracker.instance().decrement(this.getCurrentAddress());
             this._suppressedSockets.add(this._conn);
             this._conn.close();
         } else {

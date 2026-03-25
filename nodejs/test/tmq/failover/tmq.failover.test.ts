@@ -35,7 +35,10 @@ describe("tmq failover", () => {
         let cleanupSql: WsSql | null = null;
         let consumer: WsConsumer | null = null;
         let restartTriggered = false;
-        let proxyBHadActivity = false;
+        let subscribeBeforeRestart = 0;
+        let subscribeAfterRestart = 0;
+        let pollBeforeRestart = 0;
+        let pollAfterRestart = 0;
 
         setupSql = await WsSql.open(new WSConfig(localDsn));
         try {
@@ -50,41 +53,55 @@ describe("tmq failover", () => {
             setupSql = null;
         }
 
+        const handleProxyEvent = (event: WsProxyEvent, control: any) => {
+            if (event.type !== "message") {
+                return;
+            }
+            if (event.direction !== "client_to_upstream") {
+                return;
+            }
+
+            const action = parseJsonAction(event.rawData);
+            if (action === "subscribe") {
+                if (restartTriggered) {
+                    subscribeAfterRestart += 1;
+                } else {
+                    subscribeBeforeRestart += 1;
+                }
+                return;
+            }
+            if (action !== "poll") {
+                return;
+            }
+
+            if (restartTriggered) {
+                pollAfterRestart += 1;
+            } else {
+                pollBeforeRestart += 1;
+            }
+
+            if (!restartTriggered) {
+                restartTriggered = true;
+                void control.restart({
+                    downtimeMs: 350,
+                    reason: "trigger tmq poll failover",
+                });
+            }
+        };
+
         const proxyA = await WsProxy.create({
             host: "127.0.0.1",
             port: 0,
             onEvent: (event, control) => {
-                if (event.type !== "message") {
-                    return;
-                }
-                if (event.direction !== "client_to_upstream") {
-                    return;
-                }
-                const action = parseJsonAction(event.rawData);
-                if (action === "poll" && !restartTriggered) {
-                    restartTriggered = true;
-                    void control.restart({
-                        downtimeMs: 350,
-                        reason: "trigger tmq poll failover",
-                    });
-                }
+                handleProxyEvent(event, control);
             },
         });
 
         const proxyB = await WsProxy.create({
             host: "127.0.0.1",
             port: 0,
-            onEvent: (event: WsProxyEvent) => {
-                if (event.type === "client_connected") {
-                    proxyBHadActivity = true;
-                    return;
-                }
-                if (
-                    event.type === "message" &&
-                    event.direction === "client_to_upstream"
-                ) {
-                    proxyBHadActivity = true;
-                }
+            onEvent: (event, control) => {
+                handleProxyEvent(event, control);
             },
         });
 
@@ -118,7 +135,10 @@ describe("tmq failover", () => {
             }
 
             expect(restartTriggered).toBe(true);
-            expect(proxyBHadActivity).toBe(true);
+            expect(subscribeBeforeRestart).toBeGreaterThan(0);
+            expect(subscribeAfterRestart).toBeGreaterThan(0);
+            expect(pollBeforeRestart).toBeGreaterThan(0);
+            expect(pollAfterRestart).toBeGreaterThan(0);
             expect(rows).toBeGreaterThan(0);
         } finally {
             if (consumer) {

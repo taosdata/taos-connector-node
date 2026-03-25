@@ -36,10 +36,12 @@ function createInflightStore(): any {
     };
 }
 
-function createBareConnector(): any {
+function createBareConnector(
+    dsn: string = "ws://root:taosdata@host1:6041,host2:6042"
+): any {
     const connector = Object.create(WebSocketConnector.prototype) as any;
     connector._timeout = 5000;
-    connector._dsn = parse("ws://root:taosdata@host1:6041,host2:6042");
+    connector._dsn = parse(dsn);
     connector._currentAddress = connector._dsn.addresses[0];
     connector._retryConfig = new RetryConfig(1, 1, 8);
     connector._reconnectLock = null;
@@ -117,7 +119,7 @@ describe("WebSocketConnector failover and retry", () => {
         const connector = createBareConnector();
         const leastSelector = jest
             .spyOn(AddressConnectionTracker.instance(), "selectLeastConnected")
-            .mockReturnValue(1);
+            .mockImplementation(() => 0);
         const attempts: string[] = [];
         connector.sleep = jest.fn(async () => { });
         connector.reconnect = jest.fn(async () => {
@@ -135,16 +137,73 @@ describe("WebSocketConnector failover and retry", () => {
             "host1:6041",
             "host2:6042",
         ]);
-        expect(leastSelector).toHaveBeenCalledWith(connector._dsn.addresses);
+        expect(leastSelector).toHaveBeenCalledWith([
+            connector._dsn.addresses[1],
+        ]);
         expect(`${connector._currentAddress.host}:${connector._currentAddress.port}`)
             .toBe("host2:6042");
+    });
+
+    test("attemptReconnect does not reselect failed addresses in one reconnect round", async () => {
+        const connector = createBareConnector(
+            "ws://root:taosdata@host1:6041,host2:6042,host3:6043"
+        );
+        const leastSelector = jest
+            .spyOn(AddressConnectionTracker.instance(), "selectLeastConnected")
+            .mockImplementation(() => 0);
+        const attempts: string[] = [];
+        connector.sleep = jest.fn(async () => { });
+        connector.reconnect = jest.fn(async () => {
+            const current = connector._currentAddress;
+            attempts.push(`${current.host}:${current.port}`);
+            throw new Error("all down");
+        });
+
+        await expect(connector.attemptReconnect()).rejects.toThrow(
+            "Failed to reconnect to any available address"
+        );
+
+        expect(attempts).toEqual([
+            "host1:6041",
+            "host2:6042",
+            "host3:6043",
+        ]);
+        expect(leastSelector).toHaveBeenNthCalledWith(1, [
+            connector._dsn.addresses[1],
+            connector._dsn.addresses[2],
+        ]);
+        expect(leastSelector).toHaveBeenNthCalledWith(2, [
+            connector._dsn.addresses[2],
+        ]);
+    });
+
+    test("attemptReconnect keeps retrying same address for single-address dsn", async () => {
+        const connector = createBareConnector("ws://root:taosdata@host1:6041");
+        connector._retryConfig = new RetryConfig(3, 1, 8);
+        connector.sleep = jest.fn(async () => { });
+        const attempts: string[] = [];
+        connector.reconnect = jest.fn(async () => {
+            const current = connector._currentAddress;
+            attempts.push(`${current.host}:${current.port}`);
+            throw new Error("host1 down");
+        });
+
+        await expect(connector.attemptReconnect()).rejects.toThrow(
+            "Failed to reconnect to any available address"
+        );
+
+        expect(attempts).toEqual([
+            "host1:6041",
+            "host1:6041",
+            "host1:6041",
+        ]);
     });
 
     test("attemptReconnect throws after all addresses and retries are exhausted", async () => {
         const connector = createBareConnector();
         jest
             .spyOn(AddressConnectionTracker.instance(), "selectLeastConnected")
-            .mockReturnValue(1);
+            .mockImplementation(() => 0);
         connector.sleep = jest.fn(async () => { });
         connector.reconnect = jest.fn(async () => {
             throw new Error("all down");

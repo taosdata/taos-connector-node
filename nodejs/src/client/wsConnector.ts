@@ -403,10 +403,15 @@ export class WebSocketConnector {
         return `${this._currentAddress.host}:${this._currentAddress.port}`;
     }
 
-    private selectLeastConnectedAddress(): Address {
+    private selectLeastConnectedAddress(excludedAddresses: Set<string> = new Set()): Address {
+        const candidates = this._dsn.addresses.filter((address) => {
+            const addressKey = `${address.host}:${address.port}`;
+            return !excludedAddresses.has(addressKey);
+        });
+        const selectableAddresses = candidates.length > 0 ? candidates : this._dsn.addresses;
         const selectedIndex = AddressConnectionTracker.instance()
-            .selectLeastConnected(this._dsn.addresses);
-        return this._dsn.addresses[selectedIndex];
+            .selectLeastConnected(selectableAddresses);
+        return selectableAddresses[selectedIndex];
     }
 
     private async sleep(ms: number): Promise<void> {
@@ -455,6 +460,7 @@ export class WebSocketConnector {
 
     private async attemptReconnect(): Promise<void> {
         const totalAddresses = this._dsn.addresses.length;
+        const failedAddresses = new Set<string>();
 
         for (let i = 0; i < totalAddresses; i++) {
             for (let retry = 0; retry < this._retryConfig.retries; retry++) {
@@ -475,7 +481,8 @@ export class WebSocketConnector {
             }
 
             if (i < totalAddresses - 1) {
-                this._currentAddress = this.selectLeastConnectedAddress();
+                failedAddresses.add(this.getCurrentAddress());
+                this._currentAddress = this.selectLeastConnectedAddress(failedAddresses);
                 logger.info(`Switching to least-connected address: ${this.getCurrentAddress()}`);
             }
         }

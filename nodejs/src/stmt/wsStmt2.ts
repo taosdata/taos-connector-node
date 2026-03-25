@@ -418,7 +418,9 @@ export class WsStmt2 implements WsStmt {
     }
 
     private async recover(failedStep: StmtStep): Promise<any> {
-        while (true) {
+        const retries = this._wsClient.getReconnectRetries();
+        const maxAttempts = retries > 0 ? retries : 5;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 await this._wsClient.waitForReady();
 
@@ -453,8 +455,22 @@ export class WsStmt2 implements WsStmt {
                 if (!this._wsClient.isNetworkError(err)) {
                     throw err;
                 }
+
+                if (attempt === maxAttempts) {
+                    const recoverError = new TaosResultError(
+                        ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
+                        `stmt2 recover exceeded max attempts (${maxAttempts}) at step ${StmtStep[failedStep]}: ${err?.message || err}`
+                    );
+                    (recoverError as any).cause = err;
+                    throw recoverError;
+                }
             }
         }
+
+        throw new TaosResultError(
+            ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
+            `stmt2 recover exited unexpectedly at step ${StmtStep[failedStep]}`
+        );
     }
 
     getStmtId(): bigint | undefined | null {

@@ -294,6 +294,10 @@ export class WsClient {
         return this.getWsConnector().isNetworkError(err);
     }
 
+    getReconnectRetries(): number {
+        return this.getWsConnector().getReconnectRetries();
+    }
+
     async sendMsg(message: string): Promise<any> {
         logger.debug("[wsClient.sendMsg]===>" + message);
         return this.getWsConnector().sendMsg(message);

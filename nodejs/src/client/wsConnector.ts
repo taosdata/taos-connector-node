@@ -698,4 +698,8 @@ export class WebSocketConnector {
     public getPoolKey(): string {
         return this._poolKey;
     }
+
+    public getReconnectRetries(): number {
+        return this._retryConfig.retries;
+    }
 }

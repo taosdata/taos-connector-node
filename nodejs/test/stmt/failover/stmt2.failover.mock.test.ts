@@ -38,6 +38,7 @@ function createMockWsClient() {
         })),
         waitForReady: jest.fn(async () => { }),
         isNetworkError: jest.fn((_err: unknown) => false),
+        getReconnectRetries: jest.fn(() => 5),
     };
 }
 
@@ -329,5 +330,23 @@ describe("WsStmt2 failover (mock)", () => {
         jest.spyOn(stmt, "doInit").mockRejectedValueOnce(nonNetworkError);
 
         await expect(stmt.recover(Step.INIT)).rejects.toThrow("permission denied");
+    });
+
+    test("recover throws when network errors exceed max attempts", async () => {
+        const { stmt, wsClient } = createBareStmt();
+        const networkError = new Error("connection reset");
+        stmt._savedSql = "select * from t";
+        stmt._savedBindBytes = makeSavedBindBytes();
+        wsClient.getReconnectRetries.mockReturnValue(2);
+        wsClient.isNetworkError.mockImplementation((err: unknown) => err === networkError);
+        const initSpy = jest
+            .spyOn(stmt, "doInit")
+            .mockRejectedValue(networkError);
+
+        await expect(stmt.recover(Step.INIT)).rejects.toThrow(
+            "stmt2 recover exceeded max attempts (2)"
+        );
+        expect(initSpy).toHaveBeenCalledTimes(2);
+        expect(wsClient.waitForReady).toHaveBeenCalledTimes(2);
     });
 });

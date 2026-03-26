@@ -295,7 +295,7 @@ export class WebSocketConnector {
     }
 
     private shouldSkipReconnect(conn: w3cwebsocket): boolean {
-        if (!this._allowReconnect) {
+        if (!this.isReconnectAllowed()) {
             return true;
         }
         return this._suppressedSockets.has(conn);
@@ -439,7 +439,14 @@ export class WebSocketConnector {
         await new Promise((resolve) => setTimeout(resolve, ms));
     }
 
+    private isReconnectAllowed(): boolean {
+        return this._allowReconnect;
+    }
+
     private async triggerReconnect(): Promise<void> {
+        if (!this.isReconnectAllowed()) {
+            return;
+        }
         if (!this._reconnectLock) {
             this._reconnectLock = this._doReconnect();
         }
@@ -455,6 +462,9 @@ export class WebSocketConnector {
     }
 
     private async _doReconnect(): Promise<void> {
+        if (!this.isReconnectAllowed()) {
+            return;
+        }
         this._isReconnecting = true;
         try {
             await this.attemptReconnect();
@@ -485,6 +495,9 @@ export class WebSocketConnector {
 
         for (let i = 0; i < totalAddresses; i++) {
             for (let retry = 0; retry < this._retryConfig.retries; retry++) {
+                if (!this.isReconnectAllowed()) {
+                    return;
+                }
                 try {
                     logger.info(`Reconnecting to ${this.getCurrentAddress()}, attempt ${retry + 1}`);
                     await this.reconnect();
@@ -539,16 +552,19 @@ export class WebSocketConnector {
     }
 
     close() {
+        this._allowReconnect = false;
+        this.failAllInflightRequests(
+            new TDWebSocketClientError(
+                ErrorCode.ERR_CONNECTION_CLOSED,
+                "websocket connection closed"
+            )
+        );
         if (this._conn) {
-            this._allowReconnect = false;
             AddressConnectionTracker.instance().decrement(this.getCurrentAddress());
             this._suppressedSockets.add(this._conn);
             this._conn.close();
         } else {
-            throw new TDWebSocketClientError(
-                ErrorCode.ERR_WEBSOCKET_CONNECTION_FAIL,
-                "WebSocket connection is undefined"
-            );
+            logger.warn("close() called but websocket connection is undefined");
         }
     }
 

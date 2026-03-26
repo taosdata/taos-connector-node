@@ -344,6 +344,49 @@ describe("WebSocketConnector failover and retry", () => {
         expect(connector._suppressedSockets.has(connector._conn)).toBe(true);
     });
 
+    test("attemptReconnect aborts silently when close is called mid-retry", async () => {
+        const connector = createBareConnector("ws://root:taosdata@host1:6041");
+        connector._retryConfig = new RetryConfig(3, 1, 8);
+        connector.reconnect = jest.fn(async () => {
+            throw new Error("host down");
+        });
+        connector.sleep = jest.fn(async () => {
+            connector.close();
+        });
+
+        await expect(connector.attemptReconnect()).resolves.toBeUndefined();
+        expect(connector.reconnect).toHaveBeenCalledTimes(1);
+    });
+
+    test("close rejects retriable inflight request immediately", async () => {
+        const connector = createBareConnector();
+        connector.triggerReconnect = jest.fn(() => new Promise<void>(() => { }));
+        connector._conn.send = jest.fn(() => {
+            throw new Error("cannot call send() while not connected");
+        });
+
+        const pending = connector.sendMsg(
+            JSON.stringify({
+                action: "insert",
+                args: {
+                    req_id: 401,
+                },
+            })
+        );
+        void pending.catch(() => { });
+
+        await delay(20);
+        connector.close();
+
+        const state = await Promise.race([
+            pending.then(() => "resolved").catch(() => "rejected"),
+            delay(40).then(() => "pending"),
+        ]);
+
+        expect(state).toBe("rejected");
+        expect(hasInflightRequest(connector, 401n)).toBe(false);
+    });
+
     test("reconnect decrements current address before closing old socket", async () => {
         const connector = createBareConnector();
         const decrementSpy = jest

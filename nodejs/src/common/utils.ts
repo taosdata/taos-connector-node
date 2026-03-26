@@ -185,11 +185,9 @@ export function decimalToString(
         const absStr = isNegative ? decimalStr.slice(1) : decimalStr;
 
         if (absStr.length <= scale) {
-            // If the length of the number is less than or equal to the precision, add 0 before it.
             const paddedStr = absStr.padStart(scale + 1, "0");
             decimalStr = (isNegative ? "-" : "") + "0." + paddedStr.slice(1);
         } else {
-            // 在指定位置插入小数点
             const integerPart = absStr.slice(0, absStr.length - scale);
             const decimalPart = absStr.slice(absStr.length - scale);
             decimalStr =

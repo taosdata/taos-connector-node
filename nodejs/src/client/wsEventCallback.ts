@@ -52,11 +52,15 @@ export class WsEventCallback {
         let release = await eventMutex.acquire();
         try {
             const timer = setTimeout(async () => {
+                let removed = false;
                 const timeoutRelease = await eventMutex.acquire();
                 try {
-                    WsEventCallback._msgActionRegister.delete(id);
+                    removed = WsEventCallback._msgActionRegister.delete(id);
                 } finally {
                     timeoutRelease();
+                }
+                if (!removed) {
+                    return;
                 }
                 rej(
                     new WebSocketQueryError(

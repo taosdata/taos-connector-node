@@ -72,4 +72,47 @@ describe("WsEventCallback lifecycle", () => {
         expect(clearSpy).toHaveBeenCalled();
         expect((WsEventCallback as any)._msgActionRegister.size).toBe(0);
     });
+
+    test("timeout callback does not reject if response already handled", async () => {
+        const callback = WsEventCallback.instance();
+        const resolve = jest.fn();
+        const reject = jest.fn();
+        let capturedTimeoutHandler: (() => Promise<void> | void) | null = null;
+
+        jest.spyOn(global, "setTimeout").mockImplementation(((handler: any) => {
+            capturedTimeoutHandler = handler as () => Promise<void> | void;
+            return 1 as any;
+        }) as any);
+
+        await callback.registerCallback(
+            {
+                action: "insert",
+                req_id: 33n,
+                timeout: 2000,
+            },
+            resolve,
+            reject
+        );
+
+        await callback.handleEventCallback(
+            {
+                action: "insert",
+                req_id: 33n,
+            },
+            OnMessageType.MESSAGE_TYPE_STRING,
+            {
+                action: "insert",
+                req_id: 33n,
+                code: 0,
+            }
+        );
+
+        expect(resolve).toHaveBeenCalledTimes(1);
+        expect(reject).not.toHaveBeenCalled();
+
+        expect(capturedTimeoutHandler).toBeTruthy();
+        await capturedTimeoutHandler!();
+
+        expect(reject).not.toHaveBeenCalled();
+    });
 });

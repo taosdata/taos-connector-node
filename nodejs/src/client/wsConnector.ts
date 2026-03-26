@@ -271,7 +271,7 @@ export class WebSocketConnector {
                 `invalid message type ${Object.prototype.toString.call(data)}`
             );
         }
-    };
+    }
 
     private shouldSkipReconnect(conn: w3cwebsocket): boolean {
         if (!this._allowReconnect) {

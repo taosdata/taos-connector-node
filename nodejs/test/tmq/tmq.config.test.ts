@@ -1,5 +1,6 @@
 import { TmqConfig } from "@src/tmq/config";
 import { TMQConstants } from "@src/tmq/constant";
+import { WsConsumer } from "@src/tmq/wsTmq";
 import { testPassword, testUsername } from "@test-helpers/utils";
 import { WS_SQL_ENDPOINT, WS_TMQ_ENDPOINT } from "@src/common/dsn";
 
@@ -85,5 +86,18 @@ describe("TmqConfig with dsn", () => {
 
     test("CONNECT_TOKEN constant value is td.connect.token", () => {
         expect(TMQConstants.CONNECT_TOKEN).toBe("td.connect.token");
+    });
+
+    test("decode URL-encoded credentials for TMQ subscribe message", () => {
+        const configMap = new Map([
+            [TMQConstants.WS_URL, "ws://u%40ser:p%40ss@localhost:6041"],
+            [TMQConstants.GROUP_ID, "g1"],
+        ]);
+
+        const consumer = new (WsConsumer as any)(configMap);
+        const msg = consumer.buildSubscribeMessage(["t1"], 1);
+
+        expect(msg.args.user).toBe("u@ser");
+        expect(msg.args.password).toBe("p@ss");
     });
 });

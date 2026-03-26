@@ -22,7 +22,7 @@ import {
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
 import { WSFetchBlockResponse } from "../client/wsResponse";
-import { maskTmqConfigForLog } from "../common/utils";
+import { maskTmqConfigForLog, safeDecodeURIComponent } from "../common/utils";
 import { ConnectorInfo } from "../common/constant";
 
 export class WsConsumer {
@@ -91,12 +91,19 @@ export class WsConsumer {
     }
 
     private buildSubscribeMessage(topics: Array<string>, reqId?: number) {
+        const user = this._config.user === null
+            ? null
+            : safeDecodeURIComponent(this._config.user);
+        const password = this._config.password === null
+            ? null
+            : safeDecodeURIComponent(this._config.password);
+
         return {
             action: TMQMessageType.Subscribe,
             args: {
                 req_id: ReqId.getReqID(reqId),
-                user: this._config.user,
-                password: this._config.password,
+                user,
+                password,
                 group_id: this._config.group_id,
                 client_id: this._config.client_id,
                 topics: topics,

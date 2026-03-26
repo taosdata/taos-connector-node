@@ -10,9 +10,7 @@ import { OnMessageType, WsEventCallback } from "./wsEventCallback";
 import logger from "../common/log";
 import {
     maskSensitiveForLog,
-    maskUrlForLog,
-    parseNonNegativeInt,
-    parsePositiveInt
+    maskUrlForLog
 } from "../common/utils";
 
 interface InflightRequest {
@@ -93,6 +91,29 @@ const NETWORK_ERROR_MESSAGE_PATTERNS = [
     "connection reset",
     "connection closed",
 ];
+
+function parseNonNegativeInt(value: string | undefined | null, fallback: number): number {
+    return parseIntWithValidation(value, fallback, (parsed) => parsed >= 0);
+}
+
+function parsePositiveInt(value: string | undefined | null, fallback: number): number {
+    return parseIntWithValidation(value, fallback, (parsed) => parsed > 0);
+}
+
+function parseIntWithValidation(
+    value: string | undefined | null,
+    fallback: number,
+    isValid: (parsed: number) => boolean
+): number {
+    if (value === undefined || value === null || value.length === 0) {
+        return fallback;
+    }
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isNaN(parsed) || !isValid(parsed)) {
+        return fallback;
+    }
+    return parsed;
+}
 
 export class RetryConfig {
     readonly retries: number;

@@ -66,7 +66,7 @@ export class WsStmt2 implements WsStmt {
             const wsStmt = new WsStmt2(wsClient, precision);
             return await wsStmt.init(reqId);
         } catch (e: any) {
-            logger.error(`stmt2 init failed, ${e.code}, ${e.message}`);
+            logger.error(`WsStmt2 init failed, ${e.code}, ${e.message}`);
             throw e;
         }
     }

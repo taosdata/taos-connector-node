@@ -115,4 +115,30 @@ describe("WsEventCallback lifecycle", () => {
 
         expect(reject).not.toHaveBeenCalled();
     });
+
+    test("timeout handler removes callback entry when timer fires", async () => {
+        jest.useFakeTimers();
+
+        const callback = WsEventCallback.instance();
+        const resolve = jest.fn();
+        const reject = jest.fn();
+
+        await callback.registerCallback(
+            {
+                action: "insert",
+                req_id: 44n,
+                timeout: 20,
+            },
+            resolve,
+            reject
+        );
+
+        expect((WsEventCallback as any)._msgActionRegister.size).toBe(1);
+
+        await jest.advanceTimersByTimeAsync(20);
+
+        expect((WsEventCallback as any)._msgActionRegister.size).toBe(0);
+        expect(resolve).not.toHaveBeenCalled();
+        expect(reject).toHaveBeenCalledTimes(1);
+    });
 });

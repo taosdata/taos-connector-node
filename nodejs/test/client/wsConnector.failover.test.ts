@@ -89,14 +89,21 @@ function resetAddressTracker(): void {
     (tracker as any)._counts.clear();
 }
 
+function resetCallbackRegistry(): void {
+    const CallbackClass = WsEventCallback as any;
+    CallbackClass._msgActionRegister = new Map();
+}
+
 describe("WebSocketConnector failover and retry", () => {
     beforeEach(() => {
         resetAddressTracker();
+        resetCallbackRegistry();
     });
 
     afterEach(() => {
         jest.restoreAllMocks();
         resetAddressTracker();
+        resetCallbackRegistry();
     });
 
     test("deduplicates concurrent reconnect triggers with reconnect lock", async () => {
@@ -385,6 +392,37 @@ describe("WebSocketConnector failover and retry", () => {
 
         expect(state).toBe("rejected");
         expect(hasInflightRequest(connector, 401n)).toBe(false);
+    });
+
+    test("close during callback registration does not leave callback entry until timeout", async () => {
+        const connector = createBareConnector();
+        connector._conn.send = jest.fn();
+
+        const callback = WsEventCallback.instance();
+        const originalRegister = callback.registerCallback.bind(callback);
+        jest
+            .spyOn(callback, "registerCallback")
+            .mockImplementation(async (id: any, res: any, rej: any) => {
+                await delay(20);
+                await originalRegister(id, res, rej);
+            });
+
+        const pending = connector.sendMsg(
+            JSON.stringify({
+                action: "insert",
+                args: {
+                    req_id: 402,
+                },
+            })
+        );
+        void pending.catch(() => { });
+
+        await delay(5);
+        connector.close();
+        await delay(30);
+
+        expect((WsEventCallback as any)._msgActionRegister.size).toBe(0);
+        expect(connector._conn.send).not.toHaveBeenCalled();
     });
 
     test("reconnect decrements current address before closing old socket", async () => {

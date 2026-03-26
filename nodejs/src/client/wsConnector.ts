@@ -717,6 +717,11 @@ export class WebSocketConnector {
                     safeReject
                 );
 
+                if (settled) {
+                    await WsEventCallback.instance().unregisterCallback(reqId);
+                    return;
+                }
+
                 try {
                     this.send(message);
                 } catch (err) {

@@ -89,7 +89,7 @@ export class TmqConfig {
                 this.dsn.addresses,
                 this.dsn.database,
                 this.dsn.params
-            )
+            );
         }
     }
 }

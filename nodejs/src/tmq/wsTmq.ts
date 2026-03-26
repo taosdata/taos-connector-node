@@ -77,7 +77,7 @@ export class WsConsumer {
         if (wsConfig.size == 0 || !wsConfig.get(TMQConstants.WS_URL)) {
             throw new WebSocketInterfaceError(
                 ErrorCode.ERR_INVALID_URL,
-                "invalid url, password or username needed."
+                "Invalid DSN"
             );
         }
         const wsConsumer = new WsConsumer(wsConfig);

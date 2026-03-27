@@ -238,6 +238,16 @@ describe("dsn", () => {
             expect(result.params.get("token")).toBe("abc123");
         });
 
+        test("does not parse @ in query parameter as userinfo delimiter", () => {
+            const result = parse("ws://localhost:6041?bearer_token=a@b");
+            expect(result.scheme).toBe("ws");
+            expect(result.username).toBe("");
+            expect(result.password).toBe("");
+            expect(result.addresses).toEqual([{ host: "localhost", port: 6041 }]);
+            expect(result.database).toBe("");
+            expect(result.params.get("bearer_token")).toBe("a@b");
+        });
+
         test("database with query parameters", () => {
             const result = parse("ws://root:taosdata@localhost:6041/mydb?timezone=UTC");
             expect(result.scheme).toBe("ws");

@@ -115,4 +115,26 @@ describe("WsClient recovery hook", () => {
         await expect(hook()).rejects.toBeInstanceOf(WebSocketQueryError);
         expect(customRecoveryHook).not.toHaveBeenCalled();
     });
+
+    test("restores default information_schema during sql recovery when no db provided", async () => {
+        const dsn = parse("ws://root:taosdata@localhost:6041");
+        const connector = createMockConnector();
+        jest
+            .spyOn(WebSocketConnectionPool.instance(), "getConnection")
+            .mockResolvedValue(connector as any);
+
+        const client = new WsClient(dsn, 5000);
+        await client.connect();
+
+        const hookCalls = connector.setSessionRecoveryHook.mock.calls;
+        const hook = hookCalls[hookCalls.length - 1]?.[0];
+        expect(hook).toBeTruthy();
+        await hook();
+
+        expect(connector.sendMsgDirect).toHaveBeenCalledTimes(1);
+        const firstCall = connector.sendMsgDirect.mock.calls[0] as [string];
+        const connMsg = JSON.parse(firstCall[0]);
+        expect(connMsg.action).toBe("conn");
+        expect(connMsg.args.db).toBe("information_schema");
+    });
 });

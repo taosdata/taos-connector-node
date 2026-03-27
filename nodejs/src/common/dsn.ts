@@ -102,13 +102,27 @@ export function parse(url: string): Dsn {
     const scheme = schemeMatch[1].toLowerCase();
     let remainder = url.slice(schemeMatch[0].length);
 
-    // Extract username:password@ if present
+    // Isolate authority from path/query before parsing userinfo.
+    const slashIndex = remainder.indexOf("/");
+    const queryMarkIndex = remainder.indexOf("?");
+    let authorityEndIndex = remainder.length;
+    if (slashIndex !== -1) {
+        authorityEndIndex = Math.min(authorityEndIndex, slashIndex);
+    }
+    if (queryMarkIndex !== -1) {
+        authorityEndIndex = Math.min(authorityEndIndex, queryMarkIndex);
+    }
+    const authority = remainder.slice(0, authorityEndIndex);
+    const suffix = remainder.slice(authorityEndIndex);
+
+    // Extract username:password@ from authority only.
     let username = "";
     let password = "";
-    const atIndex = remainder.indexOf("@");
+    const atIndex = authority.lastIndexOf("@");
+    let hostPort = authority;
     if (atIndex !== -1) {
-        const userInfo = remainder.slice(0, atIndex);
-        remainder = remainder.slice(atIndex + 1);
+        const userInfo = authority.slice(0, atIndex);
+        hostPort = authority.slice(atIndex + 1);
         const colonIndex = userInfo.indexOf(":");
         if (colonIndex !== -1) {
             username = userInfo.slice(0, colonIndex);
@@ -117,6 +131,7 @@ export function parse(url: string): Dsn {
             username = userInfo;
         }
     }
+    remainder = `${hostPort}${suffix}`;
 
     // Extract query params (after ?)
     let params = new Map<string, string>();

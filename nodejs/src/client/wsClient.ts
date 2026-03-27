@@ -91,11 +91,20 @@ export class WsClient {
         return this._dsn.endpoint === WS_SQL_ENDPOINT;
     }
 
+    private normalizeConnectedDatabase(database?: string | null): string | null {
+        if (database && database.length > 0) {
+            return database;
+        }
+        return this.isSqlPath() ? "information_schema" : null;
+    }
+
     private async recoverSqlSessionContext(): Promise<void> {
         if (!this._wsConnector) {
             return;
         }
-        const connMsg = this.buildConnMessage(this._connectedDatabase);
+        const connMsg = this.buildConnMessage(
+            this.normalizeConnectedDatabase(this._connectedDatabase)
+        );
         await this.sendMsgDirect(JSON.stringify(connMsg), false);
 
         if (this._connectionOptions.size <= 0) {
@@ -138,14 +147,14 @@ export class WsClient {
         );
         this.bindReconnectRecoveryHook();
         if (this._wsConnector.readyState() === w3cwebsocket.OPEN) {
-            this._connectedDatabase = database ?? null;
+            this._connectedDatabase = this.normalizeConnectedDatabase(database ?? null);
             return;
         }
         try {
             await this._wsConnector.ready();
             let result: any = await this._wsConnector.sendMsg(JSON.stringify(connMsg));
             if (result.msg.code == 0) {
-                this._connectedDatabase = database ?? null;
+                this._connectedDatabase = this.normalizeConnectedDatabase(database ?? null);
                 return;
             }
             await this.close();

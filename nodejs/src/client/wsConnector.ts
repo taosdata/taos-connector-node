@@ -155,7 +155,7 @@ export class WebSocketConnector {
     private readonly _poolKey: string;
     private readonly _dsn: Dsn;
     private _currentAddress: Address;
-    private readonly _retryConfig: RetryConfig;
+    private _retryConfig: RetryConfig;
     private _inflightStore: InflightRequestStore;
     private readonly _suppressedSockets: WeakSet<w3cwebsocket> = new WeakSet();
     private _reconnectLock: Promise<void> | null = null;
@@ -186,6 +186,10 @@ export class WebSocketConnector {
         }
         logger.info(`Initial websocket address selected: ${this.getCurrentAddress()}`);
         this.createConnection();
+    }
+
+    public refreshRetryConfig(dsn: Dsn): void {
+        this._retryConfig = RetryConfig.fromDsn(dsn);
     }
 
     private buildUrl(addr: Address): string {

@@ -33,10 +33,15 @@ export class WebSocketConnectionPool {
         return poolKey.replace(/#auth=[^#]*/, "#auth=[REDACTED]");
     }
 
-    private buildAuth(dsn: Dsn): string {
+    private buildAuthScope(dsn: Dsn): string {
         const token = dsn.params.get("token") || "";
         const bearerToken = dsn.params.get("bearer_token") || "";
-        const raw = `${dsn.username}:${dsn.password}:${token}:${bearerToken}`;
+        const raw = JSON.stringify({
+            username: dsn.username,
+            password: dsn.password,
+            token,
+            bearerToken,
+        });
         return createHash("sha256").update(raw).digest("hex");
     }
 
@@ -45,7 +50,7 @@ export class WebSocketConnectionPool {
             .sort((a, b) => `${a.host}:${a.port}`.localeCompare(`${b.host}:${b.port}`))
             .map((addr) => `${addr.host}:${addr.port}`)
             .join(",");
-        const auth = this.buildAuth(dsn);
+        const auth = this.buildAuthScope(dsn);
         const path = dsn.path();
         return `${dsn.scheme}://${addrs}/${path}#auth=${auth}`;
     }
@@ -67,6 +72,7 @@ export class WebSocketConnectionPool {
                         continue;
                     }
                     if (candidate.readyState() === w3cwebsocket.OPEN) {
+                        candidate.refreshRetryConfig(dsn);
                         connector = candidate;
                         break;
                     }

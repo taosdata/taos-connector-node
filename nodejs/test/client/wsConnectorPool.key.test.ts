@@ -1,8 +1,10 @@
 import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { RetryConfig } from "@src/client/wsConnector";
 import { WSConfig } from "@src/common/config";
 import { parse, WS_TMQ_ENDPOINT } from "@src/common/dsn";
 import { WsSql } from "@src/sql/wsSql";
 import { testPassword, testUsername } from "@test-helpers/utils";
+import { w3cwebsocket } from "websocket";
 
 function resetPoolSingleton() {
     const PoolClass = WebSocketConnectionPool as any;
@@ -50,6 +52,66 @@ describe("WebSocketConnectionPool key generation", () => {
         const keyA = (pool as any).getPoolKey(dsnA);
         const keyB = (pool as any).getPoolKey(dsnB);
         expect(keyA).not.toBe(keyB);
+    });
+
+    test("does not collide auth scope when credentials contain colon", () => {
+        const pool = WebSocketConnectionPool.instance();
+
+        const dsnA = parse("ws://host1:6041/mydb");
+        dsnA.username = "a:b";
+        dsnA.password = "c";
+
+        const dsnB = parse("ws://host1:6041/mydb");
+        dsnB.username = "a";
+        dsnB.password = "b:c";
+
+        const keyA = (pool as any).getPoolKey(dsnA);
+        const keyB = (pool as any).getPoolKey(dsnB);
+        expect(keyA).not.toBe(keyB);
+    });
+
+    test("does not split pool key by reconnect policy", () => {
+        const pool = WebSocketConnectionPool.instance();
+        const lowRetryDsn = parse(
+            "ws://root:taosdata@host1:6041/mydb?retries=1&retry_backoff_ms=10&retry_backoff_max_ms=20"
+        );
+        const highRetryDsn = parse(
+            "ws://root:taosdata@host1:6041/mydb?retries=60&retry_backoff_ms=100&retry_backoff_max_ms=500"
+        );
+
+        const lowRetryKey = (pool as any).getPoolKey(lowRetryDsn);
+        const highRetryKey = (pool as any).getPoolKey(highRetryDsn);
+
+        expect(lowRetryKey).toBe(highRetryKey);
+    });
+
+    test("updates connector retry policy when reusing pooled connector", async () => {
+        const pool = WebSocketConnectionPool.instance();
+        const lowRetryDsn = parse(
+            "ws://root:taosdata@host1:6041/mydb?retries=1&retry_backoff_ms=10&retry_backoff_max_ms=20"
+        );
+        const highRetryDsn = parse(
+            "ws://root:taosdata@host1:6041/mydb?retries=60&retry_backoff_ms=100&retry_backoff_max_ms=500"
+        );
+        const poolKey = (pool as any).getPoolKey(lowRetryDsn);
+
+        let retries = 1;
+        const connector = {
+            readyState: jest.fn(() => w3cwebsocket.OPEN),
+            close: jest.fn(),
+            refreshRetryConfig: jest.fn((dsn) => {
+                retries = RetryConfig.fromDsn(dsn).retries;
+            }),
+            getReconnectRetries: jest.fn(() => retries),
+            getPoolKey: jest.fn(() => poolKey),
+        };
+
+        (pool as any).pool.set(poolKey, [connector]);
+        const reused = await pool.getConnection(highRetryDsn, 3000);
+
+        expect(reused).toBe(connector);
+        expect(connector.refreshRetryConfig).toHaveBeenCalledWith(highRetryDsn);
+        expect((reused as any).getReconnectRetries()).toBe(60);
     });
 
     test("includes endpoint-derived websocket path in the pool key scope", () => {

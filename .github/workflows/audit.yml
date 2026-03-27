@@ -20,7 +20,7 @@ jobs:
 
       - name: Audit check
         working-directory: nodejs
-        run: npx audit-ci --moderate --allowlist GHSA-qm9p-f9j5-w83w
+        run: npx audit-ci --moderate --allowlist GHSA-f886-m6hf-6m8v
 
       - name: License check
         working-directory: nodejs

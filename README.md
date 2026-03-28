@@ -1,7 +1,7 @@
 <!-- omit in toc -->
 # TDengine Node.js Connector
 
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-node/build.yaml)](https://github.com/taosdata/taos-connector-node/actions/workflows/build.yaml)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-node/build.yml)](https://github.com/taosdata/taos-connector-node/actions/workflows/build.yml)
 [![codecov](https://codecov.io/gh/taosdata/taos-connector-node/graph/badge.svg?token=5379a80b-063f-48c2-ab56-09564e7ca777)](https://codecov.io/gh/taosdata/taos-connector-node)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/taosdata/taos-connector-node)
 ![GitHub License](https://img.shields.io/github/license/taosdata/taos-connector-node)
@@ -58,7 +58,7 @@ Execute `tsc` to build the project in the 'nodejs' directory.
 
 ### 5.1 Test Execution
 
-Execute `npm run test` in the project directory to run the tests. The test cases will connect to the local TDengine server and taosAdapter for testing.
+In the `nodejs` directory of your project, execute the command `npm run test` to run all test cases in the `test` directory. The test cases will connect to the local TDengine server and taosAdapter for testing.
 After running the tests, the result similar to the following will be printed eventually. If all test cases pass, without any failures or errors.
 
 ```text
@@ -71,7 +71,7 @@ Ran all test suites.
 
 ### 5.2 Test Case Addition
 
-All tests are located in the `nodejs/test/bulkPulling` directory of the project. You can add new test files or add test cases in existing test files.
+All tests are organized by functional domain in the `nodejs/test` directory. You can add new test files in the corresponding directory or add test cases to existing test files.
 The test cases use the jest framework. Generally, a connection is established and a database is created in the `beforeAll` method, and the database is droped and the connection is released in the `afterAll` method.
 
 ### 5.3 Performance Testing
@@ -80,7 +80,7 @@ Performance testing is in progress.
 
 ## 6. CI/CD
 
-- [Build Workflow](https://github.com/taosdata/taos-connector-node/actions/workflows/build.yaml)
+- [Build Workflow](https://github.com/taosdata/taos-connector-node/actions/workflows/build.yml)
 - [Code Coverage](https://app.codecov.io/gh/taosdata/taos-connector-node)
 
 ## 7. Submitting Issues

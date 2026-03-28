@@ -342,6 +342,7 @@ export function _isVarType(metaType: number): Number {
         }
     }
 }
+
 export function readSolidDataToArray(
     dataBuffer: DataView,
     colBlockHead: number,
@@ -514,6 +515,7 @@ export function readSolidDataToArray(
     }
     return result;
 }
+
 export function readSolidData(
     dataBuffer: DataView,
     colDataHead: number,
@@ -560,7 +562,6 @@ export function readSolidData(
         }
         case TDengineTypeCode.TIMESTAMP: {
             return dataBuffer.getBigInt64(colDataHead, true);
-            // could change
         }
         case TDengineTypeCode.DECIMAL: {
             let decimalHighPart = dataBuffer.getBigInt64(colDataHead + 8, true);
@@ -596,7 +597,6 @@ export function readVarchar(
     length: number,
     textDecoder: TextDecoder
 ): string {
-    // let buff = dataBuffer.slice(colDataHead, colDataHead + length)
     let dataView = new DataView(dataBuffer, colDataHead, length);
     return textDecoder.decode(dataView);
 }
@@ -607,7 +607,6 @@ export function readNchar(
     length: number
 ): string {
     let data: string[] = [];
-    // let buff: ArrayBuffer = dataBuffer.slice(colDataHead, colDataHead + length);
     let dataView = new DataView(dataBuffer, colDataHead, length);
     for (let i = 0; i < length / 4; i++) {
         data.push(appendRune(dataView.getUint32(i * 4, true)));
@@ -621,7 +620,6 @@ export function getString(
     length: number,
     textDecoder: TextDecoder
 ): string {
-    // let buff = dataBuffer.slice(colDataHead, colDataHead + length - 1)
     let dataView = new Uint8Array(
         dataBuffer.buffer,
         dataBuffer.byteOffset + colDataHead,
@@ -665,7 +663,6 @@ function getScaleFromRowBlock(
     colIndex: number,
     startOffset: number
 ): number {
-    // for decimal: |___bytes___|__empty__|___prec___|__scale___|
     let backupPos = buffer.byteOffset + startOffset + 28 + colIndex * 5 + 1;
     let scaleBuffer = new DataView(buffer.buffer, backupPos);
     let scale = scaleBuffer.getInt32(0, true);

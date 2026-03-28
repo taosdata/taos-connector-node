@@ -1,48 +1,50 @@
 import { TmqConfig } from "../tmq/config";
 import { WSConfig } from "./config";
+import { Dsn, parse } from "./dsn";
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
 
-export function getUrl(wsConfig: WSConfig): URL {
-    let url = new URL(wsConfig.getUrl());
-    if (wsConfig.getUser()) {
-        url.username = wsConfig.getUser() || "";
-    }
-    if (wsConfig.getPwd()) {
-        url.password = wsConfig.getPwd() || "";
+export function getDsn(wsConfig: WSConfig): Dsn {
+    const dsn = parse(wsConfig.getUrl());
+
+    const user = wsConfig.getUser();
+    if (user) {
+        dsn.username = user;
     }
 
-    let token = wsConfig.getToken();
+    const password = wsConfig.getPwd();
+    if (password) {
+        dsn.password = password;
+    }
+
+    const token = wsConfig.getToken();
     if (token) {
-        url.searchParams.set("token", token);
-    }
-
-    let timezone = wsConfig.getTimezone();
-    if (timezone) {
-        url.searchParams.set("timezone", timezone);
-    }
-
-    if (url.pathname && url.pathname !== "/") {
-        wsConfig.setDb(url.pathname.slice(1));
-    }
-
-    if (url.searchParams.has("timezone")) {
-        wsConfig.setTimezone(url.searchParams.get("timezone") || "");
+        dsn.params.set("token", token);
+    } else if (dsn.params.has("token")) {
+        wsConfig.setToken(dsn.params.get("token") || "");
     }
 
     const bearerToken = wsConfig.getBearerToken();
     if (bearerToken) {
-        url.searchParams.set("bearer_token", bearerToken);
-    } else {
-        const bearerTokenFromUrl = url.searchParams.get("bearer_token");
-        if (bearerTokenFromUrl) {
-            wsConfig.setBearerToken(bearerTokenFromUrl);
-        } else {
-            url.searchParams.delete("bearer_token");
-        }
+        dsn.params.set("bearer_token", bearerToken);
+    } else if (dsn.params.has("bearer_token")) {
+        wsConfig.setBearerToken(dsn.params.get("bearer_token") || "");
     }
 
-    url.pathname = "/ws";
-    return url;
+    const timezone = wsConfig.getTimezone();
+    if (timezone) {
+        dsn.params.set("timezone", timezone);
+    } else if (dsn.params.has("timezone")) {
+        wsConfig.setTimezone(dsn.params.get("timezone") || "");
+    }
+
+    const db = wsConfig.getDb();
+    if (db && db.length > 0) {
+        dsn.database = db;
+    } else if (dsn.database.length > 0) {
+        wsConfig.setDb(dsn.database);
+    }
+
+    return dsn;
 }
 
 export function isEmpty(value: any): boolean {
@@ -183,11 +185,9 @@ export function decimalToString(
         const absStr = isNegative ? decimalStr.slice(1) : decimalStr;
 
         if (absStr.length <= scale) {
-            // If the length of the number is less than or equal to the precision, add 0 before it.
             const paddedStr = absStr.padStart(scale + 1, "0");
             decimalStr = (isNegative ? "-" : "") + "0." + paddedStr.slice(1);
         } else {
-            // 在指定位置插入小数点
             const integerPart = absStr.slice(0, absStr.length - scale);
             const decimalPart = absStr.slice(absStr.length - scale);
             decimalStr =
@@ -227,9 +227,9 @@ export function maskTmqConfigForLog(config: TmqConfig): string {
     };
     return JSON.stringify(masked, (key, value) => {
         switch (key) {
-            case 'url':
-            case 'sql_url':
-                return maskUrlForLog(value);
+            case 'dsn':
+            case 'sqlDsn':
+                return value ? value.toString() : value;
             case 'token':
             case 'password':
             case 'bearer_token':
@@ -240,3 +240,4 @@ export function maskTmqConfigForLog(config: TmqConfig): string {
         }
     });
 }
+

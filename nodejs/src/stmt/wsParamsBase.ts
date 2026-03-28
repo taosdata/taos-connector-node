@@ -4,11 +4,9 @@ import {
     TDengineTypeName,
     PrecisionLength,
 } from "../common/constant";
-import { bitmapLen } from "../common/taosResult";
 import { ErrorCode, TaosError } from "../common/wsError";
 import { FieldBindParams } from "./FieldBindParams";
 import { ColumnInfo } from "./wsColumnInfo";
-import JSONBig from "json-bigint";
 
 export interface IDataEncoder {
     encode(): void;

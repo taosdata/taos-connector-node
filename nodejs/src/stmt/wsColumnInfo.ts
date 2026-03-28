@@ -7,6 +7,7 @@ export class ColumnInfo {
     _rows: number;
     _haveLength: number = 0;
     _dataLengths?: number[];
+
     constructor(
         [length, data]: [number, ArrayBuffer],
         type: number,

@@ -1,12 +1,12 @@
-import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import { WSConfig } from "../../src/common/config";
-import { ReqId } from "../../src/common/reqid";
-import { WsSql } from "../../src/sql/wsSql";
-import { TMQConstants } from "../../src/tmq/constant";
-import { WsConsumer } from "../../src/tmq/wsTmq";
-import { Sleep, testPassword, testUsername } from "../utils";
-import { setLevel } from "../../src/common/log";
-import { WsStmt1 } from "../../src/stmt/wsStmt1";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { WSConfig } from "@src/common/config";
+import { ReqId } from "@src/common/reqid";
+import { WsSql } from "@src/sql/wsSql";
+import { TMQConstants } from "@src/tmq/constant";
+import { WsConsumer } from "@src/tmq/wsTmq";
+import { Sleep, testPassword, testUsername } from "@test-helpers/utils";
+import { setLevel } from "@src/common/log";
+import { WsStmt1 } from "@src/stmt/wsStmt1";
 
 let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
 let tags = ["California.SanFrancisco", 3];
@@ -49,8 +49,6 @@ async function stmtConnect() {
     let dsn = `ws://${testUsername()}:${testPassword()}@localhost:6041`;
     let wsConf = new WSConfig(dsn, "100.100.100.100");
     wsConf.setDb(db);
-    // let connector = WsStmtConnect.NewConnector(wsConf)
-    // let stmt = await connector.Init()
     let connector = await WsSql.open(wsConf);
     let stmt = (await connector.stmtInit()) as WsStmt1;
     let id = stmt.getStmtId();

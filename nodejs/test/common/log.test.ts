@@ -1,4 +1,4 @@
-import logger, { setLevel } from "../../src/common/log";
+import logger, { setLevel } from "@src/common/log";
 
 describe("log level print", () => {
     test("normal connect", async () => {

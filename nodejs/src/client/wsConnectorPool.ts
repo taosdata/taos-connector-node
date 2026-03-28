@@ -1,9 +1,10 @@
+import { createHash } from "crypto";
 import { Mutex } from "async-mutex";
-import { WebSocketConnector } from "./wsConnector";
+import { Dsn } from "../common/dsn";
 import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
 import { w3cwebsocket } from "websocket";
-import { maskUrlForLog } from "../common/utils";
+import { WebSocketConnector } from "./wsConnector";
 
 const mutex = new Mutex();
 
@@ -28,26 +29,56 @@ export class WebSocketConnectionPool {
         return WebSocketConnectionPool._instance;
     }
 
-    async getConnection(url: URL, timeout: number | undefined | null): Promise<WebSocketConnector> {
-        let connectAddr = url.origin.concat(url.pathname).concat(url.search);
+    private maskPoolKeyForLog(poolKey: string): string {
+        return poolKey.replace(/#auth=[^#]*/, "#auth=[REDACTED]");
+    }
+
+    private buildAuthScope(dsn: Dsn): string {
+        const token = dsn.params.get("token") || "";
+        const bearerToken = dsn.params.get("bearer_token") || "";
+        const raw = JSON.stringify({
+            username: dsn.username,
+            password: dsn.password,
+            token,
+            bearerToken,
+        });
+        return createHash("sha256").update(raw).digest("hex");
+    }
+
+    private getPoolKey(dsn: Dsn): string {
+        const addrs = [...dsn.addresses]
+            .sort((a, b) => `${a.host}:${a.port}`.localeCompare(`${b.host}:${b.port}`))
+            .map((addr) => `${addr.host}:${addr.port}`)
+            .join(",");
+        const auth = this.buildAuthScope(dsn);
+        const path = dsn.path();
+        return `${dsn.scheme}://${addrs}/${path}#auth=${auth}`;
+    }
+
+    async getConnection(
+        dsn: Dsn,
+        timeout: number | undefined | null
+    ): Promise<WebSocketConnector> {
+        const poolKey = this.getPoolKey(dsn);
+        const poolKeyForLog = this.maskPoolKeyForLog(poolKey);
         let connector: WebSocketConnector | undefined;
         const unlock = await mutex.acquire();
         try {
-            if (this.pool.has(connectAddr)) {
-                const connectors = this.pool.get(connectAddr);
+            if (this.pool.has(poolKey)) {
+                const connectors = this.pool.get(poolKey);
                 while (connectors && connectors.length > 0) {
                     const candidate = connectors.pop();
                     if (!candidate) {
                         continue;
                     }
-                    if (candidate && candidate.readyState() === w3cwebsocket.OPEN) {
+                    if (candidate.readyState() === w3cwebsocket.OPEN) {
+                        candidate.refreshRetryConfig(dsn);
                         connector = candidate;
                         break;
-                    } else if (candidate) {
-                        Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
-                        candidate.close();
-                        logger.error(`getConnection, current connection status fail, url: ${maskUrlForLog(new URL(connectAddr))}`);
                     }
+                    Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
+                    candidate.close();
+                    logger.error("getConnection, current connection status fail, poolKey: " + poolKeyForLog);
                 }
             }
 
@@ -69,48 +100,47 @@ export class WebSocketConnectionPool {
                     Atomics.load(WebSocketConnectionPool.sharedArray, 0)
                 );
             }
+
             Atomics.add(WebSocketConnectionPool.sharedArray, 0, 1);
             if (logger.isInfoEnabled()) {
                 logger.info(
                     "getConnection, new connection count:" +
                     Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
-                    ", connectAddr:" +
-                    connectAddr.replace(/(token=)[^&]*/i, "$1[REDACTED]")
+                    ", poolKey:" +
+                    poolKeyForLog
                 );
             }
-            return new WebSocketConnector(url, timeout);
+            return new WebSocketConnector(dsn, poolKey, timeout);
         } finally {
             unlock();
         }
     }
 
     async releaseConnection(connector: WebSocketConnector): Promise<void> {
-        if (connector) {
-            const unlock = await mutex.acquire();
-            try {
-                if (connector.readyState() === w3cwebsocket.OPEN) {
-                    let url = connector.getWsURL();
-                    let connectAddr = url.origin.concat(url.pathname).concat(url.search);
-                    let connectors = this.pool.get(connectAddr);
-                    if (!connectors) {
-                        connectors = new Array();
-                        connectors.push(connector);
-                        this.pool.set(connectAddr, connectors);
-                    } else {
-                        connectors.push(connector);
-                    }
-                    logger.info("releaseConnection, current connection count:" + connectors.length);
-                } else {
-                    Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
-                    connector.close();
-                    logger.info(
-                        "releaseConnection, current connection status fail:" +
-                        Atomics.load(WebSocketConnectionPool.sharedArray, 0)
-                    );
+        if (!connector) {
+            return;
+        }
+        const unlock = await mutex.acquire();
+        try {
+            if (connector.readyState() === w3cwebsocket.OPEN) {
+                const poolKey = connector.getPoolKey();
+                let connectors = this.pool.get(poolKey);
+                if (!connectors) {
+                    connectors = [];
+                    this.pool.set(poolKey, connectors);
                 }
-            } finally {
-                unlock();
+                connectors.push(connector);
+                logger.info("releaseConnection, current connection count:" + connectors.length);
+            } else {
+                Atomics.add(WebSocketConnectionPool.sharedArray, 0, -1);
+                connector.close();
+                logger.info(
+                    "releaseConnection, current connection status fail:" +
+                    Atomics.load(WebSocketConnectionPool.sharedArray, 0)
+                );
             }
+        } finally {
+            unlock();
         }
     }
 
@@ -125,10 +155,8 @@ export class WebSocketConnectionPool {
             }
         }
         logger.info(
-            "destroyed connect:" +
-            Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
-            " current count:" +
-            num
+            "destroyed connect: " + Atomics.load(WebSocketConnectionPool.sharedArray, 0) +
+            ", current count:" + num
         );
         Atomics.store(WebSocketConnectionPool.sharedArray, 0, 0);
         this.pool = new Map();

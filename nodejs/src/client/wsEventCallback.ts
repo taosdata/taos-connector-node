@@ -12,6 +12,7 @@ interface MessageId {
     req_id: bigint;
     id?: bigint;
     timeout?: number;
+    poolKey?: string;
 }
 
 interface MessageAction {
@@ -50,20 +51,30 @@ export class WsEventCallback {
     ) {
         let release = await eventMutex.acquire();
         try {
+            const timer = setTimeout(async () => {
+                let removed = false;
+                const timeoutRelease = await eventMutex.acquire();
+                try {
+                    removed = WsEventCallback._msgActionRegister.delete(id);
+                } finally {
+                    timeoutRelease();
+                }
+                if (!removed) {
+                    return;
+                }
+                rej(
+                    new WebSocketQueryError(
+                        ErrorCode.ERR_WEBSOCKET_QUERY_TIMEOUT,
+                        `action:${id.action},req_id:${id.req_id} timeout with ${id.timeout} milliseconds`
+                    )
+                );
+            }, id.timeout);
+
             WsEventCallback._msgActionRegister.set(id, {
                 sendTime: new Date().getTime(),
                 reject: rej,
                 resolve: res,
-                timer: setTimeout(
-                    () =>
-                        rej(
-                            new WebSocketQueryError(
-                                ErrorCode.ERR_WEBSOCKET_QUERY_TIMEOUT,
-                                `action:${id.action},req_id:${id.req_id} timeout with ${id.timeout} milliseconds`
-                            )
-                        ),
-                    id.timeout
-                ),
+                timer,
             });
         } finally {
             release();
@@ -75,7 +86,8 @@ export class WsEventCallback {
         messageType: OnMessageType,
         data: any
     ) {
-        let action: MessageAction | any = undefined;
+        let action: MessageAction | undefined = undefined;
+        let keyToDelete: MessageId | undefined = undefined;
         let release = await eventMutex.acquire();
         logger.debug(`HandleEventCallback get lock msg=${msg}, ${messageType}`);
         logger.debug(WsEventCallback._msgActionRegister);
@@ -84,30 +96,33 @@ export class WsEventCallback {
                 if (messageType == OnMessageType.MESSAGE_TYPE_ARRAYBUFFER) {
                     if (k.id == msg.id || k.req_id == msg.id) {
                         action = v;
-                        WsEventCallback._msgActionRegister.delete(k);
+                        keyToDelete = k;
                         break;
                     }
                 } else if (messageType == OnMessageType.MESSAGE_TYPE_BLOB) {
                     if (k.id == msg.id || k.req_id == msg.id) {
                         action = v;
-                        WsEventCallback._msgActionRegister.delete(k);
+                        keyToDelete = k;
                         break;
                     }
                 } else if (messageType == OnMessageType.MESSAGE_TYPE_STRING) {
                     if (k.req_id == msg.req_id && k.action == msg.action) {
                         action = v;
-                        WsEventCallback._msgActionRegister.delete(k);
+                        keyToDelete = k;
                         break;
                     }
-                } else if (
-                    messageType == OnMessageType.MESSAGE_TYPE_CONNECTION
-                ) {
+                } else if (messageType == OnMessageType.MESSAGE_TYPE_CONNECTION) {
                     if (k.req_id == msg.req_id && k.action == msg.action) {
                         action = v;
-                        WsEventCallback._msgActionRegister.delete(k);
+                        keyToDelete = k;
                         break;
                     }
                 }
+            }
+
+            if (action && keyToDelete) {
+                clearTimeout(action.timer);
+                WsEventCallback._msgActionRegister.delete(keyToDelete);
             }
         } finally {
             release();
@@ -121,14 +136,59 @@ export class WsEventCallback {
             };
             action.resolve(resp);
         } else {
-            logger.error("no find callback msg:=", msg);
+            logger.error("no find callback msg: ", msg);
             throw new TDWebSocketClientError(
                 ErrorCode.ERR_WS_NO_CALLBACK,
-                "no callback registered for fetch_block with req_id=" +
+                "no callback registered with req_id: " +
                 msg.req_id +
-                " action" +
+                ", action: " +
                 msg.action
             );
+        }
+    }
+
+    async unregisterCallback(reqId: bigint): Promise<void> {
+        const release = await eventMutex.acquire();
+        try {
+            for (let [k, v] of WsEventCallback._msgActionRegister) {
+                if (k.req_id === reqId || k.id === reqId) {
+                    clearTimeout(v.timer);
+                    WsEventCallback._msgActionRegister.delete(k);
+                    break;
+                }
+            }
+        } finally {
+            release();
+        }
+    }
+
+    async rejectCallbacksExceptReqIds(
+        keepReqIds: Set<bigint>,
+        error: Error,
+        poolKey?: string
+    ): Promise<void> {
+        const toReject: Function[] = [];
+        const release = await eventMutex.acquire();
+        try {
+            for (const [k, v] of WsEventCallback._msgActionRegister) {
+                if (poolKey !== undefined && k.poolKey !== poolKey) {
+                    continue;
+                }
+                const keepByReqId = keepReqIds.has(k.req_id);
+                const keepByCallbackId = k.id !== undefined && keepReqIds.has(k.id);
+                if (keepByReqId || keepByCallbackId) {
+                    continue;
+                }
+                clearTimeout(v.timer);
+                WsEventCallback._msgActionRegister.delete(k);
+                toReject.push(v.reject);
+            }
+        } finally {
+            release();
+        }
+
+        for (const reject of toReject) {
+            reject(error);
         }
     }
 }

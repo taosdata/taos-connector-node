@@ -61,16 +61,16 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
             );
         }
 
-        //computing bitmap length
+        // computing bitmap length
         let bitMapLen: number = bitmapLen(params.length);
-        //Computing the length of data
+        // computing the length of data
         let arrayBuffer = new ArrayBuffer(
             bitMapLen +
             TDengineTypeLength[TDengineTypeCode.TIMESTAMP] * params.length
         );
-        //bitmap get data range
+        // bitmap get data range
         let bitmapBuffer = new DataView(arrayBuffer);
-        //skip bitmap get data range
+        // skip bitmap get data range
         let dataBuffer = new DataView(arrayBuffer, bitMapLen);
         if (this._rows > 0) {
             if (this._rows !== params.length) {
@@ -87,7 +87,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
             if (!isEmpty(params[i])) {
                 if (params[i] instanceof Date) {
                     let date: Date = params[i];
-                    //node only support milliseconds, need fill 0
+                    // node only support milliseconds, need fill 0
                     if (this.precisionLength == PrecisionLength["us"]) {
                         let ms = date.getTime() * 1000;
                         dataBuffer.setBigInt64(i * 8, BigInt(ms), true);
@@ -111,9 +111,9 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
                     } else {
                         data = params[i];
                     }
-                    //statistical bits of digit
+                    // statistical bits of digit
                     let digit = this.countBigintDigits(data);
-                    //check digit same table Precision
+                    // check digit same table Precision
                     if (this.precisionLength == PrecisionLength["ns"]) {
                         if (this.precisionLength <= digit) {
                             dataBuffer.setBigInt64(i * 8, data, true);
@@ -135,7 +135,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
                     }
                 }
             } else {
-                //set bitmap bit is null
+                // set bitmap bit is null
                 let charOffset = getCharOffset(i);
                 let nullVal = setBitmapNull(dataBuffer.getInt8(charOffset), i);
                 bitmapBuffer.setInt8(charOffset, nullVal);
@@ -189,7 +189,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
                     i
                 );
             } else {
-                //set bitmap bit is null
+                // set bitmap bit is null
                 let charOffset = getCharOffset(i);
                 let nullVal = setBitmapNull(
                     bitmapBuffer.getUint8(charOffset),
@@ -213,7 +213,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
     ): ColumnInfo {
         let data: ArrayBuffer[] = [];
         let dataLength = 0;
-        //create params length buffer
+        // create params length buffer
         let paramsLenBuffer = new ArrayBuffer(
             TDengineTypeLength[TDengineTypeCode.INT] * params.length
         );
@@ -229,22 +229,22 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
             this._rows = params.length;
         }
         for (let i = 0; i < params.length; i++) {
-            //get param length offset 4byte
+            // get param length offset 4byte
             let offset = TDengineTypeLength[TDengineTypeCode.INT] * i;
             if (!isEmpty(params[i])) {
-                //save param length offset 4byte
+                // save param length offset 4byte
                 paramsLenView.setInt32(offset, dataLength, true);
                 if (typeof params[i] == "string") {
-                    //string TextEncoder
+                    // string TextEncoder
                     let encode = new TextEncoder();
                     let value = encode.encode(params[i]).buffer;
                     data.push(value);
-                    //add offset length
+                    // add offset length
                     dataLength +=
                         value.byteLength +
                         TDengineTypeLength[TDengineTypeCode.SMALLINT];
                 } else if (params[i] instanceof ArrayBuffer) {
-                    //input arraybuffer, save not need encode
+                    // input arraybuffer, save not need encode
                     let value: ArrayBuffer = params[i];
                     dataLength +=
                         value.byteLength +
@@ -258,7 +258,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
                     );
                 }
             } else {
-                //set length -1, param is null
+                // set length -1, param is null
                 for (
                     let j = 0;
                     j < TDengineTypeLength[TDengineTypeCode.INT];
@@ -284,21 +284,22 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
             this._rows
         );
     }
-    //splicing encode params to arraybuffer
+
+    // splicing encode params to arraybuffer
     private getBinaryColumnArrayBuffer(
         data: ArrayBuffer[],
         paramsLenBuffer: ArrayBuffer,
         dataLength: number
     ): ArrayBuffer {
-        //create arraybuffer
+        // create arraybuffer
         let paramsBuffer = new ArrayBuffer(
             paramsLenBuffer.byteLength + dataLength
         );
-        //get length data range
+        // get length data range
         const paramsUint8 = new Uint8Array(paramsBuffer);
         const paramsLenView = new Uint8Array(paramsLenBuffer);
         paramsUint8.set(paramsLenView, 0);
-        //get data range
+        // get data range
         const paramsView = new DataView(
             paramsBuffer,
             paramsLenBuffer.byteLength
@@ -306,10 +307,10 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
 
         let offset = 0;
         for (let i = 0; i < data.length; i++) {
-            //save param field length
+            // save param field length
             paramsView.setInt16(offset, data[i].byteLength, true);
             const dataView = new DataView(data[i]);
-            //save data
+            // save data
             for (let j = 0; j < data[i].byteLength; j++) {
                 paramsView.setUint8(offset + 2 + j, dataView.getUint8(j));
             }
@@ -318,7 +319,8 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
 
         return paramsBuffer;
     }
-    //encode nchar type params
+
+    // encode nchar type params
     private encodeNcharColumn(params: any[]): ColumnInfo {
         let data: ArrayBuffer[] = [];
         let dataLength = 0;
@@ -345,7 +347,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
                     let codes: number[] = [];
                     let strNcharParams: string = params[i];
                     for (let j = 0; j < params[i].length; j++) {
-                        //get char, cn char need 3~4 byte
+                        // get char, cn char need 3~4 byte
                         codes.push(strNcharParams.charCodeAt(j));
                     }
 
@@ -354,7 +356,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
                     );
                     let ncharView = new DataView(ncharBuffer);
                     for (let j = 0; j < codes.length; j++) {
-                        //1char, save into uint32
+                        // char, save into uint32
                         ncharView.setUint32(j * 4, codes[j], true);
                     }
                     data.push(ncharBuffer);
@@ -375,7 +377,7 @@ export class Stmt1BindParams extends StmtBindParams implements IDataEncoder {
                     );
                 }
             } else {
-                //set length -1, param is null
+                // set length -1, param is null
                 for (
                     let j = 0;
                     j < TDengineTypeLength[TDengineTypeCode.INT];

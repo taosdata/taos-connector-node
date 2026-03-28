@@ -1,5 +1,5 @@
-import logger from "../src/common/log";
-import { TDengineMeta } from "../src/common/taosResult";
+import logger from "@src/common/log";
+import { TDengineMeta } from "@src/common/taosResult";
 
 export function getInsertBind(
     valuesLen: number,
@@ -332,5 +332,29 @@ export function testPassword(): string {
     return process.env.TDENGINE_TEST_PASSWORD || "taosdata";
 }
 
+export function testCloudUrl(): string | undefined {
+    const cloudUrl = process.env.TDENGINE_CLOUD_URL?.trim();
+    return cloudUrl && cloudUrl.length > 0 ? cloudUrl : undefined;
+}
+
+export function testCloudToken(): string | undefined {
+    const cloudToken = process.env.TDENGINE_CLOUD_TOKEN?.trim();
+    return cloudToken && cloudToken.length > 0 ? cloudToken : undefined;
+}
+
+export function testCloudWsUrl(): string | undefined {
+    const cloudUrl = testCloudUrl();
+    const cloudToken = testCloudToken();
+    if (!cloudUrl || !cloudToken) {
+        return undefined;
+    }
+    return `wss://${cloudUrl}?token=${cloudToken}`;
+}
+
+export function hasTestCloudEnv(): boolean {
+    return !!testCloudWsUrl();
+}
+
+export const testCloud = hasTestCloudEnv() ? test : test.skip;
 export const testEnterprise = process.env.TEST_ENTERPRISE?.toLowerCase() === "true" ? test : test.skip;
 export const testNon3360 = process.env.TEST_3360?.toLowerCase() === "true" ? test.skip : test;

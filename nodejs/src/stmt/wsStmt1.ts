@@ -24,8 +24,8 @@ export class WsStmt1 implements WsStmt {
     private _wsClient: WsClient;
     private _stmt_id: bigint | undefined | null;
     private _precision: number = PrecisionLength["ms"];
-
     private lastAffected: number | undefined | null;
+
     private constructor(wsClient: WsClient, precision?: number) {
         this._wsClient = wsClient;
         if (precision) {
@@ -198,7 +198,7 @@ export class WsStmt1 implements WsStmt {
 
     private async execute(
         queryMsg: StmtMessageInfo,
-        register: Boolean = true
+        register: boolean = true
     ): Promise<void> {
         try {
             if (this._wsClient.getState() <= 0) {

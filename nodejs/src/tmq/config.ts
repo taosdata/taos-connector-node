@@ -1,8 +1,9 @@
+import { Dsn, parse, WS_TMQ_ENDPOINT } from "../common/dsn";
 import { TMQConstants } from "./constant";
 
 export class TmqConfig {
-    url: URL | null = null;
-    sql_url: URL | null = null;
+    dsn: Dsn | null = null;
+    sqlDsn: Dsn | null = null;
     user: string | null = null;
     password: string | null = null;
     token: string | null = null;
@@ -12,7 +13,7 @@ export class TmqConfig {
     topics?: Array<string>;
     auto_commit: boolean = true;
     auto_commit_interval_ms: number = 5 * 1000;
-    timeout: number = 5000;
+    timeout: number = 60000;
     otherConfigs: Map<string, any>;
 
     constructor(wsConfig: Map<string, any>) {
@@ -20,7 +21,8 @@ export class TmqConfig {
         for (const [key, value] of wsConfig) {
             switch (key) {
                 case TMQConstants.WS_URL:
-                    this.url = new URL(value);
+                    this.dsn = parse(value);
+                    this.dsn.endpoint = WS_TMQ_ENDPOINT;
                     break;
                 case TMQConstants.CONNECT_USER:
                     this.user = value;
@@ -55,33 +57,39 @@ export class TmqConfig {
             }
         }
 
-        if (this.url) {
+        if (this.dsn) {
             if (this.user) {
-                this.url.username = this.user;
+                this.dsn.username = this.user;
             } else {
-                this.user = this.url.username;
+                this.user = this.dsn.username;
             }
 
             if (this.password) {
-                this.url.password = this.password;
+                this.dsn.password = this.password;
             } else {
-                this.password = this.url.password;
+                this.password = this.dsn.password;
             }
+
             if (this.token) {
-                this.url.searchParams.set("bearer_token", this.token);
+                this.dsn.params.set("bearer_token", this.token);
             } else {
-                const bearerToken = this.url.searchParams.get("bearer_token");
+                const bearerToken = this.dsn.params.get("bearer_token");
                 if (bearerToken) {
                     this.token = bearerToken;
                     this.otherConfigs.set(TMQConstants.CONNECT_TOKEN, bearerToken);
                 } else {
-                    this.url.searchParams.delete("bearer_token");
+                    this.dsn.params.delete("bearer_token");
                 }
             }
 
-            this.sql_url = new URL(this.url);
-            this.sql_url.pathname = "/ws";
-            this.url.pathname = "/rest/tmq";
+            this.sqlDsn = new Dsn(
+                this.dsn.scheme,
+                this.dsn.username,
+                this.dsn.password,
+                this.dsn.addresses,
+                this.dsn.database,
+                this.dsn.params
+            );
         }
     }
 }

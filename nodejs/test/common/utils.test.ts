@@ -1,4 +1,4 @@
-import { compareVersions } from "../../src/common/utils";
+import { compareVersions } from "@src/common/utils";
 
 describe("utils test", () => {
     test("compare versions test", async () => {

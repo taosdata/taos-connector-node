@@ -1,10 +1,10 @@
-import { TMQConstants } from "../../src/tmq/constant";
-import { WsConsumer } from "../../src/tmq/wsTmq";
-import { WSConfig } from "../../src/common/config";
-import { WsSql } from "../../src/sql/wsSql";
-import { createSTable, insertStable, testPassword, testUsername, Sleep, testEnterprise, testNon3360 } from "../utils";
-import { WebSocketConnectionPool } from "../../src/client/wsConnectorPool";
-import { setLevel } from "../../src/common/log";
+import { TMQConstants } from "@src/tmq/constant";
+import { WsConsumer } from "@src/tmq/wsTmq";
+import { WSConfig } from "@src/common/config";
+import { WsSql } from "@src/sql/wsSql";
+import { createSTable, insertStable, testPassword, testUsername, Sleep, testEnterprise, testNon3360 } from "@test-helpers/utils";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { setLevel } from "@src/common/log";
 
 setLevel("debug");
 
@@ -296,7 +296,7 @@ describe("TDWebSocket.Tmq()", () => {
             await consumer.subscribe(topics);
         } catch (e: any) {
             console.log(e);
-            expect([280, 65535]).toContain(e.code);
+            expect([104]).toContain(e.code);
         } finally {
             if (consumer) {
                 await consumer.close();

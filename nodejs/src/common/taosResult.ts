@@ -635,8 +635,8 @@ function iteratorBuff(arr: ArrayBuffer) {
     }
 }
 
-function isNull(bitMapArr: ArrayBuffer, n: number) {
-    let c = new Uint8Array(bitMapArr);
+function isNull(bitMapArr: Uint8Array, n: number) {
+    let c = bitMapArr;
     let position = n >>> 3;
     let index = n & 0x7;
     return (c[position] & (1 << (7 - index))) == 1 << (7 - index);

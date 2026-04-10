@@ -34,6 +34,7 @@ export const TDengineTypeName: IndexableString = {
     14: "BIGINT UNSIGNED",
     15: "JSON",
     16: "VARBINARY",
+    18: "BLOB",
     20: "GEOMETRY",
 };
 

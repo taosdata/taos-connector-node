@@ -343,32 +343,37 @@ export class WSTmqFetchBlockInfo {
                             value = null;
                         } else {
                             let header = start + offsets[i];
+                            const dataHeadSize =
+                                isVarType == ColumnsBlockType.BLOB ? 4 : 2;
                             let dataLength =
-                                dataView.getInt16(header, true) & 0xffff;
+                                isVarType == ColumnsBlockType.BLOB
+                                    ? dataView.getInt32(header, true)
+                                    : dataView.getInt16(header, true) & 0xffff;
                             if (isVarType == ColumnsBlockType.VARCHAR) {
                                 //decode var char
 
                                 value = readVarchar(
                                     dataView.buffer,
-                                    dataView.byteOffset + header + 2,
+                                    dataView.byteOffset + header + dataHeadSize,
                                     dataLength,
                                     this.textDecoder
                                 );
                             } else if (
                                 isVarType == ColumnsBlockType.GEOMETRY ||
-                                isVarType == ColumnsBlockType.VARBINARY
+                                isVarType == ColumnsBlockType.VARBINARY ||
+                                isVarType == ColumnsBlockType.BLOB
                             ) {
                                 //decode binary
                                 value = readBinary(
                                     dataView.buffer,
-                                    dataView.byteOffset + header + 2,
+                                    dataView.byteOffset + header + dataHeadSize,
                                     dataLength
                                 );
                             } else {
                                 //decode nchar
                                 value = readNchar(
                                     dataView.buffer,
-                                    dataView.byteOffset + header + 2,
+                                    dataView.byteOffset + header + dataHeadSize,
                                     dataLength
                                 );
                             }

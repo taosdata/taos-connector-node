@@ -269,24 +269,34 @@ export function parseBlock(
                     } else {
                         colDataHead =
                             colBlockHead + INT_32_SIZE * rows + varOffset;
-                        let dataLength = dataView.getInt16(colDataHead, true);
+                        const dataHeadSize =
+                            isVarType == ColumnsBlockType.BLOB ? 4 : 2;
+                        let dataLength =
+                            isVarType == ColumnsBlockType.BLOB
+                                ? dataView.getInt32(colDataHead, true)
+                                : dataView.getInt16(colDataHead, true) & 0xffff;
                         if (isVarType == ColumnsBlockType.VARCHAR) {
                             row.push(
                                 readVarchar(
                                     dataView.buffer,
-                                    dataView.byteOffset + colDataHead + 2,
+                                    dataView.byteOffset +
+                                    colDataHead +
+                                    dataHeadSize,
                                     dataLength,
                                     textDecoder
                                 )
                             );
                         } else if (
                             isVarType == ColumnsBlockType.GEOMETRY ||
-                            isVarType == ColumnsBlockType.VARBINARY
+                            isVarType == ColumnsBlockType.VARBINARY ||
+                            isVarType == ColumnsBlockType.BLOB
                         ) {
                             row.push(
                                 readBinary(
                                     dataView.buffer,
-                                    dataView.byteOffset + colDataHead + 2,
+                                    dataView.byteOffset +
+                                    colDataHead +
+                                    dataHeadSize,
                                     dataLength
                                 )
                             );
@@ -294,7 +304,9 @@ export function parseBlock(
                             row.push(
                                 readNchar(
                                     dataView.buffer,
-                                    dataView.byteOffset + colDataHead + 2,
+                                    dataView.byteOffset +
+                                    colDataHead +
+                                    dataHeadSize,
                                     dataLength
                                 )
                             );
@@ -336,6 +348,9 @@ export function _isVarType(metaType: number): Number {
         }
         case TDengineTypeCode.VARBINARY: {
             return ColumnsBlockType.VARBINARY;
+        }
+        case TDengineTypeCode.BLOB: {
+            return ColumnsBlockType.BLOB;
         }
         default: {
             return ColumnsBlockType["SOLID"];

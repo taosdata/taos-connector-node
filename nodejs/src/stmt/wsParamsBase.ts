@@ -316,6 +316,16 @@ export abstract class StmtBindParams {
         );
     }
 
+    setBlob(params: any[]) {
+        if (!params || params.length == 0) {
+            throw new TaosError(
+                ErrorCode.ERR_INVALID_PARAMS,
+                "SetBlobColumn params is invalid!"
+            );
+        }
+        this.addParams(params, TDengineTypeName[18], 0, TDengineTypeCode.BLOB);
+    }
+
     setGeometry(params: any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(

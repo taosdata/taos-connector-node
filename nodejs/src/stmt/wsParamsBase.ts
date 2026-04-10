@@ -263,12 +263,7 @@ export abstract class StmtBindParams {
                 "SetVarcharColumn params is invalid!"
             );
         }
-        this.addParams(
-            params,
-            TDengineTypeName[8],
-            0,
-            TDengineTypeCode.VARCHAR
-        );
+        this.addParams(params, TDengineTypeName[8], 0, TDengineTypeCode.VARCHAR);
     }
 
     setBinary(params: any[]) {
@@ -308,12 +303,7 @@ export abstract class StmtBindParams {
                 "SetVarBinaryColumn params is invalid!"
             );
         }
-        this.addParams(
-            params,
-            TDengineTypeName[16],
-            0,
-            TDengineTypeCode.VARBINARY
-        );
+        this.addParams(params, TDengineTypeName[16], 0, TDengineTypeCode.VARBINARY);
     }
 
     setBlob(params: any[]) {
@@ -333,12 +323,7 @@ export abstract class StmtBindParams {
                 "SetGeometryColumn params is invalid!"
             );
         }
-        this.addParams(
-            params,
-            TDengineTypeName[20],
-            0,
-            TDengineTypeCode.GEOMETRY
-        );
+        this.addParams(params, TDengineTypeName[20], 0, TDengineTypeCode.GEOMETRY);
     }
 
     setTimestamp(params: any[]) {

@@ -11,7 +11,6 @@ import {
 setLevel("debug");
 
 const dsn = "ws://localhost:6041";
-const table = "blob_table";
 
 function newRootConfig(): WSConfig {
     const conf = new WSConfig(dsn);
@@ -20,34 +19,20 @@ function newRootConfig(): WSConfig {
     return conf;
 }
 
-async function withBlobDb(db: string, run: (ws: WsSql) => Promise<void>) {
-    const ws = await WsSql.open(newRootConfig());
-    try {
-        await ws.exec(`drop database if exists ${db}`);
-        await ws.exec(`create database if not exists ${db} keep 3650`);
-        await ws.exec(`use ${db}`);
-        await ws.exec(
-            `create table if not exists ${table} (ts timestamp, data blob)`
-        );
-        await run(ws);
-    } finally {
-        try {
-            await ws.exec("use information_schema");
-            await ws.exec(`drop database if exists ${db}`);
-        } finally {
-            await ws.close();
-        }
-    }
-}
-
-describe("TDWebSocket.SQL.BLOB()", () => {
+describe("TDWebSocket.SQL.BLOB", () => {
     jest.setTimeout(20 * 1000);
 
     test("insert and query blob with hex string literal", async () => {
-        await withBlobDb("sql_blob_hex_test", async (ws) => {
-            await ws.exec(`insert into ${table} values(now, '\\x393866343633')`);
+        const db = "test_1775805396";
+        const ws = await WsSql.open(newRootConfig());
+        try {
+            await ws.exec(`drop database if exists ${db}`);
+            await ws.exec(`create database ${db}`);
+            await ws.exec(`use ${db}`);
+            await ws.exec(`create table t0 (ts timestamp, data blob)`);
+            await ws.exec(`insert into t0 values(now, '\\x393866343633')`);
 
-            const result = await ws.exec(`select data from ${table}`);
+            const result = await ws.exec(`select data from t0`);
             const data = result.getData();
             expect(data).toBeTruthy();
             if (!data || data.length === 0) {
@@ -63,14 +48,26 @@ describe("TDWebSocket.SQL.BLOB()", () => {
                     new Uint8Array(expected)
                 )
             ).toBe(true);
-        });
+        } finally {
+            try {
+                await ws.exec(`drop database if exists ${db}`);
+            } finally {
+                await ws.close();
+            }
+        }
     });
 
     test("insert and query blob with raw string literal", async () => {
-        await withBlobDb("sql_blob_raw_test", async (ws) => {
-            await ws.exec(`insert into ${table} values(now, '98f46e')`);
+        const db = "test_1775805911";
+        const ws = await WsSql.open(newRootConfig());
+        try {
+            await ws.exec(`drop database if exists ${db}`);
+            await ws.exec(`create database ${db}`);
+            await ws.exec(`use ${db}`);
+            await ws.exec(`create table t0 (ts timestamp, data blob)`);
+            await ws.exec(`insert into t0 values(now, '98f46e')`);
 
-            const result = await ws.exec(`select data from ${table}`);
+            const result = await ws.exec(`select data from t0`);
             const data = result.getData();
             expect(data).toBeTruthy();
             if (!data || data.length === 0) {
@@ -83,14 +80,26 @@ describe("TDWebSocket.SQL.BLOB()", () => {
             expect(
                 compareUint8Arrays(new Uint8Array(actual), expected)
             ).toBe(true);
-        });
+        } finally {
+            try {
+                await ws.exec(`drop database if exists ${db}`);
+            } finally {
+                await ws.close();
+            }
+        }
     });
 
     test("insert and query null blob", async () => {
-        await withBlobDb("sql_blob_null_test", async (ws) => {
-            await ws.exec(`insert into ${table} values(now, null)`);
+        const db = "test_1775814624";
+        const ws = await WsSql.open(newRootConfig());
+        try {
+            await ws.exec(`drop database if exists ${db}`);
+            await ws.exec(`create database ${db}`);
+            await ws.exec(`use ${db}`);
+            await ws.exec(`create table t0 (ts timestamp, data blob)`);
+            await ws.exec(`insert into t0 values(now, null)`);
 
-            const result = await ws.exec(`select data from ${table}`);
+            const result = await ws.exec(`select data from t0`);
             const data = result.getData();
             expect(data).toBeTruthy();
             if (!data || data.length === 0) {
@@ -98,6 +107,12 @@ describe("TDWebSocket.SQL.BLOB()", () => {
             }
 
             expect(data[0][0]).toBe("NULL");
-        });
+        } finally {
+            try {
+                await ws.exec(`drop database if exists ${db}`);
+            } finally {
+                await ws.close();
+            }
+        }
     });
 });

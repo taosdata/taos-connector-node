@@ -164,9 +164,6 @@ export class TaosResult {
         return null;
     }
 
-    /**
-     * Mapping the WebSocket response type code to TDengine's type name.
-     */
     private getTDengineMeta(): Array<TDengineMeta> | null {
         if (this._meta) {
             let tdMeta = new Array<TDengineMeta>();
@@ -598,16 +595,18 @@ export function readSolidData(
 }
 
 export function readBinary(
-    dataBuffer: ArrayBuffer,
+    dataBuffer: ArrayBufferLike,
     colDataHead: number,
     length: number
 ): ArrayBuffer {
-    let buff = dataBuffer.slice(colDataHead, colDataHead + length);
+    const buff = new ArrayBuffer(length);
+    const source = new Uint8Array(dataBuffer, colDataHead, length);
+    new Uint8Array(buff).set(source);
     return buff;
 }
 
 export function readVarchar(
-    dataBuffer: ArrayBuffer,
+    dataBuffer: ArrayBufferLike,
     colDataHead: number,
     length: number,
     textDecoder: TextDecoder
@@ -617,7 +616,7 @@ export function readVarchar(
 }
 
 export function readNchar(
-    dataBuffer: ArrayBuffer,
+    dataBuffer: ArrayBufferLike,
     colDataHead: number,
     length: number
 ): string {

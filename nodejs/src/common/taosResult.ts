@@ -223,7 +223,6 @@ export function parseBlock(
 
                     let byteArrayIndex = i >> 3;
                     let bitwiseOffset = 7 - (i & 7);
-                    // let bitMapArr = dataBuffer.slice(colBlockHead, colBlockHead + bitMapSize)
                     let bitMapArr = new DataView(
                         dataView.buffer,
                         dataView.byteOffset + colBlockHead,
@@ -264,21 +263,17 @@ export function parseBlock(
                             INT_32_SIZE * rows +
                             dataView.getInt32(j * INT_32_SIZE, true);
                     } else {
-                        colDataHead =
-                            colBlockHead + INT_32_SIZE * rows + varOffset;
-                        const dataHeadSize =
-                            isVarType == ColumnsBlockType.BLOB ? 4 : 2;
+                        colDataHead = colBlockHead + INT_32_SIZE * rows + varOffset;
+                        const dataHeadSize = isVarType == ColumnsBlockType.BLOB ? 4 : 2;
                         let dataLength =
                             isVarType == ColumnsBlockType.BLOB
-                                ? dataView.getInt32(colDataHead, true)
-                                : dataView.getInt16(colDataHead, true) & 0xffff;
+                                ? dataView.getUint32(colDataHead, true)
+                                : dataView.getUint16(colDataHead, true);
                         if (isVarType == ColumnsBlockType.VARCHAR) {
                             row.push(
                                 readVarchar(
                                     dataView.buffer,
-                                    dataView.byteOffset +
-                                    colDataHead +
-                                    dataHeadSize,
+                                    dataView.byteOffset + colDataHead + dataHeadSize,
                                     dataLength,
                                     textDecoder
                                 )
@@ -291,9 +286,7 @@ export function parseBlock(
                             row.push(
                                 readBinary(
                                     dataView.buffer,
-                                    dataView.byteOffset +
-                                    colDataHead +
-                                    dataHeadSize,
+                                    dataView.byteOffset + colDataHead + dataHeadSize,
                                     dataLength
                                 )
                             );
@@ -301,9 +294,7 @@ export function parseBlock(
                             row.push(
                                 readNchar(
                                     dataView.buffer,
-                                    dataView.byteOffset +
-                                    colDataHead +
-                                    dataHeadSize,
+                                    dataView.byteOffset + colDataHead + dataHeadSize,
                                     dataLength
                                 )
                             );
@@ -329,19 +320,19 @@ export function parseBlock(
 export function _isVarType(metaType: number): Number {
     switch (metaType) {
         case TDengineTypeCode.NCHAR: {
-            return ColumnsBlockType["NCHAR"];
+            return ColumnsBlockType.NCHAR;
         }
         case TDengineTypeCode.VARCHAR: {
-            return ColumnsBlockType["VARCHAR"];
+            return ColumnsBlockType.VARCHAR;
         }
         case TDengineTypeCode.BINARY: {
-            return ColumnsBlockType["VARCHAR"];
+            return ColumnsBlockType.VARCHAR;
         }
         case TDengineTypeCode.JSON: {
-            return ColumnsBlockType["VARCHAR"];
+            return ColumnsBlockType.VARCHAR;
         }
         case TDengineTypeCode.GEOMETRY: {
-            return ColumnsBlockType["GEOMETRY"];
+            return ColumnsBlockType.GEOMETRY;
         }
         case TDengineTypeCode.VARBINARY: {
             return ColumnsBlockType.VARBINARY;
@@ -350,7 +341,7 @@ export function _isVarType(metaType: number): Number {
             return ColumnsBlockType.BLOB;
         }
         default: {
-            return ColumnsBlockType["SOLID"];
+            return ColumnsBlockType.SOLID;
         }
     }
 }
@@ -640,13 +631,6 @@ export function getString(
         length - 1
     );
     return textDecoder.decode(dataView);
-}
-
-function iteratorBuff(arr: ArrayBuffer) {
-    let buf = Buffer.from(arr);
-    for (const value of buf) {
-        logger.debug(value.toString());
-    }
 }
 
 function isNull(bitMapArr: Uint8Array, n: number) {

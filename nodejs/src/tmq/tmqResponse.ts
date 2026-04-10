@@ -347,8 +347,8 @@ export class WSTmqFetchBlockInfo {
                                 isVarType == ColumnsBlockType.BLOB ? 4 : 2;
                             let dataLength =
                                 isVarType == ColumnsBlockType.BLOB
-                                    ? dataView.getInt32(header, true)
-                                    : dataView.getInt16(header, true) & 0xffff;
+                                    ? dataView.getUint32(header, true)
+                                    : dataView.getUint16(header, true);
                             if (isVarType == ColumnsBlockType.VARCHAR) {
                                 //decode var char
 

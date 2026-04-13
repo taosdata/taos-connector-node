@@ -188,8 +188,7 @@ export function stmt2BinaryBlockEncode(
         colSizeList: new Array<number>(listLength),
     };
 
-    const hasTableName =
-        toBeBindTableNameIndex != null && toBeBindTableNameIndex >= 0;
+    const hasTableName = toBeBindTableNameIndex != null && toBeBindTableNameIndex >= 0;
     const hasTags = toBeBindTagCount > 0;
     for (let i = 0; i < listLength; i++) {
         const tableInfo = stmtTableInfoList[i];

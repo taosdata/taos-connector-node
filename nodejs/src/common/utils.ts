@@ -190,8 +190,7 @@ export function decimalToString(
         } else {
             const integerPart = absStr.slice(0, absStr.length - scale);
             const decimalPart = absStr.slice(absStr.length - scale);
-            decimalStr =
-                (isNegative ? "-" : "") + integerPart + "." + decimalPart;
+            decimalStr = (isNegative ? "-" : "") + integerPart + "." + decimalPart;
         }
     }
     return decimalStr;

@@ -41,10 +41,8 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
             if (this.paramsCount > 0) {
                 if (this._fieldParams[this.paramIndex]) {
                     if (
-                        this._fieldParams[this.paramIndex].dataType !==
-                        dataType ||
-                        this._fieldParams[this.paramIndex].columnType !==
-                        columnType
+                        this._fieldParams[this.paramIndex].dataType !== dataType
+                        || this._fieldParams[this.paramIndex].columnType !== columnType
                     ) {
                         throw new TaosError(
                             ErrorCode.ERR_INVALID_PARAMS,
@@ -53,11 +51,8 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                                 dataType,
                                 columnType,
                             })} vs ${JSONBig.stringify({
-                                dataType:
-                                    this._fieldParams[this.paramIndex].dataType,
-                                columnType:
-                                    this._fieldParams[this.paramIndex]
-                                        .columnType,
+                                dataType: this._fieldParams[this.paramIndex].dataType,
+                                columnType: this._fieldParams[this.paramIndex].columnType,
                             })}`
                         );
                     }

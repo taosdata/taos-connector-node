@@ -1,5 +1,5 @@
-import { setLevel } from "@src/common/log";
 import { WSConfig } from "@src/common/config";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
 import { WsSql } from "@src/sql/wsSql";
 import {
     compareUint8Arrays,
@@ -8,23 +8,19 @@ import {
     testUsername,
 } from "@test-helpers/utils";
 
-setLevel("debug");
-
-const dsn = "ws://localhost:6041";
-
-function newRootConfig(): WSConfig {
-    const conf = new WSConfig(dsn);
-    conf.setUser(testUsername());
-    conf.setPwd(testPassword());
-    return conf;
-}
-
 describe("TDWebSocket.SQL.BLOB", () => {
     jest.setTimeout(20 * 1000);
 
+    afterAll(() => {
+        WebSocketConnectionPool.instance().destroyed();
+    });
+
     test("insert and query blob with hex string literal", async () => {
+        const conf = new WSConfig("ws://localhost:6041");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
+        const ws = await WsSql.open(conf);
         const db = "test_1775805396";
-        const ws = await WsSql.open(newRootConfig());
         try {
             await ws.exec(`drop database if exists ${db}`);
             await ws.exec(`create database ${db}`);
@@ -58,8 +54,11 @@ describe("TDWebSocket.SQL.BLOB", () => {
     });
 
     test("insert and query blob with raw string literal", async () => {
+        const conf = new WSConfig("ws://localhost:6041");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
+        const ws = await WsSql.open(conf);
         const db = "test_1775805911";
-        const ws = await WsSql.open(newRootConfig());
         try {
             await ws.exec(`drop database if exists ${db}`);
             await ws.exec(`create database ${db}`);
@@ -90,8 +89,11 @@ describe("TDWebSocket.SQL.BLOB", () => {
     });
 
     test("insert and query null blob", async () => {
+        const conf = new WSConfig("ws://localhost:6041");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
+        const ws = await WsSql.open(conf);
         const db = "test_1775814624";
-        const ws = await WsSql.open(newRootConfig());
         try {
             await ws.exec(`drop database if exists ${db}`);
             await ws.exec(`create database ${db}`);

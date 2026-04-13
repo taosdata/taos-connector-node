@@ -157,7 +157,7 @@ export class WsStmt2 implements WsStmt {
             } else {
                 throw new TaosResultError(
                     ErrorCode.ERR_INVALID_PARAMS,
-                    "prepare No columns to bind!"
+                    "prepare no columns to bind!"
                 );
             }
         }

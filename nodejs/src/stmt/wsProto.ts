@@ -237,10 +237,8 @@ export function stmt2BinaryBlockEncode(
         result.totalColSize += size;
     }
 
-    let totalSize =
-        result.totalTableNameSize + result.totalTagSize + result.totalColSize;
-    let toBeBindTableNameCount =
-        toBeBindTableNameIndex != null && toBeBindTableNameIndex >= 0 ? 1 : 0;
+    let totalSize = result.totalTableNameSize + result.totalTagSize + result.totalColSize;
+    let toBeBindTableNameCount = toBeBindTableNameIndex != null && toBeBindTableNameIndex >= 0 ? 1 : 0;
     totalSize +=
         stmtTableInfoList.length *
         (toBeBindTableNameCount * 2 +
@@ -294,8 +292,7 @@ export function stmt2BinaryBlockEncode(
     if (toBeBindColCount > 0) {
         let skipSize = 0;
         if (toBeBindTableNameCount > 0) {
-            skipSize +=
-                result.totalTableNameSize + 2 * stmtTableInfoList.length;
+            skipSize += result.totalTableNameSize + 2 * stmtTableInfoList.length;
         }
 
         if (toBeBindTagCount > 0) {

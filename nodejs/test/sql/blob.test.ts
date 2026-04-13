@@ -5,6 +5,7 @@ import {
     compareUint8Arrays,
     hexToBytes,
     testPassword,
+    testNon3360,
     testUsername,
 } from "@test-helpers/utils";
 
@@ -15,7 +16,7 @@ describe("TDWebSocket.SQL.BLOB", () => {
         WebSocketConnectionPool.instance().destroyed();
     });
 
-    test("insert and query blob with hex string literal", async () => {
+    testNon3360("insert and query blob with hex string literal", async () => {
         const conf = new WSConfig("ws://localhost:6041");
         conf.setUser(testUsername());
         conf.setPwd(testPassword());
@@ -53,7 +54,7 @@ describe("TDWebSocket.SQL.BLOB", () => {
         }
     });
 
-    test("insert and query blob with raw string literal", async () => {
+    testNon3360("insert and query blob with raw string literal", async () => {
         const conf = new WSConfig("ws://localhost:6041");
         conf.setUser(testUsername());
         conf.setPwd(testPassword());
@@ -88,7 +89,7 @@ describe("TDWebSocket.SQL.BLOB", () => {
         }
     });
 
-    test("insert and query null blob", async () => {
+    testNon3360("insert and query null blob", async () => {
         const conf = new WSConfig("ws://localhost:6041");
         conf.setUser(testUsername());
         conf.setPwd(testPassword());

@@ -1,12 +1,17 @@
 import { WSConfig } from "@src/common/config";
 import { WsSql } from "@src/sql/wsSql";
 import { WsStmt2 } from "@src/stmt/wsStmt2";
-import { compareUint8Arrays, testPassword, testUsername } from "@test-helpers/utils";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { compareUint8Arrays, testNon3360, testPassword, testUsername } from "@test-helpers/utils";
 
 describe("TDWebSocket.Stmt2.BLOB", () => {
     jest.setTimeout(20 * 1000);
 
-    test("stmt2 bind blob with ArrayBuffer", async () => {
+    afterAll(() => {
+        WebSocketConnectionPool.instance().destroyed();
+    });
+
+    testNon3360("stmt2 bind blob with ArrayBuffer", async () => {
         const conf = new WSConfig("ws://localhost:6041");
         conf.setUser(testUsername());
         conf.setPwd(testPassword());
@@ -60,7 +65,7 @@ describe("TDWebSocket.Stmt2.BLOB", () => {
         }
     });
 
-    test("stmt2 bind blob with string", async () => {
+    testNon3360("stmt2 bind blob with string", async () => {
         const conf = new WSConfig("ws://localhost:6041");
         conf.setUser(testUsername());
         conf.setPwd(testPassword());
@@ -114,7 +119,7 @@ describe("TDWebSocket.Stmt2.BLOB", () => {
         }
     });
 
-    test("stmt2 bind null blob", async () => {
+    testNon3360("stmt2 bind null blob", async () => {
         const conf = new WSConfig("ws://localhost:6041");
         conf.setUser(testUsername());
         conf.setPwd(testPassword());
@@ -163,7 +168,7 @@ describe("TDWebSocket.Stmt2.BLOB", () => {
         }
     });
 
-    test("stmt2 bind blob with multi-subtables and multi-rows including null", async () => {
+    testNon3360("stmt2 bind blob with multi-subtables and multi-rows including null", async () => {
         const conf = new WSConfig("ws://localhost:6041");
         conf.setUser(testUsername());
         conf.setPwd(testPassword());

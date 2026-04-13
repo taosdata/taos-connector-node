@@ -2,12 +2,17 @@ import { WSConfig } from "@src/common/config";
 import { WsSql } from "@src/sql/wsSql";
 import { TMQConstants } from "@src/tmq/constant";
 import { WsConsumer } from "@src/tmq/wsTmq";
-import { compareUint8Arrays, testPassword, testUsername } from "@test-helpers/utils";
+import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
+import { compareUint8Arrays, testNon3360, testPassword, testUsername } from "@test-helpers/utils";
 
 describe("TDWebSocket.TMQ.BLOB", () => {
     jest.setTimeout(20 * 1000);
 
-    test("consume blob data as ArrayBuffer", async () => {
+    afterAll(() => {
+        WebSocketConnectionPool.instance().destroyed();
+    });
+
+    testNon3360("consume blob data as ArrayBuffer", async () => {
         const db = "test_1776049124";
         const topic = "topic_1776049124";
         const payload = "tmq_blob_payload";

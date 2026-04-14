@@ -1,9 +1,9 @@
 import JSONBig from "json-bigint";
 import { WsClient } from "../client/wsClient";
-import { FieldBindType, PrecisionLength, TDengineTypeCode, } from "../common/constant";
+import { FieldBindType, PrecisionLength, TDengineTypeCode } from "../common/constant";
 import logger from "../common/log";
 import { ReqId } from "../common/reqid";
-import { ErrorCode, TaosResultError, TDWebSocketClientError, } from "../common/wsError";
+import { ErrorCode, TaosResultError, TDWebSocketClientError } from "../common/wsError";
 import { StmtBindParams } from "./wsParamsBase";
 import {
     stmt2BinaryBlockEncode,
@@ -218,16 +218,6 @@ export class WsStmt2 implements WsStmt {
         }
 
         if (this._isInsert && this.fields && paramsArray.getBindCount() == this.fields.length) {
-            for (let i = 0; i < paramsArray._fieldParams.length; i++) {
-                const fieldParam = paramsArray._fieldParams[i];
-                if (!fieldParam) {
-                    continue;
-                }
-                this.overrideDecimalColumnType(
-                    fieldParam,
-                    this.fields[i].field_type
-                );
-            }
             const tableNameIndex = this._toBeBindTableNameIndex;
             if (tableNameIndex === null || tableNameIndex === undefined) {
                 throw new TaosResultError(
@@ -245,6 +235,10 @@ export class WsStmt2 implements WsStmt {
                         continue;
                     }
                     const fieldParam = paramsArray._fieldParams[j];
+                    const normalizedColumnType = this.resolveDecimalColumnType(
+                        fieldParam.columnType,
+                        this.fields[j].field_type
+                    );
                     if (this.fields[j].bind_type == FieldBindType.TAOS_FIELD_TAG) {
                         if (!this._currentTableInfo.tags) {
                             this._currentTableInfo.tags = new Stmt2BindParams(
@@ -258,7 +252,7 @@ export class WsStmt2 implements WsStmt {
                                 [fieldParam.params[i]],
                                 fieldParam.dataType,
                                 fieldParam.typeLen,
-                                fieldParam.columnType,
+                                normalizedColumnType,
                                 fieldParam.bindType
                             )
                         );
@@ -275,7 +269,7 @@ export class WsStmt2 implements WsStmt {
                                 [fieldParam.params[i]],
                                 fieldParam.dataType,
                                 fieldParam.typeLen,
-                                fieldParam.columnType,
+                                normalizedColumnType,
                                 fieldParam.bindType
                             )
                         );
@@ -287,36 +281,68 @@ export class WsStmt2 implements WsStmt {
                 const colFields = this.fields.filter(
                     (f) => f.bind_type === FieldBindType.TAOS_FIELD_COL
                 );
-                for (let i = 0; i < paramsArray._fieldParams.length; i++) {
-                    const fieldParam = paramsArray._fieldParams[i];
-                    if (!fieldParam) {
-                        continue;
-                    }
-                    this.overrideDecimalColumnType(
-                        fieldParam,
-                        colFields[i]?.field_type
-                    );
-                }
+                await this._currentTableInfo.setParams(
+                    this.createInsertBindParamsWithNormalizedDecimalType(
+                        paramsArray,
+                        colFields
+                    )
+                );
+            } else {
+                await this._currentTableInfo.setParams(paramsArray);
             }
-            await this._currentTableInfo.setParams(paramsArray);
         }
 
         return Promise.resolve();
     }
 
-    private overrideDecimalColumnType(
-        fieldParam: FieldBindParams,
+    private createInsertBindParamsWithNormalizedDecimalType(
+        paramsArray: StmtBindParams,
+        colFields: Array<StmtFieldInfo>
+    ): Stmt2BindParams {
+        const normalizedParams = new Stmt2BindParams(
+            colFields.length,
+            this._precision,
+            colFields
+        );
+        if (!paramsArray._fieldParams) {
+            return normalizedParams;
+        }
+
+        const sourceFieldParams = paramsArray._fieldParams;
+        for (let i = 0; i < sourceFieldParams.length; i++) {
+            const fieldParam = sourceFieldParams[i];
+            if (!fieldParam) {
+                continue;
+            }
+
+            normalizedParams.addParams(
+                fieldParam.params,
+                fieldParam.dataType,
+                fieldParam.typeLen,
+                this.resolveDecimalColumnType(
+                    fieldParam.columnType,
+                    colFields[i]?.field_type
+                )
+            );
+        }
+
+        return normalizedParams;
+    }
+
+    private resolveDecimalColumnType(
+        columnType: number,
         fieldType: number | undefined | null
-    ): void {
-        if (fieldParam.columnType !== TDengineTypeCode.DECIMAL) {
-            return;
+    ): number {
+        if (columnType !== TDengineTypeCode.DECIMAL) {
+            return columnType;
         }
         if (
             fieldType === TDengineTypeCode.DECIMAL ||
             fieldType === TDengineTypeCode.DECIMAL64
         ) {
-            fieldParam.columnType = fieldType;
+            return fieldType;
         }
+        return columnType;
     }
 
     async batch(): Promise<void> {

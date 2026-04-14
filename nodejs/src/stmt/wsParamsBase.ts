@@ -380,28 +380,23 @@ export abstract class StmtBindParams {
                     dataBuffer.setUint16(i * 2, params, true);
                     break;
                 }
-
                 case TDengineTypeCode.INT: {
                     dataBuffer.setInt32(i * 4, params, true);
                     break;
                 }
-
                 case TDengineTypeCode.INT_UNSIGNED: {
                     dataBuffer.setUint32(i * 4, params, true);
                     break;
                 }
-
                 case TDengineTypeCode.BIGINT:
                 case TDengineTypeCode.TIMESTAMP: {
                     dataBuffer.setBigInt64(i * 8, params, true);
                     break;
                 }
-
                 case TDengineTypeCode.BIGINT_UNSIGNED: {
                     dataBuffer.setBigUint64(i * 8, params, true);
                     break;
                 }
-
                 case TDengineTypeCode.FLOAT: {
                     dataBuffer.setFloat32(i * 4, params, true);
                     break;

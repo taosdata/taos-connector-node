@@ -16,33 +16,25 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
     private _fields: Array<StmtFieldInfo>;
     protected paramIndex: number = 0;
 
-    constructor(
-        paramsCount?: number,
-        precision?: number,
-        fields?: Array<StmtFieldInfo>
-    ) {
+    constructor(paramsCount?: number, precision?: number, fields?: Array<StmtFieldInfo>) {
         super(precision, paramsCount);
         this._fields = fields || [];
     }
 
-    addParams(
-        params: any[],
-        dataType: string,
-        typeLen: number,
-        columnType: number
-    ): void {
+    addParams(params: any[], dataType: string, typeLen: number, columnType: number): void {
         if (!params || params.length == 0) {
             throw new TaosError(
                 ErrorCode.ERR_INVALID_PARAMS,
                 "StmtBindParams params is invalid!"
             );
         }
+
         if (this._fieldParams) {
             if (this.paramsCount > 0) {
                 if (this._fieldParams[this.paramIndex]) {
                     if (
-                        this._fieldParams[this.paramIndex].dataType !== dataType
-                        || this._fieldParams[this.paramIndex].columnType !== columnType
+                        this._fieldParams[this.paramIndex].dataType !== dataType ||
+                        this._fieldParams[this.paramIndex].columnType !== columnType
                     ) {
                         throw new TaosError(
                             ErrorCode.ERR_INVALID_PARAMS,
@@ -98,6 +90,7 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                 "StmtBindParams params is invalid!"
             );
         }
+
         this.paramIndex = 0;
         for (let i = 0; i < bindParams._fieldParams.length; i++) {
             let fieldParam = bindParams._fieldParams[i];

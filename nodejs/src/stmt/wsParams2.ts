@@ -2,6 +2,8 @@ import {
     ColumnsBlockType,
     FieldBindType,
     PrecisionLength,
+    TDengineTypeCode,
+    TDengineTypeName,
 } from "../common/constant";
 import { ErrorCode, TaosError } from "../common/wsError";
 import { isEmpty } from "../common/utils";
@@ -105,6 +107,29 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
         }
     }
 
+    setDecimal(params: any[]) {
+        if (!params || params.length == 0) {
+            throw new TaosError(
+                ErrorCode.ERR_INVALID_PARAMS,
+                "SetDecimalColumn params is invalid!"
+            );
+        }
+        for (let i = 0; i < params.length; i++) {
+            if (!isEmpty(params[i]) && typeof params[i] !== "string") {
+                throw new TaosError(
+                    ErrorCode.ERR_INVALID_PARAMS,
+                    "SetDecimalColumn params is invalid!"
+                );
+            }
+        }
+        this.addParams(
+            params,
+            TDengineTypeName[TDengineTypeCode.DECIMAL],
+            0,
+            TDengineTypeCode.DECIMAL
+        );
+    }
+
     encode(): void {
         this.paramIndex = 0;
         if (!this._fieldParams || this._fieldParams.length == 0) {
@@ -124,42 +149,38 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
         } else {
             this._rows = this._fieldParams[0].params.length;
         }
+
         for (let i = 0; i < this._fieldParams.length; i++) {
             let fieldParam = this._fieldParams[i];
             if (!fieldParam) {
                 continue;
             }
 
-            let isVarType = _isVarType(fieldParam.columnType);
-            if (isVarType == ColumnsBlockType.SOLID) {
-                if (fieldParam.dataType === "TIMESTAMP") {
-                    this._params.push(
-                        this.encodeTimestampColumn(
-                            fieldParam.params,
-                            fieldParam.typeLen,
-                            fieldParam.columnType
-                        )
-                    );
-                } else {
-                    this._params.push(
-                        this.encodeDigitColumns(
-                            fieldParam.params,
-                            fieldParam.dataType,
-                            fieldParam.typeLen,
-                            fieldParam.columnType
-                        )
-                    );
-                }
-            } else {
-                this._params.push(
-                    this.encodeVarColumns(
+            const isSolidType = _isVarType(fieldParam.columnType) === ColumnsBlockType.SOLID;
+            const useSolidEncoder = isSolidType &&
+                fieldParam.columnType !== TDengineTypeCode.DECIMAL &&
+                fieldParam.columnType !== TDengineTypeCode.DECIMAL64;
+
+            const columnInfo = useSolidEncoder
+                ? fieldParam.dataType === "TIMESTAMP"
+                    ? this.encodeTimestampColumn(
+                        fieldParam.params,
+                        fieldParam.typeLen,
+                        fieldParam.columnType
+                    )
+                    : this.encodeDigitColumns(
                         fieldParam.params,
                         fieldParam.dataType,
                         fieldParam.typeLen,
                         fieldParam.columnType
                     )
+                : this.encodeVarColumns(
+                    fieldParam.params,
+                    fieldParam.dataType,
+                    fieldParam.typeLen,
+                    fieldParam.columnType
                 );
-            }
+            this._params.push(columnInfo);
         }
     }
 

@@ -326,6 +326,13 @@ export abstract class StmtBindParams {
         this.addParams(params, TDengineTypeName[20], 0, TDengineTypeCode.GEOMETRY);
     }
 
+    setDecimal(params: any[]) {
+        throw new TaosError(
+            ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE,
+            "setDecimal is not supported in stmt1, please use stmt2 instead!"
+        );
+    }
+
     setTimestamp(params: any[]) {
         if (!params || params.length == 0) {
             throw new TaosError(

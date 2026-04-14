@@ -162,7 +162,7 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                 fieldParam.columnType !== TDengineTypeCode.DECIMAL64;
 
             const columnInfo = useSolidEncoder
-                ? fieldParam.dataType === "TIMESTAMP"
+                ? fieldParam.dataType === TDengineTypeName[TDengineTypeCode.TIMESTAMP]
                     ? this.encodeTimestampColumn(
                         fieldParam.params,
                         fieldParam.typeLen,
@@ -219,6 +219,7 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                 }
             } else {
                 isNull.push(1);
+                dataLengths.push(0);
             }
         }
         this._dataTotalLen += totalLength;

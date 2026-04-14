@@ -307,13 +307,10 @@ export abstract class StmtBindParams {
     }
 
     setBlob(params: any[]) {
-        if (!params || params.length == 0) {
-            throw new TaosError(
-                ErrorCode.ERR_INVALID_PARAMS,
-                "SetBlobColumn params is invalid!"
-            );
-        }
-        this.addParams(params, TDengineTypeName[18], 0, TDengineTypeCode.BLOB);
+        throw new TaosError(
+            ErrorCode.ERR_UNSUPPORTED_TDENGINE_TYPE,
+            "setBlob is not supported in stmt1, please use stmt2 instead!"
+        );
     }
 
     setGeometry(params: any[]) {

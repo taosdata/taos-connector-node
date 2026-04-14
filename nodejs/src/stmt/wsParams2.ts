@@ -130,6 +130,21 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
         );
     }
 
+    setBlob(params: any[]) {
+        if (!params || params.length == 0) {
+            throw new TaosError(
+                ErrorCode.ERR_INVALID_PARAMS,
+                "SetBlobColumn params is invalid!"
+            );
+        }
+        this.addParams(
+            params,
+            TDengineTypeName[TDengineTypeCode.BLOB],
+            0,
+            TDengineTypeCode.BLOB
+        );
+    }
+
     encode(): void {
         this.paramIndex = 0;
         if (!this._fieldParams || this._fieldParams.length == 0) {

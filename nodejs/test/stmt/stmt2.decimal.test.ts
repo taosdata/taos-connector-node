@@ -6,7 +6,7 @@ import { StmtFieldInfo } from "@src/stmt/wsProto";
 import { Stmt1BindParams } from "@src/stmt/wsParams1";
 import { Stmt2BindParams } from "@src/stmt/wsParams2";
 import { WsStmt2 } from "@src/stmt/wsStmt2";
-import { testNon3360, testPassword, testUsername } from "@test-helpers/utils";
+import { compareUint8Arrays, testNon3360, testPassword, testUsername } from "@test-helpers/utils";
 
 describe("TDWebSocket.Stmt2.DECIMAL", () => {
     jest.setTimeout(20 * 1000);
@@ -155,6 +155,163 @@ describe("TDWebSocket.Stmt2.DECIMAL", () => {
             }
             if (queryStmt) {
                 await queryStmt.close();
+            }
+            try {
+                await ws.exec(`drop database if exists ${db}`);
+            } finally {
+                await ws.close();
+            }
+        }
+    });
+
+    testNon3360("stmt2 with tbname and dynamic columns should support non-null, null and empty rows", async () => {
+        const conf = new WSConfig("ws://localhost:6041");
+        conf.setUser(testUsername());
+        conf.setPwd(testPassword());
+        const ws = await WsSql.open(conf);
+        const db = "test_1776243346";
+        const tsBase = Date.now();
+        let stmt: any = null;
+        let allRowsStmt: any = null;
+        let allRows: any = null;
+
+        const encoder = new TextEncoder();
+        const geoPoint = new Uint8Array([
+            0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40,
+        ]).buffer;
+        const vbNonNull = encoder.encode("vb_non_null").buffer;
+        const blobNonNull = encoder.encode("blob_non_null").buffer;
+
+        try {
+            await ws.exec(`drop database if exists ${db}`);
+            await ws.exec(`create database ${db}`);
+            await ws.exec(`use ${db}`);
+            await ws.exec(
+                "create stable stb (" +
+                "ts timestamp, vc varchar(64), nc nchar(64), " +
+                "dec64 decimal(18, 6), decv decimal(30, 10), " +
+                "vb varbinary(64), geo geometry(512), bl blob, c1 int) " +
+                "tags (location binary(64), gid int)"
+            );
+
+            stmt = await ws.stmtInit();
+            expect(stmt).toBeInstanceOf(WsStmt2);
+            await stmt.prepare(
+                "insert into stb (tbname, location, gid, ts, vc, nc, dec64, decv, vb, geo, bl, c1) " +
+                "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            );
+
+            await stmt.setTableName("d0");
+
+            const tagParams = stmt.newStmtParam();
+            tagParams.setBinary(["beijing"]);
+            tagParams.setInt([1]);
+            await stmt.setTags(tagParams);
+
+            const bindParams = stmt.newStmtParam();
+            bindParams.setTimestamp([
+                BigInt(tsBase),
+                BigInt(tsBase + 1),
+                BigInt(tsBase + 2),
+            ]);
+            bindParams.setVarchar(["vc_non_null", null, ""]);
+            bindParams.setNchar(["nc_non_null", null, ""]);
+            bindParams.setDecimal(["12.340000", null, "0.000000"]);
+            bindParams.setDecimal(["123456.0000000001", null, "0.0000000000"]);
+            bindParams.setVarBinary([vbNonNull, null, new ArrayBuffer(0)]);
+            bindParams.setGeometry([geoPoint, null, null]);
+            bindParams.setBlob([blobNonNull, null, new ArrayBuffer(0)]);
+            bindParams.setInt([11, 22, 33]);
+
+            await stmt.bind(bindParams);
+            await stmt.batch();
+            await stmt.exec();
+            expect(stmt.getLastAffected()).toBe(3);
+
+            allRowsStmt = await ws.stmtInit();
+            expect(allRowsStmt).toBeInstanceOf(WsStmt2);
+            await allRowsStmt.prepare(
+                "select location, gid, vc, nc, dec64, decv, vb, geo, bl, c1 " +
+                "from stb where c1 >= ? order by c1"
+            );
+            const allRowsParams = new Stmt2BindParams();
+            allRowsParams.setInt([1]);
+            await allRowsStmt.bind(allRowsParams);
+            await allRowsStmt.exec();
+
+            allRows = await allRowsStmt.resultSet();
+            const allRowsData: Array<Array<any>> = [];
+            while (await allRows.next()) {
+                const row = allRows.getData();
+                if (row) {
+                    allRowsData.push([...row]);
+                }
+            }
+
+            expect(allRowsData.length).toBe(3);
+
+            expect(allRowsData[0][0]).toBe("beijing");
+            expect(allRowsData[0][1]).toBe(1);
+            expect(allRowsData[0][2]).toBe("vc_non_null");
+            expect(allRowsData[0][3]).toBe("nc_non_null");
+            expect(allRowsData[0][4]).toBe("12.340000");
+            expect(allRowsData[0][5]).toBe("123456.0000000001");
+            expect(allRowsData[0][6]).toBeInstanceOf(ArrayBuffer);
+            expect(
+                compareUint8Arrays(
+                    new Uint8Array(allRowsData[0][6] as ArrayBuffer),
+                    new Uint8Array(vbNonNull)
+                )
+            ).toBe(true);
+            expect(allRowsData[0][7]).toBeInstanceOf(ArrayBuffer);
+            expect(
+                compareUint8Arrays(
+                    new Uint8Array(allRowsData[0][7] as ArrayBuffer),
+                    new Uint8Array(geoPoint)
+                )
+            ).toBe(true);
+            expect(allRowsData[0][8]).toBeInstanceOf(ArrayBuffer);
+            expect(
+                compareUint8Arrays(
+                    new Uint8Array(allRowsData[0][8] as ArrayBuffer),
+                    new Uint8Array(blobNonNull)
+                )
+            ).toBe(true);
+            expect(allRowsData[0][9]).toBe(11);
+
+            expect(allRowsData[1][0]).toBe("beijing");
+            expect(allRowsData[1][1]).toBe(1);
+            expect(allRowsData[1][2]).toBe("NULL");
+            expect(allRowsData[1][3]).toBe("NULL");
+            expect(allRowsData[1][4]).toBe("NULL");
+            expect(allRowsData[1][5]).toBe("NULL");
+            expect(allRowsData[1][6]).toBe("NULL");
+            expect(allRowsData[1][7]).toBe("NULL");
+            expect(allRowsData[1][8]).toBe("NULL");
+            expect(allRowsData[1][9]).toBe(22);
+
+            expect(allRowsData[2][0]).toBe("beijing");
+            expect(allRowsData[2][1]).toBe(1);
+            expect(allRowsData[2][2]).toBe("");
+            expect(allRowsData[2][3]).toBe("");
+            expect(allRowsData[2][4]).toBe("0.000000");
+            expect(allRowsData[2][5]).toBe("0.0000000000");
+            expect(allRowsData[2][6]).toBeInstanceOf(ArrayBuffer);
+            expect((allRowsData[2][6] as ArrayBuffer).byteLength).toBe(0);
+            expect(allRowsData[2][7]).toBe("NULL");
+            expect(allRowsData[2][8]).toBeInstanceOf(ArrayBuffer);
+            expect((allRowsData[2][8] as ArrayBuffer).byteLength).toBe(0);
+            expect(allRowsData[2][9]).toBe(33);
+        } finally {
+            if (allRows) {
+                await allRows.close();
+            }
+            if (allRowsStmt) {
+                await allRowsStmt.close();
+            }
+            if (stmt) {
+                await stmt.close();
             }
             try {
                 await ws.exec(`drop database if exists ${db}`);

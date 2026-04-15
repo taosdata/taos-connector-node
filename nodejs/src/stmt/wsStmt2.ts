@@ -218,6 +218,17 @@ export class WsStmt2 implements WsStmt {
         }
 
         if (this._isInsert && this.fields && paramsArray.getBindCount() == this.fields.length) {
+            for (let i = 0; i < paramsArray._fieldParams.length; i++) {
+                const fieldParam = paramsArray._fieldParams[i];
+                if (!fieldParam) {
+                    continue;
+                }
+                this.overrideDecimalColumnType(
+                    fieldParam,
+                    this.fields[i].field_type
+                );
+            }
+
             const tableNameIndex = this._toBeBindTableNameIndex;
             if (tableNameIndex === null || tableNameIndex === undefined) {
                 throw new TaosResultError(
@@ -235,10 +246,6 @@ export class WsStmt2 implements WsStmt {
                         continue;
                     }
                     const fieldParam = paramsArray._fieldParams[j];
-                    const normalizedColumnType = this.resolveDecimalColumnType(
-                        fieldParam.columnType,
-                        this.fields[j].field_type
-                    );
                     if (this.fields[j].bind_type == FieldBindType.TAOS_FIELD_TAG) {
                         if (!this._currentTableInfo.tags) {
                             this._currentTableInfo.tags = new Stmt2BindParams(
@@ -252,7 +259,7 @@ export class WsStmt2 implements WsStmt {
                                 [fieldParam.params[i]],
                                 fieldParam.dataType,
                                 fieldParam.typeLen,
-                                normalizedColumnType,
+                                fieldParam.columnType,
                                 fieldParam.bindType
                             )
                         );
@@ -269,7 +276,7 @@ export class WsStmt2 implements WsStmt {
                                 [fieldParam.params[i]],
                                 fieldParam.dataType,
                                 fieldParam.typeLen,
-                                normalizedColumnType,
+                                fieldParam.columnType,
                                 fieldParam.bindType
                             )
                         );
@@ -286,8 +293,8 @@ export class WsStmt2 implements WsStmt {
                     if (!fieldParam) {
                         continue;
                     }
-                    fieldParam.columnType = this.resolveDecimalColumnType(
-                        fieldParam.columnType,
+                    this.overrideDecimalColumnType(
+                        fieldParam,
                         colFields[i]?.field_type
                     );
                 }
@@ -298,17 +305,16 @@ export class WsStmt2 implements WsStmt {
         return Promise.resolve();
     }
 
-    private resolveDecimalColumnType(
-        columnType: number,
+    private overrideDecimalColumnType(
+        fieldParam: FieldBindParams,
         fieldType: number | undefined | null
-    ): number {
-        if (columnType !== TDengineTypeCode.DECIMAL) {
-            return columnType;
+    ): void {
+        if (fieldParam.columnType !== TDengineTypeCode.DECIMAL) {
+            return;
         }
         if (fieldType === TDengineTypeCode.DECIMAL64) {
-            return fieldType;
+            fieldParam.columnType = fieldType;
         }
-        return columnType;
     }
 
     async batch(): Promise<void> {

@@ -91,6 +91,30 @@ describe("WsClient recovery hook", () => {
         expect(callOrder).toEqual(["conn", "custom"]);
     });
 
+    test("includes user app and ip in sql recovery conn message", async () => {
+        const dsn = parse(
+            "ws://root:taosdata@localhost:6041?user_app=myApp&user_ip=192.168.1.100"
+        );
+        const connector = createMockConnector();
+        jest
+            .spyOn(WebSocketConnectionPool.instance(), "getConnection")
+            .mockResolvedValue(connector as any);
+
+        const client = new WsClient(dsn, 5000);
+        await client.connect("db_recovery");
+
+        const hookCalls = connector.setSessionRecoveryHook.mock.calls;
+        const hook = hookCalls[hookCalls.length - 1]?.[0];
+        expect(hook).toBeTruthy();
+        await hook();
+
+        const firstCall = connector.sendMsgDirect.mock.calls[0] as [string];
+        const connMsg = JSON.parse(firstCall[0]);
+        expect(connMsg.action).toBe("conn");
+        expect(connMsg.args.app).toBe("myApp");
+        expect(connMsg.args.ip).toBe("192.168.1.100");
+    });
+
     test("throws WebSocketQueryError when sql recovery direct call fails", async () => {
         const dsn = parse("ws://root:taosdata@localhost:6041");
         const connector = createMockConnector();

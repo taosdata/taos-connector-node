@@ -27,6 +27,8 @@ export class WsClient {
     private _wsConnector?: WebSocketConnector;
     private _timeout?: number | undefined | null;
     private _timezone?: string | undefined | null;
+    private _userApp?: string | undefined | null;
+    private _userIp?: string | undefined | null;
     private readonly _dsn: Dsn;
     private static readonly _minVersion = "3.3.2.0";
     private _version?: string | undefined | null;
@@ -41,6 +43,12 @@ export class WsClient {
         this._timeout = timeout;
         if (this._dsn.params.has("timezone")) {
             this._timezone = this._dsn.params.get("timezone") || undefined;
+        }
+        if (this._dsn.params.has("user_app")) {
+            this._userApp = this._dsn.params.get("user_app") || undefined;
+        }
+        if (this._dsn.params.has("user_ip")) {
+            this._userIp = this._dsn.params.get("user_ip") || undefined;
         }
         if (this._dsn.params.has("bearer_token")) {
             this._bearerToken = this._dsn.params.get("bearer_token") || undefined;
@@ -57,6 +65,8 @@ export class WsClient {
                 db: database,
                 connector: ConnectorInfo,
                 ...(this._timezone && { tz: this._timezone }),
+                ...(this._userApp && { app: this._userApp }),
+                ...(this._userIp && { ip: this._userIp }),
                 ...(this._bearerToken && { bearer_token: this._bearerToken }),
             },
         };

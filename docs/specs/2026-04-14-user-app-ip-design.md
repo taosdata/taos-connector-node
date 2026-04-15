@@ -90,24 +90,24 @@ private buildConnMessage(database?: string | undefined | null) {
 
 ### 4. `nodejs/src/sql/wsSql.ts` — WsSql.open() 中 options_connection 设置
 
-在连接成功、设置 timezone 之后，追加 `user_app` 和 `user_ip` 的 options_connection 调用：
+在连接成功、设置 timezone 之后，**无条件**下发 `user_app` 和 `user_ip` 的 options_connection 调用。当值未设置时发送 `null` 清空，防止连接池复用导致旧值残留：
 
 ```typescript
 let userApp = wsConfig.getUserApp();
-if (userApp && userApp.length > 0) {
-    await wsSql._wsClient.setOptionConnection(
-        TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_APP,
-        userApp
-    );
-}
+await wsSql._wsClient.setOptionConnection(
+    TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_APP,
+    userApp && userApp.length > 0 ? userApp : null
+);
 let userIp = wsConfig.getUserIp();
-if (userIp && userIp.length > 0) {
-    await wsSql._wsClient.setOptionConnection(
-        TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_IP,
-        userIp
-    );
-}
+await wsSql._wsClient.setOptionConnection(
+    TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_IP,
+    userIp && userIp.length > 0 ? userIp : null
+);
 ```
+
+> **设计考量**：连接池 key 不含 `user_app`/`user_ip`（避免不必要的池碎片化）。因此同一池中复用的连接可能携带前一会话的值。无条件下发 options_connection（有值设值、无值清空）确保每次会话都拥有正确的状态。
+
+**失败策略**：遵循现有 timezone 的 fail-close 模式 — 若 `setOptionConnection` 失败，异常被 `WsSql.open()` 的 try/catch 捕获，连接关闭并向调用方抛出错误。不做降级或重试。
 
 ### 5. TMQ 路径
 
@@ -138,26 +138,26 @@ case TMQConstants.USER_IP:
     break;
 ```
 
-如果 config map 未设置但 DSN query params 中有值，则回退获取：
+如果 config map 未设置（值仍为 `null`）但 DSN query params 中有值，则回退获取。使用 `== null` 判断（覆盖 `null` 和 `undefined`），避免将用户显式传入的空字符串 `""` 误判为"未设置"：
 
 ```typescript
-if (!this.userApp && this.dsn?.params.has("user_app")) {
+if (this.userApp == null && this.dsn?.params.has("user_app")) {
     this.userApp = this.dsn.params.get("user_app") || null;
 }
-if (!this.userIp && this.dsn?.params.has("user_ip")) {
+if (this.userIp == null && this.dsn?.params.has("user_ip")) {
     this.userIp = this.dsn.params.get("user_ip") || null;
 }
 ```
 
 #### 5c. `nodejs/src/tmq/wsTmq.ts` — subscribe 请求包含 app 和 ip
 
-在 `buildSubscribeMessage()` 的 args 中新增：
+在 `buildSubscribeMessage()` 的 args 中，使用条件展开（与 `buildConnMessage()` 保持一致），仅在有效值时发送字段：
 
 ```typescript
 args: {
     // ... 现有字段 ...
-    app: this._config.userApp,
-    ip: this._config.userIp,
+    ...(this._config.userApp && { app: this._config.userApp }),
+    ...(this._config.userIp && { ip: this._config.userIp }),
     connector: ConnectorInfo,
 }
 ```
@@ -217,4 +217,15 @@ const consumer2 = await tmqConnect(configMap2);
 
 - 不在连接器端截断 `app` 名称（由 taosAdapter 服务端处理）
 - 不做 IP 格式校验（由 taosAdapter 服务端处理）
-- 不修改连接池 key 逻辑（`user_app` 和 `user_ip` 不影响连接池标识）
+- 不修改连接池 key 逻辑（通过无条件下发 options_connection 清空/设置解决状态残留，避免池碎片化）
+
+## 错误处理策略
+
+| 场景 | 行为 |
+|---|---|
+| `setOptionConnection` 设置 `user_app` 失败 | Fail-close：关闭连接，抛出错误，WsSql.open() 整体失败 |
+| `setOptionConnection` 设置 `user_ip` 失败 | 同上 |
+| `setOptionConnection` 清空（value: null）失败 | 同上 |
+| TMQ subscribe 时 `app`/`ip` 被服务端拒绝 | subscribe 调用失败，错误传播至调用方 |
+
+此策略与现有 `timezone` 的 fail-close 行为一致（`WsSql.open()` 中 try/catch 统一处理）。

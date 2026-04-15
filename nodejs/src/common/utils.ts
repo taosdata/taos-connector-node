@@ -37,6 +37,20 @@ export function getDsn(wsConfig: WSConfig): Dsn {
         wsConfig.setTimezone(dsn.params.get("timezone") || "");
     }
 
+    const userApp = wsConfig.getUserApp();
+    if (userApp) {
+        dsn.params.set("user_app", userApp);
+    } else if (dsn.params.has("user_app")) {
+        wsConfig.setUserApp(dsn.params.get("user_app") || "");
+    }
+
+    const userIp = wsConfig.getUserIp();
+    if (userIp) {
+        dsn.params.set("user_ip", userIp);
+    } else if (dsn.params.has("user_ip")) {
+        wsConfig.setUserIp(dsn.params.get("user_ip") || "");
+    }
+
     const db = wsConfig.getDb();
     if (db && db.length > 0) {
         dsn.database = db;
@@ -240,4 +254,3 @@ export function maskTmqConfigForLog(config: TmqConfig): string {
         }
     });
 }
-

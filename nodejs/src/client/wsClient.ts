@@ -12,16 +12,9 @@ import {
 import { WSVersionResponse, WSQueryResponse } from "./wsResponse";
 import { ReqId } from "../common/reqid";
 import logger from "../common/log";
-import {
-    safeDecodeURIComponent,
-    compareVersions,
-    maskSensitiveForLog,
-} from "../common/utils";
+import { safeDecodeURIComponent, compareVersions, maskSensitiveForLog } from "../common/utils";
 import { w3cwebsocket } from "websocket";
-import {
-    ConnectorInfo,
-    TSDB_OPTION_CONNECTION,
-} from "../common/constant";
+import { ConnectorInfo, TSDB_OPTION_CONNECTION } from "../common/constant";
 
 export class WsClient {
     private _wsConnector?: WebSocketConnector;

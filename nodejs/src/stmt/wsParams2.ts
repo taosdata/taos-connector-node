@@ -34,10 +34,12 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
         if (this._fieldParams) {
             if (this.paramsCount > 0) {
                 if (this._fieldParams[this.paramIndex]) {
-                    if (
-                        this._fieldParams[this.paramIndex].dataType !== dataType ||
-                        this._fieldParams[this.paramIndex].columnType !== columnType
-                    ) {
+                    const currentFieldParam = this._fieldParams[this.paramIndex];
+                    const columnTypeMatches =
+                        currentFieldParam.columnType === columnType ||
+                        (this.isDecimalColumnType(currentFieldParam.columnType) &&
+                            this.isDecimalColumnType(columnType));
+                    if (currentFieldParam.dataType !== dataType || !columnTypeMatches) {
                         throw new TaosError(
                             ErrorCode.ERR_INVALID_PARAMS,
                             `StmtBindParams params type is not match! ${this.paramIndex
@@ -45,12 +47,12 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                                 dataType,
                                 columnType,
                             })} vs ${JSONBig.stringify({
-                                dataType: this._fieldParams[this.paramIndex].dataType,
-                                columnType: this._fieldParams[this.paramIndex].columnType,
+                                dataType: currentFieldParam.dataType,
+                                columnType: currentFieldParam.columnType,
                             })}`
                         );
                     }
-                    this._fieldParams[this.paramIndex].params.push(...params);
+                    currentFieldParam.params.push(...params);
                 } else {
                     let bindType = this._fields[this.paramIndex].bind_type || 0;
                     this._fieldParams[this.paramIndex] = new FieldBindParams(
@@ -78,6 +80,13 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                 );
             }
         }
+    }
+
+    private isDecimalColumnType(columnType: number): boolean {
+        return (
+            columnType === TDengineTypeCode.DECIMAL ||
+            columnType === TDengineTypeCode.DECIMAL64
+        );
     }
 
     mergeParams(bindParams: StmtBindParams): void {

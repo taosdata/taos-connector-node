@@ -281,52 +281,21 @@ export class WsStmt2 implements WsStmt {
                 const colFields = this.fields.filter(
                     (f) => f.bind_type === FieldBindType.TAOS_FIELD_COL
                 );
-                await this._currentTableInfo.setParams(
-                    this.createInsertBindParamsWithNormalizedDecimalType(
-                        paramsArray,
-                        colFields
-                    )
-                );
-            } else {
-                await this._currentTableInfo.setParams(paramsArray);
+                for (let i = 0; i < paramsArray._fieldParams.length; i++) {
+                    const fieldParam = paramsArray._fieldParams[i];
+                    if (!fieldParam) {
+                        continue;
+                    }
+                    fieldParam.columnType = this.resolveDecimalColumnType(
+                        fieldParam.columnType,
+                        colFields[i]?.field_type
+                    );
+                }
             }
+            await this._currentTableInfo.setParams(paramsArray);
         }
 
         return Promise.resolve();
-    }
-
-    private createInsertBindParamsWithNormalizedDecimalType(
-        paramsArray: StmtBindParams,
-        colFields: Array<StmtFieldInfo>
-    ): Stmt2BindParams {
-        const normalizedParams = new Stmt2BindParams(
-            colFields.length,
-            this._precision,
-            colFields
-        );
-        if (!paramsArray._fieldParams) {
-            return normalizedParams;
-        }
-
-        const sourceFieldParams = paramsArray._fieldParams;
-        for (let i = 0; i < sourceFieldParams.length; i++) {
-            const fieldParam = sourceFieldParams[i];
-            if (!fieldParam) {
-                continue;
-            }
-
-            normalizedParams.addParams(
-                fieldParam.params,
-                fieldParam.dataType,
-                fieldParam.typeLen,
-                this.resolveDecimalColumnType(
-                    fieldParam.columnType,
-                    colFields[i]?.field_type
-                )
-            );
-        }
-
-        return normalizedParams;
     }
 
     private resolveDecimalColumnType(
@@ -336,10 +305,7 @@ export class WsStmt2 implements WsStmt {
         if (columnType !== TDengineTypeCode.DECIMAL) {
             return columnType;
         }
-        if (
-            fieldType === TDengineTypeCode.DECIMAL ||
-            fieldType === TDengineTypeCode.DECIMAL64
-        ) {
+        if (fieldType === TDengineTypeCode.DECIMAL64) {
             return fieldType;
         }
         return columnType;

@@ -290,7 +290,7 @@ describe("Stmt2 decimal bind behavior (mock)", () => {
         );
     });
 
-    test("bind should not mutate caller params so full-binding params can be reused", async () => {
+    test("bind should normalize full-binding decimal params in place", async () => {
         const fields = createInsertFields();
         const stmt = createBareStmt(fields, true);
         const params = new Stmt2BindParams(fields.length, 13, fields);
@@ -303,17 +303,11 @@ describe("Stmt2 decimal bind behavior (mock)", () => {
 
         await stmt.bind(params);
 
-        expect(params._fieldParams?.[3].columnType).toBe(TDengineTypeCode.DECIMAL);
+        expect(params._fieldParams?.[3].columnType).toBe(TDengineTypeCode.DECIMAL64);
 
-        params.setVarchar(["d0"]);
-        params.setVarchar(["beijing"]);
-        params.setInt([1]);
-        expect(() => {
-            params.setDecimal(["223.456700"]);
-        }).not.toThrow();
-        params.setInt([11]);
-
-        expect(params._fieldParams?.[3].params.length).toBe(2);
+        const tableInfo = stmt._stmtTableInfo.get("d0");
+        const colParams = tableInfo?.getParams();
+        expect(colParams?._fieldParams?.[0].columnType).toBe(TDengineTypeCode.DECIMAL64);
     });
 
     test("bind should override DECIMAL to real column decimal type in non-full-binding insert", async () => {
@@ -327,12 +321,39 @@ describe("Stmt2 decimal bind behavior (mock)", () => {
         await stmt.bind(params);
 
         const bindParams = stmt._currentTableInfo.getParams();
+        expect(bindParams).toBe(params);
         expect(bindParams?._fieldParams?.[0].columnType).toBe(
             TDengineTypeCode.DECIMAL64
         );
         expect(bindParams?._fieldParams?.[1].columnType).toBe(
             TDengineTypeCode.INT
         );
+    });
+
+    test("bind should still allow setDecimal after in-place normalization", async () => {
+        const fields = createInsertFields();
+        const stmt = createBareStmt(fields, true);
+        const params = new Stmt2BindParams(fields.length, 13, fields);
+
+        params.setVarchar(["d0"]);
+        params.setVarchar(["beijing"]);
+        params.setInt([1]);
+        params.setDecimal(["123.456700"]);
+        params.setInt([10]);
+
+        await stmt.bind(params);
+
+        expect(params._fieldParams?.[3].columnType).toBe(TDengineTypeCode.DECIMAL64);
+
+        params.setVarchar(["d0"]);
+        params.setVarchar(["beijing"]);
+        params.setInt([1]);
+        expect(() => {
+            params.setDecimal(["223.456700"]);
+        }).not.toThrow();
+        params.setInt([11]);
+
+        expect(params._fieldParams?.[3].params.length).toBe(2);
     });
 
     test("query mode should keep DECIMAL default type", async () => {

@@ -324,10 +324,7 @@ export class Stmt2BindParams extends StmtBindParams implements IDataEncoder {
                     } else {
                         timeStamp = BigInt(date.getTime());
                     }
-                } else if (
-                    typeof params[i] == "bigint" ||
-                    typeof params[i] == "number"
-                ) {
+                } else if (typeof params[i] == "bigint" || typeof params[i] == "number") {
                     if (typeof params[i] == "number") {
                         timeStamp = BigInt(params[i]);
                     } else {

@@ -181,7 +181,7 @@ export class WsStmt2 implements WsStmt {
         if (!paramsArray || !this._stmt_id) {
             throw new TaosResultError(
                 ErrorCode.ERR_INVALID_PARAMS,
-                "SetBinaryTags paramArray is invalid!"
+                "SetTags paramArray is invalid!"
             );
         }
         if (!this._currentTableInfo) {

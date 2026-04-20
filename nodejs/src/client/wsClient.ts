@@ -108,6 +108,7 @@ export class WsClient {
         await this.sendMsgDirect(JSON.stringify(connMsg), false);
 
         if (this._connectionOptions.size <= 0) {
+            this._wsConnector.markSessionReady();
             return;
         }
 
@@ -125,6 +126,7 @@ export class WsClient {
             },
         };
         await this.sendMsgDirect(JSONBig.stringify(optionsMsg), false);
+        this._wsConnector.markSessionReady();
     }
 
     public setSessionRecoveryHook(
@@ -136,6 +138,7 @@ export class WsClient {
 
     async connect(database?: string | undefined | null): Promise<void> {
         const connMsg = this.buildConnMessage(database);
+        const normalizedDatabase = this.normalizeConnectedDatabase(database ?? null);
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg, (key, value) =>
                 (key === "password" || key === "bearer_token") ? "[REDACTED]" : value
@@ -146,15 +149,19 @@ export class WsClient {
             this._timeout
         );
         this.bindReconnectRecoveryHook();
-        if (this._wsConnector.readyState() === w3cwebsocket.OPEN) {
-            this._connectedDatabase = this.normalizeConnectedDatabase(database ?? null);
-            return;
-        }
         try {
+            if (this._wsConnector.readyState() === w3cwebsocket.OPEN) {
+                this._connectedDatabase = normalizedDatabase;
+                if (this.isSqlPath() && !this._wsConnector.isSessionReady()) {
+                    await this.recoverSqlSessionContext();
+                }
+                return;
+            }
             await this._wsConnector.ready();
             let result: any = await this._wsConnector.sendMsg(JSON.stringify(connMsg));
             if (result.msg.code == 0) {
-                this._connectedDatabase = this.normalizeConnectedDatabase(database ?? null);
+                this._connectedDatabase = normalizedDatabase;
+                this._wsConnector.markSessionReady();
                 return;
             }
             await this.close();
@@ -276,6 +283,10 @@ export class WsClient {
             this.bindReconnectRecoveryHook();
             if (this._wsConnector.readyState() !== w3cwebsocket.OPEN) {
                 await this._wsConnector.ready();
+            }
+            if (this.isSqlPath() && !this._wsConnector.isSessionReady()) {
+                this._connectedDatabase = this.normalizeConnectedDatabase(this._connectedDatabase);
+                await this.recoverSqlSessionContext();
             }
             if (logger.isDebugEnabled()) {
                 logger.debug(

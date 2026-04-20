@@ -4,11 +4,24 @@ import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
 import { parse, WS_TMQ_ENDPOINT } from "@src/common/dsn";
 import { WebSocketQueryError } from "@src/common/wsError";
 
-function createMockConnector() {
+function resetPoolSingleton() {
+    const PoolClass = WebSocketConnectionPool as any;
+    if (PoolClass._instance) {
+        PoolClass._instance.destroyed();
+        PoolClass._instance = undefined;
+    }
+}
+
+function createMockConnector(sessionReady: boolean = true) {
+    let currentSessionReady = sessionReady;
     return {
         readyState: jest.fn(() => w3cwebsocket.OPEN),
         ready: jest.fn(async () => { }),
         setSessionRecoveryHook: jest.fn(),
+        isSessionReady: jest.fn(() => currentSessionReady),
+        markSessionReady: jest.fn(() => {
+            currentSessionReady = true;
+        }),
         sendMsgDirect: jest.fn(async (_message: string) => ({
             msg: { code: 0, message: "" }
         })),
@@ -17,9 +30,47 @@ function createMockConnector() {
     };
 }
 
+function createPooledLifecycleConnector(dsn: ReturnType<typeof parse>, sessionReady: boolean = true) {
+    const pool = WebSocketConnectionPool.instance();
+    const poolKey = (pool as any).getPoolKey(dsn);
+    let currentSessionReady = sessionReady;
+    let recoveryHook: (() => Promise<void>) | null = null;
+
+    return {
+        readyState: jest.fn(() => w3cwebsocket.OPEN),
+        ready: jest.fn(async () => { }),
+        refreshRetryConfig: jest.fn(),
+        getPoolKey: jest.fn(() => poolKey),
+        close: jest.fn(),
+        setSessionRecoveryHook: jest.fn((hook?: (() => Promise<void>) | null) => {
+            recoveryHook = hook || null;
+        }),
+        isSessionReady: jest.fn(() => currentSessionReady),
+        markSessionReady: jest.fn(() => {
+            currentSessionReady = true;
+        }),
+        sendMsgDirect: jest.fn(async (_message: string) => ({
+            msg: { code: 0, message: "" }
+        })),
+        sendMsg: jest.fn(async () => ({ msg: { code: 0, message: "" } })),
+        sendMsgNoResp: jest.fn(async () => { }),
+        simulateIdleReconnect: async () => {
+            currentSessionReady = false;
+            if (recoveryHook) {
+                await recoveryHook();
+            }
+        },
+    };
+}
+
 describe("WsClient recovery hook", () => {
+    beforeEach(() => {
+        resetPoolSingleton();
+    });
+
     afterEach(() => {
         jest.restoreAllMocks();
+        resetPoolSingleton();
     });
 
     test("uses dsn endpoint when creating connection", async () => {
@@ -136,5 +187,65 @@ describe("WsClient recovery hook", () => {
         const connMsg = JSON.parse(firstCall[0]);
         expect(connMsg.action).toBe("conn");
         expect(connMsg.args.db).toBe("information_schema");
+    });
+
+    test("restores sql conn session before reusing an OPEN pooled connector", async () => {
+        const dsn = parse("ws://root:taosdata@localhost:6041");
+        const connector = createMockConnector(false);
+        jest
+            .spyOn(WebSocketConnectionPool.instance(), "getConnection")
+            .mockResolvedValue(connector as any);
+
+        const client = new WsClient(dsn, 5000);
+        await client.connect("db_from_borrower");
+
+        expect(connector.sendMsgDirect).toHaveBeenCalledTimes(1);
+        const firstCall = connector.sendMsgDirect.mock.calls[0] as [string];
+        const connMsg = JSON.parse(firstCall[0]);
+        expect(connMsg.action).toBe("conn");
+        expect(connMsg.args.db).toBe("db_from_borrower");
+    });
+
+    test("restores sql conn session in ready path before reusing an OPEN pooled connector", async () => {
+        const dsn = parse("ws://root:taosdata@localhost:6041");
+        const connector = createMockConnector(false);
+        jest
+            .spyOn(WebSocketConnectionPool.instance(), "getConnection")
+            .mockResolvedValue(connector as any);
+
+        const client = new WsClient(dsn, 5000);
+        await client.ready();
+
+        expect(connector.sendMsgDirect).toHaveBeenCalledTimes(1);
+        const firstCall = connector.sendMsgDirect.mock.calls[0] as [string];
+        const connMsg = JSON.parse(firstCall[0]);
+        expect(connMsg.action).toBe("conn");
+        expect(connMsg.args.db).toBe("information_schema");
+    });
+
+    test("restores sql conn session after idle pooled reconnect and next borrow", async () => {
+        const dsn = parse("ws://root:taosdata@localhost:6041");
+        const connector = createPooledLifecycleConnector(dsn, true);
+        const pool = WebSocketConnectionPool.instance();
+
+        await pool.releaseConnection(connector as any);
+
+        const firstBorrower = new WsClient(dsn, 5000);
+        await firstBorrower.connect("db_first_borrow");
+        expect(connector.sendMsgDirect).toHaveBeenCalledTimes(0);
+
+        await firstBorrower.close();
+        await connector.simulateIdleReconnect();
+
+        const secondBorrower = new WsClient(dsn, 5000);
+        await secondBorrower.connect("db_second_borrow");
+
+        expect(connector.sendMsgDirect).toHaveBeenCalledTimes(1);
+        const firstCall = connector.sendMsgDirect.mock.calls[0] as [string];
+        const connMsg = JSON.parse(firstCall[0]);
+        expect(connMsg.action).toBe("conn");
+        expect(connMsg.args.db).toBe("db_second_borrow");
+
+        await secondBorrower.close();
     });
 });

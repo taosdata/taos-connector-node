@@ -14,7 +14,7 @@
 |---|------|------|
 | 1 | 端点发现 | 首次连接时通过 `list_instances=true` 获取所有 adapter 实例 |
 | 2 | 端点合并 | 将发现的新端点动态合并到连接器地址列表 |
-| 3 | 全局集群注册 | 进程级 ClusterRegistry 单例，让新连接自动复用已知集群 |
+| 3 | 全局集群注册 | 事件循环级 ClusterRegistry 单例，让新连接自动复用已知集群 |
 | 4 | 重连时抑制发现 | 重连恢复时不携带 `list_instances`，避免重复发现 |
 
 覆盖路径：SQL 和 TMQ 两条路径均支持。
@@ -143,6 +143,8 @@ export function mergeAddresses(existing: Address[], discovered: Address[]): Addr
 
 ### 2. ClusterRegistry 单例 (`src/client/clusterRegistry.ts`)
 
+**作用域**：单事件循环（即单个 Node.js 主线程或单个 Worker Thread）内的单例。与 `WebSocketConnectionPool` 使用相同的 `static _instance` 模式。若应用使用 `worker_threads`，每个 Worker 拥有独立的 ClusterRegistry 实例，发现结果不会跨 Worker 共享。
+
 ```typescript
 export class ClusterRegistry {
   private static _instance?: ClusterRegistry;
@@ -169,16 +171,33 @@ export class ClusterRegistry {
   /**
    * 用种子地址查询已知集群，返回合并后的地址列表。
    *
+   * 多集群检测：如果 seeds 中的地址分属不同已知集群，视为配置错误，
+   * 记录 warn 日志并返回 seeds 的深拷贝（不扩展），避免将不同集群的端点混合。
+   *
    * @returns 新数组（深拷贝），调用方可安全修改。
    *          如果无已知集群匹配，返回 seeds 的深拷贝。
    */
   expandEndpoints(seeds: Address[]): Address[] {
+    let matchedCluster: readonly Address[] | null = null;
+
     for (const seed of seeds) {
       const cluster = this.endpointToCluster.get(`${seed.host}:${seed.port}`);
-      if (cluster) {
-        // mergeAddresses 已保证返回新数组和深拷贝的 Address
-        return mergeAddresses(seeds, [...cluster]);
+      if (!cluster) continue;
+
+      if (matchedCluster === null) {
+        matchedCluster = cluster;
+      } else if (matchedCluster !== cluster) {
+        // 种子地址分属不同集群 → 配置错误，拒绝扩展
+        logger.warn(
+          "Adapter HA: seed addresses span multiple known clusters, " +
+          "skipping expansion. Ensure all seeds belong to the same cluster."
+        );
+        return seeds.map(a => new Address(a.host, a.port));
       }
+    }
+
+    if (matchedCluster) {
+      return mergeAddresses(seeds, [...matchedCluster]);
     }
     return seeds.map(a => new Address(a.host, a.port));
   }
@@ -419,6 +438,7 @@ private async recoverSessionContext(): Promise<void> {
 | adapter 不支持 `list_instances` 协议 | 连接正常，响应中无此字段，忽略即可 |
 | 发现的端点连不上 | 不在发现阶段验证；由 reconnect failover 逻辑处理 |
 | 全局注册失败 | 理论上不会发生（Map.set 不抛异常）；即使发生，本 connector 仍有扩展后的本地地址可用于 failover |
+| 种子地址跨多个已知集群 | warn 日志，拒绝扩展，返回原始种子地址深拷贝（与 Java `expandEndpointsIfKnown` 行为对齐） |
 
 ## 测试策略
 
@@ -436,9 +456,11 @@ private async recoverSessionContext(): Promise<void> {
 | `ClusterRegistry.registerCluster()` 注册后 freeze、不可被外部修改 | `test/client/clusterRegistry.test.ts` |
 | `ClusterRegistry.expandEndpoints()` 返回深拷贝 | `test/client/clusterRegistry.test.ts` |
 | `ClusterRegistry.expandEndpoints()` 无匹配返回种子副本 | `test/client/clusterRegistry.test.ts` |
+| `ClusterRegistry.expandEndpoints()` 种子跨多集群时拒绝扩展并 warn | `test/client/clusterRegistry.test.ts` |
 | 多轮发现：SQL 发现 [A,B]，TMQ 发现 [A,B,C]，registry 最终包含 [A,B,C] | `test/client/clusterRegistry.test.ts` |
 | 交叉发现：两个独立 connector 各自发现后，第三个 connector 从 registry 获取完整列表 | `test/client/clusterRegistry.test.ts` |
 | `_failoverAddresses` 与 `_dsn.addresses` 独立性（修改前者不影响后者） | `test/client/wsConnector.test.ts` |
+| Pool key 不变性：`mergeDiscoveredEndpoints()` 后 `getPoolKey()` 返回值与构造时一致 | `test/client/wsConnector.test.ts` |
 
 ### 集成测试
 
@@ -453,7 +475,7 @@ private async recoverSessionContext(): Promise<void> {
 
 | 维度 | Java | Node.js |
 |------|------|---------|
-| 全局注册 | RebalanceManager（含负载均衡/健康检查） | ClusterRegistry（仅集群缓存，冻结存储 + 深拷贝返回） |
+| 全局注册 | RebalanceManager（含负载均衡/健康检查） | ClusterRegistry（事件循环级单例，仅集群缓存，冻结存储 + 深拷贝返回） |
 | 地址存储 | 直接修改 connectionParam.endpoints | 独立 _failoverAddresses，DSN 不可变 |
 | 重连抑制 | 显式 `list_instances: false` | 省略字段（undefined → 不序列化） |
 | 并发安全 | `synchronized` | 单线程事件循环，天然安全 |

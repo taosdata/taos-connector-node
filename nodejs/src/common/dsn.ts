@@ -1,4 +1,5 @@
 import { ErrorCode, TDWebSocketClientError } from "./wsError";
+import logger from "./log";
 
 export type WebSocketEndpoint = "sql" | "tmq";
 export const WS_SQL_ENDPOINT: WebSocketEndpoint = "sql";
@@ -76,6 +77,10 @@ export class Dsn {
 
     path(): string {
         return this.endpoint === WS_TMQ_ENDPOINT ? WS_TMQ_PATH : WS_SQL_PATH;
+    }
+
+    isAdapterHA(): boolean {
+        return this.params.get("adapter_ha") === "true";
     }
 }
 
@@ -198,6 +203,105 @@ export function isCloudServiceHost(host: string): boolean {
 
 export function getDefaultPortForHost(host: string): number {
     return isCloudServiceHost(host) ? CLOUD_DEFAULT_PORT : DEFAULT_PORT;
+}
+
+function parsePortValue(portStr: string): number | null {
+    if (portStr.length === 0) {
+        return null;
+    }
+    if (!/^\d+$/.test(portStr)) {
+        return null;
+    }
+    const port = Number.parseInt(portStr, 10);
+    if (Number.isNaN(port) || port < 1 || port > 65535) {
+        return null;
+    }
+    return port;
+}
+
+function warnInvalidEndpoint(raw: string): void {
+    logger.warn(`Adapter HA: ignoring invalid endpoint: ${raw}`);
+}
+
+export function parseDiscoveredEndpoints(instances: string[]): Address[] {
+    const endpoints: Address[] = [];
+    for (const raw of instances) {
+        const trimmed = raw.trim();
+        if (trimmed.length === 0) {
+            continue;
+        }
+
+        if (trimmed.startsWith("[")) {
+            const closeBracket = trimmed.indexOf("]");
+            if (closeBracket === -1) {
+                warnInvalidEndpoint(raw);
+                continue;
+            }
+
+            const ipv6Host = trimmed.slice(1, closeBracket);
+            if (ipv6Host.length === 0) {
+                warnInvalidEndpoint(raw);
+                continue;
+            }
+
+            const remainder = trimmed.slice(closeBracket + 1);
+            if (remainder.length > 0 && !remainder.startsWith(":")) {
+                warnInvalidEndpoint(raw);
+                continue;
+            }
+
+            const portStr = remainder.startsWith(":") ? remainder.slice(1) : "";
+            const parsedPort = parsePortValue(portStr);
+            if (parsedPort === null && portStr.length > 0) {
+                warnInvalidEndpoint(raw);
+                continue;
+            }
+            endpoints.push(
+                new Address(`[${ipv6Host}]`, parsedPort ?? getDefaultPortForHost(ipv6Host))
+            );
+            continue;
+        }
+
+        let host = trimmed;
+        let port = getDefaultPortForHost(host);
+        const lastColon = trimmed.lastIndexOf(":");
+        if (lastColon !== -1) {
+            host = trimmed.slice(0, lastColon);
+            if (host.length === 0 || host.includes(":")) {
+                warnInvalidEndpoint(raw);
+                continue;
+            }
+            const portStr = trimmed.slice(lastColon + 1);
+            const parsedPort = parsePortValue(portStr);
+            if (parsedPort === null && portStr.length > 0) {
+                warnInvalidEndpoint(raw);
+                continue;
+            }
+            port = parsedPort ?? getDefaultPortForHost(host);
+        }
+
+        endpoints.push(new Address(host, port));
+    }
+    return endpoints;
+}
+
+export function mergeAddresses(existing: Address[], discovered: Address[]): Address[] {
+    const seen = new Set<string>();
+    const merged: Address[] = [];
+    const appendUnique = (source: Address[]) => {
+        for (const address of source) {
+            const key = `${address.host}:${address.port}`;
+            if (seen.has(key)) {
+                continue;
+            }
+            seen.add(key);
+            merged.push(new Address(address.host, address.port));
+        }
+    };
+
+    appendUnique(existing);
+    appendUnique(discovered);
+    return merged;
 }
 
 /**

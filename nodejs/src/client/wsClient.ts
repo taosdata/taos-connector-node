@@ -48,7 +48,10 @@ export class WsClient {
         }
     }
 
-    private buildConnMessage(database?: string | undefined | null) {
+    private buildConnMessage(
+        database?: string | undefined | null,
+        listInstances?: boolean
+    ) {
         return {
             action: "conn",
             args: {
@@ -61,6 +64,7 @@ export class WsClient {
                 ...(this._userApp && { app: this._userApp }),
                 ...(this._userIp && { ip: this._userIp }),
                 ...(this._bearerToken && { bearer_token: this._bearerToken }),
+                ...(listInstances !== undefined && { list_instances: listInstances }),
             },
         };
     }
@@ -140,7 +144,8 @@ export class WsClient {
     }
 
     async connect(database?: string | undefined | null): Promise<void> {
-        const connMsg = this.buildConnMessage(database);
+        const listInstances = this._dsn.isAdapterHA() ? true : undefined;
+        const connMsg = this.buildConnMessage(database, listInstances);
         const normalizedDatabase = this.normalizeConnectedDatabase(database ?? null);
         if (logger.isDebugEnabled()) {
             logger.debug("[wsClient.connect.connMsg]===>" + JSONBig.stringify(connMsg, (key, value) =>
@@ -165,6 +170,9 @@ export class WsClient {
             if (result.msg.code == 0) {
                 this._connectedDatabase = normalizedDatabase;
                 this._wsConnector.markSessionReady();
+                if (result.msg.list_instances) {
+                    this._wsConnector.mergeDiscoveredEndpoints(result.msg.list_instances);
+                }
                 return;
             }
             await this.close();
@@ -318,6 +326,14 @@ export class WsClient {
 
     getReconnectRetries(): number {
         return this.getWsConnector().getReconnectRetries();
+    }
+
+    isAdapterHA(): boolean {
+        return this._dsn.isAdapterHA();
+    }
+
+    mergeDiscoveredEndpoints(instances: string[]): void {
+        this.getWsConnector().mergeDiscoveredEndpoints(instances);
     }
 
     async sendMsg(message: string): Promise<any> {

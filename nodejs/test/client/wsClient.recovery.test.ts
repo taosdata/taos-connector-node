@@ -272,4 +272,96 @@ describe("WsClient recovery hook", () => {
 
         await secondBorrower.close();
     });
+
+    test("connect sends list_instances=true when adapter_ha is enabled", async () => {
+        const dsn = parse("ws://root:taosdata@localhost:6041?adapter_ha=true");
+        const connector = createMockConnector();
+        connector.readyState.mockReturnValue(0);
+        jest
+            .spyOn(WebSocketConnectionPool.instance(), "getConnection")
+            .mockResolvedValue(connector as any);
+
+        const client = new WsClient(dsn, 5000);
+        await client.connect("db_ha");
+
+        expect(connector.sendMsg).toHaveBeenCalledTimes(1);
+        const connMsg = JSON.parse((connector.sendMsg.mock.calls[0] as any[])[0]);
+        expect(connMsg.action).toBe("conn");
+        expect(connMsg.args.db).toBe("db_ha");
+        expect(connMsg.args.list_instances).toBe(true);
+    });
+
+    test("connect does not include list_instances when adapter_ha is disabled", async () => {
+        const dsn = parse("ws://root:taosdata@localhost:6041");
+        const connector = createMockConnector();
+        connector.readyState.mockReturnValue(0);
+        jest
+            .spyOn(WebSocketConnectionPool.instance(), "getConnection")
+            .mockResolvedValue(connector as any);
+
+        const client = new WsClient(dsn, 5000);
+        await client.connect("db_plain");
+
+        const connMsg = JSON.parse((connector.sendMsg.mock.calls[0] as any[])[0]);
+        expect(connMsg.args.list_instances).toBeUndefined();
+    });
+
+    test("connect merges discovered endpoints from conn response", async () => {
+        const dsn = parse("ws://root:taosdata@localhost:6041?adapter_ha=true");
+        const connector = createMockConnector();
+        connector.readyState.mockReturnValue(0);
+        (connector as any).mergeDiscoveredEndpoints = jest.fn();
+        connector.sendMsg.mockResolvedValue({
+            msg: {
+                code: 0,
+                message: "",
+                list_instances: ["host2:6042", "host3:6043"],
+            }
+        } as any);
+        jest
+            .spyOn(WebSocketConnectionPool.instance(), "getConnection")
+            .mockResolvedValue(connector as any);
+
+        const client = new WsClient(dsn, 5000);
+        await client.connect("db_ha");
+
+        expect((connector as any).mergeDiscoveredEndpoints).toHaveBeenCalledWith([
+            "host2:6042",
+            "host3:6043",
+        ]);
+    });
+
+    test("sql recovery does not include list_instances during reconnect restore", async () => {
+        const dsn = parse("ws://root:taosdata@localhost:6041?adapter_ha=true");
+        const connector = createMockConnector(false);
+        jest
+            .spyOn(WebSocketConnectionPool.instance(), "getConnection")
+            .mockResolvedValue(connector as any);
+
+        const client = new WsClient(dsn, 5000);
+        await client.connect("db_recovery");
+
+        expect(connector.sendMsgDirect).toHaveBeenCalledTimes(1);
+        const connMsg = JSON.parse((connector.sendMsgDirect.mock.calls[0] as [string])[0]);
+        expect(connMsg.action).toBe("conn");
+        expect(connMsg.args.db).toBe("db_recovery");
+        expect(connMsg.args.list_instances).toBeUndefined();
+    });
+
+    test("isAdapterHA proxies to dsn adapter_ha config", () => {
+        expect(new WsClient(parse("ws://root:taosdata@localhost:6041?adapter_ha=true"), 5000).isAdapterHA())
+            .toBe(true);
+        expect(new WsClient(parse("ws://root:taosdata@localhost:6041"), 5000).isAdapterHA())
+            .toBe(false);
+    });
+
+    test("mergeDiscoveredEndpoints proxies to current connector", () => {
+        const client = new WsClient(parse("ws://root:taosdata@localhost:6041"), 5000);
+        const connector = { mergeDiscoveredEndpoints: jest.fn() };
+        (client as any)._wsConnector = connector;
+
+        client.mergeDiscoveredEndpoints(["host2:6042"]);
+
+        expect(connector.mergeDiscoveredEndpoints).toHaveBeenCalledWith(["host2:6042"]);
+    });
 });

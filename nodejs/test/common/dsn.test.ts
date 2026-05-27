@@ -543,6 +543,26 @@ describe("dsn", () => {
             warnSpy.mockRestore();
         });
 
+        test("parseDiscoveredEndpoints skips out-of-range ports and warns", () => {
+            const warnSpy = jest.spyOn(logger, "warn").mockImplementation(() => logger);
+            const result = parseDiscoveredEndpoints([
+                "host_over_max:70000",
+                "host_zero:0",
+            ]);
+
+            expect(result).toEqual([]);
+            expect(warnSpy).toHaveBeenCalledTimes(2);
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                1,
+                "Adapter HA: ignoring invalid endpoint: host_over_max:70000"
+            );
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                2,
+                "Adapter HA: ignoring invalid endpoint: host_zero:0"
+            );
+            warnSpy.mockRestore();
+        });
+
         test("mergeAddresses deduplicates and appends newly discovered endpoints", () => {
             const existing = [
                 new Address("host1", 6041),
@@ -576,6 +596,16 @@ describe("dsn", () => {
             merged[0].host = "changed";
             expect(existing[0].host).toBe("seed1");
             expect(discovered[0].host).toBe("seed2");
+        });
+
+        test("mergeAddresses handles empty inputs", () => {
+            expect(mergeAddresses([], [])).toEqual([]);
+            expect(mergeAddresses([new Address("seed", 6041)], [])).toEqual([
+                { host: "seed", port: 6041 },
+            ]);
+            expect(mergeAddresses([], [new Address("discovered", 6042)])).toEqual([
+                { host: "discovered", port: 6042 },
+            ]);
         });
     });
 });

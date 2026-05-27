@@ -14,6 +14,13 @@ export class ClusterRegistry {
         return ClusterRegistry._instance;
     }
 
+    public static _resetForTest(): void {
+        if (ClusterRegistry._instance) {
+            ClusterRegistry._instance.endpointToCluster.clear();
+        }
+        ClusterRegistry._instance = undefined;
+    }
+
     public registerCluster(addresses: Address[]): void {
         const snapshot: Address[] = addresses.map(
             (address) => Object.freeze(new Address(address.host, address.port))

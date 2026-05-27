@@ -1,9 +1,13 @@
 import { ClusterRegistry } from "@src/client/clusterRegistry";
-import { Address } from "@src/common/dsn";
+import {
+    Address,
+    mergeAddresses,
+    parseDiscoveredEndpoints
+} from "@src/common/dsn";
 import logger from "@src/common/log";
 
 function resetClusterRegistrySingleton(): void {
-    (ClusterRegistry as any)._instance = undefined;
+    ClusterRegistry._resetForTest();
 }
 
 describe("ClusterRegistry", () => {
@@ -101,6 +105,32 @@ describe("ClusterRegistry", () => {
         expect(expanded).toEqual([
             { host: "host2", port: 6042 },
             { host: "host1", port: 6041 },
+            { host: "host3", port: 6043 },
+        ]);
+    });
+
+    test("cross discovery can be reused by the third connector expansion", () => {
+        const registry = ClusterRegistry.instance();
+
+        const connector1Seeds = [new Address("host1", 6041)];
+        const connector1Merged = mergeAddresses(
+            connector1Seeds,
+            parseDiscoveredEndpoints(["host1:6041", "host2:6042"])
+        );
+        registry.registerCluster(connector1Merged);
+
+        const connector2Seeds = [new Address("host1", 6041)];
+        const connector2Merged = mergeAddresses(
+            connector2Seeds,
+            parseDiscoveredEndpoints(["host1:6041", "host2:6042", "host3:6043"])
+        );
+        registry.registerCluster(connector2Merged);
+
+        const thirdConnectorSeeds = [new Address("host1", 6041)];
+        const expanded = registry.expandEndpoints(thirdConnectorSeeds);
+        expect(expanded).toEqual([
+            { host: "host1", port: 6041 },
+            { host: "host2", port: 6042 },
             { host: "host3", port: 6043 },
         ]);
     });

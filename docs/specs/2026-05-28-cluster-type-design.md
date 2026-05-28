@@ -59,19 +59,22 @@ export class Cluster {
 
 供 `WebSocketConnectionPool.getPoolKey()` 调用：
 
-- 如果 seeds 中所有匹配地址均指向同一个已知集群 → 返回该集群（不修改其地址列表）
+- 遍历 seeds，从 `endpointToCluster` 查映射，收集去重的 cluster ID 集合
+- 如果所有匹配地址均指向同一个已知集群 → 返回该集群，并将**未映射的 seed 也绑定到该集群**（仅补 endpoint→cluster 映射，不修改 cluster.addresses）
 - 如果 seeds 中的地址跨越多个已知集群 → 返回 `null`，打 warn 日志，调用方回退到地址拼接方式
-- 如果没有匹配 → 创建新 Cluster，映射 seed 地址，返回
+- 如果没有匹配 → 创建新 Cluster，映射所有 seed 地址，返回
 
-#### 修改方法：`updateCluster(addresses): void`
+#### 修改方法：`updateCluster(discovered): void`
 
-端点发现后调用，`addresses` 为 `list_instances` 解析过滤后的结果（不与现有 dsn 地址合并）：
+端点发现后调用，`discovered` 为 `list_instances` 解析过滤后的结果（不与现有 dsn 地址合并）。使用"交集 + 冲突检测"策略：
 
-- 遍历 `endpointToCluster`，查找所有与 `addresses` 有重叠的已知集群
-- 如果恰好匹配一个集群，且该集群的**所有**地址都是 `addresses` 的子集 → 调用 `addAddresses()` 扩展 → 更新映射
-- 如果子集检查失败（集群有地址不在 `addresses` 中） → 忽略
-- 如果没有匹配到任何集群 → **不创建新集群**，忽略
-- 如果匹配到多个集群 → 忽略
+1. 遍历 `discovered`，从 `endpointToCluster` 查映射，收集去重的 matched cluster ID 集合
+2. `matchedClusterIds.size === 0`：无匹配 → 不创建新集群，忽略
+3. `matchedClusterIds.size > 1`：同一批 discovered 命中多个集群 → 冲突，打告警，放弃更新
+4. `matchedClusterIds.size === 1`：唯一命中集群，进入合并流程：
+   - 对每个 discovered 地址，若它已映射到**其他** cluster → 冲突，放弃更新
+   - 无冲突 → 调用 `cluster.addAddresses(discovered)` 增量合并
+   - 把本次 discovered 的新地址回填到 `endpointToCluster` 映射
 
 #### `expandEndpoints(seeds)` 行为不变
 
@@ -97,7 +100,7 @@ else:
 **时序保证：**
 
 1. 第一个 HA 连接：`getPoolKey()` → `getOrCreateCluster([seed1])` → 创建 Cluster(uuid-1) → pool key 含 uuid-1
-2. 端点发现：`mergeDiscoveredEndpoints` → `updateCluster(list_instances 结果)` → 找到 uuid-1（子集检查通过） → addAddresses 扩展集群地址
+2. 端点发现：`mergeDiscoveredEndpoints` → `updateCluster(list_instances 结果)` → 找到 uuid-1（交集匹配通过） → addAddresses 扩展集群地址
 3. 第二个连接：`getPoolKey()` → `getOrCreateCluster([seed1])` → 找到 uuid-1 → pool key 一致 → 可复用连接池
 
 ### 4. 删除 `_failoverAddresses`，直接使用 `dsn.addresses`
@@ -112,6 +115,9 @@ else:
 **`mergeDiscoveredEndpoints` 改造：**
 ```typescript
 mergeDiscoveredEndpoints(instances: string[]): void {
+    if (!this._dsn.isAdapterHA() || !instances || instances.length === 0) {
+        return;
+    }
     const discovered = parseDiscoveredEndpoints(instances);
     // 1. 更新全局集群注册表（接收 list_instances 原始结果，不与 dsn 合并）
     ClusterRegistry.instance().updateCluster(discovered);
@@ -120,7 +126,7 @@ mergeDiscoveredEndpoints(instances: string[]): void {
     if (merged.length > this._dsn.addresses.length) {
         const newCount = merged.length - this._dsn.addresses.length;
         this._dsn.addresses = merged;
-        logger.info(...);
+        logger.info(`Adapter HA: discovered ${newCount} new endpoint(s), total ${merged.length}`);
     }
 }
 ```
@@ -158,11 +164,18 @@ mergeDiscoveredEndpoints(instances: string[]): void {
 
 **新增测试用例：**
 1. `getOrCreateCluster` 对已有集群返回相同 UUID
-2. `getOrCreateCluster` 对全新地址创建新 UUID
-3. `updateCluster` 只更新已有集群（子集检查通过时），不创建新集群
-4. `updateCluster` 子集检查失败时忽略（void 返回）
-4. `addAddresses` 正确合并去重
-5. 跨集群判断使用 `cluster.id` 而非引用相等
-6. HA 模式 pool key 包含 cluster UUID
-7. 非 HA 模式 pool key 保持地址排序拼接
-8. 删除 `_failoverAddresses` 后 `dsn.addresses` 正确更新
+2. `getOrCreateCluster` 命中单集群时补映射未知 seed
+3. `getOrCreateCluster` 对全新地址创建新 UUID
+4. `updateCluster` 交集匹配唯一集群时增量合并（即使 list_instances 临时不完整）
+5. `updateCluster` 无匹配时不创建新集群
+6. `updateCluster` discovered 命中多个集群时冲突放弃
+7. `updateCluster` discovered 地址已映射到其他 cluster 时冲突放弃
+8. `addAddresses` 正确合并去重
+9. 跨集群判断使用 `cluster.id` 而非引用相等
+10. HA 模式 pool key 包含 cluster UUID
+11. 非 HA 模式 pool key 保持地址排序拼接
+12. 删除 `_failoverAddresses` 后 `dsn.addresses` 正确更新
+
+### 8. 已知限制
+
+- **ClusterRegistry 无回收策略：** 失败连接或错误 seed 创建的孤儿 Cluster 会一直留在内存中。每个 Cluster 仅占几百字节，在正常使用模式下（同一 seed 复用已有 cluster）不会无限增长。如未来需要，可考虑 TTL/LRU 回收机制。

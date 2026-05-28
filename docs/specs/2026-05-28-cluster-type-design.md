@@ -97,27 +97,44 @@ else:
 2. 端点发现：`mergeDiscoveredEndpoints` → `registerCluster([seed1, node2, node3])` → 找到 uuid-1 → 扩展地址
 3. 第二个连接：`getPoolKey()` → `getOrCreateCluster([seed1])` → 找到 uuid-1 → pool key 一致 → 可复用连接池
 
-### 4. 调用方影响
+### 4. 删除 `_failoverAddresses`，直接使用 `dsn.addresses`
+
+**决策：** 删除 `WebSocketConnector` 中的 `_failoverAddresses` 字段，端点扩展和发现直接修改 `dsn.addresses`。
+
+**改造逻辑：**
+- 构造函数中删除 `_failoverAddresses` 的初始化拷贝
+- `expandEndpoints` 的结果直接写回 `dsn.addresses`
+- `mergeDiscoveredEndpoints` 中合并结果直接更新 `dsn.addresses`
+- 所有引用 `_failoverAddresses` 的地方改为 `this._dsn.addresses`
+
+**影响分析：**
+- HA 模式 pool key 基于 cluster ID，不受 `dsn.addresses` 变化影响
+- 非 HA 模式下 `mergeDiscoveredEndpoints` 直接 return（不修改地址），pool key 不受影响
+- 跨集群回退到地址拼接的场景属于异常情况，可接受 pool key 变化作为兜底行为
+- `WsClient.ready()` 再次获取连接时使用扩展后的地址，实际上是有益的
+
+### 5. 调用方影响
 
 | 文件 | 改动范围 |
 |------|---------|
 | `clusterRegistry.ts` | 新增 `Cluster` 类；改造 `ClusterRegistry`（新增 `getOrCreateCluster`，`registerCluster` 返回 `Cluster`，`expandEndpoints` 用 ID 比较） |
-| `wsConnectorPool.ts` | `getPoolKey()` 在 HA 模式下使用 cluster ID |
-| `wsConnector.ts` | `mergeDiscoveredEndpoints()` 无需改动（`registerCluster` 返回值可忽略） |
+| `wsConnectorPool.ts` | `getPoolKey()` 在 HA 模式下使用 cluster ID；导入 `ClusterRegistry` |
+| `wsConnector.ts` | 删除 `_failoverAddresses`，所有引用改为 `this._dsn.addresses`；`expandEndpoints` 和 `mergeDiscoveredEndpoints` 的结果直接写回 `dsn.addresses` |
 | `clusterRegistry.test.ts` | 适配 `Cluster` 类型；新增 `getOrCreateCluster` 和 `addAddresses` 测试 |
 
-### 5. 不变的部分
+### 6. 不变的部分
 
 - `Address` 类、`Dsn` 类、`mergeAddresses`、`parseDiscoveredEndpoints` 均不变
 - 非 HA 连接的 pool key 生成逻辑不变
 - `expandEndpoints` 的对外行为和返回值不变
 - 现有的凭据脱敏机制不变
 
-### 6. 测试计划
+### 7. 测试计划
 
 **适配现有测试：**
 - `endpointToCluster` 值验证改为通过 `cluster.addresses` 访问
 - 冻结语义验证保持
+- `wsConnector` 相关测试中删除 `_failoverAddresses` 引用
 
 **新增测试用例：**
 1. `getOrCreateCluster` 对已有集群返回相同 UUID
@@ -127,3 +144,4 @@ else:
 5. 跨集群判断使用 `cluster.id` 而非引用相等
 6. HA 模式 pool key 包含 cluster UUID
 7. 非 HA 模式 pool key 保持地址排序拼接
+8. 删除 `_failoverAddresses` 后 `dsn.addresses` 正确更新

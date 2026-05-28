@@ -60,7 +60,7 @@ export class Cluster {
 供 `WebSocketConnectionPool.getPoolKey()` 调用：
 
 - 遍历 seeds，从 `endpointToCluster` 查映射，收集去重的 cluster ID 集合
-- 如果所有匹配地址均指向同一个已知集群 → 返回该集群，并将**未映射的 seed 也绑定到该集群**（仅补 endpoint→cluster 映射，不修改 cluster.addresses）
+- 如果所有匹配地址均指向同一个已知集群 → 返回该集群
 - 如果 seeds 中的地址跨越多个已知集群 → 返回 `null`，打 warn 日志，调用方回退到地址拼接方式
 - 如果没有匹配 → 创建新 Cluster，映射所有 seed 地址，返回
 
@@ -164,7 +164,7 @@ mergeDiscoveredEndpoints(instances: string[]): void {
 
 **新增测试用例：**
 1. `getOrCreateCluster` 对已有集群返回相同 UUID
-2. `getOrCreateCluster` 命中单集群时补映射未知 seed
+2. `getOrCreateCluster` 命中单集群时返回该集群（不补映射）
 3. `getOrCreateCluster` 对全新地址创建新 UUID
 4. `updateCluster` 交集匹配唯一集群时增量合并（即使 list_instances 临时不完整）
 5. `updateCluster` 无匹配时不创建新集群

@@ -509,17 +509,28 @@ describe("dsn", () => {
             ]);
         });
 
-        test("parseDiscoveredEndpoints uses default port for endpoints without explicit port", () => {
+        test("parseDiscoveredEndpoints skips endpoints without explicit port and warns", () => {
+            const warnSpy = jest.spyOn(logger, "warn").mockImplementation(() => logger);
             const result = parseDiscoveredEndpoints([
                 "node3",
                 "tenant.cloud.tdengine.com",
                 "[2001:db8::10]",
             ]);
-            expect(result).toEqual([
-                { host: "node3", port: 6041 },
-                { host: "tenant.cloud.tdengine.com", port: 443 },
-                { host: "[2001:db8::10]", port: 6041 },
-            ]);
+            expect(result).toEqual([]);
+            expect(warnSpy).toHaveBeenCalledTimes(3);
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                1,
+                "Adapter HA: ignoring invalid endpoint: node3"
+            );
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                2,
+                "Adapter HA: ignoring invalid endpoint: tenant.cloud.tdengine.com"
+            );
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                3,
+                "Adapter HA: ignoring invalid endpoint: [2001:db8::10]"
+            );
+            warnSpy.mockRestore();
         });
 
         test("parseDiscoveredEndpoints skips invalid endpoints and warns", () => {

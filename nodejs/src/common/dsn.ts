@@ -252,35 +252,36 @@ export function parseDiscoveredEndpoints(instances: string[]): Address[] {
 
             const portStr = remainder.startsWith(":") ? remainder.slice(1) : "";
             const parsedPort = parsePortValue(portStr);
-            if (parsedPort === null && portStr.length > 0) {
+            if (parsedPort === null) {
                 warnInvalidEndpoint(raw);
                 continue;
             }
             endpoints.push(
-                new Address(`[${ipv6Host}]`, parsedPort ?? getDefaultPortForHost(ipv6Host))
+                new Address(`[${ipv6Host}]`, parsedPort)
             );
             continue;
         }
 
-        let host = trimmed;
-        let port = getDefaultPortForHost(host);
         const lastColon = trimmed.lastIndexOf(":");
-        if (lastColon !== -1) {
-            host = trimmed.slice(0, lastColon);
-            if (host.length === 0 || host.includes(":")) {
-                warnInvalidEndpoint(raw);
-                continue;
-            }
-            const portStr = trimmed.slice(lastColon + 1);
-            const parsedPort = parsePortValue(portStr);
-            if (parsedPort === null && portStr.length > 0) {
-                warnInvalidEndpoint(raw);
-                continue;
-            }
-            port = parsedPort ?? getDefaultPortForHost(host);
+        if (lastColon === -1) {
+            warnInvalidEndpoint(raw);
+            continue;
         }
 
-        endpoints.push(new Address(host, port));
+        const host = trimmed.slice(0, lastColon);
+        if (host.length === 0 || host.includes(":")) {
+            warnInvalidEndpoint(raw);
+            continue;
+        }
+
+        const portStr = trimmed.slice(lastColon + 1);
+        const parsedPort = parsePortValue(portStr);
+        if (parsedPort === null) {
+            warnInvalidEndpoint(raw);
+            continue;
+        }
+
+        endpoints.push(new Address(host, parsedPort));
     }
     return endpoints;
 }

@@ -15,8 +15,8 @@ export class Cluster {
         return this._addresses;
     }
 
-    addAddresses(newAddresses: Address[]): void {
-        const merged = mergeAddresses([...this._addresses], newAddresses);
+    addAddresses(addresses: Address[]): void {
+        const merged = mergeAddresses([...this._addresses], addresses);
         this._addresses = Cluster.freezeAddresses(merged);
     }
 

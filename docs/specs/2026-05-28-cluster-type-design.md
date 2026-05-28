@@ -55,11 +55,12 @@ export class Cluster {
 
 `endpointToCluster` 值类型从 `readonly Address[]` 变为 `Cluster`。
 
-#### 新增方法：`getOrCreateCluster(seeds)`
+#### 新增方法：`getOrCreateCluster(seeds): Cluster | null`
 
 供 `WebSocketConnectionPool.getPoolKey()` 调用：
 
-- 如果 seeds 中任一地址已属于某个已知集群 → 返回该集群（不修改其地址列表）
+- 如果 seeds 中所有匹配地址均指向同一个已知集群 → 返回该集群（不修改其地址列表）
+- 如果 seeds 中的地址跨越多个已知集群 → 返回 `null`，打 warn 日志，调用方回退到地址拼接方式
 - 如果没有匹配 → 创建新 Cluster，映射 seed 地址，返回
 
 #### 修改方法：`registerCluster(addresses)` → 返回 `Cluster`
@@ -81,7 +82,11 @@ export class Cluster {
 ```
 if (dsn.isAdapterHA()):
     cluster = ClusterRegistry.instance().getOrCreateCluster(dsn.addresses)
-    pool key = "${scheme}://${cluster.id}/${path}#auth=${authHash}"
+    if (cluster !== null):
+        pool key = "${scheme}://${cluster.id}/${path}#auth=${authHash}"
+    else:
+        // seeds 跨集群，回退到地址拼接方式
+        pool key = 排序地址拼接方式
 else:
     pool key = 现有的排序地址拼接方式（不变）
 ```

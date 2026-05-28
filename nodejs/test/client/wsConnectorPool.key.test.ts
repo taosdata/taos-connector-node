@@ -1,7 +1,8 @@
+import { ClusterRegistry } from "@src/client/clusterRegistry";
 import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
 import { RetryConfig } from "@src/client/wsConnector";
 import { WSConfig } from "@src/common/config";
-import { parse, WS_TMQ_ENDPOINT } from "@src/common/dsn";
+import { Address, parse, WS_TMQ_ENDPOINT } from "@src/common/dsn";
 import { WsSql } from "@src/sql/wsSql";
 import { testPassword, testUsername } from "@test-helpers/utils";
 import { w3cwebsocket } from "websocket";
@@ -14,13 +15,20 @@ function resetPoolSingleton() {
     }
 }
 
+function resetClusterRegistrySingleton(): void {
+    ClusterRegistry._resetForTest();
+}
+
 describe("WebSocketConnectionPool key generation", () => {
     beforeEach(() => {
         resetPoolSingleton();
+        resetClusterRegistrySingleton();
     });
 
     afterEach(() => {
+        jest.restoreAllMocks();
         resetPoolSingleton();
+        resetClusterRegistrySingleton();
     });
 
     test("normalizes address order when generating pool key", () => {
@@ -122,6 +130,53 @@ describe("WebSocketConnectionPool key generation", () => {
         const sqlKey = (pool as any).getPoolKey(sqlDsn);
         const tmqKey = (pool as any).getPoolKey(tmqDsn);
         expect(sqlKey).not.toBe(tmqKey);
+    });
+
+    test("uses cluster uuid for adapter_ha pool key", () => {
+        const pool = WebSocketConnectionPool.instance();
+        const dsnA = parse("ws://root:taosdata@ha1:6041/mydb?adapter_ha=true");
+        const dsnB = parse("ws://root:taosdata@ha1:6041,ha2:6042/mydb?adapter_ha=true");
+
+        const keyA = (pool as any).getPoolKey(dsnA);
+        const keyB = (pool as any).getPoolKey(dsnB);
+
+        expect(keyA).toBe(keyB);
+        expect(keyA).toMatch(/^ws:\/\/[0-9a-f-]{36}\/ws#auth=/);
+    });
+
+    test("avoids address sorting on adapter_ha fast path when cluster is resolved", () => {
+        const pool = WebSocketConnectionPool.instance();
+        const dsn = parse("ws://root:taosdata@ha-fast:6041/mydb?adapter_ha=true");
+        ClusterRegistry.instance().getOrCreateCluster(dsn.addresses);
+
+        const sortSpy = jest
+            .spyOn(Array.prototype, "sort")
+            .mockImplementation(() => {
+                throw new Error("sort should not be called on HA fast path");
+            });
+
+        const poolKey = (pool as any).getPoolKey(dsn);
+        expect(poolKey).toMatch(/^ws:\/\/[0-9a-f-]{36}\/ws#auth=/);
+        expect(sortSpy).not.toHaveBeenCalled();
+    });
+
+    test("falls back to address-based key when adapter_ha seeds span multiple clusters", () => {
+        const pool = WebSocketConnectionPool.instance();
+        const registry = ClusterRegistry.instance();
+        registry.getOrCreateCluster([new Address("ha-a", 6041)]);
+        registry.getOrCreateCluster([new Address("ha-b", 6042)]);
+
+        const dsn = parse("ws://root:taosdata@ha-a:6041,ha-b:6042/mydb?adapter_ha=true");
+        const key = (pool as any).getPoolKey(dsn);
+
+        expect(key).toContain("ha-a:6041,ha-b:6042");
+    });
+
+    test("keeps address-based pool key for non adapter_ha dsn", () => {
+        const pool = WebSocketConnectionPool.instance();
+        const dsn = parse("ws://root:taosdata@host2:6042,host1:6041/mydb");
+        const key = (pool as any).getPoolKey(dsn);
+        expect(key).toContain("host1:6041,host2:6042");
     });
 });
 

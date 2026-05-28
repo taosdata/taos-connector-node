@@ -25,9 +25,6 @@ function createBareAdapterHaConnector(seedDsn: string): any {
     connector._suppressedSockets = new WeakSet();
     connector._sessionRecoveryHook = null;
     connector._inflightStore = createInflightStore();
-    connector._failoverAddresses = connector._dsn.addresses.map(
-        (address: Address) => new Address(address.host, address.port)
-    );
     connector._conn = {
         readyState: 1,
         send: jest.fn(),
@@ -50,12 +47,14 @@ describe("WebSocketConnector adapter ha", () => {
         resetClusterRegistrySingleton();
     });
 
-    test("constructor expands failover addresses from registry when adapter_ha=true", () => {
+    test("constructor expands dsn addresses from registry when adapter_ha=true", () => {
         const createConnectionSpy = jest
             .spyOn(WebSocketConnector.prototype as any, "createConnection")
             .mockImplementation(() => { });
 
-        ClusterRegistry.instance().registerCluster([
+        const registry = ClusterRegistry.instance();
+        registry.getOrCreateCluster([new Address("host1", 6041)]);
+        registry.updateCluster([
             new Address("host1", 6041),
             new Address("host2", 6042),
         ]);
@@ -66,26 +65,29 @@ describe("WebSocketConnector adapter ha", () => {
             null
         ) as any;
 
-        expect(connector._dsn.addresses).toEqual([{ host: "host1", port: 6041 }]);
-        expect(connector._failoverAddresses).toEqual([
+        expect(connector._dsn.addresses).toEqual([
             { host: "host1", port: 6041 },
             { host: "host2", port: 6042 },
         ]);
         expect(createConnectionSpy).toHaveBeenCalledTimes(1);
     });
 
-    test("mergeDiscoveredEndpoints extends failover addresses without mutating dsn addresses", () => {
+    test("mergeDiscoveredEndpoints extends dsn addresses and updates cluster registry", () => {
         const connector = createBareAdapterHaConnector(
             "ws://root:taosdata@host1:6041?adapter_ha=true"
         );
+        const updateSpy = jest.spyOn(ClusterRegistry.instance(), "updateCluster");
 
         connector.mergeDiscoveredEndpoints([
             "host2:6042",
             "host3:6043",
         ]);
 
-        expect(connector._dsn.addresses).toEqual([{ host: "host1", port: 6041 }]);
-        expect(connector._failoverAddresses).toEqual([
+        expect(updateSpy).toHaveBeenCalledWith([
+            { host: "host2", port: 6042 },
+            { host: "host3", port: 6043 },
+        ]);
+        expect(connector._dsn.addresses).toEqual([
             { host: "host1", port: 6041 },
             { host: "host2", port: 6042 },
             { host: "host3", port: 6043 },
@@ -103,11 +105,11 @@ describe("WebSocketConnector adapter ha", () => {
         expect(connector.getPoolKey()).toBe(initialPoolKey);
     });
 
-    test("selectLeastConnectedAddress selects from failover addresses", () => {
+    test("selectLeastConnectedAddress selects from dsn addresses", () => {
         const connector = createBareAdapterHaConnector(
             "ws://root:taosdata@host1:6041?adapter_ha=true"
         );
-        connector._failoverAddresses = [
+        connector._dsn.addresses = [
             new Address("host1", 6041),
             new Address("host2", 6042),
         ];
@@ -118,16 +120,16 @@ describe("WebSocketConnector adapter ha", () => {
 
         const selected = connector.selectLeastConnectedAddress();
 
-        expect(selectSpy).toHaveBeenCalledWith(connector._failoverAddresses);
+        expect(selectSpy).toHaveBeenCalledWith(connector._dsn.addresses);
         expect(selected).toEqual({ host: "host2", port: 6042 });
     });
 
-    test("attemptReconnect iterates all failover addresses", async () => {
+    test("attemptReconnect iterates all dsn addresses", async () => {
         const connector = createBareAdapterHaConnector(
             "ws://root:taosdata@host1:6041?adapter_ha=true"
         );
         connector._retryConfig = new RetryConfig(1, 1, 8);
-        connector._failoverAddresses = [
+        connector._dsn.addresses = [
             new Address("host1", 6041),
             new Address("host2", 6042),
         ];
@@ -135,7 +137,7 @@ describe("WebSocketConnector adapter ha", () => {
         connector.reconnect = jest.fn(async () => {
             throw new Error("down");
         });
-        connector.selectLeastConnectedAddress = jest.fn(() => connector._failoverAddresses[1]);
+        connector.selectLeastConnectedAddress = jest.fn(() => connector._dsn.addresses[1]);
 
         await expect(connector.attemptReconnect()).rejects.toThrow(
             "Failed to reconnect to any available address"

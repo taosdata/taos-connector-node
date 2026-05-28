@@ -42,7 +42,7 @@ function createBareConnector(
     const connector = Object.create(WebSocketConnector.prototype) as any;
     connector._timeout = 5000;
     connector._dsn = parse(dsn);
-    connector._failoverAddresses = connector._dsn.addresses.map(
+    connector._dsn.addresses = connector._dsn.addresses.map(
         (address: any) => ({ ...address })
     );
     connector._currentAddress = connector._dsn.addresses[0];

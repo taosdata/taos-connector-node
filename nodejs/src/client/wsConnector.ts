@@ -160,7 +160,6 @@ export class WebSocketConnector {
     private _conn!: w3cwebsocket;
     private readonly _poolKey: string;
     private readonly _dsn: Dsn;
-    private _failoverAddresses: Address[];
     private _currentAddress: Address;
     private _retryConfig: RetryConfig;
     private _inflightStore: InflightRequestStore;
@@ -186,17 +185,14 @@ export class WebSocketConnector {
         }
         this._poolKey = poolKey;
         this._dsn = dsn;
-        this._failoverAddresses = dsn.addresses.map(
-            (address) => new Address(address.host, address.port)
-        );
         if (dsn.isAdapterHA()) {
-            const expanded = ClusterRegistry.instance().expandEndpoints(this._failoverAddresses);
-            if (expanded.length > this._failoverAddresses.length) {
+            const expanded = ClusterRegistry.instance().expandEndpoints(this._dsn.addresses);
+            if (expanded.length > this._dsn.addresses.length) {
                 logger.info(
                     "Adapter HA: expanded seed endpoints from registry, " +
-                    `${this._failoverAddresses.length} -> ${expanded.length}`
+                    `${this._dsn.addresses.length} -> ${expanded.length}`
                 );
-                this._failoverAddresses = expanded;
+                this._dsn.addresses = expanded;
             }
         }
         this._currentAddress = this.selectLeastConnectedAddress();
@@ -451,11 +447,11 @@ export class WebSocketConnector {
     }
 
     private selectLeastConnectedAddress(excludedAddresses: Set<string> = new Set()): Address {
-        const candidates = this._failoverAddresses.filter((address) => {
+        const candidates = this._dsn.addresses.filter((address) => {
             const addressKey = `${address.host}:${address.port}`;
             return !excludedAddresses.has(addressKey);
         });
-        const selectableAddresses = candidates.length > 0 ? candidates : this._failoverAddresses;
+        const selectableAddresses = candidates.length > 0 ? candidates : this._dsn.addresses;
         const selectedIndex = AddressConnectionTracker.instance()
             .selectLeastConnected(selectableAddresses);
         return selectableAddresses[selectedIndex];
@@ -516,7 +512,7 @@ export class WebSocketConnector {
     }
 
     private async attemptReconnect(): Promise<void> {
-        const totalAddresses = this._failoverAddresses.length;
+        const totalAddresses = this._dsn.addresses.length;
         const failedAddresses = new Set<string>();
 
         for (let i = 0; i < totalAddresses; i++) {
@@ -617,14 +613,14 @@ export class WebSocketConnector {
             return;
         }
         const discovered = parseDiscoveredEndpoints(instances);
-        const merged = mergeAddresses(this._failoverAddresses, discovered);
-        if (merged.length <= this._failoverAddresses.length) {
+        ClusterRegistry.instance().updateCluster(discovered);
+        const merged = mergeAddresses(this._dsn.addresses, discovered);
+        if (merged.length <= this._dsn.addresses.length) {
             return;
         }
 
-        const newCount = merged.length - this._failoverAddresses.length;
-        this._failoverAddresses = merged;
-        ClusterRegistry.instance().registerCluster(merged);
+        const newCount = merged.length - this._dsn.addresses.length;
+        this._dsn.addresses = merged;
         logger.info(
             `Adapter HA: discovered ${newCount} new endpoint(s), total ${merged.length}`
         );

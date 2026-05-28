@@ -42,13 +42,6 @@ export class ClusterRegistry {
         return ClusterRegistry._instance;
     }
 
-    public static _resetForTest(): void {
-        if (ClusterRegistry._instance) {
-            ClusterRegistry._instance.endpointToCluster.clear();
-        }
-        ClusterRegistry._instance = undefined;
-    }
-
     private endpointKey(address: Address): string {
         return `${address.host}:${address.port}`;
     }

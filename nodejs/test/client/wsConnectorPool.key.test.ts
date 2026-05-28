@@ -16,7 +16,7 @@ function resetPoolSingleton() {
 }
 
 function resetClusterRegistrySingleton(): void {
-    ClusterRegistry._resetForTest();
+    (ClusterRegistry as any)._instance = undefined;
 }
 
 describe("WebSocketConnectionPool key generation", () => {

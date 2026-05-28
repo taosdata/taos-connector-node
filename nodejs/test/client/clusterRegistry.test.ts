@@ -3,7 +3,7 @@ import { Address } from "@src/common/dsn";
 import logger from "@src/common/log";
 
 function resetClusterRegistrySingleton(): void {
-    ClusterRegistry._resetForTest();
+    (ClusterRegistry as any)._instance = undefined;
 }
 
 describe("Cluster", () => {

@@ -63,12 +63,15 @@ export class Cluster {
 - 如果 seeds 中的地址跨越多个已知集群 → 返回 `null`，打 warn 日志，调用方回退到地址拼接方式
 - 如果没有匹配 → 创建新 Cluster，映射 seed 地址，返回
 
-#### 修改方法：`registerCluster(addresses)` → 返回 `Cluster`
+#### 修改方法：`registerCluster(addresses): Cluster | null`
 
-端点发现后调用：
+端点发现后调用，`addresses` 为 `list_instances` 解析过滤后的结果（不与现有 dsn 地址合并）：
 
-- 查找已有集群（通过地址重叠） → 调用 `addAddresses()` 扩展 → 更新映射 → 返回
-- 未找到 → 创建新集群 → 返回
+- 遍历 `endpointToCluster`，查找所有与 `addresses` 有重叠的已知集群
+- 如果恰好匹配一个集群，且该集群的**所有**地址都是 `addresses` 的子集 → 调用 `addAddresses()` 扩展 → 更新映射 → 返回该集群
+- 如果子集检查失败（集群有地址不在 `addresses` 中） → 返回 `null`
+- 如果没有匹配到任何集群 → **不创建新集群**，直接返回 `null`
+- 如果匹配到多个集群 → 返回 `null`
 
 #### `expandEndpoints(seeds)` 行为不变
 
@@ -94,7 +97,7 @@ else:
 **时序保证：**
 
 1. 第一个 HA 连接：`getPoolKey()` → `getOrCreateCluster([seed1])` → 创建 Cluster(uuid-1) → pool key 含 uuid-1
-2. 端点发现：`mergeDiscoveredEndpoints` → `registerCluster([seed1, node2, node3])` → 找到 uuid-1 → 扩展地址
+2. 端点发现：`mergeDiscoveredEndpoints` → `registerCluster(list_instances 结果)` → 找到 uuid-1（子集检查通过） → addAddresses 扩展集群地址
 3. 第二个连接：`getPoolKey()` → `getOrCreateCluster([seed1])` → 找到 uuid-1 → pool key 一致 → 可复用连接池
 
 ### 4. 删除 `_failoverAddresses`，直接使用 `dsn.addresses`
@@ -104,8 +107,25 @@ else:
 **改造逻辑：**
 - 构造函数中删除 `_failoverAddresses` 的初始化拷贝
 - `expandEndpoints` 的结果直接写回 `dsn.addresses`
-- `mergeDiscoveredEndpoints` 中合并结果直接更新 `dsn.addresses`
 - 所有引用 `_failoverAddresses` 的地方改为 `this._dsn.addresses`
+
+**`mergeDiscoveredEndpoints` 改造：**
+```typescript
+mergeDiscoveredEndpoints(instances: string[]): void {
+    const discovered = parseDiscoveredEndpoints(instances);
+    // 1. 更新全局集群注册表（接收 list_instances 原始结果，不与 dsn 合并）
+    ClusterRegistry.instance().registerCluster(discovered);
+    // 2. 更新本 connector 的 dsn.addresses（独立合并）
+    const merged = mergeAddresses(this._dsn.addresses, discovered);
+    if (merged.length > this._dsn.addresses.length) {
+        const newCount = merged.length - this._dsn.addresses.length;
+        this._dsn.addresses = merged;
+        logger.info(...);
+    }
+}
+```
+
+**关键点：** `dsn.addresses` 的更新独立于集群注册表，各 Connector 只合并自己收到的 instances。
 
 **影响分析：**
 - HA 模式 pool key 基于 cluster ID，不受 `dsn.addresses` 变化影响
@@ -119,7 +139,7 @@ else:
 |------|---------|
 | `clusterRegistry.ts` | 新增 `Cluster` 类；改造 `ClusterRegistry`（新增 `getOrCreateCluster`，`registerCluster` 返回 `Cluster`，`expandEndpoints` 用 ID 比较） |
 | `wsConnectorPool.ts` | `getPoolKey()` 在 HA 模式下使用 cluster ID；导入 `ClusterRegistry` |
-| `wsConnector.ts` | 删除 `_failoverAddresses`，所有引用改为 `this._dsn.addresses`；`expandEndpoints` 和 `mergeDiscoveredEndpoints` 的结果直接写回 `dsn.addresses` |
+| `wsConnector.ts` | 删除 `_failoverAddresses`，所有引用改为 `this._dsn.addresses`；`mergeDiscoveredEndpoints` 拆分：`registerCluster` 接收原始 instances，`dsn.addresses` 独立合并 |
 | `clusterRegistry.test.ts` | 适配 `Cluster` 类型；新增 `getOrCreateCluster` 和 `addAddresses` 测试 |
 
 ### 6. 不变的部分
@@ -139,7 +159,8 @@ else:
 **新增测试用例：**
 1. `getOrCreateCluster` 对已有集群返回相同 UUID
 2. `getOrCreateCluster` 对全新地址创建新 UUID
-3. `registerCluster` 复用已有 Cluster UUID 并通过 `addAddresses` 扩展地址
+3. `registerCluster` 只更新已有集群（子集检查通过时），不创建新集群
+4. `registerCluster` 子集检查失败时返回 null
 4. `addAddresses` 正确合并去重
 5. 跨集群判断使用 `cluster.id` 而非引用相等
 6. HA 模式 pool key 包含 cluster UUID

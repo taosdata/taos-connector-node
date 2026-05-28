@@ -1,3 +1,4 @@
+import { ClusterRegistry } from "@src/client/clusterRegistry";
 import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
 import { WSConfig } from "@src/common/config";
 import { WsSql } from "@src/sql/wsSql";
@@ -7,6 +8,11 @@ import { setLevel } from "@src/common/log";
 let dsn = "ws://localhost:6041";
 let password1 = "Ab1!@#$%,.:?<>;~";
 let password2 = "Bc%^&*()-_+=[]{}";
+
+function resetClusterRegistrySingleton(): void {
+    (ClusterRegistry as any)._instance = undefined;
+}
+
 setLevel("debug");
 beforeAll(async () => {
     let conf: WSConfig = new WSConfig(dsn);
@@ -123,6 +129,47 @@ describe("TDWebSocket.WsSql()", () => {
         await wsSql.close();
         console.log(version);
         expect(version).toBeTruthy();
+    });
+
+    test("adapter_ha connect reuses pooled connector across seed variants", async () => {
+        const dsnA =
+            `ws://${testUsername()}:${testPassword()}` +
+            "@localhost:6041?adapter_ha=true";
+        const dsnB =
+            `ws://${testUsername()}:${testPassword()}` +
+            "@localhost:6041,127.0.0.1:6041?adapter_ha=true";
+
+        let connA: WsSql | null = null;
+        let connB: WsSql | null = null;
+
+        WebSocketConnectionPool.instance().destroyed();
+        resetClusterRegistrySingleton();
+
+        try {
+            connA = await WsSql.open(new WSConfig(dsnA));
+            const firstResult = await connA.exec("select server_version()");
+            expect(firstResult).toBeTruthy();
+
+            const connectorA = ((connA as any)._wsClient as any)._wsConnector;
+            expect(connectorA).toBeDefined();
+            expect(connectorA.getPoolKey()).toMatch(/^ws:\/\/[0-9a-f-]{36}\/ws#auth=/);
+
+            connB = await WsSql.open(new WSConfig(dsnB));
+            const connectorB = ((connB as any)._wsClient as any)._wsConnector;
+            expect(connectorB).toBe(connectorA);
+
+            const secondResult = await connB.exec("select server_version()");
+            expect(secondResult).toBeTruthy();
+        } finally {
+            if (connB) {
+                await connB.close();
+            }
+            if (connA) {
+                await connA.close();
+            }
+            WebSocketConnectionPool.instance().destroyed();
+            resetClusterRegistrySingleton();
+        }
     });
 
     test("show databases", async () => {

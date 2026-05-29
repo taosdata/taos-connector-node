@@ -30,4 +30,5 @@ jobs:
         with:
           sbom: "${{ env.SBOM_FILENAME }}"
           cache-db: true
+          config: ".github/grype-sbom.yaml"
           output-format: "table"

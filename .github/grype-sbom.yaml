@@ -1,0 +1,5 @@
+ignore:
+  - vulnerability: GHSA-w5hq-g745-h8pq
+    package:
+      name: uuid
+      type: npm

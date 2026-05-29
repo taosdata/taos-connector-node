@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { v4 as uuidv4 } from "uuid";
 import { Address, mergeAddresses } from "../common/dsn";
 import logger from "../common/log";
 
@@ -7,7 +7,7 @@ export class Cluster {
     private _addresses: readonly Address[];
 
     constructor(addresses: Address[]) {
-        this.id = randomUUID();
+        this.id = uuidv4();
         this._addresses = Cluster.freezeAddresses(addresses);
     }
 

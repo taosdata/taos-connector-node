@@ -7,6 +7,7 @@ import { setLevel } from "@src/common/log";
 let dsn = "ws://localhost:6041";
 let password1 = "Ab1!@#$%,.:?<>;~";
 let password2 = "Bc%^&*()-_+=[]{}";
+
 setLevel("debug");
 beforeAll(async () => {
     let conf: WSConfig = new WSConfig(dsn);

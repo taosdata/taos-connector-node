@@ -1,4 +1,11 @@
-import { parse, WS_SQL_ENDPOINT } from "@src/common/dsn";
+import {
+    Address,
+    mergeAddresses,
+    parse,
+    parseDiscoveredEndpoints,
+    WS_SQL_ENDPOINT
+} from "@src/common/dsn";
+import logger from "@src/common/log";
 
 describe("dsn", () => {
     describe("parse", () => {
@@ -481,6 +488,135 @@ describe("dsn", () => {
             expect(masked.params.Token).toBe("[REDACTED]");
             expect(masked.params.Bearer_Token).toBe("[REDACTED]");
             expect(masked.params["TD.CONNECT.TOKEN"]).toBe("[REDACTED]");
+        });
+    });
+
+    describe("adapter ha helpers", () => {
+        test("isAdapterHA returns true only when adapter_ha=true", () => {
+            expect(parse("ws://root:taosdata@localhost:6041?adapter_ha=true").isAdapterHA()).toBe(true);
+            expect(parse("ws://root:taosdata@localhost:6041?adapter_ha=false").isAdapterHA()).toBe(false);
+            expect(parse("ws://root:taosdata@localhost:6041").isAdapterHA()).toBe(false);
+        });
+
+        test("parseDiscoveredEndpoints parses hostname and ipv6 endpoint", () => {
+            const result = parseDiscoveredEndpoints([
+                "node2:6042",
+                "[::1]:6043",
+            ]);
+            expect(result).toEqual([
+                { host: "node2", port: 6042 },
+                { host: "[::1]", port: 6043 },
+            ]);
+        });
+
+        test("parseDiscoveredEndpoints skips endpoints without explicit port and warns", () => {
+            const warnSpy = jest.spyOn(logger, "warn").mockImplementation(() => logger);
+            const result = parseDiscoveredEndpoints([
+                "node3",
+                "tenant.cloud.tdengine.com",
+                "[2001:db8::10]",
+            ]);
+            expect(result).toEqual([]);
+            expect(warnSpy).toHaveBeenCalledTimes(3);
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                1,
+                "Adapter HA: ignoring invalid endpoint: node3"
+            );
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                2,
+                "Adapter HA: ignoring invalid endpoint: tenant.cloud.tdengine.com"
+            );
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                3,
+                "Adapter HA: ignoring invalid endpoint: [2001:db8::10]"
+            );
+            warnSpy.mockRestore();
+        });
+
+        test("parseDiscoveredEndpoints skips invalid endpoints and warns", () => {
+            const warnSpy = jest.spyOn(logger, "warn").mockImplementation(() => logger);
+            const result = parseDiscoveredEndpoints([
+                "",
+                "   ",
+                "::1:6041",
+                "bad_port:abc",
+            ]);
+            expect(result).toEqual([]);
+            expect(warnSpy).toHaveBeenCalledTimes(2);
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                1,
+                "Adapter HA: ignoring invalid endpoint: ::1:6041"
+            );
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                2,
+                "Adapter HA: ignoring invalid endpoint: bad_port:abc"
+            );
+            warnSpy.mockRestore();
+        });
+
+        test("parseDiscoveredEndpoints skips out-of-range ports and warns", () => {
+            const warnSpy = jest.spyOn(logger, "warn").mockImplementation(() => logger);
+            const result = parseDiscoveredEndpoints([
+                "host_over_max:70000",
+                "host_zero:0",
+            ]);
+
+            expect(result).toEqual([]);
+            expect(warnSpy).toHaveBeenCalledTimes(2);
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                1,
+                "Adapter HA: ignoring invalid endpoint: host_over_max:70000"
+            );
+            expect(warnSpy).toHaveBeenNthCalledWith(
+                2,
+                "Adapter HA: ignoring invalid endpoint: host_zero:0"
+            );
+            warnSpy.mockRestore();
+        });
+
+        test("mergeAddresses deduplicates and appends newly discovered endpoints", () => {
+            const existing = [
+                new Address("host1", 6041),
+                new Address("host2", 6042),
+            ];
+            const discovered = [
+                new Address("host2", 6042),
+                new Address("host3", 6043),
+            ];
+            const merged = mergeAddresses(existing, discovered);
+            expect(merged).toEqual([
+                { host: "host1", port: 6041 },
+                { host: "host2", port: 6042 },
+                { host: "host3", port: 6043 },
+            ]);
+        });
+
+        test("mergeAddresses returns deep-copied addresses and does not mutate inputs", () => {
+            const existing = [new Address("seed1", 6041)];
+            const discovered = [new Address("seed2", 6042)];
+            const merged = mergeAddresses(existing, discovered);
+
+            expect(merged).toEqual([
+                { host: "seed1", port: 6041 },
+                { host: "seed2", port: 6042 },
+            ]);
+            expect(merged).not.toBe(existing);
+            expect(merged[0]).not.toBe(existing[0]);
+            expect(merged[1]).not.toBe(discovered[0]);
+
+            merged[0].host = "changed";
+            expect(existing[0].host).toBe("seed1");
+            expect(discovered[0].host).toBe("seed2");
+        });
+
+        test("mergeAddresses handles empty inputs", () => {
+            expect(mergeAddresses([], [])).toEqual([]);
+            expect(mergeAddresses([new Address("seed", 6041)], [])).toEqual([
+                { host: "seed", port: 6041 },
+            ]);
+            expect(mergeAddresses([], [new Address("discovered", 6042)])).toEqual([
+                { host: "discovered", port: 6042 },
+            ]);
         });
     });
 });

@@ -1,5 +1,10 @@
 import { ICloseEvent, w3cwebsocket } from "websocket";
-import { Address, Dsn } from "../common/dsn";
+import {
+    Address,
+    Dsn,
+    mergeAddresses,
+    parseDiscoveredEndpoints
+} from "../common/dsn";
 import { AddressConnectionTracker } from "../common/addressConnectionTracker";
 import {
     ErrorCode,
@@ -12,6 +17,7 @@ import {
     maskSensitiveForLog,
     maskUrlForLog
 } from "../common/utils";
+import { ClusterRegistry } from "./clusterRegistry";
 
 interface InflightRequest {
     reqId: bigint;
@@ -179,6 +185,16 @@ export class WebSocketConnector {
         }
         this._poolKey = poolKey;
         this._dsn = dsn;
+        if (dsn.isAdapterHA()) {
+            const expanded = ClusterRegistry.instance().expandEndpoints(this._dsn.addresses);
+            if (expanded.length > this._dsn.addresses.length) {
+                logger.info(
+                    "Adapter HA: expanded seed endpoints from registry, " +
+                    `${this._dsn.addresses.length} -> ${expanded.length}`
+                );
+                this._dsn.addresses = expanded;
+            }
+        }
         this._currentAddress = this.selectLeastConnectedAddress();
         this._retryConfig = RetryConfig.fromDsn(dsn);
         this._inflightStore = new InflightRequestStore();
@@ -590,6 +606,24 @@ export class WebSocketConnector {
 
     public markSessionReady(): void {
         this._sessionReady = true;
+    }
+
+    public mergeDiscoveredEndpoints(instances: string[]): void {
+        if (!this._dsn.isAdapterHA() || !instances || instances.length === 0) {
+            return;
+        }
+        const discovered = parseDiscoveredEndpoints(instances);
+        ClusterRegistry.instance().updateCluster(discovered);
+        const merged = mergeAddresses(this._dsn.addresses, discovered);
+        if (merged.length <= this._dsn.addresses.length) {
+            return;
+        }
+
+        const newCount = merged.length - this._dsn.addresses.length;
+        this._dsn.addresses = merged;
+        logger.info(
+            `Adapter HA: discovered ${newCount} new endpoint(s), total ${merged.length}`
+        );
     }
 
     private async recoverSessionContext(): Promise<void> {

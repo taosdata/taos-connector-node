@@ -90,7 +90,11 @@ export class WsConsumer {
         });
     }
 
-    private buildSubscribeMessage(topics: Array<string>, reqId?: number) {
+    private buildSubscribeMessage(
+        topics: Array<string>,
+        reqId?: number,
+        listInstances?: boolean
+    ) {
         const user = this._config.user === null
             ? null
             : safeDecodeURIComponent(this._config.user);
@@ -114,6 +118,7 @@ export class WsConsumer {
                 ...(this._config.userApp && { app: this._config.userApp }),
                 ...(this._config.userIp && { ip: this._config.userIp }),
                 connector: ConnectorInfo,
+                ...(listInstances !== undefined && { list_instances: listInstances }),
             },
         };
     }
@@ -139,8 +144,12 @@ export class WsConsumer {
             );
         }
 
-        let queryMsg = this.buildSubscribeMessage(topics, reqId);
-        await this._wsClient.exec(JSON.stringify(queryMsg));
+        const listInstances = this._wsClient.isAdapterHA() ? true : undefined;
+        let queryMsg = this.buildSubscribeMessage(topics, reqId, listInstances);
+        const result = await this._wsClient.exec(JSON.stringify(queryMsg), false);
+        if (result?.msg?.list_instances) {
+            this._wsClient.mergeDiscoveredEndpoints(result.msg.list_instances);
+        }
         this._topics = [...topics];
     }
 

@@ -4,6 +4,7 @@ import { Dsn } from "../common/dsn";
 import { ErrorCode, TDWebSocketClientError } from "../common/wsError";
 import logger from "../common/log";
 import { w3cwebsocket } from "websocket";
+import { ClusterRegistry } from "./clusterRegistry";
 import { WebSocketConnector } from "./wsConnector";
 
 const mutex = new Mutex();
@@ -46,12 +47,18 @@ export class WebSocketConnectionPool {
     }
 
     private getPoolKey(dsn: Dsn): string {
+        const auth = this.buildAuthScope(dsn);
+        const path = dsn.path();
+        if (dsn.isAdapterHA()) {
+            const cluster = ClusterRegistry.instance().getOrCreateCluster(dsn.addresses);
+            if (cluster) {
+                return `${dsn.scheme}://${cluster.id}/${path}#auth=${auth}`;
+            }
+        }
         const addrs = [...dsn.addresses]
             .sort((a, b) => `${a.host}:${a.port}`.localeCompare(`${b.host}:${b.port}`))
             .map((addr) => `${addr.host}:${addr.port}`)
             .join(",");
-        const auth = this.buildAuthScope(dsn);
-        const path = dsn.path();
         return `${dsn.scheme}://${addrs}/${path}#auth=${auth}`;
     }
 

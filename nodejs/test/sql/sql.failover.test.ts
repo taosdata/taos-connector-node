@@ -1,7 +1,8 @@
+import { ClusterRegistry } from "@src/client/clusterRegistry";
 import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
 import { WSConfig } from "@src/common/config";
 import { WsSql } from "@src/sql/wsSql";
-import { testPassword, testUsername } from "@test-helpers/utils";
+import { testNon3360, testPassword, testUsername } from "@test-helpers/utils";
 import { WsProxy, WsProxyEvent } from "@test-helpers/wsProxy";
 
 function parseBinaryAction(rawData: Buffer | string): bigint | null {
@@ -9,6 +10,10 @@ function parseBinaryAction(rawData: Buffer | string): bigint | null {
         return null;
     }
     return rawData.readBigInt64LE(16);
+}
+
+function resetClusterRegistrySingleton(): void {
+    (ClusterRegistry as any)._instance = undefined;
 }
 
 describe("sql failover", () => {
@@ -394,4 +399,53 @@ describe("sql failover", () => {
         },
         300 * 1000
     );
+});
+
+describe("sql adapter_ha pooled connector", () => {
+    afterEach(() => {
+        WebSocketConnectionPool.instance().destroyed();
+        resetClusterRegistrySingleton();
+    });
+
+    testNon3360("adapter_ha connect reuses pooled connector across seed variants", async () => {
+        const dsnA =
+            `ws://${testUsername()}:${testPassword()}` +
+            "@localhost:6041?adapter_ha=true";
+        const dsnB =
+            `ws://${testUsername()}:${testPassword()}` +
+            "@localhost:6041,127.0.0.1:6041?adapter_ha=true";
+
+        let connA: WsSql | null = null;
+        let connB: WsSql | null = null;
+
+        WebSocketConnectionPool.instance().destroyed();
+        resetClusterRegistrySingleton();
+
+        try {
+            connA = await WsSql.open(new WSConfig(dsnA));
+            const firstResult = await connA.exec("select server_version()");
+            expect(firstResult).toBeTruthy();
+
+            const connectorA = ((connA as any)._wsClient as any)._wsConnector;
+            expect(connectorA).toBeDefined();
+            expect(connectorA.getPoolKey()).toMatch(/^ws:\/\/[0-9a-f-]{36}\/ws#auth=/);
+
+            await connA.close();
+            connA = null;
+
+            connB = await WsSql.open(new WSConfig(dsnB));
+            const connectorB = ((connB as any)._wsClient as any)._wsConnector;
+            expect(connectorB).toBe(connectorA);
+
+            const secondResult = await connB.exec("select server_version()");
+            expect(secondResult).toBeTruthy();
+        } finally {
+            if (connB) {
+                await connB.close();
+            }
+            if (connA) {
+                await connA.close();
+            }
+        }
+    });
 });

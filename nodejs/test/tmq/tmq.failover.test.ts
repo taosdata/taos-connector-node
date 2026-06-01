@@ -1,9 +1,10 @@
+import { ClusterRegistry } from "@src/client/clusterRegistry";
 import { WebSocketConnectionPool } from "@src/client/wsConnectorPool";
 import { WSConfig } from "@src/common/config";
 import { WsSql } from "@src/sql/wsSql";
 import { TMQConstants } from "@src/tmq/constant";
 import { WsConsumer } from "@src/tmq/wsTmq";
-import { testPassword, testUsername } from "@test-helpers/utils";
+import { testNon3360, testPassword, testUsername } from "@test-helpers/utils";
 import { WsProxy } from "@test-helpers/wsProxy";
 
 function parseJsonAction(rawData: Buffer | string): string | null {
@@ -16,6 +17,10 @@ function parseJsonAction(rawData: Buffer | string): string | null {
     } catch (_err) {
         return null;
     }
+}
+
+function resetClusterRegistrySingleton(): void {
+    (ClusterRegistry as any)._instance = undefined;
 }
 
 describe("tmq failover", () => {
@@ -434,4 +439,134 @@ describe("tmq failover", () => {
             }
         }
     }, 300 * 1000);
+});
+
+describe("tmq adapter_ha pooled connector", () => {
+    afterEach(() => {
+        WebSocketConnectionPool.instance().destroyed();
+        resetClusterRegistrySingleton();
+    });
+
+    testNon3360("adapter_ha consumes data and reuses pooled connector across seed variants", async () => {
+        const now = Date.now();
+        const dbName = `test_adapter_ha_${now}`;
+        const tableName = "t0";
+        const topicName = `topic_adapter_ha_${now}`;
+        const dsnA = "ws://localhost:6041?adapter_ha=true";
+        const dsnB = "ws://localhost:6041,127.0.0.1:6041?adapter_ha=true";
+        const localDsn = `ws://${testUsername()}:${testPassword()}@127.0.0.1:6041`;
+        const buildConfig = (
+            groupId: string,
+            clientId: string,
+            url: string
+        ): Map<string, any> => {
+            const cfg = new Map<string, any>();
+            cfg.set(TMQConstants.GROUP_ID, groupId);
+            cfg.set(TMQConstants.CONNECT_USER, testUsername());
+            cfg.set(TMQConstants.CONNECT_PASS, testPassword());
+            cfg.set(TMQConstants.AUTO_OFFSET_RESET, "earliest");
+            cfg.set(TMQConstants.CLIENT_ID, clientId);
+            cfg.set(TMQConstants.WS_URL, url);
+            cfg.set(TMQConstants.ENABLE_AUTO_COMMIT, false);
+            cfg.set(TMQConstants.AUTO_COMMIT_INTERVAL_MS, 1000);
+            cfg.set("session.timeout.ms", "10000");
+            cfg.set("max.poll.interval.ms", "30000");
+            cfg.set("msg.with.table.name", "true");
+            return cfg;
+        };
+
+        let setupSql: WsSql | null = null;
+        let cleanupSql: WsSql | null = null;
+        let consumerA: WsConsumer | null = null;
+        let consumerB: WsConsumer | null = null;
+
+        WebSocketConnectionPool.instance().destroyed();
+        resetClusterRegistrySingleton();
+
+        setupSql = await WsSql.open(new WSConfig(localDsn));
+        try {
+            await setupSql.exec(`drop topic if exists ${topicName}`);
+            await setupSql.exec(`drop database if exists ${dbName}`);
+            await setupSql.exec(`create database ${dbName}`);
+            await setupSql.exec(`create table ${dbName}.${tableName}(ts timestamp, c1 int)`);
+
+            const baseTs = 1700030000000;
+            const values = Array.from({ length: 10 }, (_, i) => `(${baseTs + i}, ${i})`);
+            await setupSql.exec(
+                `insert into ${dbName}.${tableName} values ${values.join(" ")}`
+            );
+            await setupSql.exec(`create topic ${topicName} as select * from ${dbName}.${tableName}`);
+        } finally {
+            await setupSql.close();
+            setupSql = null;
+        }
+
+        try {
+            const cfgA = buildConfig(
+                `g_adapter_ha_${now}_a`,
+                `c_adapter_ha_${now}_a`,
+                dsnA
+            );
+            consumerA = await WsConsumer.newConsumer(cfgA);
+            await consumerA.subscribe([topicName]);
+
+            const connectorA = ((consumerA as any)._wsClient as any)._wsConnector;
+            expect(connectorA).toBeDefined();
+            expect(connectorA.getPoolKey()).toMatch(/^ws:\/\/[0-9a-f-]{36}\/rest\/tmq#auth=/);
+
+            let count = 0;
+            for (let i = 0; i < 20 && count < 10; i++) {
+                const res = await consumerA.poll(500);
+                for (const [, value] of res) {
+                    const data = value.getData();
+                    if (!data || data.length === 0) {
+                        continue;
+                    }
+                    count += data.length;
+                }
+            }
+            expect(count).toBeGreaterThanOrEqual(10);
+
+            await consumerA.unsubscribe();
+            await consumerA.close();
+            consumerA = null;
+
+            const cfgB = buildConfig(
+                `g_adapter_ha_${now}_b`,
+                `c_adapter_ha_${now}_b`,
+                dsnB
+            );
+            consumerB = await WsConsumer.newConsumer(cfgB);
+
+            const connectorB = ((consumerB as any)._wsClient as any)._wsConnector;
+            expect(connectorB).toBe(connectorA);
+
+            await consumerB.subscribe([topicName]);
+            const res = await consumerB.poll(500);
+            expect(res).toBeTruthy();
+
+            await consumerB.unsubscribe();
+            await consumerB.close();
+            consumerB = null;
+        } finally {
+            if (consumerB) {
+                await consumerB.close();
+            }
+            if (consumerA) {
+                await consumerA.close();
+            }
+
+            cleanupSql = await WsSql.open(new WSConfig(localDsn));
+            try {
+                await cleanupSql.exec(`drop topic if exists ${topicName}`);
+                await cleanupSql.exec(`drop database if exists ${dbName}`);
+            } finally {
+                await cleanupSql.close();
+                cleanupSql = null;
+            }
+
+            WebSocketConnectionPool.instance().destroyed();
+            resetClusterRegistrySingleton();
+        }
+    });
 });
